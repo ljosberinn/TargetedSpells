@@ -51,7 +51,9 @@
     "GameFontHighlightHugeOutline",
     "class",
     "RegisterStateDriver",
-    "RegisterAttributeDriver"
+    "RegisterAttributeDriver",
+    "CompactRaidFrameContainerMixin",
+    "CompactRaidFrameContainer"
   ],
   "stylua.targetReleaseVersion": "latest"
 }

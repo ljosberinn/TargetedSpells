@@ -183,7 +183,6 @@ function TargetedSpellsMixin:StartPreviewLoop(RepositionPreviewFrames)
 end
 
 function TargetedSpellsMixin:StopPreviewLoop()
-	print("TargetedSpellsMixin:StopPreviewLoop()", self.unit, self.kind)
 	if self.loopTicker ~= nil and not self.loopTicker:IsCancelled() then
 		self.loopTicker:Cancel()
 		self.loopTicker = nil
@@ -193,6 +192,8 @@ function TargetedSpellsMixin:StopPreviewLoop()
 		self.hideTimer:Cancel()
 		self.hideTimer = nil
 	end
+
+	print("TargetedSpellsMixin:StopPreviewLoop()", self.unit, self.kind, self.loopTicker, self.hideTimer)
 
 	self:Hide()
 end
@@ -214,4 +215,12 @@ end
 
 function TargetedSpellsMixin:GetKind()
 	return self.kind
+end
+
+function TargetedSpellsMixin:SetRelationalUnit(unit)
+	self.relationalUnit = unit
+end
+
+function TargetedSpellsMixin:GetRelationalUnit()
+	return self.relationalUnit
 end

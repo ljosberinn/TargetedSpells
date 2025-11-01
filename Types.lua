@@ -89,6 +89,9 @@
 ---@field StartPreviewLoop fun(self: TargetedSpellsMixin, RepositionPreviewFrames: fun())
 ---@field StopPreviewLoop fun(self: TargetedSpellsMixin)
 ---@field settingsCallbackId number?
+---@field relationalUnit string?
+---@field SetRelationalUnit fun(self: TargetedSpellsMixin, unit: string)
+---@field GetRelationalUnit fun(self: TargetedSpellsMixin): string?
 
 ---@class IconDataProviderMixin
 ---@field GetRandomIcon fun(self: IconDataProviderMixin): number

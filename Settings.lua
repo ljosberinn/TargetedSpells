@@ -273,16 +273,22 @@ table.insert(Private.LoginFnQueue, function()
 
 				local function ResetToDefault()
 					local defaults = Private.Settings.GetSelfDefaultSettings().LoadConditionContentType
+					local hasChanges = false
 
 					for id, value in pairs(defaults) do
-						TargetedSpellsSaved.Settings.Self.LoadConditionContentType[id] = value
+						if TargetedSpellsSaved.Settings.Self.LoadConditionContentType[id] ~= value then
+							TargetedSpellsSaved.Settings.Self.LoadConditionContentType[id] = value
+							hasChanges = true
+						end
 					end
 
-					Private.EventRegistry:TriggerEvent(
-						Private.Events.SETTING_CHANGED,
-						key,
-						TargetedSpellsSaved.Settings.Self.LoadConditionContentType
-					)
+					if hasChanges then
+						Private.EventRegistry:TriggerEvent(
+							Private.Events.SETTING_CHANGED,
+							key,
+							TargetedSpellsSaved.Settings.Self.LoadConditionContentType
+						)
+					end
 
 					return 0
 				end
@@ -335,16 +341,22 @@ table.insert(Private.LoginFnQueue, function()
 
 				local function ResetToDefault()
 					local defaults = Private.Settings.GetSelfDefaultSettings().LoadConditionRole
+					local hasChanges = false
 
 					for id, value in pairs(defaults) do
-						TargetedSpellsSaved.Settings.Self.LoadConditionRole[id] = value
+						if TargetedSpellsSaved.Settings.Self.LoadConditionRole[id] ~= value then
+							TargetedSpellsSaved.Settings.Self.LoadConditionRole[id] = value
+							hasChanges = true
+						end
 					end
 
-					Private.EventRegistry:TriggerEvent(
-						Private.Events.SETTING_CHANGED,
-						key,
-						TargetedSpellsSaved.Settings.Self.LoadConditionRole
-					)
+					if hasChanges then
+						Private.EventRegistry:TriggerEvent(
+							Private.Events.SETTING_CHANGED,
+							key,
+							TargetedSpellsSaved.Settings.Self.LoadConditionRole
+						)
+					end
 
 					return 0
 				end
@@ -498,7 +510,7 @@ table.insert(Private.LoginFnQueue, function()
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
-		-- Grow Direction
+		-- Frame Grow Direction
 		do
 			local key = Private.Settings.Keys.Self.GrowDirection
 			local defaultValue = Private.Settings.GetSelfDefaultSettings().GrowDirection
