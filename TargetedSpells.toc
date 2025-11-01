@@ -1,0 +1,23 @@
+## Interface: 1125000, 120000
+## Title: Targeted Spells
+## DefaultState: Enabled
+## SavedVariables: TargetedSpellsSaved
+## IconTexture: Interface\Icons\ability_hunter_mastermarksman
+## OptionalDeps: !!AddonLocale
+## Category: Archon
+
+Libs\LibStub\LibStub.lua
+Libs\LibEditMode\embed.xml
+
+Enum.lua
+Init.lua
+Settings.lua
+Frame.lua
+
+TargetedSpellsMixin.lua
+
+Templates\TargetedSpellsFrameTemplate.xml
+Templates\PartyPreviewTemplate.xml
+Templates\SelfPreviewTemplate.xml
+
+EditMode.lua
