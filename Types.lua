@@ -7,10 +7,11 @@
 ---@field LoginFnQueue table<string, function>
 
 ---@class TargetedSpellsEnums
----@field GrowDirection table<string, number>
+---@field GrowDirection table<string, string>
 ---@field ContentType table<string, number>
 ---@field Role table<string, number>
 ---@field FrameKind table<'Party' | 'Self', string>
+---@field Anchor table<string, string>
 
 ---@class SliderSettings
 ---@field min number
@@ -51,6 +52,9 @@
 ---@field GrowDirection number
 ---@field LoadConditionContentType boolean[]
 ---@field LoadConditionRole boolean[]
+---@field OffsetX number
+---@field OffsetY number
+---@field Anchor string
 
 ---@class TargetedSpellsSelfPreviewFrame: Frame
 ---@field GetChildren fun(self: TargetedSpellsSelfPreviewFrame): TargetedSpellsMixin
@@ -89,9 +93,6 @@
 ---@field StartPreviewLoop fun(self: TargetedSpellsMixin, RepositionPreviewFrames: fun())
 ---@field StopPreviewLoop fun(self: TargetedSpellsMixin)
 ---@field settingsCallbackId number?
----@field relationalUnit string?
----@field SetRelationalUnit fun(self: TargetedSpellsMixin, unit: string)
----@field GetRelationalUnit fun(self: TargetedSpellsMixin): string?
 
 ---@class IconDataProviderMixin
 ---@field GetRandomIcon fun(self: IconDataProviderMixin): number

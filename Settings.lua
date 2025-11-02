@@ -23,6 +23,9 @@ Private.Settings.Keys = {
 		Height = "FRAME_HEIGHT_PARTY",
 		Spacing = "FRAME_SPACING_PARTY",
 		GrowDirection = "GROW_DIRECTION_PARTY",
+		OffsetX = "FRAME_OFFSET_X_PARTY",
+		OffsetY = "FRAME_OFFSET_Y_PARTY",
+		Anchor = "FRAME_ANCHOR_PARTY",
 	},
 }
 
@@ -35,7 +38,15 @@ function Private.Settings.GetSliderSettingsForOption(key)
 		}
 	end
 
-	if key == Private.Settings.Keys.Self.Spacing then
+	if key == Private.Settings.Keys.Party.Width or key == Private.Settings.Keys.Party.Height then
+		return {
+			min = 16,
+			max = 60,
+			step = 2,
+		}
+	end
+
+	if key == Private.Settings.Keys.Self.Spacing or key == Private.Settings.Keys.Party.Spacing then
 		return {
 			min = -10,
 			max = 40,
@@ -43,10 +54,17 @@ function Private.Settings.GetSliderSettingsForOption(key)
 		}
 	end
 
+	if key == Private.Settings.Keys.Party.OffsetX or key == Private.Settings.Keys.Party.OffsetY then
+		return {
+			min = -100,
+			max = 100,
+			step = 2,
+		}
+	end
+
 	error(
 		string.format(
 			"Slider Settings for key '%s' are either not implemented or you're calling this with the wrong key.",
-			addonName,
 			key
 		)
 	)
@@ -107,6 +125,9 @@ function Private.Settings.GetPartyDefaultSettings()
 			[Private.Enum.Role.Tank] = true,
 			[Private.Enum.Role.Damager] = true,
 		},
+		OffsetX = 0,
+		OffsetY = 0,
+		Anchor = "CENTER",
 	}
 end
 
@@ -532,8 +553,9 @@ table.insert(Private.LoginFnQueue, function()
 			local function GetOptions()
 				local container = Settings.CreateControlTextContainer()
 
-				container:Add(1, "Horizontal")
-				container:Add(2, "Vertical")
+				for k in pairs(Private.Enum.GrowDirection) do
+					container:Add(k, k)
+				end
 
 				return container:GetData()
 			end
@@ -541,7 +563,7 @@ table.insert(Private.LoginFnQueue, function()
 			local setting = Settings.RegisterProxySetting(
 				category,
 				key,
-				Settings.VarType.Number,
+				Settings.VarType.String,
 				"Grow Direction",
 				defaultValue,
 				GetValue,
@@ -847,8 +869,9 @@ table.insert(Private.LoginFnQueue, function()
 			local function GetOptions()
 				local container = Settings.CreateControlTextContainer()
 
-				container:Add(1, "Horizontal")
-				container:Add(2, "Vertical")
+				for k in pairs(Private.Enum.GrowDirection) do
+					container:Add(k, k)
+				end
 
 				return container:GetData()
 			end
@@ -856,7 +879,7 @@ table.insert(Private.LoginFnQueue, function()
 			local setting = Settings.RegisterProxySetting(
 				category,
 				key,
-				Settings.VarType.Number,
+				Settings.VarType.String,
 				"Grow Direction",
 				defaultValue,
 				GetValue,

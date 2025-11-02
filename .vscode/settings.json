@@ -53,7 +53,15 @@
     "RegisterStateDriver",
     "RegisterAttributeDriver",
     "CompactRaidFrameContainerMixin",
-    "CompactRaidFrameContainer"
+    "CompactRaidFrameContainer",
+    "PartyFrame",
+    "CompactPartyFrame",
+    "EditModeUnitFrameSystemMixin",
+    "EditModeSystemSettingsDialogMixin",
+    "EditModeSystemSettingsDialog",
+    "EditModeSettingCheckboxMixin",
+    "HUD_EDIT_MODE_SETTING_UNIT_FRAME_RAID_STYLE_PARTY_FRAMES",
+    "CompactPartyFrameMixin"
   ],
   "stylua.targetReleaseVersion": "latest"
 }

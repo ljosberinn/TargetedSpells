@@ -4,8 +4,8 @@ local addonName, Private = ...
 Private.Enum = {}
 
 Private.Enum.GrowDirection = {
-	Horizontal = 1,
-	Vertical = 2,
+	Horizontal = "horizontal",
+	Vertical = "vertical",
 }
 
 Private.Enum.ContentType = {
@@ -26,4 +26,16 @@ Private.Enum.Role = {
 Private.Enum.FrameKind = {
 	Self = "self",
 	Party = "party",
+}
+
+Private.Enum.Anchor = {
+	Center = "CENTER",
+	Top = "TOP",
+	Bottom = "BOTTOM",
+	Left = "LEFT",
+	Right = "RIGHT",
+	TopLeft = "TOPLEFT",
+	TopRight = "TOPRIGHT",
+	BottomLeft = "BOTTOMLEFT",
+	BottomRight = "BOTTOMRIGHT",
 }

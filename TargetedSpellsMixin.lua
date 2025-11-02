@@ -101,12 +101,12 @@ function TargetedSpellsMixin:OnSettingChanged(key, value)
 end
 
 function TargetedSpellsMixin:RefreshSpellCooldownInfo()
-	print("TargetedSpellsMixin:RefreshSpellCooldownInfo()", self.unit, self.kind)
+	-- print("TargetedSpellsMixin:RefreshSpellCooldownInfo()", self.unit, self.kind)
 	self.Cooldown:SetCooldown(self.startTime, self.castTime)
 end
 
 function TargetedSpellsMixin:SetStartTime()
-	print("TargetedSpellsMixin:SetStartTime()", self.unit, self.kind)
+	-- print("TargetedSpellsMixin:SetStartTime()", self.unit, self.kind)
 	self.startTime = GetTime()
 end
 
@@ -115,12 +115,12 @@ function TargetedSpellsMixin:GetStartTime()
 end
 
 function TargetedSpellsMixin:SetCastTime(castTime)
-	print("TargetedSpellsMixin:SetCastTime()", self.unit, self.kind, castTime)
+	-- print("TargetedSpellsMixin:SetCastTime()", self.unit, self.kind, castTime)
 	self.castTime = castTime
 end
 
 function TargetedSpellsMixin:GetCastTime()
-	print("TargetedSpellsMixin:GetCastTime()", self.unit, self.kind)
+	-- print("TargetedSpellsMixin:GetCastTime()", self.unit, self.kind)
 	return self.castTime
 end
 
@@ -174,8 +174,8 @@ function TargetedSpellsMixin:StartPreviewLoop(RepositionPreviewFrames)
 		end)
 	end
 
-	local unit = string.gsub(self.unit, "preview", "")
-	local index = tonumber(unit)
+	local unitId = string.gsub(self.unit, "preview", "")
+	local index = tonumber(unitId)
 	local delay = (index - 1) * math.random()
 
 	self.loopTicker = C_Timer.NewTicker(4.5 + delay, Loop)
@@ -193,7 +193,7 @@ function TargetedSpellsMixin:StopPreviewLoop()
 		self.hideTimer = nil
 	end
 
-	print("TargetedSpellsMixin:StopPreviewLoop()", self.unit, self.kind, self.loopTicker, self.hideTimer)
+	-- print("TargetedSpellsMixin:StopPreviewLoop()", self.unit, self.kind, self.loopTicker, self.hideTimer)
 
 	self:Hide()
 end
@@ -215,12 +215,4 @@ end
 
 function TargetedSpellsMixin:GetKind()
 	return self.kind
-end
-
-function TargetedSpellsMixin:SetRelationalUnit(unit)
-	self.relationalUnit = unit
-end
-
-function TargetedSpellsMixin:GetRelationalUnit()
-	return self.relationalUnit
 end
