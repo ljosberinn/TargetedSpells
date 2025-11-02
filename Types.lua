@@ -12,7 +12,7 @@
 ---@field Role table<string, number>
 ---@field FrameKind table<'Party' | 'Self', string>
 ---@field Anchor table<string, string>
----@field Order table<'Ascending' | 'Descending', string>
+---@field SortOrder table<'Ascending' | 'Descending', string>
 
 ---@class SliderSettings
 ---@field min number
@@ -56,6 +56,7 @@
 ---@field OffsetX number
 ---@field OffsetY number
 ---@field Anchor string
+---@field SortOrder string
 
 ---@class TargetedSpellsSelfPreviewFrame: Frame
 ---@field GetChildren fun(self: TargetedSpellsSelfPreviewFrame): TargetedSpellsMixin

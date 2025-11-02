@@ -312,10 +312,44 @@ local function CreateSetting(key)
 		}
 	end
 
+	if key == Private.Settings.Keys.Party.SortOrder then
+		---@param layoutName string
+		---@param value string
+		local function Set(layoutName, value)
+			if TargetedSpellsSaved.Settings.Party.SortOrder ~= value then
+				TargetedSpellsSaved.Settings.Party.SortOrder = value
+				Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, value)
+			end
+		end
+
+		return {
+			name = "Sort Order",
+			kind = Enum.EditModeSettingDisplayType.Dropdown,
+			default = Private.Settings.GetPartyDefaultSettings().SortOrder,
+			generator = function(owner, rootDescription, data)
+				for label, enumValue in pairs(Private.Enum.SortOrder) do
+					local function IsEnabled()
+						return TargetedSpellsSaved.Settings.Party.SortOrder == enumValue
+					end
+
+					local function SetProxy()
+						Set(LEM:GetActiveLayoutName(), enumValue)
+					end
+
+					rootDescription:CreateCheckbox(label, IsEnabled, SetProxy, {
+						value = label,
+						isRadio = true,
+					})
+				end
+			end,
+			set = Set,
+		}
+	end
+
 	error(
 		string.format(
 			"Edit Mode Settings for key '%s' are either not implemented or you're calling this with the wrong key.",
-			key
+			key or "NO KEY"
 		)
 	)
 end
@@ -572,14 +606,15 @@ local function SetupPartyEditMode()
 	LEM:AddFrame(EditModeParentFrame, onPositionChanged, defaultPosition)
 
 	local function RepositionPreviewFrames()
-		local width, height, gap, direction, offsetX, offsetY, anchor =
+		local width, height, gap, direction, offsetX, offsetY, anchor, sortOrder =
 			TargetedSpellsSaved.Settings.Party.Width,
 			TargetedSpellsSaved.Settings.Party.Height,
 			TargetedSpellsSaved.Settings.Party.Gap,
 			TargetedSpellsSaved.Settings.Party.Direction,
 			TargetedSpellsSaved.Settings.Party.OffsetX,
 			TargetedSpellsSaved.Settings.Party.OffsetY,
-			TargetedSpellsSaved.Settings.Party.Anchor
+			TargetedSpellsSaved.Settings.Party.Anchor,
+			TargetedSpellsSaved.Settings.Party.SortOrder
 
 		for index, frames in pairs(previewFrames) do
 			---@type table<string, TargetedSpellsMixin[]>
@@ -591,18 +626,16 @@ local function SetupPartyEditMode()
 				end
 			end
 
-			local isHorizontal = direction == Private.Enum.Direction.Horizontal
+			local isAscending = sortOrder == Private.Enum.SortOrder.Ascending
 
 			table.sort(activeFrames, function(a, b)
-				if a:GetStartTime() and b:GetStartTime() then
-					if isHorizontal then
-						return a:GetStartTime() < b:GetStartTime()
-					end
+				local aStart, bStart = a:GetStartTime(), b:GetStartTime()
 
-					return a:GetStartTime() > b:GetStartTime()
+				if isAscending then
+					return aStart < bStart
 				end
 
-				return false
+				return aStart > bStart
 			end)
 
 			local parentFrame = nil
@@ -629,7 +662,7 @@ local function SetupPartyEditMode()
 
 			local activeFrameCount = #activeFrames
 
-			if isHorizontal then
+			if direction == Private.Enum.Direction.Horizontal then
 				local totalWidth = (activeFrameCount * width) + (activeFrameCount - 1) * gap
 
 				for i, frame in ipairs(activeFrames) do
@@ -693,6 +726,7 @@ local function SetupPartyEditMode()
 			or key == Private.Settings.Keys.Party.OffsetX
 			or key == Private.Settings.Keys.Party.OffsetY
 			or key == Private.Settings.Keys.Party.Anchor
+			or key == Private.Settings.Keys.Party.SortOrder
 		then
 			RepositionPreviewFrames()
 		elseif key == Private.Settings.Keys.Party.Enabled then
@@ -716,6 +750,7 @@ local function SetupPartyEditMode()
 		CreateSetting(Private.Settings.Keys.Party.OffsetX),
 		CreateSetting(Private.Settings.Keys.Party.OffsetY),
 		CreateSetting(Private.Settings.Keys.Party.Anchor),
+		CreateSetting(Private.Settings.Keys.Party.SortOrder),
 	})
 end
 
