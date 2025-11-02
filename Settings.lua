@@ -10,8 +10,8 @@ Private.Settings.Keys = {
 		LoadConditionRole = "LOAD_CONDITION_ROLE_SELF",
 		Width = "FRAME_WIDTH_SELF",
 		Height = "FRAME_HEIGHT_SELF",
-		Spacing = "FRAME_SPACING_SELF",
-		GrowDirection = "GROW_DIRECTION_SELF",
+		Gap = "FRAME_GAP_SELF",
+		Direction = "GROW_DIRECTION_SELF",
 		OffsetX = "FRAME_OFFSET_X_SELF",
 		OffsetY = "FRAME_OFFSET_Y_SELF",
 	},
@@ -21,8 +21,8 @@ Private.Settings.Keys = {
 		LoadConditionRole = "LOAD_CONDITION_ROLE_PARTY",
 		Width = "FRAME_WIDTH_PARTY",
 		Height = "FRAME_HEIGHT_PARTY",
-		Spacing = "FRAME_SPACING_PARTY",
-		GrowDirection = "GROW_DIRECTION_PARTY",
+		Gap = "FRAME_GAP_PARTY",
+		Direction = "GROW_DIRECTION_PARTY",
 		OffsetX = "FRAME_OFFSET_X_PARTY",
 		OffsetY = "FRAME_OFFSET_Y_PARTY",
 		Anchor = "FRAME_ANCHOR_PARTY",
@@ -46,7 +46,7 @@ function Private.Settings.GetSliderSettingsForOption(key)
 		}
 	end
 
-	if key == Private.Settings.Keys.Self.Spacing or key == Private.Settings.Keys.Party.Spacing then
+	if key == Private.Settings.Keys.Self.Gap or key == Private.Settings.Keys.Party.Gap then
 		return {
 			min = -10,
 			max = 40,
@@ -76,8 +76,8 @@ function Private.Settings.GetSelfDefaultSettings()
 		Enabled = true,
 		Width = 48,
 		Height = 48,
-		Spacing = 2,
-		GrowDirection = Private.Enum.GrowDirection.Horizontal,
+		Gap = 2,
+		Direction = Private.Enum.Direction.Horizontal,
 		LoadConditionContentType = {
 			[Private.Enum.ContentType.OpenWorld] = false,
 			[Private.Enum.ContentType.Delve] = true,
@@ -110,8 +110,8 @@ function Private.Settings.GetPartyDefaultSettings()
 		Enabled = true,
 		Width = 24,
 		Height = 24,
-		Spacing = 2,
-		GrowDirection = Private.Enum.GrowDirection.Horizontal,
+		Gap = 2,
+		Direction = Private.Enum.Direction.Horizontal,
 		LoadConditionContentType = {
 			[Private.Enum.ContentType.OpenWorld] = false,
 			[Private.Enum.ContentType.Delve] = true,
@@ -188,13 +188,13 @@ table.insert(Private.LoginFnQueue, function()
 					end
 				end
 
-				local width, height, spacing, growDirection =
+				local width, height, gap, direction =
 					TargetedSpellsSaved.Settings.Self.Width,
 					TargetedSpellsSaved.Settings.Self.Height,
-					TargetedSpellsSaved.Settings.Self.Spacing,
-					TargetedSpellsSaved.Settings.Self.GrowDirection
+					TargetedSpellsSaved.Settings.Self.Gap,
+					TargetedSpellsSaved.Settings.Self.Direction
 
-				local isHorizontal = growDirection == Private.Enum.GrowDirection.Horizontal
+				local isHorizontal = direction == Private.Enum.Direction.Horizontal
 
 				table.sort(
 					activeFrames,
@@ -216,17 +216,17 @@ table.insert(Private.LoginFnQueue, function()
 				local activeFrameCount = #activeFrames
 
 				if isHorizontal then
-					local totalWidth = (activeFrameCount * width) + (activeFrameCount - 1) * spacing
+					local totalWidth = (activeFrameCount * width) + (activeFrameCount - 1) * gap
 
 					for i, frame in ipairs(activeFrames) do
-						local x = (i - 1) * width + (i - 1) * spacing - totalWidth / 2
+						local x = (i - 1) * width + (i - 1) * gap - totalWidth / 2
 						frame:Reposition("LEFT", previewContainer, "CENTER", x, 0)
 					end
 				else
-					local totalHeight = (activeFrameCount * height) + (activeFrameCount - 1) * spacing
+					local totalHeight = (activeFrameCount * height) + (activeFrameCount - 1) * gap
 
 					for i, frame in ipairs(activeFrames) do
-						local y = (i - 1) * height + (i - 1) * spacing - totalHeight / 2
+						local y = (i - 1) * height + (i - 1) * gap - totalHeight / 2
 						frame:Reposition("BOTTOM", previewContainer, "CENTER", 0, y)
 					end
 				end
@@ -260,8 +260,8 @@ table.insert(Private.LoginFnQueue, function()
 								Private.Events.SETTING_CHANGED,
 								function(self, key, value)
 									if
-										key == Private.Settings.Keys.Self.Spacing
-										or key == Private.Settings.Keys.Self.GrowDirection
+										key == Private.Settings.Keys.Self.Gap
+										or key == Private.Settings.Keys.Self.Direction
 										or key == Private.Settings.Keys.Self.OffsetX
 										or key == Private.Settings.Keys.Self.OffsetY
 										or key == Private.Settings.Keys.Self.Width
@@ -495,23 +495,23 @@ table.insert(Private.LoginFnQueue, function()
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
-		-- Frame Spacing
+		-- Frame Gap
 		do
-			local key = Private.Settings.Keys.Self.Spacing
-			local defaultValue = Private.Settings.GetSelfDefaultSettings().Spacing
+			local key = Private.Settings.Keys.Self.Gap
+			local defaultValue = Private.Settings.GetSelfDefaultSettings().Gap
 			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
 
 			local function GetValue()
-				return TargetedSpellsSaved.Settings.Self.Spacing
+				return TargetedSpellsSaved.Settings.Self.Gap
 			end
 
 			local function SetValue(value)
-				TargetedSpellsSaved.Settings.Self.Spacing = value
+				TargetedSpellsSaved.Settings.Self.Gap = value
 
 				Private.EventRegistry:TriggerEvent(
 					Private.Events.SETTING_CHANGED,
 					key,
-					TargetedSpellsSaved.Settings.Self.Spacing
+					TargetedSpellsSaved.Settings.Self.Gap
 				)
 			end
 
@@ -519,7 +519,7 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.Number,
-				"Spacing",
+				"Gap",
 				defaultValue,
 				GetValue,
 				SetValue
@@ -531,29 +531,29 @@ table.insert(Private.LoginFnQueue, function()
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
-		-- Frame Grow Direction
+		-- Frame Direction
 		do
-			local key = Private.Settings.Keys.Self.GrowDirection
-			local defaultValue = Private.Settings.GetSelfDefaultSettings().GrowDirection
+			local key = Private.Settings.Keys.Self.Direction
+			local defaultValue = Private.Settings.GetSelfDefaultSettings().Direction
 
 			local function GetValue()
-				return TargetedSpellsSaved.Settings.Self.GrowDirection
+				return TargetedSpellsSaved.Settings.Self.Direction
 			end
 
 			local function SetValue(value)
-				TargetedSpellsSaved.Settings.Self.GrowDirection = value
+				TargetedSpellsSaved.Settings.Self.Direction = value
 
 				Private.EventRegistry:TriggerEvent(
 					Private.Events.SETTING_CHANGED,
 					key,
-					TargetedSpellsSaved.Settings.Self.GrowDirection
+					TargetedSpellsSaved.Settings.Self.Direction
 				)
 			end
 
 			local function GetOptions()
 				local container = Settings.CreateControlTextContainer()
 
-				for k in pairs(Private.Enum.GrowDirection) do
+				for k in pairs(Private.Enum.Direction) do
 					container:Add(k, k)
 				end
 
@@ -564,7 +564,7 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.String,
-				"Grow Direction",
+				"Direction",
 				defaultValue,
 				GetValue,
 				SetValue
@@ -811,23 +811,23 @@ table.insert(Private.LoginFnQueue, function()
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
-		-- Frame Spacing
+		-- Frame Gap
 		do
-			local key = Private.Settings.Keys.Party.Spacing
-			local defaultValue = Private.Settings.GetPartyDefaultSettings().Spacing
+			local key = Private.Settings.Keys.Party.Gap
+			local defaultValue = Private.Settings.GetPartyDefaultSettings().Gap
 			local minValue, maxValue, step = 0, 20, 2
 
 			local function GetValue()
-				return TargetedSpellsSaved.Settings.Party.Spacing
+				return TargetedSpellsSaved.Settings.Party.Gap
 			end
 
 			local function SetValue(value)
-				TargetedSpellsSaved.Settings.Party.Spacing = value
+				TargetedSpellsSaved.Settings.Party.Gap = value
 
 				Private.EventRegistry:TriggerEvent(
 					Private.Events.SETTING_CHANGED,
 					key,
-					TargetedSpellsSaved.Settings.Party.Spacing
+					TargetedSpellsSaved.Settings.Party.Gap
 				)
 			end
 
@@ -835,7 +835,7 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.Number,
-				"Spacing",
+				"Gap",
 				defaultValue,
 				GetValue,
 				SetValue
@@ -847,29 +847,29 @@ table.insert(Private.LoginFnQueue, function()
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
-		-- Grow Direction
+		-- Frame Direction
 		do
-			local key = Private.Settings.Keys.Party.GrowDirection
-			local defaultValue = Private.Settings.GetPartyDefaultSettings().GrowDirection
+			local key = Private.Settings.Keys.Party.Direction
+			local defaultValue = Private.Settings.GetPartyDefaultSettings().Direction
 
 			local function GetValue()
-				return TargetedSpellsSaved.Settings.Party.GrowDirection
+				return TargetedSpellsSaved.Settings.Party.Direction
 			end
 
 			local function SetValue(value)
-				TargetedSpellsSaved.Settings.Party.GrowDirection = value
+				TargetedSpellsSaved.Settings.Party.Direction = value
 
 				Private.EventRegistry:TriggerEvent(
 					Private.Events.SETTING_CHANGED,
 					key,
-					TargetedSpellsSaved.Settings.Party.GrowDirection
+					TargetedSpellsSaved.Settings.Party.Direction
 				)
 			end
 
 			local function GetOptions()
 				local container = Settings.CreateControlTextContainer()
 
-				for k in pairs(Private.Enum.GrowDirection) do
+				for k in pairs(Private.Enum.Direction) do
 					container:Add(k, k)
 				end
 
@@ -880,7 +880,7 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.String,
-				"Grow Direction",
+				"Direction",
 				defaultValue,
 				GetValue,
 				SetValue

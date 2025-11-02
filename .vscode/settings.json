@@ -61,7 +61,8 @@
     "EditModeSystemSettingsDialog",
     "EditModeSettingCheckboxMixin",
     "HUD_EDIT_MODE_SETTING_UNIT_FRAME_RAID_STYLE_PARTY_FRAMES",
-    "CompactPartyFrameMixin"
+    "CompactPartyFrameMixin",
+    "EditModeManagerFrameMixin"
   ],
   "stylua.targetReleaseVersion": "latest"
 }

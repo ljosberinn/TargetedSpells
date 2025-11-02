@@ -7,18 +7,17 @@ local function SetupSelfEditMode()
 	local EditModeParentFrame = CreateFrame("Frame", "Targeted Spells Self", UIParent)
 	EditModeParentFrame:SetClampedToScreen(true)
 
-	if TargetedSpellsSaved.Settings.Self.GrowDirection == Private.Enum.GrowDirection.Horizontal then
-		EditModeParentFrame:SetSize(
-			amountOfPreviewFrames * TargetedSpellsSaved.Settings.Self.Width
-				+ (amountOfPreviewFrames - 1) * TargetedSpellsSaved.Settings.Self.Spacing,
-			TargetedSpellsSaved.Settings.Self.Height
-		)
-	else
-		EditModeParentFrame:SetSize(
+	do
+		local width, gap, height =
 			TargetedSpellsSaved.Settings.Self.Width,
-			amountOfPreviewFrames * TargetedSpellsSaved.Settings.Self.Height
-				+ (amountOfPreviewFrames - 1) * TargetedSpellsSaved.Settings.Self.Spacing
-		)
+			TargetedSpellsSaved.Settings.Self.Gap,
+			TargetedSpellsSaved.Settings.Self.Height
+
+		if TargetedSpellsSaved.Settings.Self.Direction == Private.Enum.Direction.Horizontal then
+			EditModeParentFrame:SetSize(amountOfPreviewFrames * width + (amountOfPreviewFrames - 1) * gap, height)
+		else
+			EditModeParentFrame:SetSize(width, amountOfPreviewFrames * height + (amountOfPreviewFrames - 1) * gap)
+		end
 	end
 
 	-- todo: restore position from layout
@@ -54,11 +53,11 @@ local function SetupSelfEditMode()
 	LEM:AddFrame(EditModeParentFrame, onPositionChanged, defaultPosition)
 
 	local function RepositionPreviewFrames()
-		local width, height, spacing, growDirection =
+		local width, height, gap, direction =
 			TargetedSpellsSaved.Settings.Self.Width,
 			TargetedSpellsSaved.Settings.Self.Height,
-			TargetedSpellsSaved.Settings.Self.Spacing,
-			TargetedSpellsSaved.Settings.Self.GrowDirection
+			TargetedSpellsSaved.Settings.Self.Gap,
+			TargetedSpellsSaved.Settings.Self.Direction
 
 		---@type TargetedSpellsMixin[]
 		local frames = {}
@@ -68,7 +67,7 @@ local function SetupSelfEditMode()
 			end
 		end
 
-		local isHorizontal = growDirection == Private.Enum.GrowDirection.Horizontal
+		local isHorizontal = direction == Private.Enum.Direction.Horizontal
 
 		table.sort(frames, function(a, b)
 			if a:GetStartTime() and b:GetStartTime() then
@@ -85,54 +84,36 @@ local function SetupSelfEditMode()
 		local activeFrameCount = #frames
 
 		if isHorizontal then
-			local totalWidth = (activeFrameCount * width) + (activeFrameCount - 1) * spacing
+			local totalWidth = (activeFrameCount * width) + (activeFrameCount - 1) * gap
 
 			for i, frame in ipairs(frames) do
-				local x = (i - 1) * width + (i - 1) * spacing - totalWidth / 2
+				local x = (i - 1) * width + (i - 1) * gap - totalWidth / 2
 				frame:Reposition("LEFT", EditModeParentFrame, "CENTER", x, 0)
 			end
 		else
-			local totalHeight = (activeFrameCount * height) + (activeFrameCount - 1) * spacing
+			local totalHeight = (activeFrameCount * height) + (activeFrameCount - 1) * gap
 
 			for i, frame in ipairs(frames) do
-				local y = (i - 1) * height + (i - 1) * spacing - totalHeight / 2
+				local y = (i - 1) * height + (i - 1) * gap - totalHeight / 2
 				frame:Reposition("BOTTOM", EditModeParentFrame, "CENTER", 0, y)
 			end
 		end
 	end
 
-	Private.EventRegistry:RegisterCallback(Private.Events.SETTING_CHANGED, function(self, key, value)
-		if
-			key == Private.Settings.Keys.Self.Spacing
-			or key == Private.Settings.Keys.Self.GrowDirection
-			or key == Private.Settings.Keys.Self.Width
-			or key == Private.Settings.Keys.Self.Height
-		then
-			local isHorizontal = TargetedSpellsSaved.Settings.Self.GrowDirection
-				== Private.Enum.GrowDirection.Horizontal
-			local activeFrameCount = #previewFrames
-			local spacing = TargetedSpellsSaved.Settings.Self.Spacing
-
-			if isHorizontal then
-				local width = TargetedSpellsSaved.Settings.Self.Width
-				local totalWidth = (activeFrameCount * width) + (activeFrameCount - 1) * spacing
-				self:SetSize(totalWidth, TargetedSpellsSaved.Settings.Self.Height)
-			else
-				local height = TargetedSpellsSaved.Settings.Self.Height
-				local totalHeight = (activeFrameCount * height) + (activeFrameCount - 1) * spacing
-				self:SetSize(TargetedSpellsSaved.Settings.Self.Width, totalHeight)
-			end
-
-			RepositionPreviewFrames()
-		elseif key == Private.Settings.Keys.Self.Enabled then
-		end
-	end, EditModeParentFrame)
-
 	local playing = false
 
-	local function ToggleDemo()
+	---@param forceDisable boolean?
+	local function ToggleDemo(forceDisable)
+		if forceDisable == nil then
+			forceDisable = false
+		end
+
+		if not TargetedSpellsSaved.Settings.Self.Enabled and not forceDisable then
+			return
+		end
+
 		for _, frame in pairs(previewFrames) do
-			if playing then
+			if playing or forceDisable then
 				frame:StopPreviewLoop()
 			else
 				frame:StartPreviewLoop(RepositionPreviewFrames)
@@ -142,12 +123,64 @@ local function SetupSelfEditMode()
 		playing = not playing
 	end
 
+	Private.EventRegistry:RegisterCallback(Private.Events.SETTING_CHANGED, function(self, key, value)
+		if
+			key == Private.Settings.Keys.Self.Gap
+			or key == Private.Settings.Keys.Self.Direction
+			or key == Private.Settings.Keys.Self.Width
+			or key == Private.Settings.Keys.Self.Height
+		then
+			local isHorizontal = TargetedSpellsSaved.Settings.Self.Direction == Private.Enum.Direction.Horizontal
+			local activeFrameCount = #previewFrames
+			local gap = TargetedSpellsSaved.Settings.Self.Gap
+
+			if isHorizontal then
+				local width = TargetedSpellsSaved.Settings.Self.Width
+				local totalWidth = (activeFrameCount * width) + (activeFrameCount - 1) * gap
+				self:SetSize(totalWidth, TargetedSpellsSaved.Settings.Self.Height)
+			else
+				local height = TargetedSpellsSaved.Settings.Self.Height
+				local totalHeight = (activeFrameCount * height) + (activeFrameCount - 1) * gap
+				self:SetSize(TargetedSpellsSaved.Settings.Self.Width, totalHeight)
+			end
+
+			RepositionPreviewFrames()
+		elseif key == Private.Settings.Keys.Self.Enabled then
+			local forceDisable = not TargetedSpellsSaved.Settings.Self.Enabled and playing
+			ToggleDemo(forceDisable)
+		end
+	end, EditModeParentFrame)
+
 	LEM:RegisterCallback("enter", ToggleDemo)
 	LEM:RegisterCallback("exit", ToggleDemo)
 
 	local frameSettings = {}
 
 	-- Enabled
+	table.insert(frameSettings, {
+		name = "Enabled",
+		kind = Enum.EditModeSettingDisplayType.Checkbox,
+		default = Private.Settings.GetSelfDefaultSettings().Enabled,
+		get =
+			---@param layoutName string
+			function(layoutName)
+				return TargetedSpellsSaved.Settings.Self.Enabled
+			end,
+		---@param layoutName string
+		---@param value boolean
+		set = function(layoutName, value)
+			if value ~= TargetedSpellsSaved.Settings.Self.Enabled then
+				TargetedSpellsSaved.Settings.Self.Enabled = value
+
+				Private.EventRegistry:TriggerEvent(
+					Private.Events.SETTING_CHANGED,
+					Private.Settings.Keys.Self.Enabled,
+					value
+				)
+			end
+		end,
+	})
+
 	-- Load Condition: Content Type
 	table.insert(frameSettings, {
 		name = "Load in Content",
@@ -282,22 +315,22 @@ local function SetupSelfEditMode()
 		})
 	end
 
-	-- Frame Spacing
+	-- Frame Gap
 	do
-		local sliderSettings = Private.Settings.GetSliderSettingsForOption(Private.Settings.Keys.Self.Spacing)
+		local sliderSettings = Private.Settings.GetSliderSettingsForOption(Private.Settings.Keys.Self.Gap)
 
 		table.insert(frameSettings, {
-			name = "Spacing",
+			name = "Gap",
 			kind = Enum.EditModeSettingDisplayType.Slider,
-			default = Private.Settings.GetSelfDefaultSettings().Spacing,
+			default = Private.Settings.GetSelfDefaultSettings().Gap,
 			get = function(layoutName)
-				return TargetedSpellsSaved.Settings.Self.Spacing
+				return TargetedSpellsSaved.Settings.Self.Gap
 			end,
 			set = function(layoutName, value)
-				TargetedSpellsSaved.Settings.Self.Spacing = value
+				TargetedSpellsSaved.Settings.Self.Gap = value
 				Private.EventRegistry:TriggerEvent(
 					Private.Events.SETTING_CHANGED,
-					Private.Settings.Keys.Self.Spacing,
+					Private.Settings.Keys.Self.Gap,
 					value
 				)
 			end,
@@ -307,29 +340,29 @@ local function SetupSelfEditMode()
 		})
 	end
 
-	-- Frame Grow Direction
+	-- Frame Direction
 	do
 		---@param layoutName string
-		---@param value number
+		---@param value string
 		local function Set(layoutName, value)
-			if TargetedSpellsSaved.Settings.Self.GrowDirection ~= value then
-				TargetedSpellsSaved.Settings.Self.GrowDirection = value
+			if TargetedSpellsSaved.Settings.Self.Direction ~= value then
+				TargetedSpellsSaved.Settings.Self.Direction = value
 				Private.EventRegistry:TriggerEvent(
 					Private.Events.SETTING_CHANGED,
-					Private.Settings.Keys.Self.GrowDirection,
+					Private.Settings.Keys.Self.Direction,
 					value
 				)
 			end
 		end
 
 		table.insert(frameSettings, {
-			name = "Grow Direction",
+			name = "Direction",
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
-			default = Private.Settings.GetSelfDefaultSettings().GrowDirection,
+			default = Private.Settings.GetSelfDefaultSettings().Direction,
 			generator = function(owner, rootDescription, data)
-				for label, enumValue in pairs(Private.Enum.GrowDirection) do
+				for label, enumValue in pairs(Private.Enum.Direction) do
 					local function IsEnabled()
-						return TargetedSpellsSaved.Settings.Self.GrowDirection == enumValue
+						return TargetedSpellsSaved.Settings.Self.Direction == enumValue
 					end
 
 					local function SetProxy()
@@ -369,22 +402,25 @@ table.insert(Private.LoginFnQueue, SetupSelfEditMode)
 local function SetupPartyEditMode()
 	local amountOfPreviewFramesPerUnit = 3
 	---@type boolean
-	local useRaidStylePartyFrames = EditModeManagerFrame:UseRaidStylePartyFrames()
+	local useRaidStylePartyFrames = false
+
+	-- when this executes, layouts aren't loaded yet
+	hooksecurefunc(EditModeManagerFrame, "UpdateLayoutInfo", function(self)
+		useRaidStylePartyFrames = EditModeManagerFrame:UseRaidStylePartyFrames()
+	end)
 
 	local EditModeParentFrame = CreateFrame("Frame", "Targeted Spells Party", UIParent)
 	EditModeParentFrame:SetClampedToScreen(true)
-	EditModeParentFrame:SetSize(200, 48)
+	EditModeParentFrame:SetSize(250, 24)
 	-- todo: show something in this frame as it otherwise has no preview
 
 	local function RepositionEditModeParentFrame()
-		-- todo: restore position from layout instead?
-
 		EditModeParentFrame:SetPoint(
 			"CENTER",
 			useRaidStylePartyFrames and CompactPartyFrame or PartyFrame,
 			"TOP",
 			0,
-			36
+			16
 		)
 	end
 
@@ -427,11 +463,11 @@ local function SetupPartyEditMode()
 	LEM:AddFrame(EditModeParentFrame, onPositionChanged, defaultPosition)
 
 	local function RepositionPreviewFrames()
-		local width, height, spacing, growDirection, offsetX, offsetY, anchor =
+		local width, height, gap, direction, offsetX, offsetY, anchor =
 			TargetedSpellsSaved.Settings.Party.Width,
 			TargetedSpellsSaved.Settings.Party.Height,
-			TargetedSpellsSaved.Settings.Party.Spacing,
-			TargetedSpellsSaved.Settings.Party.GrowDirection,
+			TargetedSpellsSaved.Settings.Party.Gap,
+			TargetedSpellsSaved.Settings.Party.Direction,
 			TargetedSpellsSaved.Settings.Party.OffsetX,
 			TargetedSpellsSaved.Settings.Party.OffsetY,
 			TargetedSpellsSaved.Settings.Party.Anchor
@@ -446,7 +482,7 @@ local function SetupPartyEditMode()
 				end
 			end
 
-			local isHorizontal = growDirection == Private.Enum.GrowDirection.Horizontal
+			local isHorizontal = direction == Private.Enum.Direction.Horizontal
 
 			table.sort(activeFrames, function(a, b)
 				if a:GetStartTime() and b:GetStartTime() then
@@ -485,17 +521,17 @@ local function SetupPartyEditMode()
 			local activeFrameCount = #activeFrames
 
 			if isHorizontal then
-				local totalWidth = (activeFrameCount * width) + (activeFrameCount - 1) * spacing
+				local totalWidth = (activeFrameCount * width) + (activeFrameCount - 1) * gap
 
 				for i, frame in ipairs(activeFrames) do
-					local x = (i - 1) * width + (i - 1) * spacing - totalWidth / 2 + offsetX
+					local x = (i - 1) * width + (i - 1) * gap - totalWidth / 2 + offsetX
 					frame:Reposition("LEFT", parentFrame, anchor, x, offsetY)
 				end
 			else
-				local totalHeight = (activeFrameCount * height) + (activeFrameCount - 1) * spacing
+				local totalHeight = (activeFrameCount * height) + (activeFrameCount - 1) * gap
 
 				for i, frame in ipairs(frames) do
-					local y = (i - 1) * height + (i - 1) * spacing - totalHeight / 2 + offsetY
+					local y = (i - 1) * height + (i - 1) * gap - totalHeight / 2 + offsetY
 					frame:Reposition("BOTTOM", parentFrame, anchor, offsetX, y)
 				end
 			end
@@ -514,24 +550,18 @@ local function SetupPartyEditMode()
 		end
 	end)
 
-	Private.EventRegistry:RegisterCallback(Private.Events.SETTING_CHANGED, function(self, key, value)
-		if
-			key == Private.Settings.Keys.Party.Spacing
-			or key == Private.Settings.Keys.Party.GrowDirection
-			or key == Private.Settings.Keys.Party.Width
-			or key == Private.Settings.Keys.Party.Height
-			or key == Private.Settings.Keys.Party.OffsetX
-			or key == Private.Settings.Keys.Party.OffsetY
-			or key == Private.Settings.Keys.Party.Anchor
-		then
-			RepositionPreviewFrames()
-		elseif key == Private.Settings.Keys.Party.Enabled then
-		end
-	end, EditModeParentFrame)
-
 	local playing = false
 
-	local function ToggleDemo()
+	---@param forceDisable boolean?
+	local function ToggleDemo(forceDisable)
+		if forceDisable == nil then
+			forceDisable = false
+		end
+
+		if not TargetedSpellsSaved.Settings.Party.Enabled and not forceDisable then
+			return
+		end
+
 		for _, frames in pairs(previewFrames) do
 			for _, frame in pairs(frames) do
 				if playing then
@@ -545,17 +575,53 @@ local function SetupPartyEditMode()
 		playing = not playing
 	end
 
-	LEM:RegisterCallback("enter", function()
-		-- this bool isn't initialized properly when the addon loads, so check again when entering edit mode
-		useRaidStylePartyFrames = EditModeManagerFrame:UseRaidStylePartyFrames()
+	Private.EventRegistry:RegisterCallback(Private.Events.SETTING_CHANGED, function(self, key, value)
+		if
+			key == Private.Settings.Keys.Party.Gap
+			or key == Private.Settings.Keys.Party.Direction
+			or key == Private.Settings.Keys.Party.Width
+			or key == Private.Settings.Keys.Party.Height
+			or key == Private.Settings.Keys.Party.OffsetX
+			or key == Private.Settings.Keys.Party.OffsetY
+			or key == Private.Settings.Keys.Party.Anchor
+		then
+			RepositionPreviewFrames()
+		elseif key == Private.Settings.Keys.Party.Enabled then
+			local forceDisable = not TargetedSpellsSaved.Settings.Party.Enabled and playing
+			ToggleDemo(forceDisable)
+		end
+	end, EditModeParentFrame)
 
-		ToggleDemo()
-	end)
+	LEM:RegisterCallback("enter", ToggleDemo)
 	LEM:RegisterCallback("exit", ToggleDemo)
 
 	local frameSettings = {}
 
 	-- Enabled
+	table.insert(frameSettings, {
+		name = "Enabled",
+		kind = Enum.EditModeSettingDisplayType.Checkbox,
+		default = Private.Settings.GetPartyDefaultSettings().Enabled,
+		get =
+			---@param layoutName string
+			function(layoutName)
+				return TargetedSpellsSaved.Settings.Party.Enabled
+			end,
+		---@param layoutName string
+		---@param value boolean
+		set = function(layoutName, value)
+			if value ~= TargetedSpellsSaved.Settings.Party.Enabled then
+				TargetedSpellsSaved.Settings.Party.Enabled = value
+
+				Private.EventRegistry:TriggerEvent(
+					Private.Events.SETTING_CHANGED,
+					Private.Settings.Keys.Party.Enabled,
+					value
+				)
+			end
+		end,
+	})
+
 	-- Load Condition: Content Type
 	table.insert(frameSettings, {
 		name = "Load in Content",
@@ -600,6 +666,7 @@ local function SetupPartyEditMode()
 				end
 			end,
 	})
+
 	-- Load Condition: Role
 	table.insert(frameSettings, {
 		name = "Load on Role",
@@ -644,6 +711,7 @@ local function SetupPartyEditMode()
 				end
 			end,
 	})
+
 	-- Frame Width
 	do
 		local sliderSettings = Private.Settings.GetSliderSettingsForOption(Private.Settings.Keys.Party.Width)
@@ -704,27 +772,27 @@ local function SetupPartyEditMode()
 		})
 	end
 
-	-- Frame Spacing
+	-- Frame Gap
 	do
-		local sliderSettings = Private.Settings.GetSliderSettingsForOption(Private.Settings.Keys.Party.Spacing)
+		local sliderSettings = Private.Settings.GetSliderSettingsForOption(Private.Settings.Keys.Party.Gap)
 
 		table.insert(frameSettings, {
-			name = "Spacing",
+			name = "Gap",
 			kind = Enum.EditModeSettingDisplayType.Slider,
-			default = Private.Settings.GetPartyDefaultSettings().Spacing,
+			default = Private.Settings.GetPartyDefaultSettings().Gap,
 			get =
 				---@param layoutName string
 				function(layoutName)
-					return TargetedSpellsSaved.Settings.Party.Spacing
+					return TargetedSpellsSaved.Settings.Party.Gap
 				end,
 			set =
 				---@param layoutName string
 				---@param value number
 				function(layoutName, value)
-					TargetedSpellsSaved.Settings.Party.Spacing = value
+					TargetedSpellsSaved.Settings.Party.Gap = value
 					Private.EventRegistry:TriggerEvent(
 						Private.Events.SETTING_CHANGED,
-						Private.Settings.Keys.Party.Spacing,
+						Private.Settings.Keys.Party.Gap,
 						value
 					)
 				end,
@@ -734,29 +802,29 @@ local function SetupPartyEditMode()
 		})
 	end
 
-	-- Frame Grow Direction
+	-- Frame Direction
 	do
 		---@param layoutName string
 		---@param value string
 		local function Set(layoutName, value)
-			if TargetedSpellsSaved.Settings.Party.GrowDirection ~= value then
-				TargetedSpellsSaved.Settings.Party.GrowDirection = value
+			if TargetedSpellsSaved.Settings.Party.Direction ~= value then
+				TargetedSpellsSaved.Settings.Party.Direction = value
 				Private.EventRegistry:TriggerEvent(
 					Private.Events.SETTING_CHANGED,
-					Private.Settings.Keys.Party.GrowDirection,
+					Private.Settings.Keys.Party.Direction,
 					value
 				)
 			end
 		end
 
 		table.insert(frameSettings, {
-			name = "Grow Direction",
+			name = "Direction",
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
-			default = Private.Settings.GetPartyDefaultSettings().GrowDirection,
+			default = Private.Settings.GetPartyDefaultSettings().Direction,
 			generator = function(owner, rootDescription, data)
-				for label, enumValue in pairs(Private.Enum.GrowDirection) do
+				for label, enumValue in pairs(Private.Enum.Direction) do
 					local function IsEnabled()
-						return TargetedSpellsSaved.Settings.Party.GrowDirection == enumValue
+						return TargetedSpellsSaved.Settings.Party.Direction == enumValue
 					end
 
 					local function SetProxy()

@@ -245,12 +245,12 @@ do
 		Settings.CreateSlider(category, setting, options, "Tooltip")
 	end
 
-	-- Frame Spacing
+	-- Frame Gap
 	do
 		local minValue, maxValue, step = 0, 16, 2
 
 		local function GetValue()
-			return TargetedSpellsSaved.Spacing
+			return TargetedSpellsSaved.Gap
 		end
 
 		local function SetValue(value)

@@ -3,7 +3,7 @@ local addonName, Private = ...
 
 Private.Enum = {}
 
-Private.Enum.GrowDirection = {
+Private.Enum.Direction = {
 	Horizontal = "horizontal",
 	Vertical = "vertical",
 }

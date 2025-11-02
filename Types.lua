@@ -7,7 +7,7 @@
 ---@field LoginFnQueue table<string, function>
 
 ---@class TargetedSpellsEnums
----@field GrowDirection table<string, string>
+---@field Direction table<string, string>
 ---@field ContentType table<string, number>
 ---@field Role table<string, number>
 ---@field FrameKind table<'Party' | 'Self', string>
@@ -36,8 +36,8 @@
 ---@field Enabled boolean
 ---@field Width number
 ---@field Height number
----@field Spacing number
----@field GrowDirection number
+---@field Gap number
+---@field Direction number
 ---@field LoadConditionContentType boolean[]
 ---@field LoadConditionRole boolean[]
 ---@field PlaySound boolean
@@ -48,8 +48,8 @@
 ---@field Enabled boolean
 ---@field Width number
 ---@field Height number
----@field Spacing number
----@field GrowDirection number
+---@field Gap number
+---@field Direction number
 ---@field LoadConditionContentType boolean[]
 ---@field LoadConditionRole boolean[]
 ---@field OffsetX number
