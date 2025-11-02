@@ -32,9 +32,11 @@ end
 EventUtil.ContinueOnAddOnLoaded(addonName, function()
 	---@type SavedVariables
 	TargetedSpellsSaved = TargetedSpellsSaved or {}
+	---@class TargetedSpellsSettings
 	TargetedSpellsSaved.Settings = TargetedSpellsSaved.Settings or {}
-
+	---@class TargetedSpellsSettingsSelf
 	TargetedSpellsSaved.Settings.Self = TargetedSpellsSaved.Settings.Self or {}
+	---@class TargetedSpellsSettingsParty
 	TargetedSpellsSaved.Settings.Party = TargetedSpellsSaved.Settings.Party or {}
 
 	for key, value in pairs(Private.Settings.GetSelfDefaultSettings()) do

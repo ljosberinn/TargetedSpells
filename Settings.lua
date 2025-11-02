@@ -25,7 +25,8 @@ Private.Settings.Keys = {
 		Direction = "GROW_DIRECTION_PARTY",
 		OffsetX = "FRAME_OFFSET_X_PARTY",
 		OffsetY = "FRAME_OFFSET_Y_PARTY",
-		Anchor = "FRAME_ANCHOR_PARTY",
+		SourceAnchor = "FRAME_SOURCE_ANCHOR_PARTY",
+		TargetAnchor = "FRAME_TARGET_ANCHOR_PARTY",
 		SortOrder = "FRAME_SORT_ORDER_PARTY",
 	},
 }
@@ -128,7 +129,8 @@ function Private.Settings.GetPartyDefaultSettings()
 		},
 		OffsetX = 0,
 		OffsetY = 0,
-		Anchor = Private.Enum.Anchor.Center,
+		SourceAnchor = Private.Enum.Anchor.Left,
+		TargetAnchor = Private.Enum.Anchor.Center,
 		SortOrder = Private.Enum.SortOrder.Ascending,
 	}
 end

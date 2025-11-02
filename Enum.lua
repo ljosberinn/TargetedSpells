@@ -1,13 +1,16 @@
 ---@type string, TargetedSpells
 local addonName, Private = ...
 
+---@class TargetedSpellsEnums
 Private.Enum = {}
 
+---@enum Direction
 Private.Enum.Direction = {
 	Horizontal = "horizontal",
 	Vertical = "vertical",
 }
 
+---@enum ContentType
 Private.Enum.ContentType = {
 	OpenWorld = 1,
 	Delve = 2,
@@ -17,17 +20,20 @@ Private.Enum.ContentType = {
 	Battleground = 6,
 }
 
+---@enum Role
 Private.Enum.Role = {
 	Healer = 1,
 	Tank = 2,
 	Damager = 3,
 }
 
+---@enum FrameKind
 Private.Enum.FrameKind = {
 	Self = "self",
 	Party = "party",
 }
 
+---@enum Anchor
 Private.Enum.Anchor = {
 	Center = "CENTER",
 	Top = "TOP",
@@ -40,6 +46,7 @@ Private.Enum.Anchor = {
 	BottomRight = "BOTTOMRIGHT",
 }
 
+---@enum SortOrder
 Private.Enum.SortOrder = {
 	Ascending = "ascending",
 	Descending = "descending",

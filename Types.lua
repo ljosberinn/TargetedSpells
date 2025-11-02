@@ -7,12 +7,6 @@
 ---@field LoginFnQueue table<string, function>
 
 ---@class TargetedSpellsEnums
----@field Direction table<string, string>
----@field ContentType table<string, number>
----@field Role table<string, number>
----@field FrameKind table<'Party' | 'Self', string>
----@field Anchor table<string, string>
----@field SortOrder table<'Ascending' | 'Descending', string>
 
 ---@class SliderSettings
 ---@field min number
@@ -21,7 +15,7 @@
 
 ---@class TargetedSpellsSettings
 ---@field CreateSettings fun()
----@field Keys table<'Party' | 'Self', table<string, string>>
+---@field Keys table<'Self' | 'Party', table<string, string>>
 ---@field GetSelfDefaultSettings fun(): SavedVariablesSettingsSelf
 ---@field GetPartyDefaultSettings fun(): SavedVariablesSettingsParty
 ---@field GetSliderSettingsForOption fun(key: string): SliderSettings
@@ -38,7 +32,7 @@
 ---@field Width number
 ---@field Height number
 ---@field Gap number
----@field Direction string
+---@field Direction Direction
 ---@field LoadConditionContentType boolean[]
 ---@field LoadConditionRole boolean[]
 ---@field PlaySound boolean
@@ -50,13 +44,14 @@
 ---@field Width number
 ---@field Height number
 ---@field Gap number
----@field Direction string
+---@field Direction Direction
 ---@field LoadConditionContentType boolean[]
 ---@field LoadConditionRole boolean[]
 ---@field OffsetX number
 ---@field OffsetY number
----@field Anchor string
----@field SortOrder string
+---@field SourceAnchor Anchor
+---@field TargetAnchor Anchor
+---@field SortOrder SortOrder
 
 ---@class TargetedSpellsSelfPreviewFrame: Frame
 ---@field GetChildren fun(self: TargetedSpellsSelfPreviewFrame): TargetedSpellsMixin

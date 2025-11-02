@@ -278,24 +278,28 @@ local function CreateSetting(key)
 		}
 	end
 
-	if key == Private.Settings.Keys.Party.Anchor then
+	if key == Private.Settings.Keys.Party.SourceAnchor or key == Private.Settings.Keys.Party.TargetAnchor then
+		local isSource = key == Private.Settings.Keys.Party.SourceAnchor
+		local tableKey = isSource and "SourceAnchor" or "TargetAnchor"
+
 		---@param layoutName string
 		---@param value string
 		local function Set(layoutName, value)
-			if TargetedSpellsSaved.Settings.Party.Anchor ~= value then
-				TargetedSpellsSaved.Settings.Party.Anchor = value
+			if TargetedSpellsSaved.Settings.Party[tableKey] ~= value then
+				TargetedSpellsSaved.Settings.Party[tableKey] = value
 				Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, value)
 			end
 		end
 
 		return {
-			name = "Anchor",
+			name = isSource and "Source Anchor" or "Target Anchor",
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
-			default = Private.Settings.GetPartyDefaultSettings().Anchor,
+			default = isSource and Private.Settings.GetPartyDefaultSettings().SourceAnchor
+				or Private.Settings.GetPartyDefaultSettings().TargetAnchor,
 			generator = function(owner, rootDescription, data)
 				for label, enumValue in pairs(Private.Enum.Anchor) do
 					local function IsEnabled()
-						return TargetedSpellsSaved.Settings.Party.Anchor == enumValue
+						return TargetedSpellsSaved.Settings.Party[tableKey] == enumValue
 					end
 
 					local function SetProxy()
@@ -606,15 +610,16 @@ local function SetupPartyEditMode()
 	LEM:AddFrame(EditModeParentFrame, onPositionChanged, defaultPosition)
 
 	local function RepositionPreviewFrames()
-		local width, height, gap, direction, offsetX, offsetY, anchor, sortOrder =
+		local width, height, gap, direction, offsetX, offsetY, sortOrder, sourceAnchor, targetAnchor =
 			TargetedSpellsSaved.Settings.Party.Width,
 			TargetedSpellsSaved.Settings.Party.Height,
 			TargetedSpellsSaved.Settings.Party.Gap,
 			TargetedSpellsSaved.Settings.Party.Direction,
 			TargetedSpellsSaved.Settings.Party.OffsetX,
 			TargetedSpellsSaved.Settings.Party.OffsetY,
-			TargetedSpellsSaved.Settings.Party.Anchor,
-			TargetedSpellsSaved.Settings.Party.SortOrder
+			TargetedSpellsSaved.Settings.Party.SortOrder,
+			TargetedSpellsSaved.Settings.Party.SourceAnchor,
+			TargetedSpellsSaved.Settings.Party.TargetAnchor
 
 		for index, frames in pairs(previewFrames) do
 			---@type table<string, TargetedSpellsMixin[]>
@@ -629,13 +634,11 @@ local function SetupPartyEditMode()
 			local isAscending = sortOrder == Private.Enum.SortOrder.Ascending
 
 			table.sort(activeFrames, function(a, b)
-				local aStart, bStart = a:GetStartTime(), b:GetStartTime()
-
 				if isAscending then
-					return aStart < bStart
+					return a:GetStartTime() < b:GetStartTime()
 				end
 
-				return aStart > bStart
+				return a:GetStartTime() > b:GetStartTime()
 			end)
 
 			local parentFrame = nil
@@ -667,14 +670,14 @@ local function SetupPartyEditMode()
 
 				for i, frame in ipairs(activeFrames) do
 					local x = (i - 1) * width + (i - 1) * gap - totalWidth / 2 + offsetX
-					frame:Reposition("LEFT", parentFrame, anchor, x, offsetY)
+					frame:Reposition(sourceAnchor, parentFrame, targetAnchor, x, offsetY)
 				end
 			else
 				local totalHeight = (activeFrameCount * height) + (activeFrameCount - 1) * gap
 
 				for i, frame in ipairs(frames) do
 					local y = (i - 1) * height + (i - 1) * gap - totalHeight / 2 + offsetY
-					frame:Reposition("BOTTOM", parentFrame, anchor, offsetX, y)
+					frame:Reposition(sourceAnchor, parentFrame, targetAnchor, offsetX, y)
 				end
 			end
 		end
@@ -725,7 +728,8 @@ local function SetupPartyEditMode()
 			or key == Private.Settings.Keys.Party.Height
 			or key == Private.Settings.Keys.Party.OffsetX
 			or key == Private.Settings.Keys.Party.OffsetY
-			or key == Private.Settings.Keys.Party.Anchor
+			or key == Private.Settings.Keys.Party.SourceAnchor
+			or key == Private.Settings.Keys.Party.TargetAnchor
 			or key == Private.Settings.Keys.Party.SortOrder
 		then
 			RepositionPreviewFrames()
@@ -749,7 +753,8 @@ local function SetupPartyEditMode()
 		CreateSetting(Private.Settings.Keys.Party.Direction),
 		CreateSetting(Private.Settings.Keys.Party.OffsetX),
 		CreateSetting(Private.Settings.Keys.Party.OffsetY),
-		CreateSetting(Private.Settings.Keys.Party.Anchor),
+		CreateSetting(Private.Settings.Keys.Party.SourceAnchor),
+		CreateSetting(Private.Settings.Keys.Party.TargetAnchor),
 		CreateSetting(Private.Settings.Keys.Party.SortOrder),
 	})
 end

@@ -160,7 +160,7 @@ function TargetedSpellsMixin:StartPreviewLoop(RepositionPreviewFrames)
 		self:SetSpellTexture()
 		self:SetStartTime()
 		RepositionPreviewFrames()
-		local castTime = math.random(2, 4) + math.random()
+		local castTime = math.random(4, 6) + math.random()
 		self:SetCastTime(castTime)
 		self:RefreshSpellCooldownInfo()
 		self:RefreshSpellTexture()
@@ -178,7 +178,7 @@ function TargetedSpellsMixin:StartPreviewLoop(RepositionPreviewFrames)
 	local index = tonumber(unitId)
 	local delay = (index - 1) * math.random()
 
-	self.loopTicker = C_Timer.NewTicker(4.5 + delay, Loop)
+	self.loopTicker = C_Timer.NewTicker(6.5 + delay, Loop)
 	Loop()
 end
 
