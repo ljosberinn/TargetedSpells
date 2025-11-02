@@ -51,3 +51,10 @@ Private.Enum.SortOrder = {
 	Ascending = "ascending",
 	Descending = "descending",
 }
+
+---@enum Grow
+Private.Enum.Grow = {
+	Center = "center",
+	Start = "start",
+	End = "end",
+}

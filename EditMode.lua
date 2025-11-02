@@ -316,12 +316,15 @@ local function CreateSetting(key)
 		}
 	end
 
-	if key == Private.Settings.Keys.Party.SortOrder then
+	if key == Private.Settings.Keys.Self.SortOrder or key == Private.Settings.Keys.Party.SortOrder then
+		local isSelf = key == Private.Settings.Keys.Self.SortOrder
+		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
+
 		---@param layoutName string
 		---@param value string
 		local function Set(layoutName, value)
-			if TargetedSpellsSaved.Settings.Party.SortOrder ~= value then
-				TargetedSpellsSaved.Settings.Party.SortOrder = value
+			if tableRef.SortOrder ~= value then
+				tableRef.SortOrder = value
 				Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, value)
 			end
 		end
@@ -333,7 +336,44 @@ local function CreateSetting(key)
 			generator = function(owner, rootDescription, data)
 				for label, enumValue in pairs(Private.Enum.SortOrder) do
 					local function IsEnabled()
-						return TargetedSpellsSaved.Settings.Party.SortOrder == enumValue
+						return tableRef.SortOrder == enumValue
+					end
+
+					local function SetProxy()
+						Set(LEM:GetActiveLayoutName(), enumValue)
+					end
+
+					rootDescription:CreateCheckbox(label, IsEnabled, SetProxy, {
+						value = label,
+						isRadio = true,
+					})
+				end
+			end,
+			set = Set,
+		}
+	end
+
+	if key == Private.Settings.Keys.Self.Grow or key == Private.Settings.Keys.Party.Grow then
+		local isSelf = key == Private.Settings.Keys.Self.Grow
+		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
+
+		---@param layoutName string
+		---@param value string
+		local function Set(layoutName, value)
+			if tableRef.Grow ~= value then
+				tableRef.Grow = value
+				Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, value)
+			end
+		end
+
+		return {
+			name = "Grow",
+			kind = Enum.EditModeSettingDisplayType.Dropdown,
+			default = Private.Settings.GetPartyDefaultSettings().Grow,
+			generator = function(owner, rootDescription, data)
+				for label, enumValue in pairs(Private.Enum.Grow) do
+					local function IsEnabled()
+						return tableRef.Grow == enumValue
 					end
 
 					local function SetProxy()
@@ -356,6 +396,20 @@ local function CreateSetting(key)
 			key or "NO KEY"
 		)
 	)
+end
+
+---@param frames TargetedSpellsMixin[]
+---@param sortOrder SortOrder
+local function SortFrames(frames, sortOrder)
+	local isAscending = sortOrder == Private.Enum.SortOrder.Ascending
+
+	table.sort(frames, function(a, b)
+		if isAscending then
+			return a:GetStartTime() < b:GetStartTime()
+		end
+
+		return a:GetStartTime() > b:GetStartTime()
+	end)
 end
 
 local function SetupSelfEditMode()
@@ -413,11 +467,13 @@ local function SetupSelfEditMode()
 	LEM:AddFrame(EditModeParentFrame, onPositionChanged, defaultPosition)
 
 	local function RepositionPreviewFrames()
-		local width, height, gap, direction =
+		local width, height, gap, direction, sortOrder, grow =
 			TargetedSpellsSaved.Settings.Self.Width,
 			TargetedSpellsSaved.Settings.Self.Height,
 			TargetedSpellsSaved.Settings.Self.Gap,
-			TargetedSpellsSaved.Settings.Self.Direction
+			TargetedSpellsSaved.Settings.Self.Direction,
+			TargetedSpellsSaved.Settings.Self.SortOrder,
+			TargetedSpellsSaved.Settings.Self.Grow
 
 		---@type TargetedSpellsMixin[]
 		local frames = {}
@@ -427,21 +483,10 @@ local function SetupSelfEditMode()
 			end
 		end
 
-		local isHorizontal = direction == Private.Enum.Direction.Horizontal
-
-		table.sort(frames, function(a, b)
-			if a:GetStartTime() and b:GetStartTime() then
-				if isHorizontal then
-					return a:GetStartTime() < b:GetStartTime()
-				end
-
-				return a:GetStartTime() > b:GetStartTime()
-			end
-
-			return false
-		end)
+		SortFrames(frames, sortOrder)
 
 		local activeFrameCount = #frames
+		local isHorizontal = direction == Private.Enum.Direction.Horizontal
 
 		if isHorizontal then
 			local totalWidth = (activeFrameCount * width) + (activeFrameCount - 1) * gap
@@ -489,19 +534,23 @@ local function SetupSelfEditMode()
 			or key == Private.Settings.Keys.Self.Direction
 			or key == Private.Settings.Keys.Self.Width
 			or key == Private.Settings.Keys.Self.Height
+			or key == Private.Settings.Keys.Self.SortOrder
+			or key == Private.Settings.Keys.Self.Grow
 		then
-			local isHorizontal = TargetedSpellsSaved.Settings.Self.Direction == Private.Enum.Direction.Horizontal
-			local activeFrameCount = #previewFrames
-			local gap = TargetedSpellsSaved.Settings.Self.Gap
+			if key == Private.Settings.Keys.Self.Width or key == Private.Settings.Keys.Self.Height then
+				local isHorizontal = TargetedSpellsSaved.Settings.Self.Direction == Private.Enum.Direction.Horizontal
+				local activeFrameCount = #previewFrames
+				local gap = TargetedSpellsSaved.Settings.Self.Gap
 
-			if isHorizontal then
-				local width = TargetedSpellsSaved.Settings.Self.Width
-				local totalWidth = (activeFrameCount * width) + (activeFrameCount - 1) * gap
-				self:SetSize(totalWidth, TargetedSpellsSaved.Settings.Self.Height)
-			else
-				local height = TargetedSpellsSaved.Settings.Self.Height
-				local totalHeight = (activeFrameCount * height) + (activeFrameCount - 1) * gap
-				self:SetSize(TargetedSpellsSaved.Settings.Self.Width, totalHeight)
+				if isHorizontal then
+					local width = TargetedSpellsSaved.Settings.Self.Width
+					local totalWidth = (activeFrameCount * width) + (activeFrameCount - 1) * gap
+					self:SetSize(totalWidth, TargetedSpellsSaved.Settings.Self.Height)
+				else
+					local height = TargetedSpellsSaved.Settings.Self.Height
+					local totalHeight = (activeFrameCount * height) + (activeFrameCount - 1) * gap
+					self:SetSize(TargetedSpellsSaved.Settings.Self.Width, totalHeight)
+				end
 			end
 
 			RepositionPreviewFrames()
@@ -523,6 +572,8 @@ local function SetupSelfEditMode()
 		CreateSetting(Private.Settings.Keys.Self.Height),
 		CreateSetting(Private.Settings.Keys.Self.Gap),
 		CreateSetting(Private.Settings.Keys.Self.Direction),
+		CreateSetting(Private.Settings.Keys.Self.SortOrder),
+		CreateSetting(Private.Settings.Keys.Self.Grow),
 	})
 
 	-- LEM:RegisterCallback("layout", function(layoutName)
@@ -610,7 +661,7 @@ local function SetupPartyEditMode()
 	LEM:AddFrame(EditModeParentFrame, onPositionChanged, defaultPosition)
 
 	local function RepositionPreviewFrames()
-		local width, height, gap, direction, offsetX, offsetY, sortOrder, sourceAnchor, targetAnchor =
+		local width, height, gap, direction, offsetX, offsetY, sortOrder, sourceAnchor, targetAnchor, grow =
 			TargetedSpellsSaved.Settings.Party.Width,
 			TargetedSpellsSaved.Settings.Party.Height,
 			TargetedSpellsSaved.Settings.Party.Gap,
@@ -619,7 +670,8 @@ local function SetupPartyEditMode()
 			TargetedSpellsSaved.Settings.Party.OffsetY,
 			TargetedSpellsSaved.Settings.Party.SortOrder,
 			TargetedSpellsSaved.Settings.Party.SourceAnchor,
-			TargetedSpellsSaved.Settings.Party.TargetAnchor
+			TargetedSpellsSaved.Settings.Party.TargetAnchor,
+			TargetedSpellsSaved.Settings.Party.Grow
 
 		for index, frames in pairs(previewFrames) do
 			---@type table<string, TargetedSpellsMixin[]>
@@ -631,15 +683,7 @@ local function SetupPartyEditMode()
 				end
 			end
 
-			local isAscending = sortOrder == Private.Enum.SortOrder.Ascending
-
-			table.sort(activeFrames, function(a, b)
-				if isAscending then
-					return a:GetStartTime() < b:GetStartTime()
-				end
-
-				return a:GetStartTime() > b:GetStartTime()
-			end)
+			SortFrames(activeFrames, sortOrder)
 
 			local parentFrame = nil
 			if useRaidStylePartyFrames then
@@ -731,6 +775,7 @@ local function SetupPartyEditMode()
 			or key == Private.Settings.Keys.Party.SourceAnchor
 			or key == Private.Settings.Keys.Party.TargetAnchor
 			or key == Private.Settings.Keys.Party.SortOrder
+			or key == Private.Settings.Keys.Party.Grow
 		then
 			RepositionPreviewFrames()
 		elseif key == Private.Settings.Keys.Party.Enabled then
@@ -755,6 +800,7 @@ local function SetupPartyEditMode()
 		CreateSetting(Private.Settings.Keys.Party.OffsetY),
 		CreateSetting(Private.Settings.Keys.Party.SourceAnchor),
 		CreateSetting(Private.Settings.Keys.Party.TargetAnchor),
+		CreateSetting(Private.Settings.Keys.Party.Grow),
 		CreateSetting(Private.Settings.Keys.Party.SortOrder),
 	})
 end

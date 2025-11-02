@@ -38,6 +38,8 @@
 ---@field PlaySound boolean
 ---@field Sound string
 ---@field LoadConditionSoundContentType boolean[]
+---@field SortOrder SortOrder
+---@field Grow Grow
 
 ---@class SavedVariablesSettingsParty
 ---@field Enabled boolean
@@ -52,6 +54,7 @@
 ---@field SourceAnchor Anchor
 ---@field TargetAnchor Anchor
 ---@field SortOrder SortOrder
+---@field Grow Grow
 
 ---@class TargetedSpellsSelfPreviewFrame: Frame
 ---@field GetChildren fun(self: TargetedSpellsSelfPreviewFrame): TargetedSpellsMixin

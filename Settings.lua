@@ -14,6 +14,8 @@ Private.Settings.Keys = {
 		Direction = "GROW_DIRECTION_SELF",
 		OffsetX = "FRAME_OFFSET_X_SELF",
 		OffsetY = "FRAME_OFFSET_Y_SELF",
+		SortOrder = "FRAME_SORT_ORDER_SELF",
+		Grow = "FRAME_GROW_SELF",
 	},
 	Party = {
 		Enabled = "ENABLED_PARTY",
@@ -28,6 +30,7 @@ Private.Settings.Keys = {
 		SourceAnchor = "FRAME_SOURCE_ANCHOR_PARTY",
 		TargetAnchor = "FRAME_TARGET_ANCHOR_PARTY",
 		SortOrder = "FRAME_SORT_ORDER_PARTY",
+		Grow = "FRAME_GROW_PARTY",
 	},
 }
 
@@ -103,6 +106,8 @@ function Private.Settings.GetSelfDefaultSettings()
 			[Private.Enum.ContentType.Arena] = false,
 			[Private.Enum.ContentType.Battleground] = false,
 		},
+		SortOrder = Private.Enum.SortOrder.Ascending,
+		Grow = Private.Enum.Grow.Center,
 	}
 end
 
@@ -132,6 +137,7 @@ function Private.Settings.GetPartyDefaultSettings()
 		SourceAnchor = Private.Enum.Anchor.Left,
 		TargetAnchor = Private.Enum.Anchor.Center,
 		SortOrder = Private.Enum.SortOrder.Ascending,
+		Grow = Private.Enum.Grow.Center,
 	}
 end
 
