@@ -2,6 +2,324 @@
 local addonName, Private = ...
 local LEM = LibStub("LibEditMode")
 
+---@param key string
+local function CreateSetting(key)
+	if key == Private.Settings.Keys.Self.Enabled or key == Private.Settings.Keys.Party.Enabled then
+		local isSelf = key == Private.Settings.Keys.Self.Enabled
+		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
+
+		return {
+			name = "Enabled",
+			kind = Enum.EditModeSettingDisplayType.Checkbox,
+			default = isSelf and Private.Settings.GetSelfDefaultSettings().Enabled
+				or Private.Settings.GetPartyDefaultSettings().Enabled,
+			get =
+				---@param layoutName string
+				function(layoutName)
+					return tableRef.Enabled
+				end,
+			---@param layoutName string
+			---@param value boolean
+			set = function(layoutName, value)
+				local hasChanges = false
+
+				if value ~= tableRef.Enabled then
+					tableRef.Enabled = value
+					hasChanges = true
+				end
+
+				if hasChanges then
+					Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, value)
+				end
+			end,
+		}
+	end
+
+	if
+		key == Private.Settings.Keys.Self.LoadConditionContentType
+		or key == Private.Settings.Keys.Party.LoadConditionContentType
+	then
+		local isSelf = key == Private.Settings.Keys.Self.LoadConditionContentType
+		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self.LoadConditionContentType
+			or TargetedSpellsSaved.Settings.Party.LoadConditionContentType
+
+		return {
+			name = "Load in Content",
+			kind = Enum.EditModeSettingDisplayType.Dropdown,
+			default = isSelf and Private.Settings.GetSelfDefaultSettings().LoadConditionContentType
+				or Private.Settings.GetPartyDefaultSettings().LoadConditionContentType,
+			generator = function(owner, rootDescription, data)
+				for label, id in pairs(Private.Enum.ContentType) do
+					local function IsEnabled()
+						return tableRef[id]
+					end
+
+					local function Toggle()
+						tableRef[id] = not tableRef[id]
+
+						print(id, key)
+
+						Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, tableRef)
+					end
+
+					rootDescription:CreateCheckbox(label, IsEnabled, Toggle, {
+						value = label,
+						isRadio = false,
+					})
+				end
+			end,
+			-- technically is a reset only
+			set =
+				---@param layoutName string
+				---@param values table<string, boolean>
+				function(layoutName, values)
+					local hasChanges = false
+
+					for id, bool in pairs(values) do
+						if tableRef[id] ~= bool then
+							tableRef[id] = bool
+							hasChanges = true
+						end
+					end
+
+					if hasChanges then
+						Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, tableRef)
+					end
+				end,
+		}
+	end
+
+	if key == Private.Settings.Keys.Self.LoadConditionRole or key == Private.Settings.Keys.Party.LoadConditionRole then
+		local isSelf = key == Private.Settings.Keys.Self.LoadConditionRole
+		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self.LoadConditionRole
+			or TargetedSpellsSaved.Settings.Party.LoadConditionRole
+
+		return {
+			name = "Load on Role",
+			kind = Enum.EditModeSettingDisplayType.Dropdown,
+			default = Private.Settings.GetSelfDefaultSettings().LoadConditionRole,
+			generator = function(owner, rootDescription, data)
+				for label, id in pairs(Private.Enum.ContentType) do
+					local function IsEnabled()
+						return tableRef[id]
+					end
+
+					local function Toggle()
+						tableRef[id] = not tableRef[id]
+
+						Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, tableRef)
+					end
+
+					rootDescription:CreateCheckbox(label, IsEnabled, Toggle, {
+						value = label,
+						isRadio = false,
+					})
+				end
+			end,
+			-- technically is a reset only
+			set = function(layoutName, values)
+				local hasChanges = false
+				for id, bool in pairs(values) do
+					if tableRef[id] ~= bool then
+						tableRef[id] = bool
+						hasChanges = true
+					end
+				end
+
+				if hasChanges then
+					Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, tableRef)
+				end
+			end,
+		}
+	end
+
+	if key == Private.Settings.Keys.Self.Width or key == Private.Settings.Keys.Party.Width then
+		local isSelf = key == Private.Settings.Keys.Self.Width
+		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
+
+		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+
+		return {
+			name = "Width",
+			kind = Enum.EditModeSettingDisplayType.Slider,
+			default = isSelf and Private.Settings.GetSelfDefaultSettings().Width
+				or Private.Settings.GetPartyDefaultSettings().Width,
+			get = function(layoutName)
+				return tableRef.Width
+			end,
+			set = function(layoutName, value)
+				tableRef.Width = value
+				Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, value)
+			end,
+			minValue = sliderSettings.min,
+			maxValue = sliderSettings.max,
+			valueStep = sliderSettings.step,
+		}
+	end
+
+	if key == Private.Settings.Keys.Self.Height or key == Private.Settings.Keys.Party.Height then
+		local isSelf = key == Private.Settings.Keys.Self.Height
+		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
+
+		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+
+		return {
+			name = "Height",
+			kind = Enum.EditModeSettingDisplayType.Slider,
+			default = isSelf and Private.Settings.GetSelfDefaultSettings().Height
+				or Private.Settings.GetPartyDefaultSettings().Height,
+			get = function(layoutName)
+				return tableRef.Height
+			end,
+			set = function(layoutName, value)
+				tableRef.Height = value
+				Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, value)
+			end,
+			minValue = sliderSettings.min,
+			maxValue = sliderSettings.max,
+			valueStep = sliderSettings.step,
+		}
+	end
+
+	if key == Private.Settings.Keys.Self.Gap or key == Private.Settings.Keys.Party.Gap then
+		local isSelf = key == Private.Settings.Keys.Self.Gap
+		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
+
+		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+
+		return {
+			name = "Gap",
+			kind = Enum.EditModeSettingDisplayType.Slider,
+			default = isSelf and Private.Settings.GetSelfDefaultSettings().Gap
+				or Private.Settings.GetPartyDefaultSettings().Gap,
+			get = function(layoutName)
+				return tableRef.Gap
+			end,
+			set = function(layoutName, value)
+				tableRef.Gap = value
+				Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, value)
+			end,
+			minValue = sliderSettings.min,
+			maxValue = sliderSettings.max,
+			valueStep = sliderSettings.step,
+		}
+	end
+
+	if key == Private.Settings.Keys.Self.Direction or key == Private.Settings.Keys.Party.Direction then
+		local isSelf = key == Private.Settings.Keys.Self.Direction
+		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
+
+		---@param layoutName string
+		---@param value string
+		local function Set(layoutName, value)
+			if tableRef.Direction ~= value then
+				tableRef.Direction = value
+				Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, value)
+			end
+		end
+
+		return {
+			name = "Direction",
+			kind = Enum.EditModeSettingDisplayType.Dropdown,
+			default = Private.Settings.GetPartyDefaultSettings().Direction,
+			generator = function(owner, rootDescription, data)
+				for label, enumValue in pairs(Private.Enum.Direction) do
+					local function IsEnabled()
+						return tableRef.Direction == enumValue
+					end
+
+					local function SetProxy()
+						Set(LEM:GetActiveLayoutName(), enumValue)
+					end
+
+					rootDescription:CreateCheckbox(label, IsEnabled, SetProxy, {
+						value = label,
+						isRadio = true,
+					})
+				end
+			end,
+			set = Set,
+		}
+	end
+
+	if key == Private.Settings.Keys.Party.OffsetX or key == Private.Settings.Keys.Party.OffsetY then
+		local isX = key == Private.Settings.Keys.Party.OffsetX
+		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+
+		return {
+			name = isX and "Offset X" or "Offset Y",
+			kind = Enum.EditModeSettingDisplayType.Slider,
+			default = isX and Private.Settings.GetPartyDefaultSettings().OffsetX
+				or Private.Settings.GetPartyDefaultSettings().OffsetY,
+			get =
+				---@param layoutName string
+				function(layoutName)
+					if isX then
+						return TargetedSpellsSaved.Settings.Party.OffsetX
+					end
+
+					return TargetedSpellsSaved.Settings.Party.OffsetY
+				end,
+			set =
+				---@param layoutName string
+				---@param value number
+				function(layoutName, value)
+					if isX then
+						TargetedSpellsSaved.Settings.Party.OffsetX = value
+					else
+						TargetedSpellsSaved.Settings.Party.OffsetY = value
+					end
+
+					Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, value)
+				end,
+			minValue = sliderSettings.min,
+			maxValue = sliderSettings.max,
+			valueStep = sliderSettings.step,
+		}
+	end
+
+	if key == Private.Settings.Keys.Party.Anchor then
+		---@param layoutName string
+		---@param value string
+		local function Set(layoutName, value)
+			if TargetedSpellsSaved.Settings.Party.Anchor ~= value then
+				TargetedSpellsSaved.Settings.Party.Anchor = value
+				Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, value)
+			end
+		end
+
+		return {
+			name = "Anchor",
+			kind = Enum.EditModeSettingDisplayType.Dropdown,
+			default = Private.Settings.GetPartyDefaultSettings().Anchor,
+			generator = function(owner, rootDescription, data)
+				for label, enumValue in pairs(Private.Enum.Anchor) do
+					local function IsEnabled()
+						return TargetedSpellsSaved.Settings.Party.Anchor == enumValue
+					end
+
+					local function SetProxy()
+						Set(LEM:GetActiveLayoutName(), enumValue)
+					end
+
+					rootDescription:CreateCheckbox(label, IsEnabled, SetProxy, {
+						value = label,
+						isRadio = true,
+					})
+				end
+			end,
+			set = Set,
+		}
+	end
+
+	error(
+		string.format(
+			"Edit Mode Settings for key '%s' are either not implemented or you're calling this with the wrong key.",
+			key
+		)
+	)
+end
+
 local function SetupSelfEditMode()
 	local amountOfPreviewFrames = 5
 	local EditModeParentFrame = CreateFrame("Frame", "Targeted Spells Self", UIParent)
@@ -38,6 +356,10 @@ local function SetupSelfEditMode()
 		previewFrame:SetKind(Private.Enum.FrameKind.Self)
 
 		table.insert(previewFrames, previewFrame)
+
+		if not TargetedSpellsSaved.Settings.Self.Enabled then
+			previewFrame:Hide()
+		end
 	end
 
 	local defaultPosition = { point = "CENTER", x = 0, y = 0 }
@@ -154,233 +476,16 @@ local function SetupSelfEditMode()
 	LEM:RegisterCallback("enter", ToggleDemo)
 	LEM:RegisterCallback("exit", ToggleDemo)
 
-	local frameSettings = {}
-
-	-- Enabled
-	table.insert(frameSettings, {
-		name = "Enabled",
-		kind = Enum.EditModeSettingDisplayType.Checkbox,
-		default = Private.Settings.GetSelfDefaultSettings().Enabled,
-		get =
-			---@param layoutName string
-			function(layoutName)
-				return TargetedSpellsSaved.Settings.Self.Enabled
-			end,
-		---@param layoutName string
-		---@param value boolean
-		set = function(layoutName, value)
-			if value ~= TargetedSpellsSaved.Settings.Self.Enabled then
-				TargetedSpellsSaved.Settings.Self.Enabled = value
-
-				Private.EventRegistry:TriggerEvent(
-					Private.Events.SETTING_CHANGED,
-					Private.Settings.Keys.Self.Enabled,
-					value
-				)
-			end
-		end,
-	})
-
-	-- Load Condition: Content Type
-	table.insert(frameSettings, {
-		name = "Load in Content",
-		kind = Enum.EditModeSettingDisplayType.Dropdown,
-		default = Private.Settings.GetSelfDefaultSettings().LoadConditionContentType,
-		generator = function(owner, rootDescription, data)
-			for label, id in pairs(Private.Enum.ContentType) do
-				local function IsEnabled()
-					return TargetedSpellsSaved.Settings.Self.LoadConditionContentType[id]
-				end
-
-				local function Toggle()
-					TargetedSpellsSaved.Settings.Self.LoadConditionContentType[id] =
-						not TargetedSpellsSaved.Settings.Self.LoadConditionContentType[id]
-				end
-
-				rootDescription:CreateCheckbox(label, IsEnabled, Toggle, {
-					value = label,
-					isRadio = false,
-				})
-			end
-		end,
-		-- technically is a reset only
-		set = function(layoutName, values)
-			local hasChanges = false
-			for id, bool in pairs(values) do
-				if TargetedSpellsSaved.Settings.Self.LoadConditionContentType[id] ~= bool then
-					TargetedSpellsSaved.Settings.Self.LoadConditionContentType[id] = bool
-					hasChanges = true
-				end
-			end
-
-			if hasChanges then
-				Private.EventRegistry:TriggerEvent(
-					Private.Events.SETTING_CHANGED,
-					Private.Settings.Keys.Self.LoadConditionContentType,
-					TargetedSpellsSaved.Settings.Self.LoadConditionContentType
-				)
-			end
-		end,
-	})
-
-	-- Load Condition: Role
-	table.insert(frameSettings, {
-		name = "Load on Role",
-		kind = Enum.EditModeSettingDisplayType.Dropdown,
-		default = Private.Settings.GetSelfDefaultSettings().LoadConditionRole,
-		generator = function(owner, rootDescription, data)
-			for label, id in pairs(Private.Enum.ContentType) do
-				local function IsEnabled()
-					return TargetedSpellsSaved.Settings.Self.LoadConditionRole[id]
-				end
-
-				local function Toggle()
-					TargetedSpellsSaved.Settings.Self.LoadConditionRole[id] =
-						not TargetedSpellsSaved.Settings.Self.LoadConditionRole[id]
-				end
-
-				rootDescription:CreateCheckbox(label, IsEnabled, Toggle, {
-					value = label,
-					isRadio = false,
-				})
-			end
-		end,
-		-- technically is a reset only
-		set = function(layoutName, values)
-			local hasChanges = false
-			for id, bool in pairs(values) do
-				if TargetedSpellsSaved.Settings.Self.LoadConditionRole[id] ~= bool then
-					TargetedSpellsSaved.Settings.Self.LoadConditionRole[id] = bool
-					hasChanges = true
-				end
-			end
-
-			if hasChanges then
-				Private.EventRegistry:TriggerEvent(
-					Private.Events.SETTING_CHANGED,
-					Private.Settings.Keys.Self.LoadConditionRole,
-					TargetedSpellsSaved.Settings.Self.LoadConditionRole
-				)
-			end
-		end,
-	})
-
-	-- Frame Width
-	do
-		local sliderSettings = Private.Settings.GetSliderSettingsForOption(Private.Settings.Keys.Self.Width)
-
-		table.insert(frameSettings, {
-			name = "Width",
-			kind = Enum.EditModeSettingDisplayType.Slider,
-			default = Private.Settings.GetSelfDefaultSettings().Width,
-			get = function(layoutName)
-				return TargetedSpellsSaved.Settings.Self.Width
-			end,
-			set = function(layoutName, value)
-				TargetedSpellsSaved.Settings.Self.Width = value
-				Private.EventRegistry:TriggerEvent(
-					Private.Events.SETTING_CHANGED,
-					Private.Settings.Keys.Self.Width,
-					value
-				)
-			end,
-			minValue = sliderSettings.min,
-			maxValue = sliderSettings.max,
-			valueStep = sliderSettings.step,
-		})
-	end
-
-	-- Frame Height
-	do
-		local sliderSettings = Private.Settings.GetSliderSettingsForOption(Private.Settings.Keys.Self.Height)
-
-		table.insert(frameSettings, {
-			name = "Height",
-			kind = Enum.EditModeSettingDisplayType.Slider,
-			default = Private.Settings.GetSelfDefaultSettings().Height,
-			get = function(layoutName)
-				return TargetedSpellsSaved.Settings.Self.Height
-			end,
-			set = function(layoutName, value)
-				TargetedSpellsSaved.Settings.Self.Height = value
-				Private.EventRegistry:TriggerEvent(
-					Private.Events.SETTING_CHANGED,
-					Private.Settings.Keys.Self.Height,
-					value
-				)
-			end,
-			minValue = sliderSettings.min,
-			maxValue = sliderSettings.max,
-			valueStep = sliderSettings.step,
-		})
-	end
-
-	-- Frame Gap
-	do
-		local sliderSettings = Private.Settings.GetSliderSettingsForOption(Private.Settings.Keys.Self.Gap)
-
-		table.insert(frameSettings, {
-			name = "Gap",
-			kind = Enum.EditModeSettingDisplayType.Slider,
-			default = Private.Settings.GetSelfDefaultSettings().Gap,
-			get = function(layoutName)
-				return TargetedSpellsSaved.Settings.Self.Gap
-			end,
-			set = function(layoutName, value)
-				TargetedSpellsSaved.Settings.Self.Gap = value
-				Private.EventRegistry:TriggerEvent(
-					Private.Events.SETTING_CHANGED,
-					Private.Settings.Keys.Self.Gap,
-					value
-				)
-			end,
-			minValue = sliderSettings.min,
-			maxValue = sliderSettings.max,
-			valueStep = sliderSettings.step,
-		})
-	end
-
-	-- Frame Direction
-	do
-		---@param layoutName string
-		---@param value string
-		local function Set(layoutName, value)
-			if TargetedSpellsSaved.Settings.Self.Direction ~= value then
-				TargetedSpellsSaved.Settings.Self.Direction = value
-				Private.EventRegistry:TriggerEvent(
-					Private.Events.SETTING_CHANGED,
-					Private.Settings.Keys.Self.Direction,
-					value
-				)
-			end
-		end
-
-		table.insert(frameSettings, {
-			name = "Direction",
-			kind = Enum.EditModeSettingDisplayType.Dropdown,
-			default = Private.Settings.GetSelfDefaultSettings().Direction,
-			generator = function(owner, rootDescription, data)
-				for label, enumValue in pairs(Private.Enum.Direction) do
-					local function IsEnabled()
-						return TargetedSpellsSaved.Settings.Self.Direction == enumValue
-					end
-
-					local function SetProxy()
-						Set(LEM:GetActiveLayoutName(), enumValue)
-					end
-
-					rootDescription:CreateCheckbox(label, IsEnabled, SetProxy, {
-						value = label,
-						isRadio = true,
-					})
-				end
-			end,
-			set = Set,
-		})
-	end
-
 	-- todo: layouting
-	LEM:AddFrameSettings(EditModeParentFrame, frameSettings)
+	LEM:AddFrameSettings(EditModeParentFrame, {
+		CreateSetting(Private.Settings.Keys.Self.Enabled),
+		CreateSetting(Private.Settings.Keys.Self.LoadConditionContentType),
+		CreateSetting(Private.Settings.Keys.Self.LoadConditionRole),
+		CreateSetting(Private.Settings.Keys.Self.Width),
+		CreateSetting(Private.Settings.Keys.Self.Height),
+		CreateSetting(Private.Settings.Keys.Self.Gap),
+		CreateSetting(Private.Settings.Keys.Self.Direction),
+	})
 
 	-- LEM:RegisterCallback("layout", function(layoutName)
 	--     if not TagsTrivialTweaks_Settings.LEM then
@@ -447,6 +552,10 @@ local function SetupPartyEditMode()
 			end
 
 			table.insert(previewFrames[i], previewFrame)
+
+			if not TargetedSpellsSaved.Settings.Party.Enabled then
+				previewFrame:Hide()
+			end
 		end
 	end
 
@@ -595,352 +704,19 @@ local function SetupPartyEditMode()
 	LEM:RegisterCallback("enter", ToggleDemo)
 	LEM:RegisterCallback("exit", ToggleDemo)
 
-	local frameSettings = {}
-
-	-- Enabled
-	table.insert(frameSettings, {
-		name = "Enabled",
-		kind = Enum.EditModeSettingDisplayType.Checkbox,
-		default = Private.Settings.GetPartyDefaultSettings().Enabled,
-		get =
-			---@param layoutName string
-			function(layoutName)
-				return TargetedSpellsSaved.Settings.Party.Enabled
-			end,
-		---@param layoutName string
-		---@param value boolean
-		set = function(layoutName, value)
-			if value ~= TargetedSpellsSaved.Settings.Party.Enabled then
-				TargetedSpellsSaved.Settings.Party.Enabled = value
-
-				Private.EventRegistry:TriggerEvent(
-					Private.Events.SETTING_CHANGED,
-					Private.Settings.Keys.Party.Enabled,
-					value
-				)
-			end
-		end,
-	})
-
-	-- Load Condition: Content Type
-	table.insert(frameSettings, {
-		name = "Load in Content",
-		kind = Enum.EditModeSettingDisplayType.Dropdown,
-		default = Private.Settings.GetPartyDefaultSettings().LoadConditionContentType,
-		generator = function(owner, rootDescription, data)
-			for label, id in pairs(Private.Enum.ContentType) do
-				local function IsEnabled()
-					return TargetedSpellsSaved.Settings.Party.LoadConditionContentType[id]
-				end
-
-				local function Toggle()
-					TargetedSpellsSaved.Settings.Party.LoadConditionContentType[id] =
-						not TargetedSpellsSaved.Settings.Party.LoadConditionContentType[id]
-				end
-
-				rootDescription:CreateCheckbox(label, IsEnabled, Toggle, {
-					value = label,
-					isRadio = false,
-				})
-			end
-		end,
-		-- technically is a reset only
-		set =
-			---@param layoutName string
-			---@param values table<string, boolean>
-			function(layoutName, values)
-				local hasChanges = false
-				for id, bool in pairs(values) do
-					if TargetedSpellsSaved.Settings.Party.LoadConditionContentType[id] ~= bool then
-						TargetedSpellsSaved.Settings.Party.LoadConditionContentType[id] = bool
-						hasChanges = true
-					end
-				end
-
-				if hasChanges then
-					Private.EventRegistry:TriggerEvent(
-						Private.Events.SETTING_CHANGED,
-						Private.Settings.Keys.Party.LoadConditionContentType,
-						TargetedSpellsSaved.Settings.Party.LoadConditionContentType
-					)
-				end
-			end,
-	})
-
-	-- Load Condition: Role
-	table.insert(frameSettings, {
-		name = "Load on Role",
-		kind = Enum.EditModeSettingDisplayType.Dropdown,
-		default = Private.Settings.GetPartyDefaultSettings().LoadConditionRole,
-		generator = function(owner, rootDescription, data)
-			for label, id in pairs(Private.Enum.ContentType) do
-				local function IsEnabled()
-					return TargetedSpellsSaved.Settings.Party.LoadConditionRole[id]
-				end
-
-				local function Toggle()
-					TargetedSpellsSaved.Settings.Party.LoadConditionRole[id] =
-						not TargetedSpellsSaved.Settings.Party.LoadConditionRole[id]
-				end
-
-				rootDescription:CreateCheckbox(label, IsEnabled, Toggle, {
-					value = label,
-					isRadio = false,
-				})
-			end
-		end,
-		-- technically is a reset only
-		set =
-			---@param layoutName string
-			---@param values table<string, boolean>
-			function(layoutName, values)
-				local hasChanges = false
-				for id, bool in pairs(values) do
-					if TargetedSpellsSaved.Settings.Party.LoadConditionRole[id] ~= bool then
-						TargetedSpellsSaved.Settings.Party.LoadConditionRole[id] = bool
-						hasChanges = true
-					end
-				end
-
-				if hasChanges then
-					Private.EventRegistry:TriggerEvent(
-						Private.Events.SETTING_CHANGED,
-						Private.Settings.Keys.Party.LoadConditionRole,
-						TargetedSpellsSaved.Settings.Party.LoadConditionRole
-					)
-				end
-			end,
-	})
-
-	-- Frame Width
-	do
-		local sliderSettings = Private.Settings.GetSliderSettingsForOption(Private.Settings.Keys.Party.Width)
-
-		table.insert(frameSettings, {
-			name = "Width",
-			kind = Enum.EditModeSettingDisplayType.Slider,
-			default = Private.Settings.GetPartyDefaultSettings().Width,
-			get =
-				---@param layoutName string
-				function(layoutName)
-					return TargetedSpellsSaved.Settings.Party.Width
-				end,
-			set =
-				---@param layoutName string
-				---@param value number
-				function(layoutName, value)
-					TargetedSpellsSaved.Settings.Party.Width = value
-					Private.EventRegistry:TriggerEvent(
-						Private.Events.SETTING_CHANGED,
-						Private.Settings.Keys.Party.Width,
-						value
-					)
-				end,
-			minValue = sliderSettings.min,
-			maxValue = sliderSettings.max,
-			valueStep = sliderSettings.step,
-		})
-	end
-
-	-- Frame Height
-	do
-		local sliderSettings = Private.Settings.GetSliderSettingsForOption(Private.Settings.Keys.Party.Height)
-
-		table.insert(frameSettings, {
-			name = "Height",
-			kind = Enum.EditModeSettingDisplayType.Slider,
-			default = Private.Settings.GetPartyDefaultSettings().Height,
-			get =
-				---@param layoutName string
-				function(layoutName)
-					return TargetedSpellsSaved.Settings.Party.Height
-				end,
-			set =
-				---@param layoutName string
-				---@param value number
-				function(layoutName, value)
-					TargetedSpellsSaved.Settings.Party.Height = value
-					Private.EventRegistry:TriggerEvent(
-						Private.Events.SETTING_CHANGED,
-						Private.Settings.Keys.Party.Height,
-						value
-					)
-				end,
-			minValue = sliderSettings.min,
-			maxValue = sliderSettings.max,
-			valueStep = sliderSettings.step,
-		})
-	end
-
-	-- Frame Gap
-	do
-		local sliderSettings = Private.Settings.GetSliderSettingsForOption(Private.Settings.Keys.Party.Gap)
-
-		table.insert(frameSettings, {
-			name = "Gap",
-			kind = Enum.EditModeSettingDisplayType.Slider,
-			default = Private.Settings.GetPartyDefaultSettings().Gap,
-			get =
-				---@param layoutName string
-				function(layoutName)
-					return TargetedSpellsSaved.Settings.Party.Gap
-				end,
-			set =
-				---@param layoutName string
-				---@param value number
-				function(layoutName, value)
-					TargetedSpellsSaved.Settings.Party.Gap = value
-					Private.EventRegistry:TriggerEvent(
-						Private.Events.SETTING_CHANGED,
-						Private.Settings.Keys.Party.Gap,
-						value
-					)
-				end,
-			minValue = sliderSettings.min,
-			maxValue = sliderSettings.max,
-			valueStep = sliderSettings.step,
-		})
-	end
-
-	-- Frame Direction
-	do
-		---@param layoutName string
-		---@param value string
-		local function Set(layoutName, value)
-			if TargetedSpellsSaved.Settings.Party.Direction ~= value then
-				TargetedSpellsSaved.Settings.Party.Direction = value
-				Private.EventRegistry:TriggerEvent(
-					Private.Events.SETTING_CHANGED,
-					Private.Settings.Keys.Party.Direction,
-					value
-				)
-			end
-		end
-
-		table.insert(frameSettings, {
-			name = "Direction",
-			kind = Enum.EditModeSettingDisplayType.Dropdown,
-			default = Private.Settings.GetPartyDefaultSettings().Direction,
-			generator = function(owner, rootDescription, data)
-				for label, enumValue in pairs(Private.Enum.Direction) do
-					local function IsEnabled()
-						return TargetedSpellsSaved.Settings.Party.Direction == enumValue
-					end
-
-					local function SetProxy()
-						Set(LEM:GetActiveLayoutName(), enumValue)
-					end
-
-					rootDescription:CreateCheckbox(label, IsEnabled, SetProxy, {
-						value = label,
-						isRadio = true,
-					})
-				end
-			end,
-			set = Set,
-		})
-	end
-
-	-- Frame Offset X
-	do
-		local sliderSettings = Private.Settings.GetSliderSettingsForOption(Private.Settings.Keys.Party.OffsetX)
-
-		table.insert(frameSettings, {
-			name = "Offset X",
-			kind = Enum.EditModeSettingDisplayType.Slider,
-			default = Private.Settings.GetPartyDefaultSettings().OffsetX,
-			get =
-				---@param layoutName string
-				function(layoutName)
-					return TargetedSpellsSaved.Settings.Party.OffsetX
-				end,
-			set =
-				---@param layoutName string
-				---@param value number
-				function(layoutName, value)
-					TargetedSpellsSaved.Settings.Party.OffsetX = value
-					Private.EventRegistry:TriggerEvent(
-						Private.Events.SETTING_CHANGED,
-						Private.Settings.Keys.Party.OffsetX,
-						value
-					)
-				end,
-			minValue = sliderSettings.min,
-			maxValue = sliderSettings.max,
-			valueStep = sliderSettings.step,
-		})
-	end
-
-	-- Frame Offset Y
-	do
-		local sliderSettings = Private.Settings.GetSliderSettingsForOption(Private.Settings.Keys.Party.OffsetY)
-
-		table.insert(frameSettings, {
-			name = "Offset Y",
-			kind = Enum.EditModeSettingDisplayType.Slider,
-			default = Private.Settings.GetPartyDefaultSettings().OffsetY,
-			get =
-				---@param layoutName string
-				function(layoutName)
-					return TargetedSpellsSaved.Settings.Party.OffsetY
-				end,
-			set =
-				---@param layoutName string
-				---@param value number
-				function(layoutName, value)
-					TargetedSpellsSaved.Settings.Party.OffsetY = value
-					Private.EventRegistry:TriggerEvent(
-						Private.Events.SETTING_CHANGED,
-						Private.Settings.Keys.Party.OffsetY,
-						value
-					)
-				end,
-			minValue = sliderSettings.min,
-			maxValue = sliderSettings.max,
-			valueStep = sliderSettings.step,
-		})
-	end
-	-- Frame Anchor
-	do
-		---@param layoutName string
-		---@param value string
-		local function Set(layoutName, value)
-			if TargetedSpellsSaved.Settings.Party.Anchor ~= value then
-				TargetedSpellsSaved.Settings.Party.Anchor = value
-				Private.EventRegistry:TriggerEvent(
-					Private.Events.SETTING_CHANGED,
-					Private.Settings.Keys.Party.Anchor,
-					value
-				)
-			end
-		end
-
-		table.insert(frameSettings, {
-			name = "Anchor",
-			kind = Enum.EditModeSettingDisplayType.Dropdown,
-			default = Private.Settings.GetPartyDefaultSettings().Anchor,
-			generator = function(owner, rootDescription, data)
-				for label, enumValue in pairs(Private.Enum.Anchor) do
-					local function IsEnabled()
-						return TargetedSpellsSaved.Settings.Party.Anchor == enumValue
-					end
-
-					local function SetProxy()
-						Set(LEM:GetActiveLayoutName(), enumValue)
-					end
-
-					rootDescription:CreateCheckbox(label, IsEnabled, SetProxy, {
-						value = label,
-						isRadio = true,
-					})
-				end
-			end,
-			set = Set,
-		})
-	end
-
 	-- todo: layouting
-	LEM:AddFrameSettings(EditModeParentFrame, frameSettings)
+	LEM:AddFrameSettings(EditModeParentFrame, {
+		CreateSetting(Private.Settings.Keys.Party.Enabled),
+		CreateSetting(Private.Settings.Keys.Party.LoadConditionContentType),
+		CreateSetting(Private.Settings.Keys.Party.LoadConditionRole),
+		CreateSetting(Private.Settings.Keys.Party.Width),
+		CreateSetting(Private.Settings.Keys.Party.Height),
+		CreateSetting(Private.Settings.Keys.Party.Gap),
+		CreateSetting(Private.Settings.Keys.Party.Direction),
+		CreateSetting(Private.Settings.Keys.Party.OffsetX),
+		CreateSetting(Private.Settings.Keys.Party.OffsetY),
+		CreateSetting(Private.Settings.Keys.Party.Anchor),
+	})
 end
 
 table.insert(Private.LoginFnQueue, SetupPartyEditMode)

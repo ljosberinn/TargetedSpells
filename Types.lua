@@ -12,6 +12,7 @@
 ---@field Role table<string, number>
 ---@field FrameKind table<'Party' | 'Self', string>
 ---@field Anchor table<string, string>
+---@field Order table<'Ascending' | 'Descending', string>
 
 ---@class SliderSettings
 ---@field min number
@@ -37,7 +38,7 @@
 ---@field Width number
 ---@field Height number
 ---@field Gap number
----@field Direction number
+---@field Direction string
 ---@field LoadConditionContentType boolean[]
 ---@field LoadConditionRole boolean[]
 ---@field PlaySound boolean
@@ -49,7 +50,7 @@
 ---@field Width number
 ---@field Height number
 ---@field Gap number
----@field Direction number
+---@field Direction string
 ---@field LoadConditionContentType boolean[]
 ---@field LoadConditionRole boolean[]
 ---@field OffsetX number

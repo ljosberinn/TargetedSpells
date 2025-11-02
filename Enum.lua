@@ -39,3 +39,8 @@ Private.Enum.Anchor = {
 	BottomLeft = "BOTTOMLEFT",
 	BottomRight = "BOTTOMRIGHT",
 }
+
+Private.Enum.Order = {
+	Ascending = "ascending",
+	Descending = "descending",
+}
