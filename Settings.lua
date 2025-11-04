@@ -117,7 +117,7 @@ function Private.Settings.GetPartyDefaultSettings()
 		Enabled = true,
 		Width = 24,
 		Height = 24,
-		Gap = 2,
+		Gap = 6,
 		Direction = Private.Enum.Direction.Horizontal,
 		LoadConditionContentType = {
 			[Private.Enum.ContentType.OpenWorld] = false,

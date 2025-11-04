@@ -627,16 +627,36 @@ function SelfEditModeMixin:RepositionPreviewFrames()
 
 	if isHorizontal then
 		local totalWidth = (activeFrameCount * width) + (activeFrameCount - 1) * gap
+		local parentFrameWidth = self.editModeFrame:GetWidth()
 
 		for i, frame in ipairs(activeFrames) do
-			local x = (i - 1) * width + (i - 1) * gap - totalWidth / 2
+			local x = 0
+
+			if grow == Private.Enum.Grow.Start then
+				x = (i - 1) * (width + gap) - parentFrameWidth / 2
+			elseif grow == Private.Enum.Grow.Center then
+				x = (i - 1) * (width + gap) - totalWidth / 2
+			elseif grow == Private.Enum.Grow.End then
+				x = parentFrameWidth / 2 - i * (width + gap)
+			end
+
 			frame:Reposition("LEFT", self.editModeFrame, "CENTER", x, 0)
 		end
 	else
 		local totalHeight = (activeFrameCount * height) + (activeFrameCount - 1) * gap
+		local parentFrameHeight = self.editModeFrame:GetHeight()
 
 		for i, frame in ipairs(activeFrames) do
-			local y = (i - 1) * height + (i - 1) * gap - totalHeight / 2
+			local y = 0
+
+			if grow == Private.Enum.Grow.Start then
+				y = (i - 1) * (width + gap) - parentFrameHeight / 2
+			elseif grow == Private.Enum.Grow.Center then
+				y = (i - 1) * (height + gap) - totalHeight / 2
+			elseif grow == Private.Enum.Grow.End then
+				y = parentFrameHeight / 2 - i * (width + gap)
+			end
+
 			frame:Reposition("BOTTOM", self.editModeFrame, "CENTER", 0, y)
 		end
 	end
