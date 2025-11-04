@@ -912,20 +912,24 @@ hooksecurefunc(EditModeManagerFrame, "UpdateLayoutInfo", function(self)
 	PartyEditModeMixin.useRaidStylePartyFrames = EditModeManagerFrame:UseRaidStylePartyFrames()
 end)
 
+-- dirtying settings while edit mode is opened doesn't fire any events
 hooksecurefunc(EditModeSystemSettingsDialog, "OnSettingValueChanged", function(self, setting, checked)
-	if setting == Enum.EditModeUnitFrameSetting.UseRaidStylePartyFrames then
-		local nextUseRaidStylePartyFrames = checked == 1
+	if setting ~= Enum.EditModeUnitFrameSetting.UseRaidStylePartyFrames then
+		return
+	end
 
-		if nextUseRaidStylePartyFrames ~= PartyEditModeMixin.useRaidStylePartyFrames then
-			PartyEditModeMixin.useRaidStylePartyFrames = nextUseRaidStylePartyFrames
+	local useRaidStylePartyFrames = checked == 1
 
-			PartyEditModeMixin:RepositionEditModeFrame()
+	if useRaidStylePartyFrames == PartyEditModeMixin.useRaidStylePartyFrames then
+		return
+	end
 
-			if TargetedSpellsSaved.Settings.Party.Enabled then
-				PartyEditModeMixin:EndDemo()
-				PartyEditModeMixin:StartDemo()
-			end
-		end
+	PartyEditModeMixin.useRaidStylePartyFrames = useRaidStylePartyFrames
+	PartyEditModeMixin:RepositionEditModeFrame()
+
+	if TargetedSpellsSaved.Settings.Party.Enabled then
+		PartyEditModeMixin:EndDemo()
+		PartyEditModeMixin:StartDemo()
 	end
 end)
 
