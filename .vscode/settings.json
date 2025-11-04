@@ -64,5 +64,6 @@
     "CompactPartyFrameMixin",
     "EditModeManagerFrameMixin"
   ],
-  "stylua.targetReleaseVersion": "latest"
+  "stylua.targetReleaseVersion": "latest",
+  "Lua.diagnostics.disable": ["assign-type-mismatch"]
 }

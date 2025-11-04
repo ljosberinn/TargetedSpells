@@ -13,16 +13,13 @@ local function GetPreviewIconDataProvider()
 	return PreviewIconDataProvider
 end
 
----@type TargetedSpellsMixin
+---@class TargetedSpellsMixin
 TargetedSpellsMixin = {}
 
 function TargetedSpellsMixin:OnLoad()
 	print("TargetedSpellsMixin:OnLoad()", self.kind, self.unit)
 
-	if self.settingsCallbackId == nil then
-		self.settingsCallbackId =
-			Private.EventRegistry:RegisterCallback(Private.Events.SETTING_CHANGED, self.OnSettingChanged, self)
-	end
+	Private.EventRegistry:RegisterCallback(Private.Events.SETTING_CHANGED, self.OnSettingChanged, self)
 
 	-- initially set via SelfPreviewTemplate through Settings, but not in any other case
 	if self.kind ~= nil then
@@ -151,52 +148,51 @@ function TargetedSpellsMixin:Reposition(point, relativeTo, relativePoint, offset
 	self:SetPoint(point, relativeTo, relativePoint, offsetX, offsetY)
 end
 
-function TargetedSpellsMixin:StartPreviewLoop(RepositionPreviewFrames)
-	if self.unit == nil or string.find(self.unit, "preview") == nil or self.loopTicker ~= nil then
-		return
-	end
+-- function TargetedSpellsMixin:StartPreviewLoop(RepositionPreviewFrames)
+-- 	if self.unit == nil or self.unit ~= "preview" == nil or self.loopTicker ~= nil then
+-- 		return
+-- 	end
 
-	local function Loop()
-		self:SetSpellTexture()
-		self:SetStartTime()
-		RepositionPreviewFrames()
-		local castTime = math.random(4, 6) + math.random()
-		self:SetCastTime(castTime)
-		self:RefreshSpellCooldownInfo()
-		self:RefreshSpellTexture()
-		self:Show()
+-- 	local function Loop()
+-- 		self:SetSpellTexture()
+-- 		self:SetStartTime()
+-- 		-- RepositionPreviewFrames()
+-- 		local castTime = math.random(4, 6) + math.random()
+-- 		self:SetCastTime(castTime)
+-- 		self:RefreshSpellCooldownInfo()
+-- 		self:RefreshSpellTexture()
+-- 		self:Show()
 
-		self.hideTimer = C_Timer.NewTimer(castTime, function()
-			self:ClearStartTime()
-			self.hideTimer = nil
-			self:Hide()
-			RepositionPreviewFrames()
-		end)
-	end
+-- 		self.hideTimer = C_Timer.NewTimer(castTime, function()
+-- 			self:ClearStartTime()
+-- 			self.hideTimer = nil
+-- 			self:Hide()
+-- 			RepositionPreviewFrames()
+-- 		end)
+-- 	end
 
-	local unitId = string.gsub(self.unit, "preview", "")
-	local index = tonumber(unitId)
-	local delay = (index - 1) * math.random()
+-- 	self.loopTicker = C_Timer.NewTicker(6.5 + math.random(1, 5), Loop)
+-- 	Loop()
+-- end
 
-	self.loopTicker = C_Timer.NewTicker(6.5 + delay, Loop)
-	Loop()
-end
+-- function TargetedSpellsMixin:StopPreviewLoop()
+-- 	if self.loopTicker ~= nil and not self.loopTicker:IsCancelled() then
+-- 		self.loopTicker:Cancel()
+-- 		self.loopTicker = nil
+-- 	end
 
-function TargetedSpellsMixin:StopPreviewLoop()
-	if self.loopTicker ~= nil and not self.loopTicker:IsCancelled() then
-		self.loopTicker:Cancel()
-		self.loopTicker = nil
-	end
+-- 	if self.hideTimer ~= nil and not self.hideTimer:IsCancelled() then
+-- 		self.hideTimer:Cancel()
+-- 		self.hideTimer = nil
+-- 	end
 
-	if self.hideTimer ~= nil and not self.hideTimer:IsCancelled() then
-		self.hideTimer:Cancel()
-		self.hideTimer = nil
-	end
+-- 	self.Cooldown:Clear()
 
-	-- print("TargetedSpellsMixin:StopPreviewLoop()", self.unit, self.kind, self.loopTicker, self.hideTimer)
+-- 	-- print("TargetedSpellsMixin:StopPreviewLoop()", self.unit, self.kind, self.loopTicker, self.hideTimer)
 
-	self:Hide()
-end
+-- 	self:ClearAllPoints()
+-- 	self:Hide()
+-- end
 
 function TargetedSpellsMixin:SetUnit(unit)
 	self.unit = unit
@@ -215,4 +211,16 @@ end
 
 function TargetedSpellsMixin:GetKind()
 	return self.kind
+end
+
+function TargetedSpellsMixin:PostCreate(unit, kind)
+	self:SetUnit(unit)
+	self:SetKind(kind)
+end
+
+function TargetedSpellsMixin:Reset()
+	self.Cooldown:Clear()
+	self:ClearAllPoints()
+	self:Hide()
+	Private.EventRegistry:UnregisterCallback(Private.Events.SETTING_CHANGED, self)
 end

@@ -57,8 +57,6 @@ local function CreateSetting(key)
 					local function Toggle()
 						tableRef[id] = not tableRef[id]
 
-						print(id, key)
-
 						Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, tableRef)
 					end
 
@@ -99,7 +97,7 @@ local function CreateSetting(key)
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
 			default = Private.Settings.GetSelfDefaultSettings().LoadConditionRole,
 			generator = function(owner, rootDescription, data)
-				for label, id in pairs(Private.Enum.ContentType) do
+				for label, id in pairs(Private.Enum.Role) do
 					local function IsEnabled()
 						return tableRef[id]
 					end
@@ -591,204 +589,54 @@ local function SetupSelfEditMode()
 	-- end)
 end
 
-table.insert(Private.LoginFnQueue, SetupSelfEditMode)
+-- table.insert(Private.LoginFnQueue, SetupSelfEditMode)
 
-local function SetupPartyEditMode()
-	local amountOfPreviewFramesPerUnit = 3
-	---@type boolean
-	local useRaidStylePartyFrames = false
+---@type TargetedSpellsPartyEditModeFrame
+local PartyEditModeParentFrame = CreateFrame("Frame", "Targeted Spells Party", UIParent)
+-- todo: show something in this frame as it otherwise has no preview
 
-	-- when this executes, layouts aren't loaded yet
-	hooksecurefunc(EditModeManagerFrame, "UpdateLayoutInfo", function(self)
-		useRaidStylePartyFrames = EditModeManagerFrame:UseRaidStylePartyFrames()
-	end)
+-- when this executes, layouts aren't loaded yet
+hooksecurefunc(EditModeManagerFrame, "UpdateLayoutInfo", function(self)
+	PartyEditModeParentFrame.useRaidStylePartyFrames = EditModeManagerFrame:UseRaidStylePartyFrames()
+end)
 
-	local EditModeParentFrame = CreateFrame("Frame", "Targeted Spells Party", UIParent)
-	EditModeParentFrame:SetClampedToScreen(true)
-	EditModeParentFrame:SetSize(250, 24)
-	-- todo: show something in this frame as it otherwise has no preview
+hooksecurefunc(EditModeSystemSettingsDialog, "OnSettingValueChanged", function(self, setting, checked)
+	if setting == Enum.EditModeUnitFrameSetting.UseRaidStylePartyFrames then
+		local nextUseRaidStylePartyFrames = checked == 1
 
-	local function RepositionEditModeParentFrame()
-		EditModeParentFrame:SetPoint(
-			"CENTER",
-			useRaidStylePartyFrames and CompactPartyFrame or PartyFrame,
-			"TOP",
-			0,
-			16
-		)
-	end
+		if nextUseRaidStylePartyFrames ~= PartyEditModeParentFrame.useRaidStylePartyFrames then
+			PartyEditModeParentFrame.useRaidStylePartyFrames = nextUseRaidStylePartyFrames
 
-	RepositionEditModeParentFrame()
-
-	---@type table<number, TargetedSpellsMixin[]>
-	local previewFrames = {}
-
-	for i = 1, 5 do
-		for j = 1, amountOfPreviewFramesPerUnit do
-			local index = #previewFrames + 1
-			local previewFrame = CreateFrame(
-				"Frame",
-				"EditModeTargetedSpellsPartyPreview" .. index,
-				EditModeParentFrame,
-				"TargetedSpellsFrameTemplate"
-			)
-
-			previewFrame:SetUnit("preview" .. j)
-			previewFrame:SetKind(Private.Enum.FrameKind.Party)
-
-			if previewFrames[i] == nil then
-				previewFrames[i] = {}
-			end
-
-			table.insert(previewFrames[i], previewFrame)
-
-			if not TargetedSpellsSaved.Settings.Party.Enabled then
-				previewFrame:Hide()
-			end
+			PartyEditModeParentFrame:EndDemo()
+			PartyEditModeParentFrame:StartDemo()
+			PartyEditModeParentFrame:RepositionSelf()
 		end
 	end
+end)
 
-	local defaultPosition = { point = "CENTER", x = 0, y = 0 }
+function PartyEditModeParentFrame:OnLoad()
+	self.maxUnitCount = 5
+	self.amountOfPreviewFramesPerUnit = 3
+	self.demoPlaying = false
+	self.framePool = CreateFramePool("Frame", UIParent, "TargetedSpellsFrameTemplate")
+	self.frames = {}
+	self.useRaidStylePartyFrames = self.useRaidStylePartyFrames or false
+	self.demoTimers = {
+		tickers = {},
+		timers = {},
+	}
 
-	local function onPositionChanged(frame, layoutName, point, x, y)
-		print(layoutName, point, x, y)
+	self:SetClampedToScreen(true)
+	self:RepositionSelf()
 
-		-- TagsTrivialTweaks_Settings.LEM[layoutName].point = point
-		-- TagsTrivialTweaks_Settings.LEM[layoutName].x = x
-		-- TagsTrivialTweaks_Settings.LEM[layoutName].y = y
-	end
+	Private.EventRegistry:RegisterCallback(Private.Events.SETTING_CHANGED, self.OnSettingsChanged, self)
 
-	LEM:AddFrame(EditModeParentFrame, onPositionChanged, defaultPosition)
-
-	local function RepositionPreviewFrames()
-		local width, height, gap, direction, offsetX, offsetY, sortOrder, sourceAnchor, targetAnchor, grow =
-			TargetedSpellsSaved.Settings.Party.Width,
-			TargetedSpellsSaved.Settings.Party.Height,
-			TargetedSpellsSaved.Settings.Party.Gap,
-			TargetedSpellsSaved.Settings.Party.Direction,
-			TargetedSpellsSaved.Settings.Party.OffsetX,
-			TargetedSpellsSaved.Settings.Party.OffsetY,
-			TargetedSpellsSaved.Settings.Party.SortOrder,
-			TargetedSpellsSaved.Settings.Party.SourceAnchor,
-			TargetedSpellsSaved.Settings.Party.TargetAnchor,
-			TargetedSpellsSaved.Settings.Party.Grow
-
-		for index, frames in pairs(previewFrames) do
-			---@type table<string, TargetedSpellsMixin[]>
-			local activeFrames = {}
-
-			for _, frame in pairs(frames) do
-				if frame:ShouldBeShown() then
-					table.insert(activeFrames, frame)
-				end
-			end
-
-			SortFrames(activeFrames, sortOrder)
-
-			local parentFrame = nil
-			if useRaidStylePartyFrames then
-				parentFrame = CompactPartyFrame.memberUnitFrames[index]
-			else
-				for memberFrame in PartyFrame.PartyMemberFramePool:EnumerateActive() do
-					if memberFrame.layoutIndex == index then
-						parentFrame = memberFrame
-						break
-					end
-				end
-			end
-
-			if parentFrame == nil then
-				-- disabling raid-style party frames - which show only 4 frames - needs to hide the 5th
-				for i, frame in ipairs(activeFrames) do
-					frame:ClearAllPoints()
-					frame:Hide()
-				end
-
-				return
-			end
-
-			local activeFrameCount = #activeFrames
-
-			if direction == Private.Enum.Direction.Horizontal then
-				local totalWidth = (activeFrameCount * width) + (activeFrameCount - 1) * gap
-
-				for i, frame in ipairs(activeFrames) do
-					local x = (i - 1) * width + (i - 1) * gap - totalWidth / 2 + offsetX
-					frame:Reposition(sourceAnchor, parentFrame, targetAnchor, x, offsetY)
-				end
-			else
-				local totalHeight = (activeFrameCount * height) + (activeFrameCount - 1) * gap
-
-				for i, frame in ipairs(frames) do
-					local y = (i - 1) * height + (i - 1) * gap - totalHeight / 2 + offsetY
-					frame:Reposition(sourceAnchor, parentFrame, targetAnchor, offsetX, y)
-				end
-			end
-		end
-	end
-
-	hooksecurefunc(EditModeSystemSettingsDialog, "OnSettingValueChanged", function(self, setting, checked)
-		if setting == Enum.EditModeUnitFrameSetting.UseRaidStylePartyFrames then
-			local nextUseRaidStylePartyFrames = checked == 1
-
-			if nextUseRaidStylePartyFrames ~= useRaidStylePartyFrames then
-				useRaidStylePartyFrames = nextUseRaidStylePartyFrames
-				RepositionPreviewFrames()
-				RepositionEditModeParentFrame()
-			end
-		end
-	end)
-
-	local playing = false
-
-	---@param forceDisable boolean?
-	local function ToggleDemo(forceDisable)
-		if forceDisable == nil then
-			forceDisable = false
-		end
-
-		if not TargetedSpellsSaved.Settings.Party.Enabled and not forceDisable then
-			return
-		end
-
-		for _, frames in pairs(previewFrames) do
-			for _, frame in pairs(frames) do
-				if playing then
-					frame:StopPreviewLoop()
-				else
-					frame:StartPreviewLoop(RepositionPreviewFrames)
-				end
-			end
-		end
-
-		playing = not playing
-	end
-
-	Private.EventRegistry:RegisterCallback(Private.Events.SETTING_CHANGED, function(self, key, value)
-		if
-			key == Private.Settings.Keys.Party.Gap
-			or key == Private.Settings.Keys.Party.Direction
-			or key == Private.Settings.Keys.Party.Width
-			or key == Private.Settings.Keys.Party.Height
-			or key == Private.Settings.Keys.Party.OffsetX
-			or key == Private.Settings.Keys.Party.OffsetY
-			or key == Private.Settings.Keys.Party.SourceAnchor
-			or key == Private.Settings.Keys.Party.TargetAnchor
-			or key == Private.Settings.Keys.Party.SortOrder
-			or key == Private.Settings.Keys.Party.Grow
-		then
-			RepositionPreviewFrames()
-		elseif key == Private.Settings.Keys.Party.Enabled then
-			local forceDisable = not TargetedSpellsSaved.Settings.Party.Enabled and playing
-			ToggleDemo(forceDisable)
-		end
-	end, EditModeParentFrame)
-
-	LEM:RegisterCallback("enter", ToggleDemo)
-	LEM:RegisterCallback("exit", ToggleDemo)
+	LEM:AddFrame(self, GenerateClosure(self.OnEditModePositionChanged, self), { point = "CENTER", x = 0, y = 0 })
+	LEM:RegisterCallback("enter", GenerateClosure(self.StartDemo, self))
+	LEM:RegisterCallback("exit", GenerateClosure(self.EndDemo, self))
 
 	-- todo: layouting
-	LEM:AddFrameSettings(EditModeParentFrame, {
+	LEM:AddFrameSettings(self, {
 		CreateSetting(Private.Settings.Keys.Party.Enabled),
 		CreateSetting(Private.Settings.Keys.Party.LoadConditionContentType),
 		CreateSetting(Private.Settings.Keys.Party.LoadConditionRole),
@@ -805,4 +653,246 @@ local function SetupPartyEditMode()
 	})
 end
 
-table.insert(Private.LoginFnQueue, SetupPartyEditMode)
+---@return TargetedSpellsMixin
+function PartyEditModeParentFrame:AcquireFrame()
+	local frame = self.framePool:Acquire()
+
+	frame:PostCreate("preview", Private.Enum.FrameKind.Party)
+
+	return frame
+end
+
+---@param frame TargetedSpellsMixin
+function PartyEditModeParentFrame:ReleaseFrame(frame)
+	frame:Reset()
+end
+
+function PartyEditModeParentFrame:RepositionSelf()
+	local parent = self.useRaidStylePartyFrames and CompactPartyFrame or PartyFrame
+	local width = self.useRaidStylePartyFrames and 250 or 125
+	local height = self.useRaidStylePartyFrames and 24 or 16
+
+	self:SetSize(width, height)
+	self:ClearAllPoints()
+	self:SetPoint("CENTER", parent, "TOP", 0, 16)
+end
+
+---@param key string
+---@param value string|number|table|boolean
+function PartyEditModeParentFrame:OnSettingsChanged(key, value)
+	if
+		key == Private.Settings.Keys.Party.Gap
+		or key == Private.Settings.Keys.Party.Direction
+		or key == Private.Settings.Keys.Party.Width
+		or key == Private.Settings.Keys.Party.Height
+		or key == Private.Settings.Keys.Party.OffsetX
+		or key == Private.Settings.Keys.Party.OffsetY
+		or key == Private.Settings.Keys.Party.SourceAnchor
+		or key == Private.Settings.Keys.Party.TargetAnchor
+		or key == Private.Settings.Keys.Party.SortOrder
+		or key == Private.Settings.Keys.Party.Grow
+	then
+		self:RepositionPreviewFrames()
+	elseif key == Private.Settings.Keys.Party.Enabled then
+		if value then
+			self:StartDemo()
+		else
+			local forceDisable = not TargetedSpellsSaved.Settings.Party.Enabled and self.demoPlaying
+			self:EndDemo(forceDisable)
+		end
+	end
+end
+
+function PartyEditModeParentFrame:RepositionPreviewFrames()
+	if not self.demoPlaying then
+		return
+	end
+
+	-- await for the setup to be finished
+	if self.buildingFrames ~= nil then
+		return
+	end
+
+	local width, height, gap, direction, offsetX, offsetY, sortOrder, sourceAnchor, targetAnchor, grow =
+		TargetedSpellsSaved.Settings.Party.Width,
+		TargetedSpellsSaved.Settings.Party.Height,
+		TargetedSpellsSaved.Settings.Party.Gap,
+		TargetedSpellsSaved.Settings.Party.Direction,
+		TargetedSpellsSaved.Settings.Party.OffsetX,
+		TargetedSpellsSaved.Settings.Party.OffsetY,
+		TargetedSpellsSaved.Settings.Party.SortOrder,
+		TargetedSpellsSaved.Settings.Party.SourceAnchor,
+		TargetedSpellsSaved.Settings.Party.TargetAnchor,
+		TargetedSpellsSaved.Settings.Party.Grow
+
+	for i = 1, self.maxUnitCount do
+		if i == self.maxUnitCount and not self.useRaidStylePartyFrames then
+			break
+		end
+
+		---@type TargetedSpellsMixin[]
+		local activeFrames = {}
+
+		for j = 1, self.amountOfPreviewFramesPerUnit do
+			local frame = self.frames[i][j]
+
+			if frame and frame:ShouldBeShown() then
+				table.insert(activeFrames, frame)
+			end
+		end
+
+		local activeFrameCount = #activeFrames
+
+		if activeFrameCount > 0 then
+			SortFrames(activeFrames, sortOrder)
+
+			local parentFrame = nil
+
+			if self.useRaidStylePartyFrames then
+				parentFrame = CompactPartyFrame.memberUnitFrames[i]
+			else
+				for memberFrame in PartyFrame.PartyMemberFramePool:EnumerateActive() do
+					if memberFrame.layoutIndex == i then
+						parentFrame = memberFrame
+						break
+					end
+				end
+			end
+
+			-- cannot happen
+			if parentFrame == nil then
+				error("couldn't establish a parent frame")
+			end
+
+			if direction == Private.Enum.Direction.Horizontal then
+				local totalWidth = (activeFrameCount * width) + (activeFrameCount - 1) * gap
+
+				for j, frame in ipairs(activeFrames) do
+					local x = (j - 1) * width + (j - 1) * gap - totalWidth / 2 + offsetX
+					frame:Reposition(sourceAnchor, parentFrame, targetAnchor, x, offsetY)
+				end
+			else
+				local totalHeight = (activeFrameCount * height) + (activeFrameCount - 1) * gap
+
+				for j, frame in ipairs(activeFrames) do
+					local y = (j - 1) * height + (j - 1) * gap - totalHeight / 2 + offsetY
+					frame:Reposition(sourceAnchor, parentFrame, targetAnchor, offsetX, y)
+				end
+			end
+		end
+	end
+end
+
+---@param frame TargetedSpellsPartyEditModeFrame
+---@param layoutName string
+---@param point string
+---@param x number
+---@param y number
+function PartyEditModeParentFrame:OnEditModePositionChanged(frame, layoutName, point, x, y)
+	-- don't do anything here as the element will stay attached to the party frames when reopening edit mode
+	-- but still allow repositioning this frame while editing to temporarily move it out of the way
+end
+
+---@param frame TargetedSpellsMixin
+---@param index number
+function PartyEditModeParentFrame:LoopFrame(frame, index)
+	frame:SetSpellTexture()
+	frame:SetStartTime()
+	local castTime = 4 + index / 2
+	frame:SetCastTime(castTime)
+	frame:RefreshSpellCooldownInfo()
+	frame:RefreshSpellTexture()
+	frame:Show()
+	self:RepositionPreviewFrames()
+
+	table.insert(
+		self.demoTimers.timers,
+		C_Timer.NewTimer(castTime, function()
+			frame:ClearStartTime()
+			frame:Hide()
+			self:RepositionPreviewFrames()
+		end)
+	)
+end
+
+function PartyEditModeParentFrame:StartDemo()
+	if self.demoPlaying then
+		return
+	end
+
+	self.demoPlaying = true
+	self.buildingFrames = true
+
+	for unit = 1, self.maxUnitCount do
+		if self.frames[unit] == nil then
+			self.frames[unit] = {}
+		end
+
+		if unit == self.maxUnitCount and not self.useRaidStylePartyFrames then
+			break
+		end
+
+		for index = 1, self.amountOfPreviewFramesPerUnit do
+			if self.frames[unit][index] == nil then
+				self.frames[unit][index] = self:AcquireFrame()
+			end
+
+			local frame = self.frames[unit][index]
+
+			if frame then
+				table.insert(
+					self.demoTimers.tickers,
+					C_Timer.NewTicker(5 + index + unit, GenerateClosure(self.LoopFrame, self, frame, index + unit))
+				)
+
+				self:LoopFrame(frame, index + unit)
+			end
+		end
+	end
+
+	self.buildingFrames = nil
+
+	self:RepositionPreviewFrames()
+end
+
+function PartyEditModeParentFrame:EndDemo(forceDisable)
+	if forceDisable == nil then
+		forceDisable = false
+	end
+
+	if not self.demoPlaying and not forceDisable then
+		return
+	end
+
+	local cleared = 0
+	for _, ticker in pairs(self.demoTimers.tickers) do
+		ticker:Cancel()
+		cleared = cleared + 1
+	end
+
+	cleared = 0
+	for _, timer in pairs(self.demoTimers.timers) do
+		timer:Cancel()
+		cleared = cleared + 1
+	end
+
+	table.wipe(self.demoTimers.tickers)
+	table.wipe(self.demoTimers.timers)
+
+	local releasedFrames = 0
+
+	for unit = 1, self.maxUnitCount do
+		for index = 1, self.amountOfPreviewFramesPerUnit do
+			local frame = self.frames[unit][index]
+
+			if frame then
+				self:ReleaseFrame(frame)
+				releasedFrames = releasedFrames + 1
+			end
+		end
+	end
+
+	self.demoPlaying = false
+end
+
+table.insert(Private.LoginFnQueue, GenerateClosure(PartyEditModeParentFrame.OnLoad, PartyEditModeParentFrame))
