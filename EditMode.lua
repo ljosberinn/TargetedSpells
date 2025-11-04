@@ -410,159 +410,31 @@ local function SortFrames(frames, sortOrder)
 	end)
 end
 
-local function SetupSelfEditMode()
-	local amountOfPreviewFrames = 5
-	local EditModeParentFrame = CreateFrame("Frame", "Targeted Spells Self", UIParent)
-	EditModeParentFrame:SetClampedToScreen(true)
+---@type TargetedSpellsSelfEditModeFrame
+local SelfEditModeParentFrame = CreateFrame("Frame", "Targeted Spells Self", UIParent)
 
-	do
-		local width, gap, height =
-			TargetedSpellsSaved.Settings.Self.Width,
-			TargetedSpellsSaved.Settings.Self.Gap,
-			TargetedSpellsSaved.Settings.Self.Height
+function SelfEditModeParentFrame:OnLoad()
+	self.maxFrameCount = 5
+	self.demoPlaying = false
+	self.framePool = CreateFramePool("Frame", UIParent, "TargetedSpellsFrameTemplate")
+	self.frames = {}
+	self.demoTimers = {
+		tickers = {},
+		timers = {},
+	}
 
-		if TargetedSpellsSaved.Settings.Self.Direction == Private.Enum.Direction.Horizontal then
-			EditModeParentFrame:SetSize(amountOfPreviewFrames * width + (amountOfPreviewFrames - 1) * gap, height)
-		else
-			EditModeParentFrame:SetSize(width, amountOfPreviewFrames * height + (amountOfPreviewFrames - 1) * gap)
-		end
-	end
+	self:SetClampedToScreen(true)
+	self:SetPoint("CENTER", UIParent)
+	self:ResizeSelf()
 
-	-- todo: restore position from layout
-	EditModeParentFrame:SetPoint("CENTER", UIParent)
+	Private.EventRegistry:RegisterCallback(Private.Events.SETTING_CHANGED, self.OnSettingsChanged, self)
 
-	---@type TargetedSpellsMixin[]
-	local previewFrames = {}
-
-	for i = 1, amountOfPreviewFrames do
-		local previewFrame = CreateFrame(
-			"Frame",
-			"EditModeTargetedSpellsSelfPreview" .. i,
-			EditModeParentFrame,
-			"TargetedSpellsFrameTemplate"
-		)
-
-		previewFrame:SetUnit("preview" .. i)
-		previewFrame:SetKind(Private.Enum.FrameKind.Self)
-
-		table.insert(previewFrames, previewFrame)
-
-		if not TargetedSpellsSaved.Settings.Self.Enabled then
-			previewFrame:Hide()
-		end
-	end
-
-	local defaultPosition = { point = "CENTER", x = 0, y = 0 }
-
-	local function onPositionChanged(frame, layoutName, point, x, y)
-		print(layoutName, point, x, y)
-
-		-- TagsTrivialTweaks_Settings.LEM[layoutName].point = point
-		-- TagsTrivialTweaks_Settings.LEM[layoutName].x = x
-		-- TagsTrivialTweaks_Settings.LEM[layoutName].y = y
-	end
-
-	LEM:AddFrame(EditModeParentFrame, onPositionChanged, defaultPosition)
-
-	local function RepositionPreviewFrames()
-		local width, height, gap, direction, sortOrder, grow =
-			TargetedSpellsSaved.Settings.Self.Width,
-			TargetedSpellsSaved.Settings.Self.Height,
-			TargetedSpellsSaved.Settings.Self.Gap,
-			TargetedSpellsSaved.Settings.Self.Direction,
-			TargetedSpellsSaved.Settings.Self.SortOrder,
-			TargetedSpellsSaved.Settings.Self.Grow
-
-		---@type TargetedSpellsMixin[]
-		local frames = {}
-		for _, frame in pairs(previewFrames) do
-			if frame:ShouldBeShown() then
-				table.insert(frames, frame)
-			end
-		end
-
-		SortFrames(frames, sortOrder)
-
-		local activeFrameCount = #frames
-		local isHorizontal = direction == Private.Enum.Direction.Horizontal
-
-		if isHorizontal then
-			local totalWidth = (activeFrameCount * width) + (activeFrameCount - 1) * gap
-
-			for i, frame in ipairs(frames) do
-				local x = (i - 1) * width + (i - 1) * gap - totalWidth / 2
-				frame:Reposition("LEFT", EditModeParentFrame, "CENTER", x, 0)
-			end
-		else
-			local totalHeight = (activeFrameCount * height) + (activeFrameCount - 1) * gap
-
-			for i, frame in ipairs(frames) do
-				local y = (i - 1) * height + (i - 1) * gap - totalHeight / 2
-				frame:Reposition("BOTTOM", EditModeParentFrame, "CENTER", 0, y)
-			end
-		end
-	end
-
-	local playing = false
-
-	---@param forceDisable boolean?
-	local function ToggleDemo(forceDisable)
-		if forceDisable == nil then
-			forceDisable = false
-		end
-
-		if not TargetedSpellsSaved.Settings.Self.Enabled and not forceDisable then
-			return
-		end
-
-		for _, frame in pairs(previewFrames) do
-			if playing or forceDisable then
-				frame:StopPreviewLoop()
-			else
-				frame:StartPreviewLoop(RepositionPreviewFrames)
-			end
-		end
-
-		playing = not playing
-	end
-
-	Private.EventRegistry:RegisterCallback(Private.Events.SETTING_CHANGED, function(self, key, value)
-		if
-			key == Private.Settings.Keys.Self.Gap
-			or key == Private.Settings.Keys.Self.Direction
-			or key == Private.Settings.Keys.Self.Width
-			or key == Private.Settings.Keys.Self.Height
-			or key == Private.Settings.Keys.Self.SortOrder
-			or key == Private.Settings.Keys.Self.Grow
-		then
-			if key == Private.Settings.Keys.Self.Width or key == Private.Settings.Keys.Self.Height then
-				local isHorizontal = TargetedSpellsSaved.Settings.Self.Direction == Private.Enum.Direction.Horizontal
-				local activeFrameCount = #previewFrames
-				local gap = TargetedSpellsSaved.Settings.Self.Gap
-
-				if isHorizontal then
-					local width = TargetedSpellsSaved.Settings.Self.Width
-					local totalWidth = (activeFrameCount * width) + (activeFrameCount - 1) * gap
-					self:SetSize(totalWidth, TargetedSpellsSaved.Settings.Self.Height)
-				else
-					local height = TargetedSpellsSaved.Settings.Self.Height
-					local totalHeight = (activeFrameCount * height) + (activeFrameCount - 1) * gap
-					self:SetSize(TargetedSpellsSaved.Settings.Self.Width, totalHeight)
-				end
-			end
-
-			RepositionPreviewFrames()
-		elseif key == Private.Settings.Keys.Self.Enabled then
-			local forceDisable = not TargetedSpellsSaved.Settings.Self.Enabled and playing
-			ToggleDemo(forceDisable)
-		end
-	end, EditModeParentFrame)
-
-	LEM:RegisterCallback("enter", ToggleDemo)
-	LEM:RegisterCallback("exit", ToggleDemo)
+	LEM:AddFrame(self, GenerateClosure(self.OnEditModePositionChanged, self), { point = "CENTER", x = 0, y = 0 })
+	LEM:RegisterCallback("enter", GenerateClosure(self.StartDemo, self))
+	LEM:RegisterCallback("exit", GenerateClosure(self.EndDemo, self))
 
 	-- todo: layouting
-	LEM:AddFrameSettings(EditModeParentFrame, {
+	LEM:AddFrameSettings(self, {
 		CreateSetting(Private.Settings.Keys.Self.Enabled),
 		CreateSetting(Private.Settings.Keys.Self.LoadConditionContentType),
 		CreateSetting(Private.Settings.Keys.Self.LoadConditionRole),
@@ -573,6 +445,220 @@ local function SetupSelfEditMode()
 		CreateSetting(Private.Settings.Keys.Self.SortOrder),
 		CreateSetting(Private.Settings.Keys.Self.Grow),
 	})
+end
+
+function SelfEditModeParentFrame:AcquireFrame()
+	local frame = self.framePool:Acquire()
+
+	frame:PostCreate("preview", Private.Enum.FrameKind.Self)
+
+	return frame
+end
+
+function SelfEditModeParentFrame:ReleaseFrame(frame)
+	frame:Reset()
+
+	self.framePool:Release(frame)
+end
+
+function SelfEditModeParentFrame:ResizeSelf()
+	local width, gap, height =
+		TargetedSpellsSaved.Settings.Self.Width,
+		TargetedSpellsSaved.Settings.Self.Gap,
+		TargetedSpellsSaved.Settings.Self.Height
+
+	if TargetedSpellsSaved.Settings.Self.Direction == Private.Enum.Direction.Horizontal then
+		self:SetSize(self.maxFrameCount * width + (self.maxFrameCount - 1) * gap, height)
+	else
+		self:SetSize(width, self.maxFrameCount * height + (self.maxFrameCount - 1) * gap)
+	end
+end
+
+function SelfEditModeParentFrame:OnEditModePositionChanged(frame, layoutName, point, x, y)
+	-- todo: restore position from layout
+end
+
+function SelfEditModeParentFrame:OnSettingsChanged(key, value)
+	if
+		key == Private.Settings.Keys.Self.Gap
+		or key == Private.Settings.Keys.Self.Direction
+		or key == Private.Settings.Keys.Self.Width
+		or key == Private.Settings.Keys.Self.Height
+		or key == Private.Settings.Keys.Self.SortOrder
+		or key == Private.Settings.Keys.Self.Grow
+	then
+		if
+			key == Private.Settings.Keys.Self.Width
+			or key == Private.Settings.Keys.Self.Height
+			or key == Private.Settings.Keys.Self.Gap
+			or key == Private.Settings.Keys.Self.Direction
+		then
+			local isHorizontal = TargetedSpellsSaved.Settings.Self.Direction == Private.Enum.Direction.Horizontal
+			local gap = TargetedSpellsSaved.Settings.Self.Gap
+
+			if isHorizontal then
+				local width = TargetedSpellsSaved.Settings.Self.Width
+				local totalWidth = (self.maxFrameCount * width) + (self.maxFrameCount - 1) * gap
+				self:SetSize(totalWidth, TargetedSpellsSaved.Settings.Self.Height)
+			else
+				local height = TargetedSpellsSaved.Settings.Self.Height
+				local totalHeight = (self.maxFrameCount * height) + (self.maxFrameCount - 1) * gap
+				self:SetSize(TargetedSpellsSaved.Settings.Self.Width, totalHeight)
+			end
+		end
+
+		self:RepositionPreviewFrames()
+	elseif key == Private.Settings.Keys.Self.Enabled then
+		if value then
+			self:StartDemo()
+		else
+			local forceDisable = not TargetedSpellsSaved.Settings.Self.Enabled and self.demoPlaying
+			self:EndDemo(forceDisable)
+		end
+	end
+end
+
+function SelfEditModeParentFrame:RepositionPreviewFrames()
+	if not self.demoPlaying then
+		return
+	end
+
+	-- await for the setup to be finished
+	if self.buildingFrames ~= nil then
+		return
+	end
+
+	local width, height, gap, direction, sortOrder, grow =
+		TargetedSpellsSaved.Settings.Self.Width,
+		TargetedSpellsSaved.Settings.Self.Height,
+		TargetedSpellsSaved.Settings.Self.Gap,
+		TargetedSpellsSaved.Settings.Self.Direction,
+		TargetedSpellsSaved.Settings.Self.SortOrder,
+		TargetedSpellsSaved.Settings.Self.Grow
+
+	---@type TargetedSpellsMixin[]
+	local activeFrames = {}
+
+	for i = 1, self.maxFrameCount do
+		local frame = self.frames[i]
+		if frame and frame:ShouldBeShown() then
+			table.insert(activeFrames, frame)
+		end
+	end
+
+	local activeFrameCount = #activeFrames
+
+	if activeFrameCount == 0 then
+		return
+	end
+
+	SortFrames(activeFrames, sortOrder)
+
+	local isHorizontal = direction == Private.Enum.Direction.Horizontal
+
+	if isHorizontal then
+		local totalWidth = (activeFrameCount * width) + (activeFrameCount - 1) * gap
+
+		for i, frame in ipairs(activeFrames) do
+			local x = (i - 1) * width + (i - 1) * gap - totalWidth / 2
+			frame:Reposition("LEFT", self, "CENTER", x, 0)
+		end
+	else
+		local totalHeight = (activeFrameCount * height) + (activeFrameCount - 1) * gap
+
+		for i, frame in ipairs(activeFrames) do
+			local y = (i - 1) * height + (i - 1) * gap - totalHeight / 2
+			frame:Reposition("BOTTOM", self, "CENTER", 0, y)
+		end
+	end
+end
+
+function SelfEditModeParentFrame:LoopFrame(frame, index)
+	frame:SetSpellTexture()
+	frame:SetStartTime()
+	local castTime = 4 + index / 2
+	frame:SetCastTime(castTime)
+	frame:RefreshSpellCooldownInfo()
+	frame:RefreshSpellTexture()
+	frame:Show()
+	self:RepositionPreviewFrames()
+
+	table.insert(
+		self.demoTimers.timers,
+		C_Timer.NewTimer(castTime, function()
+			frame:ClearStartTime()
+			frame:Hide()
+			self:RepositionPreviewFrames()
+		end)
+	)
+end
+
+function SelfEditModeParentFrame:StartDemo()
+	if self.demoPlaying or not TargetedSpellsSaved.Settings.Self.Enabled then
+		return
+	end
+
+	self.demoPlaying = true
+	self.buildingFrames = true
+
+	for index = 1, self.maxFrameCount do
+		self.frames[index] = self.frames[index] or self:AcquireFrame()
+
+		local frame = self.frames[index]
+
+		if frame then
+			table.insert(
+				self.demoTimers.tickers,
+				C_Timer.NewTicker(5 + index, GenerateClosure(self.LoopFrame, self, frame, index))
+			)
+
+			self:LoopFrame(frame, index)
+		end
+	end
+
+	self.buildingFrames = nil
+
+	self:RepositionPreviewFrames()
+end
+
+function SelfEditModeParentFrame:EndDemo(forceDisable)
+	if forceDisable == nil then
+		forceDisable = false
+	end
+
+	if not self.demoPlaying and not forceDisable then
+		return
+	end
+
+	for _, ticker in pairs(self.demoTimers.tickers) do
+		ticker:Cancel()
+	end
+
+	for _, timer in pairs(self.demoTimers.timers) do
+		timer:Cancel()
+	end
+
+	table.wipe(self.demoTimers.tickers)
+	table.wipe(self.demoTimers.timers)
+
+	for index = 1, self.maxFrameCount do
+		local frame = self.frames[index]
+
+		if frame then
+			self:ReleaseFrame(frame)
+			self.frames[index] = nil
+		end
+	end
+
+	self.demoPlaying = false
+end
+
+table.insert(Private.LoginFnQueue, GenerateClosure(SelfEditModeParentFrame.OnLoad, SelfEditModeParentFrame))
+
+local function SetupSelfEditMode()
+	local function RepositionPreviewFrames() end
+
+	-- todo: layouting
 
 	-- LEM:RegisterCallback("layout", function(layoutName)
 	--     if not TagsTrivialTweaks_Settings.LEM then
@@ -588,8 +674,6 @@ local function SetupSelfEditMode()
 	--     app.ArtifactAbility.Texture:SetAtlas(app.ButtonSkin[TagsTrivialTweaks_Settings.LEM[layoutName].style] or "stormwhite-extrabutton", true)
 	-- end)
 end
-
--- table.insert(Private.LoginFnQueue, SetupSelfEditMode)
 
 ---@type TargetedSpellsPartyEditModeFrame
 local PartyEditModeParentFrame = CreateFrame("Frame", "Targeted Spells Party", UIParent)
@@ -607,9 +691,12 @@ hooksecurefunc(EditModeSystemSettingsDialog, "OnSettingValueChanged", function(s
 		if nextUseRaidStylePartyFrames ~= PartyEditModeParentFrame.useRaidStylePartyFrames then
 			PartyEditModeParentFrame.useRaidStylePartyFrames = nextUseRaidStylePartyFrames
 
-			PartyEditModeParentFrame:EndDemo()
-			PartyEditModeParentFrame:StartDemo()
 			PartyEditModeParentFrame:RepositionSelf()
+
+			if TargetedSpellsSaved.Settings.Party.Enabled then
+				PartyEditModeParentFrame:EndDemo()
+				PartyEditModeParentFrame:StartDemo()
+			end
 		end
 	end
 end)
@@ -653,7 +740,6 @@ function PartyEditModeParentFrame:OnLoad()
 	})
 end
 
----@return TargetedSpellsMixin
 function PartyEditModeParentFrame:AcquireFrame()
 	local frame = self.framePool:Acquire()
 
@@ -662,9 +748,9 @@ function PartyEditModeParentFrame:AcquireFrame()
 	return frame
 end
 
----@param frame TargetedSpellsMixin
 function PartyEditModeParentFrame:ReleaseFrame(frame)
 	frame:Reset()
+	self.framePool:Release(frame)
 end
 
 function PartyEditModeParentFrame:RepositionSelf()
@@ -677,8 +763,6 @@ function PartyEditModeParentFrame:RepositionSelf()
 	self:SetPoint("CENTER", parent, "TOP", 0, 16)
 end
 
----@param key string
----@param value string|number|table|boolean
 function PartyEditModeParentFrame:OnSettingsChanged(key, value)
 	if
 		key == Private.Settings.Keys.Party.Gap
@@ -783,18 +867,11 @@ function PartyEditModeParentFrame:RepositionPreviewFrames()
 	end
 end
 
----@param frame TargetedSpellsPartyEditModeFrame
----@param layoutName string
----@param point string
----@param x number
----@param y number
 function PartyEditModeParentFrame:OnEditModePositionChanged(frame, layoutName, point, x, y)
 	-- don't do anything here as the element will stay attached to the party frames when reopening edit mode
 	-- but still allow repositioning this frame while editing to temporarily move it out of the way
 end
 
----@param frame TargetedSpellsMixin
----@param index number
 function PartyEditModeParentFrame:LoopFrame(frame, index)
 	frame:SetSpellTexture()
 	frame:SetStartTime()
@@ -816,7 +893,7 @@ function PartyEditModeParentFrame:LoopFrame(frame, index)
 end
 
 function PartyEditModeParentFrame:StartDemo()
-	if self.demoPlaying then
+	if self.demoPlaying or not TargetedSpellsSaved.Settings.Party.Enabled then
 		return
 	end
 
@@ -824,19 +901,14 @@ function PartyEditModeParentFrame:StartDemo()
 	self.buildingFrames = true
 
 	for unit = 1, self.maxUnitCount do
-		if self.frames[unit] == nil then
-			self.frames[unit] = {}
-		end
+		self.frames[unit] = self.frames[unit] or {}
 
 		if unit == self.maxUnitCount and not self.useRaidStylePartyFrames then
 			break
 		end
 
 		for index = 1, self.amountOfPreviewFramesPerUnit do
-			if self.frames[unit][index] == nil then
-				self.frames[unit][index] = self:AcquireFrame()
-			end
-
+			self.frames[unit][index] = self.frames[unit][index] or self:AcquireFrame()
 			local frame = self.frames[unit][index]
 
 			if frame then
@@ -864,22 +936,16 @@ function PartyEditModeParentFrame:EndDemo(forceDisable)
 		return
 	end
 
-	local cleared = 0
 	for _, ticker in pairs(self.demoTimers.tickers) do
 		ticker:Cancel()
-		cleared = cleared + 1
 	end
 
-	cleared = 0
 	for _, timer in pairs(self.demoTimers.timers) do
 		timer:Cancel()
-		cleared = cleared + 1
 	end
 
 	table.wipe(self.demoTimers.tickers)
 	table.wipe(self.demoTimers.timers)
-
-	local releasedFrames = 0
 
 	for unit = 1, self.maxUnitCount do
 		for index = 1, self.amountOfPreviewFramesPerUnit do
@@ -887,7 +953,7 @@ function PartyEditModeParentFrame:EndDemo(forceDisable)
 
 			if frame then
 				self:ReleaseFrame(frame)
-				releasedFrames = releasedFrames + 1
+				self.frames[unit][index] = nil
 			end
 		end
 	end

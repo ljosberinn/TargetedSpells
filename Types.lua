@@ -103,22 +103,39 @@
 ---@field Acquire fun(self: FramePool): TargetedSpellsMixin
 ---@field Release fun(self: FramePool, frame: TargetedSpellsMixin)
 
+---@class TargetedSpellsSelfEditModeFrame : Frame
+---@field maxFrameCount number
+---@field demoPlaying boolean
+---@field frames TargetedSpellsMixin[]
+---@field buildingFrames true|nil
+---@field OnLoad fun(self: TargetedSpellsSelfEditModeFrame)
+---@field RepositionPreviewFrames fun(self: TargetedSpellsSelfEditModeFrame)
+---@field AcquireFrame fun(self: TargetedSpellsSelfEditModeFrame): TargetedSpellsMixin
+---@field ReleaseFrame fun(self: TargetedSpellsSelfEditModeFrame, frame: TargetedSpellsMixin)
+---@field StartDemo fun(self: TargetedSpellsSelfEditModeFrame)
+---@field EndDemo fun(self: TargetedSpellsSelfEditModeFrame, forceDisable: boolean?)
+---@field demoTimers { tickers: table<number, FunctionContainer>, timers: table<number, FunctionContainer> }
+---@field LoopFrame fun(self: TargetedSpellsSelfEditModeFrame, frame: TargetedSpellsMixin, index: number)
+---@field framePool FramePool
+---@field OnSettingsChanged fun(self: TargetedSpellsSelfEditModeFrame, key: string, value: number|string)
+---@field OnEditModePositionChanged fun(self: TargetedSpellsSelfEditModeFrame, frame: Frame, layoutName: string, point: string, x: number, y: number)
+---@field ResizeSelf fun(self: TargetedSpellsSelfEditModeFrame)
+
 ---@class TargetedSpellsPartyEditModeFrame : Frame
 ---@field demoPlaying boolean
 ---@field maxUnitCount number
 ---@field useRaidStylePartyFrames boolean
 ---@field amountOfPreviewFramesPerUnit number
+---@field framePool FramePool
 ---@field frames table<number, TargetedSpellsMixin[]>
----@field FrameRepositioningClosure fun()
+---@field buildingFrames true|nil
 ---@field OnLoad fun(self: TargetedSpellsPartyEditModeFrame)
 ---@field RepositionPreviewFrames fun(self: TargetedSpellsPartyEditModeFrame)
 ---@field RepositionSelf fun(self: TargetedSpellsPartyEditModeFrame)
 ---@field OnSettingsChanged fun(self: TargetedSpellsPartyEditModeFrame, key: string, value: number|string)
----@field framePool FramePool
 ---@field OnEditModePositionChanged fun(self: TargetedSpellsPartyEditModeFrame, frame: Frame, layoutName: string, point: string, x: number, y: number)
 ---@field AcquireFrame fun(self: TargetedSpellsPartyEditModeFrame): TargetedSpellsMixin
 ---@field ReleaseFrame fun(self: TargetedSpellsPartyEditModeFrame, frame: TargetedSpellsMixin)
----@field buildingFrames true|nil
 ---@field StartDemo fun(self: TargetedSpellsPartyEditModeFrame)
 ---@field EndDemo fun(self: TargetedSpellsPartyEditModeFrame, forceDisable: boolean?)
 ---@field demoTimers { tickers: table<number, FunctionContainer>, timers: table<number, FunctionContainer> }

@@ -148,52 +148,6 @@ function TargetedSpellsMixin:Reposition(point, relativeTo, relativePoint, offset
 	self:SetPoint(point, relativeTo, relativePoint, offsetX, offsetY)
 end
 
--- function TargetedSpellsMixin:StartPreviewLoop(RepositionPreviewFrames)
--- 	if self.unit == nil or self.unit ~= "preview" == nil or self.loopTicker ~= nil then
--- 		return
--- 	end
-
--- 	local function Loop()
--- 		self:SetSpellTexture()
--- 		self:SetStartTime()
--- 		-- RepositionPreviewFrames()
--- 		local castTime = math.random(4, 6) + math.random()
--- 		self:SetCastTime(castTime)
--- 		self:RefreshSpellCooldownInfo()
--- 		self:RefreshSpellTexture()
--- 		self:Show()
-
--- 		self.hideTimer = C_Timer.NewTimer(castTime, function()
--- 			self:ClearStartTime()
--- 			self.hideTimer = nil
--- 			self:Hide()
--- 			RepositionPreviewFrames()
--- 		end)
--- 	end
-
--- 	self.loopTicker = C_Timer.NewTicker(6.5 + math.random(1, 5), Loop)
--- 	Loop()
--- end
-
--- function TargetedSpellsMixin:StopPreviewLoop()
--- 	if self.loopTicker ~= nil and not self.loopTicker:IsCancelled() then
--- 		self.loopTicker:Cancel()
--- 		self.loopTicker = nil
--- 	end
-
--- 	if self.hideTimer ~= nil and not self.hideTimer:IsCancelled() then
--- 		self.hideTimer:Cancel()
--- 		self.hideTimer = nil
--- 	end
-
--- 	self.Cooldown:Clear()
-
--- 	-- print("TargetedSpellsMixin:StopPreviewLoop()", self.unit, self.kind, self.loopTicker, self.hideTimer)
-
--- 	self:ClearAllPoints()
--- 	self:Hide()
--- end
-
 function TargetedSpellsMixin:SetUnit(unit)
 	self.unit = unit
 end
