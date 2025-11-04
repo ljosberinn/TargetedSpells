@@ -103,40 +103,56 @@
 ---@field Acquire fun(self: FramePool): TargetedSpellsMixin
 ---@field Release fun(self: FramePool, frame: TargetedSpellsMixin)
 
----@class TargetedSpellsSelfEditModeFrame : Frame
----@field maxFrameCount number
----@field demoPlaying boolean
----@field frames TargetedSpellsMixin[]
----@field buildingFrames true|nil
----@field OnLoad fun(self: TargetedSpellsSelfEditModeFrame)
----@field RepositionPreviewFrames fun(self: TargetedSpellsSelfEditModeFrame)
----@field AcquireFrame fun(self: TargetedSpellsSelfEditModeFrame): TargetedSpellsMixin
----@field ReleaseFrame fun(self: TargetedSpellsSelfEditModeFrame, frame: TargetedSpellsMixin)
----@field StartDemo fun(self: TargetedSpellsSelfEditModeFrame)
----@field EndDemo fun(self: TargetedSpellsSelfEditModeFrame, forceDisable: boolean?)
----@field demoTimers { tickers: table<number, FunctionContainer>, timers: table<number, FunctionContainer> }
----@field LoopFrame fun(self: TargetedSpellsSelfEditModeFrame, frame: TargetedSpellsMixin, index: number)
----@field framePool FramePool
----@field OnSettingsChanged fun(self: TargetedSpellsSelfEditModeFrame, key: string, value: number|string)
----@field OnEditModePositionChanged fun(self: TargetedSpellsSelfEditModeFrame, frame: Frame, layoutName: string, point: string, x: number, y: number)
----@field ResizeSelf fun(self: TargetedSpellsSelfEditModeFrame)
+---@class LibEditModeSetting
+---@field name string
+---@field kind string
+---@field default number|string|boolean|table
 
----@class TargetedSpellsPartyEditModeFrame : Frame
+---@class LibEditModeCheckbox : LibEditModeSetting
+---@field get fun(layoutName: string): number|string|boolean|table
+---@field set fun(layoutName: string, value: number|string|boolean|table)
+
+---@class LibEditModeDropdown : LibEditModeSetting
+---@field generator fun(owner, rootDescription, data)
+---@field set fun(layoutName: string, value: number|string|boolean|table)
+
+---@class LibEditModeSlider : LibEditModeSetting
+---@field get fun(layoutName: string): number|string|boolean|table
+---@field set fun(layoutName: string, value: number|string|boolean|table)
+---@field minValue number
+---@field maxValue number
+---@field valueStep number
+
+---@class TargetedSpellsEditModeParentFrameMixin
+---@field Init fun(self: TargetedSpellsEditModeParentFrameMixin, displayName: string, frameKind: FrameKind)
+---@field editModeFrame Frame
 ---@field demoPlaying boolean
+---@field framePool FramePool
+---@field frames table<number, TargetedSpellsMixin[]> | TargetedSpellsMixin[]
+---@field demoTimers { tickers: table<number, FunctionContainer>, timers: table<number, FunctionContainer> }
+---@field StartDemo fun(self: TargetedSpellsEditModeParentFrameMixin)
+---@field EndDemo fun(self: TargetedSpellsEditModeParentFrameMixin, forceDisable: boolean?)
+---@field OnEditModePositionChanged fun(self: TargetedSpellsEditModeParentFrameMixin, frame: Frame, layoutName: string, point: string, x: number, y: number)
+---@field RepositionPreviewFrames fun(self: TargetedSpellsEditModeParentFrameMixin)
+---@field SortFrames fun(self: TargetedSpellsEditModeParentFrameMixin, frames: TargetedSpellsMixin[], sortOrder: SortOrder)
+---@field buildingFrames true|nil
+---@field CreateSetting fun(self: TargetedSpellsEditModeParentFrameMixin, key: string): LibEditModeCheckbox | LibEditModeDropdown | LibEditModeSlider
+---@field AcquireFrame fun(self: TargetedSpellsEditModeParentFrameMixin): TargetedSpellsMixin
+---@field LoopFrame fun(self: TargetedSpellsEditModeParentFrameMixin, frame: TargetedSpellsMixin, index: number)
+---@field ReleaseFrame fun(self: TargetedSpellsEditModeParentFrameMixin, frame: TargetedSpellsMixin)
+---@field OnSettingsChanged fun(self: TargetedSpellsEditModeParentFrameMixin, key: string, value: number|string)
+---@field ReleaseAllFrames fun(self: TargetedSpellsEditModeParentFrameMixin)
+
+---@class TargetedSpellsSelfEditModeFrame : TargetedSpellsEditModeParentFrameMixin
+---@field maxFrameCount number
+---@field frames TargetedSpellsMixin[]
+---@field ResizeEditModeFrame fun(self: TargetedSpellsSelfEditModeFrame)
+---@field StartDemo fun(self: TargetedSpellsSelfEditModeFrame)
+
+---@class TargetedSpellsPartyEditModeFrame : TargetedSpellsEditModeParentFrameMixin
 ---@field maxUnitCount number
 ---@field useRaidStylePartyFrames boolean
 ---@field amountOfPreviewFramesPerUnit number
----@field framePool FramePool
 ---@field frames table<number, TargetedSpellsMixin[]>
----@field buildingFrames true|nil
----@field OnLoad fun(self: TargetedSpellsPartyEditModeFrame)
----@field RepositionPreviewFrames fun(self: TargetedSpellsPartyEditModeFrame)
----@field RepositionSelf fun(self: TargetedSpellsPartyEditModeFrame)
----@field OnSettingsChanged fun(self: TargetedSpellsPartyEditModeFrame, key: string, value: number|string)
----@field OnEditModePositionChanged fun(self: TargetedSpellsPartyEditModeFrame, frame: Frame, layoutName: string, point: string, x: number, y: number)
----@field AcquireFrame fun(self: TargetedSpellsPartyEditModeFrame): TargetedSpellsMixin
----@field ReleaseFrame fun(self: TargetedSpellsPartyEditModeFrame, frame: TargetedSpellsMixin)
+---@field RepositionEditModeFrame fun(self: TargetedSpellsPartyEditModeFrame)
 ---@field StartDemo fun(self: TargetedSpellsPartyEditModeFrame)
----@field EndDemo fun(self: TargetedSpellsPartyEditModeFrame, forceDisable: boolean?)
----@field demoTimers { tickers: table<number, FunctionContainer>, timers: table<number, FunctionContainer> }
----@field LoopFrame fun(self: TargetedSpellsPartyEditModeFrame, frame: TargetedSpellsMixin, index: number)
