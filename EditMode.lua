@@ -715,9 +715,6 @@ function PartyEditModeMixin:Init(displayName, frameKind)
 	self:RepositionEditModeFrame()
 
 	-- todo: show something in self.editModeFrame as it otherwise has no preview
-
-	LEM:RegisterCallback("enter", GenerateClosure(self.StartDemo, self))
-	LEM:RegisterCallback("exit", GenerateClosure(self.EndDemo, self))
 end
 
 function PartyEditModeMixin:AppendSettings()
