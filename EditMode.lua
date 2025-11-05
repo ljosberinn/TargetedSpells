@@ -177,6 +177,7 @@ function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
 			-- technically is a reset only
 			set = function(layoutName, values)
 				local hasChanges = false
+
 				for id, bool in pairs(values) do
 					if tableRef[id] ~= bool then
 						tableRef[id] = bool
@@ -575,8 +576,8 @@ end
 ---@class TargetedSpellsSelfEditModeFrame
 local SelfEditModeMixin = CreateFromMixins(TargetedSpellsEditModeParentFrameMixin)
 
-function SelfEditModeMixin:Init(displayName, frameKind)
-	TargetedSpellsEditModeParentFrameMixin.Init(self, displayName, frameKind)
+function SelfEditModeMixin:Init()
+	TargetedSpellsEditModeParentFrameMixin.Init(self, "Targeted Spells Self", Private.Enum.FrameKind.Self)
 	self.maxFrameCount = 5
 
 	self.editModeFrame:SetPoint("CENTER", UIParent)
@@ -738,16 +739,13 @@ function SelfEditModeMixin:OnLayoutSettingChange(key, value)
 	end
 end
 
-table.insert(
-	Private.LoginFnQueue,
-	GenerateClosure(SelfEditModeMixin.Init, SelfEditModeMixin, "Targeted Spells Self", Private.Enum.FrameKind.Self)
-)
+table.insert(Private.LoginFnQueue, GenerateClosure(SelfEditModeMixin.Init, SelfEditModeMixin))
 
 ---@class TargetedSpellsPartyEditModeFrame
 local PartyEditModeMixin = CreateFromMixins(TargetedSpellsEditModeParentFrameMixin)
 
-function PartyEditModeMixin:Init(displayName, frameKind)
-	TargetedSpellsEditModeParentFrameMixin.Init(self, displayName, frameKind)
+function PartyEditModeMixin:Init()
+	TargetedSpellsEditModeParentFrameMixin.Init(self, "Targeted Spells Party", Private.Enum.FrameKind.Party)
 	self.maxUnitCount = 5
 	self.amountOfPreviewFramesPerUnit = 3
 	self.useRaidStylePartyFrames = self.useRaidStylePartyFrames or false
@@ -964,10 +962,7 @@ hooksecurefunc(EditModeSystemSettingsDialog, "OnSettingValueChanged", function(s
 	end
 end)
 
-table.insert(
-	Private.LoginFnQueue,
-	GenerateClosure(PartyEditModeMixin.Init, PartyEditModeMixin, "Targeted Spells Party", Private.Enum.FrameKind.Party)
-)
+table.insert(Private.LoginFnQueue, GenerateClosure(PartyEditModeMixin.Init, PartyEditModeMixin))
 
 local function SetupSelfEditMode()
 	local function RepositionPreviewFrames() end

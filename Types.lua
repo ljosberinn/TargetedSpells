@@ -145,12 +145,14 @@
 ---@field CalculateCoordinate fun(self: TargetedSpellsEditModeParentFrameMixin, index: number, dimension: number, gap: number, parentDimension: number, total: number, offset: number, grow: Grow): number
 
 ---@class TargetedSpellsSelfEditModeFrame : TargetedSpellsEditModeParentFrameMixin
+---@field Init fun(self: TargetedSpellsSelfEditModeFrame)
 ---@field maxFrameCount number
 ---@field frames TargetedSpellsMixin[]
 ---@field ResizeEditModeFrame fun(self: TargetedSpellsSelfEditModeFrame)
 ---@field StartDemo fun(self: TargetedSpellsSelfEditModeFrame)
 
 ---@class TargetedSpellsPartyEditModeFrame : TargetedSpellsEditModeParentFrameMixin
+---@field Init fun(self: TargetedSpellsPartyEditModeFrame)
 ---@field maxUnitCount number
 ---@field useRaidStylePartyFrames boolean
 ---@field amountOfPreviewFramesPerUnit number
