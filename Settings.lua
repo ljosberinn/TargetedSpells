@@ -179,124 +179,6 @@ table.insert(Private.LoginFnQueue, function()
 			generalCategoryEnabledInitializer = Settings.CreateCheckbox(category, setting, "Tooltip")
 		end
 
-		-- Preview
-		do
-			---@type TargetedSpellsSelfPreviewFrame?
-			local previewContainer = nil
-
-			local function RepositionPreviewFrames()
-				if previewContainer == nil then
-					return
-				end
-
-				---@type TargetedSpellsMixin[]
-				local activeFrames = {}
-
-				for i, frame in ipairs({ previewContainer:GetChildren() }) do
-					if frame:ShouldBeShown() then
-						table.insert(activeFrames, frame)
-					end
-				end
-
-				local width, height, gap, direction =
-					TargetedSpellsSaved.Settings.Self.Width,
-					TargetedSpellsSaved.Settings.Self.Height,
-					TargetedSpellsSaved.Settings.Self.Gap,
-					TargetedSpellsSaved.Settings.Self.Direction
-
-				local isHorizontal = direction == Private.Enum.Direction.Horizontal
-
-				table.sort(
-					activeFrames,
-					---@param a TargetedSpellsMixin
-					---@param b TargetedSpellsMixin
-					function(a, b)
-						if a:GetStartTime() and b:GetStartTime() then
-							if isHorizontal then
-								return a:GetStartTime() < b:GetStartTime()
-							end
-
-							return a:GetStartTime() > b:GetStartTime()
-						end
-
-						return false
-					end
-				)
-
-				local activeFrameCount = #activeFrames
-
-				if isHorizontal then
-					local totalWidth = (activeFrameCount * width) + (activeFrameCount - 1) * gap
-
-					for i, frame in ipairs(activeFrames) do
-						local x = (i - 1) * width + (i - 1) * gap - totalWidth / 2
-						frame:Reposition("LEFT", previewContainer, "CENTER", x, 0)
-					end
-				else
-					local totalHeight = (activeFrameCount * height) + (activeFrameCount - 1) * gap
-
-					for i, frame in ipairs(activeFrames) do
-						local y = (i - 1) * height + (i - 1) * gap - totalHeight / 2
-						frame:Reposition("BOTTOM", previewContainer, "CENTER", 0, y)
-					end
-				end
-			end
-
-			local playing = false
-
-			local function ToggleDemo()
-				if previewContainer == nil then
-					return
-				end
-
-				for i, frame in pairs({ previewContainer:GetChildren() }) do
-					if playing then
-						frame:StopPreviewLoop()
-					else
-						frame:StartPreviewLoop(RepositionPreviewFrames)
-					end
-				end
-
-				playing = not playing
-			end
-
-			EventRegistry:RegisterCallback("Settings.CategoryChanged", function(ownerId, categoryData)
-				if categoryData == category then
-					if not playing then
-						if previewContainer == nil then
-							previewContainer = TargetedSpellsSelfPreviewSettings1:GetParent()
-
-							Private.EventRegistry:RegisterCallback(
-								Private.Events.SETTING_CHANGED,
-								function(self, key, value)
-									if
-										key == Private.Settings.Keys.Self.Gap
-										or key == Private.Settings.Keys.Self.Direction
-										or key == Private.Settings.Keys.Self.OffsetX
-										or key == Private.Settings.Keys.Self.OffsetY
-										or key == Private.Settings.Keys.Self.Width
-										or key == Private.Settings.Keys.Self.Height
-									then
-										RepositionPreviewFrames()
-									elseif key == Private.Settings.Keys.Self.Enabled then
-									end
-								end,
-								previewContainer
-							)
-						end
-
-						ToggleDemo()
-					end
-				elseif playing then
-					ToggleDemo()
-				end
-			end)
-
-			local data = {}
-			local initializer = Settings.CreatePanelInitializer("TargetedSpellsSelfPreviewTemplate", data)
-			layout:AddInitializer(initializer)
-		end
-
 		-- Load Condition Content Type
 		if Private.IsMidnight then
 			do
@@ -563,8 +445,8 @@ table.insert(Private.LoginFnQueue, function()
 			local function GetOptions()
 				local container = Settings.CreateControlTextContainer()
 
-				for k in pairs(Private.Enum.Direction) do
-					container:Add(k, k)
+				for k, v in pairs(Private.Enum.Direction) do
+					container:Add(v, k)
 				end
 
 				return container:GetData()
@@ -616,13 +498,6 @@ table.insert(Private.LoginFnQueue, function()
 				SetValue
 			)
 			generalCategoryEnabledInitializer = Settings.CreateCheckbox(category, setting, "Tooltip")
-		end
-
-		-- Preview
-		do
-			-- local data = {}
-			-- local initializer = Settings.CreatePanelInitializer("TargetedSpellsPartyPreviewTemplate", data)
-			-- layout:AddInitializer(initializer)
 		end
 
 		-- Load Condition: Content Type
@@ -753,7 +628,7 @@ table.insert(Private.LoginFnQueue, function()
 		do
 			local key = Private.Settings.Keys.Party.Width
 			local defaultValue = Private.Settings.GetPartyDefaultSettings().Width
-			local minValue, maxValue, step = 16, 60, 2
+			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
 
 			local function GetValue()
 				return TargetedSpellsSaved.Settings.Party.Width
@@ -778,7 +653,7 @@ table.insert(Private.LoginFnQueue, function()
 				GetValue,
 				SetValue
 			)
-			local options = Settings.CreateSliderOptions(minValue, maxValue, step)
+			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
 			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
 
 			local initializer = Settings.CreateSlider(category, setting, options, "Tooltip")
@@ -789,7 +664,7 @@ table.insert(Private.LoginFnQueue, function()
 		do
 			local key = Private.Settings.Keys.Party.Height
 			local defaultValue = Private.Settings.GetPartyDefaultSettings().Height
-			local minValue, maxValue, step = 16, 60, 2
+			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
 
 			local function GetValue()
 				return TargetedSpellsSaved.Settings.Party.Height
@@ -814,7 +689,7 @@ table.insert(Private.LoginFnQueue, function()
 				GetValue,
 				SetValue
 			)
-			local options = Settings.CreateSliderOptions(minValue, maxValue, step)
+			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
 			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
 
 			local initializer = Settings.CreateSlider(category, setting, options, "Tooltip")
@@ -825,7 +700,7 @@ table.insert(Private.LoginFnQueue, function()
 		do
 			local key = Private.Settings.Keys.Party.Gap
 			local defaultValue = Private.Settings.GetPartyDefaultSettings().Gap
-			local minValue, maxValue, step = 0, 20, 2
+			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
 
 			local function GetValue()
 				return TargetedSpellsSaved.Settings.Party.Gap
@@ -850,7 +725,7 @@ table.insert(Private.LoginFnQueue, function()
 				GetValue,
 				SetValue
 			)
-			local options = Settings.CreateSliderOptions(minValue, maxValue, step)
+			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
 			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
 
 			local initializer = Settings.CreateSlider(category, setting, options, "Tooltip")
@@ -879,8 +754,8 @@ table.insert(Private.LoginFnQueue, function()
 			local function GetOptions()
 				local container = Settings.CreateControlTextContainer()
 
-				for k in pairs(Private.Enum.Direction) do
-					container:Add(k, k)
+				for k, v in pairs(Private.Enum.Direction) do
+					container:Add(v, k)
 				end
 
 				return container:GetData()
@@ -891,6 +766,246 @@ table.insert(Private.LoginFnQueue, function()
 				key,
 				Settings.VarType.String,
 				"Direction",
+				defaultValue,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, "Tooltip")
+			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+		end
+
+		-- Frame OffsetX
+		do
+			local key = Private.Settings.Keys.Party.OffsetX
+			local defaultValue = Private.Settings.GetPartyDefaultSettings().OffsetX
+			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Party.OffsetX
+			end
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Party.OffsetX = value
+
+				Private.EventRegistry:TriggerEvent(
+					Private.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Party.OffsetX
+				)
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				"Offset X",
+				defaultValue,
+				GetValue,
+				SetValue
+			)
+			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
+			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
+
+			local initializer = Settings.CreateSlider(category, setting, options, "Tooltip")
+			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+		end
+
+		-- Frame OffsetY
+		do
+			local key = Private.Settings.Keys.Party.OffsetY
+			local defaultValue = Private.Settings.GetPartyDefaultSettings().OffsetY
+			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Party.OffsetY
+			end
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Party.OffsetY = value
+
+				Private.EventRegistry:TriggerEvent(
+					Private.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Party.OffsetY
+				)
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				"Offset Y",
+				defaultValue,
+				GetValue,
+				SetValue
+			)
+			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
+			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
+
+			local initializer = Settings.CreateSlider(category, setting, options, "Tooltip")
+			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+		end
+
+		-- Frame Source Anchor
+		do
+			local key = Private.Settings.Keys.Party.SourceAnchor
+			local defaultValue = Private.Settings.GetPartyDefaultSettings().SourceAnchor
+
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Party.SourceAnchor
+			end
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Party.SourceAnchor = value
+
+				Private.EventRegistry:TriggerEvent(
+					Private.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Party.SourceAnchor
+				)
+			end
+
+			local function GetOptions()
+				local container = Settings.CreateControlTextContainer()
+
+				for k, v in pairs(Private.Enum.Anchor) do
+					container:Add(v, k)
+				end
+
+				return container:GetData()
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.String,
+				"Source Anchor",
+				defaultValue,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, "Tooltip")
+			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+		end
+
+		-- Frame Target Anchor
+		do
+			local key = Private.Settings.Keys.Party.TargetAnchor
+			local defaultValue = Private.Settings.GetPartyDefaultSettings().TargetAnchor
+
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Party.TargetAnchor
+			end
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Party.TargetAnchor = value
+
+				Private.EventRegistry:TriggerEvent(
+					Private.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Party.TargetAnchor
+				)
+			end
+
+			local function GetOptions()
+				local container = Settings.CreateControlTextContainer()
+
+				for k, v in pairs(Private.Enum.Anchor) do
+					container:Add(v, k)
+				end
+
+				return container:GetData()
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.String,
+				"Target Anchor",
+				defaultValue,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, "Tooltip")
+			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+		end
+
+		-- Frame Grow
+		do
+			local key = Private.Settings.Keys.Party.Grow
+			local defaultValue = Private.Settings.GetPartyDefaultSettings().Grow
+
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Party.Grow
+			end
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Party.Grow = value
+
+				Private.EventRegistry:TriggerEvent(
+					Private.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Party.Grow
+				)
+			end
+
+			local function GetOptions()
+				local container = Settings.CreateControlTextContainer()
+
+				for k, v in pairs(Private.Enum.Grow) do
+					container:Add(v, k)
+				end
+
+				return container:GetData()
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.String,
+				"Grow",
+				defaultValue,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, "Tooltip")
+			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+		end
+
+		-- Frame Sort Order
+		do
+			local key = Private.Settings.Keys.Party.SortOrder
+			local defaultValue = Private.Settings.GetPartyDefaultSettings().SortOrder
+
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Party.SortOrder
+			end
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Party.SortOrder = value
+
+				Private.EventRegistry:TriggerEvent(
+					Private.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Party.SortOrder
+				)
+			end
+
+			local function GetOptions()
+				local container = Settings.CreateControlTextContainer()
+
+				for k, v in pairs(Private.Enum.SortOrder) do
+					container:Add(v, k)
+				end
+
+				return container:GetData()
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.String,
+				"Sort Order",
 				defaultValue,
 				GetValue,
 				SetValue

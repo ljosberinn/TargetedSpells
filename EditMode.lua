@@ -159,7 +159,6 @@ function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
 	if key == Private.Settings.Keys.Self.Width or key == Private.Settings.Keys.Party.Width then
 		local isSelf = key == Private.Settings.Keys.Self.Width
 		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
-
 		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
 
 		---@type LibEditModeSlider
@@ -184,7 +183,6 @@ function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
 	if key == Private.Settings.Keys.Self.Height or key == Private.Settings.Keys.Party.Height then
 		local isSelf = key == Private.Settings.Keys.Self.Height
 		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
-
 		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
 
 		---@type LibEditModeSlider
@@ -209,7 +207,6 @@ function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
 	if key == Private.Settings.Keys.Self.Gap or key == Private.Settings.Keys.Party.Gap then
 		local isSelf = key == Private.Settings.Keys.Self.Gap
 		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
-
 		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
 
 		---@type LibEditModeSlider

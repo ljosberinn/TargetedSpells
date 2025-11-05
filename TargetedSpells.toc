@@ -17,7 +17,5 @@ Frame.lua
 TargetedSpellsMixin.lua
 
 Templates\TargetedSpellsFrameTemplate.xml
-Templates\PartyPreviewTemplate.xml
-Templates\SelfPreviewTemplate.xml
 
 EditMode.lua
