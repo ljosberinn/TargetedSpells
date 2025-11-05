@@ -142,6 +142,7 @@
 ---@field ReleaseFrame fun(self: TargetedSpellsEditModeParentFrameMixin, frame: TargetedSpellsMixin)
 ---@field OnSettingsChanged fun(self: TargetedSpellsEditModeParentFrameMixin, key: string, value: number|string)
 ---@field ReleaseAllFrames fun(self: TargetedSpellsEditModeParentFrameMixin)
+---@field CalculateCoordinate fun(self: TargetedSpellsEditModeParentFrameMixin, index: number, dimension: number, gap: number, parentDimension: number, total: number, offset: number, grow: Grow): number
 
 ---@class TargetedSpellsSelfEditModeFrame : TargetedSpellsEditModeParentFrameMixin
 ---@field maxFrameCount number

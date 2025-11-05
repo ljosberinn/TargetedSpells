@@ -524,6 +524,26 @@ function TargetedSpellsEditModeParentFrameMixin:EndDemo(forceDisable)
 	self.demoPlaying = false
 end
 
+function TargetedSpellsEditModeParentFrameMixin:CalculateCoordinate(
+	index,
+	dimension,
+	gap,
+	parentDimension,
+	total,
+	offset,
+	grow
+)
+	if grow == Private.Enum.Grow.Start then
+		return (index - 1) * (dimension + gap) - parentDimension / 2 + offset
+	elseif grow == Private.Enum.Grow.Center then
+		return (index - 1) * (dimension + gap) - total / 2 + offset
+	elseif grow == Private.Enum.Grow.End then
+		return parentDimension / 2 - index * (dimension + gap) + offset
+	end
+
+	return 0
+end
+
 ---@class TargetedSpellsSelfEditModeFrame
 local SelfEditModeMixin = CreateFromMixins(TargetedSpellsEditModeParentFrameMixin)
 
@@ -625,40 +645,18 @@ function SelfEditModeMixin:RepositionPreviewFrames()
 
 	local isHorizontal = direction == Private.Enum.Direction.Horizontal
 
-	if isHorizontal then
-		local totalWidth = (activeFrameCount * width) + (activeFrameCount - 1) * gap
-		local parentFrameWidth = self.editModeFrame:GetWidth()
+	local point = isHorizontal and "LEFT" or "BOTTOM"
+	local total = (activeFrameCount * (isHorizontal and width or height)) + (activeFrameCount - 1) * gap
+	local parentDimension = isHorizontal and self.editModeFrame:GetWidth() or self.editModeFrame:GetHeight()
 
-		for i, frame in ipairs(activeFrames) do
-			local x = 0
-
-			if grow == Private.Enum.Grow.Start then
-				x = (i - 1) * (width + gap) - parentFrameWidth / 2
-			elseif grow == Private.Enum.Grow.Center then
-				x = (i - 1) * (width + gap) - totalWidth / 2
-			elseif grow == Private.Enum.Grow.End then
-				x = parentFrameWidth / 2 - i * (width + gap)
-			end
-
-			frame:Reposition("LEFT", self.editModeFrame, "CENTER", x, 0)
-		end
-	else
-		local totalHeight = (activeFrameCount * height) + (activeFrameCount - 1) * gap
-		local parentFrameHeight = self.editModeFrame:GetHeight()
-
-		for i, frame in ipairs(activeFrames) do
-			local y = 0
-
-			if grow == Private.Enum.Grow.Start then
-				y = (i - 1) * (width + gap) - parentFrameHeight / 2
-			elseif grow == Private.Enum.Grow.Center then
-				y = (i - 1) * (height + gap) - totalHeight / 2
-			elseif grow == Private.Enum.Grow.End then
-				y = parentFrameHeight / 2 - i * (width + gap)
-			end
-
-			frame:Reposition("BOTTOM", self.editModeFrame, "CENTER", 0, y)
-		end
+	for i, frame in ipairs(activeFrames) do
+		frame:Reposition(
+			point,
+			self.editModeFrame,
+			"CENTER",
+			isHorizontal and self:CalculateCoordinate(i, width, gap, parentDimension, total, 0, grow) or 0,
+			isHorizontal and 0 or self:CalculateCoordinate(i, width, gap, parentDimension, total, 0, grow)
+		)
 	end
 end
 
@@ -818,6 +816,8 @@ function PartyEditModeMixin:RepositionPreviewFrames()
 		TargetedSpellsSaved.Settings.Party.TargetAnchor,
 		TargetedSpellsSaved.Settings.Party.Grow
 
+	local isHorizontal = direction == Private.Enum.Direction.Horizontal
+
 	for i = 1, self.maxUnitCount do
 		if i == self.maxUnitCount and not self.useRaidStylePartyFrames then
 			break
@@ -857,20 +857,19 @@ function PartyEditModeMixin:RepositionPreviewFrames()
 				error("couldn't establish a parent frame")
 			end
 
-			if direction == Private.Enum.Direction.Horizontal then
-				local totalWidth = (activeFrameCount * width) + (activeFrameCount - 1) * gap
+			local total = (activeFrameCount * (isHorizontal and width or height)) + (activeFrameCount - 1) * gap
+			local parentDimension = isHorizontal and parentFrame:GetWidth() or parentFrame:GetHeight()
 
-				for j, frame in ipairs(activeFrames) do
-					local x = (j - 1) * width + (j - 1) * gap - totalWidth / 2 + offsetX
-					frame:Reposition(sourceAnchor, parentFrame, targetAnchor, x, offsetY)
-				end
-			else
-				local totalHeight = (activeFrameCount * height) + (activeFrameCount - 1) * gap
-
-				for j, frame in ipairs(activeFrames) do
-					local y = (j - 1) * height + (j - 1) * gap - totalHeight / 2 + offsetY
-					frame:Reposition(sourceAnchor, parentFrame, targetAnchor, offsetX, y)
-				end
+			for j, frame in ipairs(activeFrames) do
+				frame:Reposition(
+					sourceAnchor,
+					parentFrame,
+					targetAnchor,
+					isHorizontal and self:CalculateCoordinate(j, width, gap, parentDimension, total, offsetX, grow)
+						or offsetX,
+					isHorizontal and offsetY
+						or self:CalculateCoordinate(j, width, gap, parentDimension, total, offsetX, grow)
+				)
 			end
 		end
 	end
@@ -927,6 +926,7 @@ end
 -- when this executes, layouts aren't loaded yet
 hooksecurefunc(EditModeManagerFrame, "UpdateLayoutInfo", function(self)
 	PartyEditModeMixin.useRaidStylePartyFrames = EditModeManagerFrame:UseRaidStylePartyFrames()
+	PartyEditModeMixin:RepositionEditModeFrame()
 end)
 
 -- dirtying settings while edit mode is opened doesn't fire any events
