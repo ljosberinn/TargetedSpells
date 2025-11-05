@@ -13,9 +13,7 @@ Enum.lua
 Init.lua
 Settings.lua
 Frame.lua
-
 TargetedSpellsMixin.lua
+EditMode.lua
 
 Templates\TargetedSpellsFrameTemplate.xml
-
-EditMode.lua

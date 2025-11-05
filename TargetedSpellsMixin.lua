@@ -4,13 +4,20 @@ local addonName, Private = ...
 local PreviewIconDataProvider = nil
 
 ---@return IconDataProviderMixin
-local function GetPreviewIconDataProvider()
+local function GetRandomIcon()
 	if PreviewIconDataProvider == nil then
 		PreviewIconDataProvider =
 			CreateAndInitFromMixin(IconDataProviderMixin, IconDataProviderExtraType.Spellbook, true)
 	end
 
-	return PreviewIconDataProvider
+	if Private.IsMidnight then
+		return PreviewIconDataProvider:GetRandomIcon()
+	end
+
+	-- backport of GetRandomIcon() frmo 12.0
+	local numIcons = PreviewIconDataProvider:GetNumIcons()
+	local avoidQuestionMarkIndex = 2
+	return PreviewIconDataProvider:GetIconByIndex(math.random(avoidQuestionMarkIndex, numIcons))
 end
 
 ---@class TargetedSpellsMixin
@@ -122,7 +129,7 @@ function TargetedSpellsMixin:GetCastTime()
 end
 
 function TargetedSpellsMixin:SetSpellTexture(texture)
-	texture = texture or GetPreviewIconDataProvider():GetRandomIcon()
+	texture = texture or GetRandomIcon()
 	self.texture = texture
 end
 
@@ -176,5 +183,4 @@ function TargetedSpellsMixin:Reset()
 	self.Cooldown:Clear()
 	self:ClearAllPoints()
 	self:Hide()
-	Private.EventRegistry:UnregisterCallback(Private.Events.SETTING_CHANGED, self)
 end
