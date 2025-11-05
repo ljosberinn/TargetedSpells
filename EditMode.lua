@@ -52,10 +52,15 @@ function TargetedSpellsEditModeParentFrameMixin:OnSettingsChanged(key, value)
 			return
 		end
 
-		if value then
-			self:StartDemo()
-		else
-			self:EndDemo()
+		if
+			(key == Private.Settings.Keys.Self.Enabled and self.frameKind == Private.Enum.FrameKind.Self)
+			or (key == Private.Settings.Keys.Party.Enabled and self.frameKind == Private.Enum.FrameKind.Party)
+		then
+			if value then
+				self:StartDemo()
+			else
+				self:EndDemo()
+			end
 		end
 	end
 end
