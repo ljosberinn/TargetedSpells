@@ -25,6 +25,41 @@ function TargetedSpellsEditModeParentFrameMixin:Init(displayName, frameKind)
 	self:AppendSettings()
 end
 
+function TargetedSpellsEditModeParentFrameMixin:OnSettingsChanged(key, value)
+	if
+		-- self
+		key == Private.Settings.Keys.Self.Gap
+		or key == Private.Settings.Keys.Self.Direction
+		or key == Private.Settings.Keys.Self.Width
+		or key == Private.Settings.Keys.Self.Height
+		or key == Private.Settings.Keys.Self.SortOrder
+		or key == Private.Settings.Keys.Self.Grow
+		-- party
+		or key == Private.Settings.Keys.Party.Gap
+		or key == Private.Settings.Keys.Party.Direction
+		or key == Private.Settings.Keys.Party.Width
+		or key == Private.Settings.Keys.Party.Height
+		or key == Private.Settings.Keys.Party.OffsetX
+		or key == Private.Settings.Keys.Party.OffsetY
+		or key == Private.Settings.Keys.Party.SourceAnchor
+		or key == Private.Settings.Keys.Party.TargetAnchor
+		or key == Private.Settings.Keys.Party.SortOrder
+		or key == Private.Settings.Keys.Party.Grow
+	then
+		self:OnLayoutSettingChange(key, value)
+	elseif key == Private.Settings.Keys.Self.Enabled or key == Private.Settings.Keys.Party.Enabled then
+		if not LEM:IsInEditMode() then
+			return
+		end
+
+		if value then
+			self:StartDemo()
+		else
+			self:EndDemo()
+		end
+	end
+end
+
 function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
 	if key == Private.Settings.Keys.Self.Enabled or key == Private.Settings.Keys.Party.Enabled then
 		local isSelf = key == Private.Settings.Keys.Self.Enabled
@@ -426,6 +461,10 @@ function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
 	)
 end
 
+function TargetedSpellsEditModeParentFrameMixin:OnLayoutSettingChange(key, value)
+	-- Implement in your derived mixin.
+end
+
 function TargetedSpellsEditModeParentFrameMixin:SortFrames(frames, sortOrder)
 	local isAscending = sortOrder == Private.Enum.SortOrder.Ascending
 
@@ -439,10 +478,6 @@ function TargetedSpellsEditModeParentFrameMixin:SortFrames(frames, sortOrder)
 end
 
 function TargetedSpellsEditModeParentFrameMixin:AppendSettings()
-	-- Implement in your derived mixin.
-end
-
-function TargetedSpellsEditModeParentFrameMixin:OnSettingsChanged(key, value)
 	-- Implement in your derived mixin.
 end
 
@@ -496,12 +531,8 @@ function TargetedSpellsEditModeParentFrameMixin:ReleaseAllFrames()
 	-- Implement in your derived mixin.
 end
 
-function TargetedSpellsEditModeParentFrameMixin:EndDemo(forceDisable)
-	if forceDisable == nil then
-		forceDisable = false
-	end
-
-	if not self.demoPlaying and not forceDisable then
+function TargetedSpellsEditModeParentFrameMixin:EndDemo()
+	if not self.demoPlaying then
 		return
 	end
 
@@ -685,7 +716,7 @@ function SelfEditModeMixin:StartDemo()
 	self:RepositionPreviewFrames()
 end
 
-function SelfEditModeMixin:OnSettingsChanged(key, value)
+function SelfEditModeMixin:OnLayoutSettingChange(key, value)
 	if
 		key == Private.Settings.Keys.Self.Gap
 		or key == Private.Settings.Keys.Self.Direction
@@ -704,13 +735,6 @@ function SelfEditModeMixin:OnSettingsChanged(key, value)
 		end
 
 		self:RepositionPreviewFrames()
-	elseif key == Private.Settings.Keys.Self.Enabled then
-		if value then
-			self:StartDemo()
-		else
-			local forceDisable = not TargetedSpellsSaved.Settings.Self.Enabled and self.demoPlaying
-			self:EndDemo(forceDisable)
-		end
 	end
 end
 
@@ -767,7 +791,7 @@ function PartyEditModeMixin:RepositionEditModeFrame()
 	self.editModeFrame:SetPoint("CENTER", parent, "TOP", 0, 16)
 end
 
-function PartyEditModeMixin:OnSettingsChanged(key, value)
+function PartyEditModeMixin:OnLayoutSettingChange(key, value)
 	if
 		key == Private.Settings.Keys.Party.Gap
 		or key == Private.Settings.Keys.Party.Direction
@@ -781,13 +805,6 @@ function PartyEditModeMixin:OnSettingsChanged(key, value)
 		or key == Private.Settings.Keys.Party.Grow
 	then
 		self:RepositionPreviewFrames()
-	elseif key == Private.Settings.Keys.Party.Enabled then
-		if value then
-			self:StartDemo()
-		else
-			local forceDisable = not TargetedSpellsSaved.Settings.Party.Enabled and self.demoPlaying
-			self:EndDemo(forceDisable)
-		end
 	end
 end
 
