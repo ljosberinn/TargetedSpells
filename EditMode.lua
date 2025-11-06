@@ -17,7 +17,7 @@ function TargetedSpellsEditModeParentFrameMixin:Init(displayName, frameKind)
 	self.editModeFrame = CreateFrame("Frame", displayName, UIParent)
 	self.editModeFrame:SetClampedToScreen(true)
 
-	Private.EventRegistry:RegisterCallback(Private.Events.SETTING_CHANGED, self.OnSettingsChanged, self)
+	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingsChanged, self)
 
 	LEM:RegisterCallback("enter", GenerateClosure(self.StartDemo, self))
 	LEM:RegisterCallback("exit", GenerateClosure(self.EndDemo, self))
@@ -92,7 +92,7 @@ function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
 				end
 
 				if hasChanges then
-					Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, value)
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 				end
 			end,
 		}
@@ -121,7 +121,7 @@ function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
 					local function Toggle()
 						tableRef[id] = not tableRef[id]
 
-						Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, tableRef)
+						Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef)
 					end
 
 					rootDescription:CreateCheckbox(label, IsEnabled, Toggle, {
@@ -145,7 +145,7 @@ function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
 					end
 
 					if hasChanges then
-						Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, tableRef)
+						Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef)
 					end
 				end,
 		}
@@ -170,7 +170,7 @@ function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
 					local function Toggle()
 						tableRef[id] = not tableRef[id]
 
-						Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, tableRef)
+						Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef)
 					end
 
 					rootDescription:CreateCheckbox(label, IsEnabled, Toggle, {
@@ -191,7 +191,7 @@ function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
 				end
 
 				if hasChanges then
-					Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, tableRef)
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef)
 				end
 			end,
 		}
@@ -213,7 +213,7 @@ function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
 			end,
 			set = function(layoutName, value)
 				tableRef.Width = value
-				Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, value)
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 			end,
 			minValue = sliderSettings.min,
 			maxValue = sliderSettings.max,
@@ -237,7 +237,7 @@ function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
 			end,
 			set = function(layoutName, value)
 				tableRef.Height = value
-				Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, value)
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 			end,
 			minValue = sliderSettings.min,
 			maxValue = sliderSettings.max,
@@ -261,7 +261,7 @@ function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
 			end,
 			set = function(layoutName, value)
 				tableRef.Gap = value
-				Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, value)
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 			end,
 			minValue = sliderSettings.min,
 			maxValue = sliderSettings.max,
@@ -278,7 +278,7 @@ function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
 		local function Set(layoutName, value)
 			if tableRef.Direction ~= value then
 				tableRef.Direction = value
-				Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, value)
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 			end
 		end
 
@@ -336,7 +336,7 @@ function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
 						TargetedSpellsSaved.Settings.Party.OffsetY = value
 					end
 
-					Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, value)
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 				end,
 			minValue = sliderSettings.min,
 			maxValue = sliderSettings.max,
@@ -353,7 +353,7 @@ function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
 		local function Set(layoutName, value)
 			if TargetedSpellsSaved.Settings.Party[tableKey] ~= value then
 				TargetedSpellsSaved.Settings.Party[tableKey] = value
-				Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, value)
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 			end
 		end
 
@@ -392,7 +392,7 @@ function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
 		local function Set(layoutName, value)
 			if tableRef.SortOrder ~= value then
 				tableRef.SortOrder = value
-				Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, value)
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 			end
 		end
 
@@ -430,7 +430,7 @@ function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
 		local function Set(layoutName, value)
 			if tableRef.Grow ~= value then
 				tableRef.Grow = value
-				Private.EventRegistry:TriggerEvent(Private.Events.SETTING_CHANGED, key, value)
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 			end
 		end
 

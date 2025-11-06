@@ -77,10 +77,10 @@
 ---@field ClearStartTime fun(self: TargetedSpellsMixin)
 ---@field GetStartTime fun(self: TargetedSpellsMixin): number
 ---@field SetStartTime fun(self: TargetedSpellsMixin)
----@field castTime number?
+---@field castTime number? -- secret
 ---@field GetCastTime fun(self: TargetedSpellsMixin): number
 ---@field SetCastTime fun(self: TargetedSpellsMixin, castTime: number)
----@field texture number?
+---@field texture number? -- secret
 ---@field SetSpellTexture fun(self: TargetedSpellsMixin, texture: number?)
 ---@field GetSpellTexture fun(self: TargetedSpellsMixin)
 ---@field RefreshSpellTexture fun(self: TargetedSpellsMixin)
@@ -159,3 +159,15 @@
 ---@field frames table<number, TargetedSpellsMixin[]>
 ---@field RepositionEditModeFrame fun(self: TargetedSpellsPartyEditModeFrame)
 ---@field StartDemo fun(self: TargetedSpellsPartyEditModeFrame)
+
+---@class CastMetaInformation
+---@field castTime number -- secret
+---@field startTime number
+
+---@class TargetedSpellsDriver
+---@field framePool FramePool
+---@field listenerFrame Frame
+---@field unitToCastMetaInformation table<string, CastMetaInformation>
+---@field OnSettingsChanged fun(self: TargetedSpellsDriver, key: string, value: number|string)
+---@field OnFrameEvent fun(self: TargetedSpellsDriver, listenerFrame: Frame, event: WowEvent, ...)
+---@field SetupListenerFrame fun(self: TargetedSpellsDriver)

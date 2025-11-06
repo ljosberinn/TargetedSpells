@@ -26,7 +26,7 @@ TargetedSpellsMixin = {}
 function TargetedSpellsMixin:OnLoad()
 	print("TargetedSpellsMixin:OnLoad()", self.kind, self.unit)
 
-	Private.EventRegistry:RegisterCallback(Private.Events.SETTING_CHANGED, self.OnSettingChanged, self)
+	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingChanged, self)
 
 	-- initially set via SelfPreviewTemplate through Settings, but not in any other case
 	if self.kind ~= nil then

@@ -161,7 +161,7 @@ table.insert(Private.LoginFnQueue, function()
 			local function SetValue(value)
 				TargetedSpellsSaved.Settings.Self.Enabled = not TargetedSpellsSaved.Settings.Self.Enabled
 				Private.EventRegistry:TriggerEvent(
-					Private.Events.SETTING_CHANGED,
+					Private.Enum.Events.SETTING_CHANGED,
 					key,
 					TargetedSpellsSaved.Settings.Self.Enabled
 				)
@@ -197,7 +197,7 @@ table.insert(Private.LoginFnQueue, function()
 
 					if hasChanges then
 						Private.EventRegistry:TriggerEvent(
-							Private.Events.SETTING_CHANGED,
+							Private.Enum.Events.SETTING_CHANGED,
 							key,
 							TargetedSpellsSaved.Settings.Self.LoadConditionContentType
 						)
@@ -265,7 +265,7 @@ table.insert(Private.LoginFnQueue, function()
 
 					if hasChanges then
 						Private.EventRegistry:TriggerEvent(
-							Private.Events.SETTING_CHANGED,
+							Private.Enum.Events.SETTING_CHANGED,
 							key,
 							TargetedSpellsSaved.Settings.Self.LoadConditionRole
 						)
@@ -329,7 +329,7 @@ table.insert(Private.LoginFnQueue, function()
 				TargetedSpellsSaved.Settings.Self.Width = value
 
 				Private.EventRegistry:TriggerEvent(
-					Private.Events.SETTING_CHANGED,
+					Private.Enum.Events.SETTING_CHANGED,
 					key,
 					TargetedSpellsSaved.Settings.Self.Width
 				)
@@ -365,7 +365,7 @@ table.insert(Private.LoginFnQueue, function()
 				TargetedSpellsSaved.Settings.Self.Height = value
 
 				Private.EventRegistry:TriggerEvent(
-					Private.Events.SETTING_CHANGED,
+					Private.Enum.Events.SETTING_CHANGED,
 					key,
 					TargetedSpellsSaved.Settings.Self.Height
 				)
@@ -401,7 +401,7 @@ table.insert(Private.LoginFnQueue, function()
 				TargetedSpellsSaved.Settings.Self.Gap = value
 
 				Private.EventRegistry:TriggerEvent(
-					Private.Events.SETTING_CHANGED,
+					Private.Enum.Events.SETTING_CHANGED,
 					key,
 					TargetedSpellsSaved.Settings.Self.Gap
 				)
@@ -436,7 +436,7 @@ table.insert(Private.LoginFnQueue, function()
 				TargetedSpellsSaved.Settings.Self.Direction = value
 
 				Private.EventRegistry:TriggerEvent(
-					Private.Events.SETTING_CHANGED,
+					Private.Enum.Events.SETTING_CHANGED,
 					key,
 					TargetedSpellsSaved.Settings.Self.Direction
 				)
@@ -482,7 +482,7 @@ table.insert(Private.LoginFnQueue, function()
 			local function SetValue(value)
 				TargetedSpellsSaved.Settings.Party.Enabled = not TargetedSpellsSaved.Settings.Party.Enabled
 				Private.EventRegistry:TriggerEvent(
-					Private.Events.SETTING_CHANGED,
+					Private.Enum.Events.SETTING_CHANGED,
 					key,
 					TargetedSpellsSaved.Settings.Party.Enabled
 				)
@@ -513,7 +513,7 @@ table.insert(Private.LoginFnQueue, function()
 					end
 
 					Private.EventRegistry:TriggerEvent(
-						Private.Events.SETTING_CHANGED,
+						Private.Enum.Events.SETTING_CHANGED,
 						key,
 						TargetedSpellsSaved.Settings.Party.LoadConditionContentType
 					)
@@ -575,7 +575,7 @@ table.insert(Private.LoginFnQueue, function()
 					end
 
 					Private.EventRegistry:TriggerEvent(
-						Private.Events.SETTING_CHANGED,
+						Private.Enum.Events.SETTING_CHANGED,
 						key,
 						TargetedSpellsSaved.Settings.Party.LoadConditionRole
 					)
@@ -638,7 +638,7 @@ table.insert(Private.LoginFnQueue, function()
 				TargetedSpellsSaved.Settings.Party.Width = value
 
 				Private.EventRegistry:TriggerEvent(
-					Private.Events.SETTING_CHANGED,
+					Private.Enum.Events.SETTING_CHANGED,
 					key,
 					TargetedSpellsSaved.Settings.Party.Width
 				)
@@ -674,7 +674,7 @@ table.insert(Private.LoginFnQueue, function()
 				TargetedSpellsSaved.Settings.Party.Height = value
 
 				Private.EventRegistry:TriggerEvent(
-					Private.Events.SETTING_CHANGED,
+					Private.Enum.Events.SETTING_CHANGED,
 					key,
 					TargetedSpellsSaved.Settings.Party.Height
 				)
@@ -710,7 +710,7 @@ table.insert(Private.LoginFnQueue, function()
 				TargetedSpellsSaved.Settings.Party.Gap = value
 
 				Private.EventRegistry:TriggerEvent(
-					Private.Events.SETTING_CHANGED,
+					Private.Enum.Events.SETTING_CHANGED,
 					key,
 					TargetedSpellsSaved.Settings.Party.Gap
 				)
@@ -745,7 +745,7 @@ table.insert(Private.LoginFnQueue, function()
 				TargetedSpellsSaved.Settings.Party.Direction = value
 
 				Private.EventRegistry:TriggerEvent(
-					Private.Events.SETTING_CHANGED,
+					Private.Enum.Events.SETTING_CHANGED,
 					key,
 					TargetedSpellsSaved.Settings.Party.Direction
 				)
@@ -788,7 +788,7 @@ table.insert(Private.LoginFnQueue, function()
 				TargetedSpellsSaved.Settings.Party.OffsetX = value
 
 				Private.EventRegistry:TriggerEvent(
-					Private.Events.SETTING_CHANGED,
+					Private.Enum.Events.SETTING_CHANGED,
 					key,
 					TargetedSpellsSaved.Settings.Party.OffsetX
 				)
@@ -824,7 +824,7 @@ table.insert(Private.LoginFnQueue, function()
 				TargetedSpellsSaved.Settings.Party.OffsetY = value
 
 				Private.EventRegistry:TriggerEvent(
-					Private.Events.SETTING_CHANGED,
+					Private.Enum.Events.SETTING_CHANGED,
 					key,
 					TargetedSpellsSaved.Settings.Party.OffsetY
 				)
@@ -859,7 +859,7 @@ table.insert(Private.LoginFnQueue, function()
 				TargetedSpellsSaved.Settings.Party.SourceAnchor = value
 
 				Private.EventRegistry:TriggerEvent(
-					Private.Events.SETTING_CHANGED,
+					Private.Enum.Events.SETTING_CHANGED,
 					key,
 					TargetedSpellsSaved.Settings.Party.SourceAnchor
 				)
@@ -901,7 +901,7 @@ table.insert(Private.LoginFnQueue, function()
 				TargetedSpellsSaved.Settings.Party.TargetAnchor = value
 
 				Private.EventRegistry:TriggerEvent(
-					Private.Events.SETTING_CHANGED,
+					Private.Enum.Events.SETTING_CHANGED,
 					key,
 					TargetedSpellsSaved.Settings.Party.TargetAnchor
 				)
@@ -943,7 +943,7 @@ table.insert(Private.LoginFnQueue, function()
 				TargetedSpellsSaved.Settings.Party.Grow = value
 
 				Private.EventRegistry:TriggerEvent(
-					Private.Events.SETTING_CHANGED,
+					Private.Enum.Events.SETTING_CHANGED,
 					key,
 					TargetedSpellsSaved.Settings.Party.Grow
 				)
@@ -985,7 +985,7 @@ table.insert(Private.LoginFnQueue, function()
 				TargetedSpellsSaved.Settings.Party.SortOrder = value
 
 				Private.EventRegistry:TriggerEvent(
-					Private.Events.SETTING_CHANGED,
+					Private.Enum.Events.SETTING_CHANGED,
 					key,
 					TargetedSpellsSaved.Settings.Party.SortOrder
 				)

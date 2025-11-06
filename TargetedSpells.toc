@@ -9,11 +9,12 @@
 Libs\LibStub\LibStub.lua
 Libs\LibEditMode\embed.xml
 
+Templates\TargetedSpellsFrameTemplate.xml
+
 Enum.lua
 Init.lua
 Settings.lua
 Frame.lua
 TargetedSpellsMixin.lua
 EditMode.lua
-
-Templates\TargetedSpellsFrameTemplate.xml
+Instrument.lua

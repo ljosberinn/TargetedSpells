@@ -4,6 +4,13 @@ local addonName, Private = ...
 ---@class TargetedSpellsEnums
 Private.Enum = {}
 
+---@enum CustomEvents
+Private.Enum.Events = {
+	SETTING_CHANGED = "SETTING_CHANGED",
+	DELAYED_UNIT_SPELLCAST_START = "DELAYED_UNIT_SPELLCAST_START",
+	DELAYED_UNIT_SPELLCAST_CHANNEL_START = "DELAYED_UNIT_SPELLCAST_CHANNEL_START",
+}
+
 ---@enum Direction
 Private.Enum.Direction = {
 	Horizontal = "horizontal",

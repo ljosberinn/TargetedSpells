@@ -2,9 +2,6 @@
 local addonName, Private = ...
 
 Private.IsMidnight = select(4, GetBuildInfo()) >= 120000
-Private.Events = {
-	SETTING_CHANGED = "SETTING_CHANGED",
-}
 
 Private.EventRegistry = CreateFromMixins(CallbackRegistryMixin)
 Private.EventRegistry:OnLoad()
@@ -12,7 +9,7 @@ Private.EventRegistry:OnLoad()
 do
 	local tbl = {}
 
-	for _, value in pairs(Private.Events) do
+	for _, value in pairs(Private.Enum.Events) do
 		table.insert(tbl, value)
 	end
 
@@ -20,14 +17,6 @@ do
 end
 
 Private.LoginFnQueue = {}
-
-function Private.DebugLog(...)
-	if DevTool then
-		DevTool:AddData({ data = ... })
-	else
-		print(...)
-	end
-end
 
 EventUtil.ContinueOnAddOnLoaded(addonName, function()
 	---@type SavedVariables
