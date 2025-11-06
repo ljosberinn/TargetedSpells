@@ -123,23 +123,8 @@ function TargetedSpellsMixin:SetCastTime(castTime)
 	self.castTime = castTime
 end
 
-function TargetedSpellsMixin:GetCastTime()
-	-- print("TargetedSpellsMixin:GetCastTime()", self.unit, self.kind)
-	return self.castTime
-end
-
 function TargetedSpellsMixin:SetSpellTexture(texture)
-	texture = texture or GetRandomIcon()
-	self.texture = texture
-end
-
-function TargetedSpellsMixin:RefreshSpellTexture()
-	self.Icon:SetTexture(self.texture)
-end
-
-function TargetedSpellsMixin:UpdateShownState()
-	local shouldBeShown = self:ShouldBeShown()
-	self:SetShown(shouldBeShown)
+	self.Icon:SetTexture(texture or GetRandomIcon())
 end
 
 function TargetedSpellsMixin:ShouldBeShown()
@@ -170,10 +155,6 @@ function TargetedSpellsMixin:GetUnit()
 	return self.unit
 end
 
-function TargetedSpellsMixin:GetKind()
-	return self.kind
-end
-
 function TargetedSpellsMixin:PostCreate(unit, kind)
 	self:SetUnit(unit)
 	self:SetKind(kind)
@@ -183,4 +164,35 @@ function TargetedSpellsMixin:Reset()
 	self.Cooldown:Clear()
 	self:ClearAllPoints()
 	self:Hide()
+
+	if self.soundHandle then
+		StopSound(self.soundHandle)
+		self.soundHandle = nil
+	end
+end
+
+function TargetedSpellsMixin:AttemptToPlaySound()
+	if not self.kind == Private.Enum.FrameKind.Self then
+		return
+	end
+
+	if not TargetedSpellsSaved.Settings.Self.PlaySound then
+		return
+	end
+
+	local sound = TargetedSpellsSaved.Settings.Self.Sound
+
+	if sound == nil then
+		return
+	end
+
+	local channel = "Master"
+
+	-- todo: load condition check for sound
+	-- todo: add sound channel setting
+	local ok, _, handle = pcall(PlaySoundFile, sound, channel)
+
+	if ok then
+		self.soundHandle = handle
+	end
 end

@@ -515,7 +515,6 @@ function TargetedSpellsEditModeParentFrameMixin:LoopFrame(frame, index)
 	local castTime = 4 + index / 2
 	frame:SetCastTime(castTime)
 	frame:RefreshSpellCooldownInfo()
-	frame:RefreshSpellTexture()
 	frame:Show()
 	self:RepositionPreviewFrames()
 

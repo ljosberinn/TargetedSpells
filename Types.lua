@@ -65,36 +65,27 @@
 ---@field Overlay Texture
 ---@field Icon Texture
 ---@field Cooldown Cooldown
+---@field soundHandle number?
+---@field kind FrameKind
+---@field unit string? -- secret?
+---@field startTime number?
+---@field castTime number? -- secret
 ---@field OnLoad fun(self: TargetedSpellsMixin)
----@field kind string<'Party' | 'Self'>
 ---@field SetKind fun(self: TargetedSpellsMixin, kind: string)
----@field GetKind fun(self: TargetedSpellsMixin): string
 ---@field OnKindChanged fun(self: TargetedSpellsMixin, kind: string)
----@field unit string?
 ---@field SetUnit fun(self: TargetedSpellsMixin, unit: string)
 ---@field GetUnit fun(self: TargetedSpellsMixin): string
----@field startTime number?
 ---@field ClearStartTime fun(self: TargetedSpellsMixin)
 ---@field GetStartTime fun(self: TargetedSpellsMixin): number
 ---@field SetStartTime fun(self: TargetedSpellsMixin)
----@field castTime number? -- secret
----@field GetCastTime fun(self: TargetedSpellsMixin): number
 ---@field SetCastTime fun(self: TargetedSpellsMixin, castTime: number)
----@field texture number? -- secret
 ---@field SetSpellTexture fun(self: TargetedSpellsMixin, texture: number?)
----@field GetSpellTexture fun(self: TargetedSpellsMixin)
----@field RefreshSpellTexture fun(self: TargetedSpellsMixin)
 ---@field RefreshSpellCooldownInfo fun(self: TargetedSpellsMixin)
----@field hideTimer FunctionContainer?
----@field loopTicker FunctionContainer?
 ---@field OnSizeChanged fun(self: TargetedSpellsMixin, width: number, height: number)
 ---@field OnSettingChanged fun(self: TargetedSpellsMixin, key: string, value: number|string)
----@field UpdateShownState fun(self: TargetedSpellsMixin)
 ---@field ShouldBeShown fun(self: TargetedSpellsMixin): boolean
 ---@field Reposition fun(self: TargetedSpellsMixin, point: string, relativeTo: Frame, relativePoint: string, offsetX: number, offsetY: number)
----@field StartPreviewLoop fun(self: TargetedSpellsMixin, RepositionPreviewFrames: fun())
----@field StopPreviewLoop fun(self: TargetedSpellsMixin)
----@field settingsCallbackId number?
+---@field AttemptToPlaySound fun(self: TargetedSpellsMixin)
 
 ---@class IconDataProviderMixin
 ---@field GetRandomIcon fun(self: IconDataProviderMixin): number
