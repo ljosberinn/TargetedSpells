@@ -24,7 +24,7 @@ end
 TargetedSpellsMixin = {}
 
 function TargetedSpellsMixin:OnLoad()
-	print("TargetedSpellsMixin:OnLoad()", self.kind, self.unit)
+	-- print("TargetedSpellsMixin:OnLoad()", self.kind, self.unit)
 
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingChanged, self)
 
@@ -37,7 +37,7 @@ function TargetedSpellsMixin:OnLoad()
 end
 
 function TargetedSpellsMixin:OnKindChanged(kind)
-	print("TargetedSpellsMixin:OnKindChanged()", kind)
+	-- print("TargetedSpellsMixin:OnKindChanged()", kind)
 
 	if kind == Private.Enum.FrameKind.Self then
 		self:SetSize(TargetedSpellsSaved.Settings.Self.Width, TargetedSpellsSaved.Settings.Self.Height)
@@ -50,7 +50,7 @@ end
 ---@param width number
 ---@param height number
 function TargetedSpellsMixin:OnSizeChanged(width, height)
-	print("TargetedSpellsMixin:OnSizeChanged()", self.kind, self.unit, width, height)
+	-- print("TargetedSpellsMixin:OnSizeChanged()", self.kind, self.unit, width, height)
 
 	local aspectRatio = width / height
 
@@ -109,9 +109,9 @@ function TargetedSpellsMixin:RefreshSpellCooldownInfo()
 	self.Cooldown:SetCooldown(self.startTime, self.castTime)
 end
 
-function TargetedSpellsMixin:SetStartTime()
+function TargetedSpellsMixin:SetStartTime(startTime)
 	-- print("TargetedSpellsMixin:SetStartTime()", self.unit, self.kind)
-	self.startTime = GetTime()
+	self.startTime = startTime or GetTime()
 end
 
 function TargetedSpellsMixin:GetStartTime()
