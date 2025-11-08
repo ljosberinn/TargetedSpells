@@ -34,6 +34,7 @@ function TargetedSpellsMixin:OnLoad()
 	end
 
 	self.Cooldown:SetCountdownFont("GameFontHighlightHugeOutline")
+	self.Cooldown:SetMinimumCountdownDuration(0)
 end
 
 function TargetedSpellsMixin:OnKindChanged(kind)
@@ -41,8 +42,10 @@ function TargetedSpellsMixin:OnKindChanged(kind)
 
 	if kind == Private.Enum.FrameKind.Self then
 		self:SetSize(TargetedSpellsSaved.Settings.Self.Width, TargetedSpellsSaved.Settings.Self.Height)
+		self:SetFontSize(TargetedSpellsSaved.Settings.Self.FontSize)
 	elseif kind == Private.Enum.FrameKind.Party then
 		self:SetSize(TargetedSpellsSaved.Settings.Party.Width, TargetedSpellsSaved.Settings.Party.Height)
+		self:SetFontSize(TargetedSpellsSaved.Settings.Party.FontSize)
 	end
 end
 
@@ -89,25 +92,31 @@ end
 function TargetedSpellsMixin:OnSettingChanged(key, value)
 	if self.kind == Private.Enum.FrameKind.Self then
 		if key == Private.Settings.Keys.Self.Width then
-			print("TargetedSpellsMixin:OnSettingChanged()", key, value)
+			print("TargetedSpellsMixin:OnSettingChanged->SetSize()", key, value)
 			self:SetSize(value, TargetedSpellsSaved.Settings.Self.Height)
 		elseif key == Private.Settings.Keys.Self.Height then
-			print("TargetedSpellsMixin:OnSettingChanged()", key, value)
+			print("TargetedSpellsMixin:OnSettingChanged->SetSize()", key, value)
 			self:SetSize(TargetedSpellsSaved.Settings.Self.Width, value)
 		elseif key == Private.Settings.Keys.Self.ShowDuration then
-			print("TargetedSpellsMixin:OnSettingChanged()", key, value)
+			print("TargetedSpellsMixin:OnSettingChanged->SetShowDuration()", key, value)
 			self:SetShowDuration(value)
+		elseif key == Private.Settings.Keys.Self.FontSize then
+			print("TargetedSpellsMixin:OnSettingChanged->SetFontSize()", key, value)
+			self:SetFontSize(value)
 		end
 	else
 		if key == Private.Settings.Keys.Party.Width then
-			print("TargetedSpellsMixin:OnSettingChanged()", key, value)
+			print("TargetedSpellsMixin:OnSettingChanged->SetSize()", key, value)
 			self:SetSize(value, TargetedSpellsSaved.Settings.Party.Height)
 		elseif key == Private.Settings.Keys.Party.Height then
-			print("TargetedSpellsMixin:OnSettingChanged()", key, value)
+			print("TargetedSpellsMixin:OnSettingChanged->SetSize()", key, value)
 			self:SetSize(TargetedSpellsSaved.Settings.Party.Width, value)
 		elseif key == Private.Settings.Keys.Party.ShowDuration then
-			print("TargetedSpellsMixin:OnSettingChanged()", key, value)
+			print("TargetedSpellsMixin:OnSettingChanged->SetShowDuration()", key, value)
 			self:SetShowDuration(value)
+		elseif key == Private.Settings.Keys.Party.FontSize then
+			print("TargetedSpellsMixin:OnSettingChanged->SetFontSize()", key, value)
+			self:SetFontSize(value)
 		end
 	end
 end
@@ -211,4 +220,15 @@ end
 
 function TargetedSpellsMixin:SetShowDuration(showDuration)
 	self.Cooldown:SetHideCountdownNumbers(not showDuration)
+end
+
+function TargetedSpellsMixin:SetFontSize(fontSize)
+	local fontString = self.Cooldown:GetCountdownFontString()
+	local font, size, flags = fontString:GetFont()
+
+	if size == fontSize then
+		return
+	end
+
+	fontString:SetFont(font, fontSize, flags)
 end

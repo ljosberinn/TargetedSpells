@@ -12,6 +12,7 @@ Private.Settings.Keys = {
 		LoadConditionRole = "LOAD_CONDITION_ROLE_SELF",
 		Width = "FRAME_WIDTH_SELF",
 		Height = "FRAME_HEIGHT_SELF",
+		FontSize = "FONT_SIZE_SELF",
 		Gap = "FRAME_GAP_SELF",
 		Direction = "GROW_DIRECTION_SELF",
 		OffsetX = "FRAME_OFFSET_X_SELF",
@@ -29,6 +30,7 @@ Private.Settings.Keys = {
 		LoadConditionRole = "LOAD_CONDITION_ROLE_PARTY",
 		Width = "FRAME_WIDTH_PARTY",
 		Height = "FRAME_HEIGHT_PARTY",
+		FontSize = "FONT_SIZE_PARTY",
 		Gap = "FRAME_GAP_PARTY",
 		Direction = "GROW_DIRECTION_PARTY",
 		OffsetX = "FRAME_OFFSET_X_PARTY",
@@ -43,6 +45,14 @@ Private.Settings.Keys = {
 }
 
 function Private.Settings.GetSliderSettingsForOption(key)
+	if key == Private.Settings.Keys.Self.FontSize or key == Private.Settings.Keys.Party.FontSize then
+		return {
+			min = 8,
+			max = key == Private.Settings.Keys.Self.FontSize and 32 or 24,
+			step = 1,
+		}
+	end
+
 	if key == Private.Settings.Keys.Self.Width or key == Private.Settings.Keys.Self.Height then
 		return {
 			min = 36,
@@ -89,6 +99,7 @@ function Private.Settings.GetSelfDefaultSettings()
 		Enabled = true,
 		Width = 48,
 		Height = 48,
+		FontSize = 20,
 		Gap = 2,
 		Direction = Private.Enum.Direction.Horizontal,
 		LoadConditionContentType = {
@@ -105,7 +116,7 @@ function Private.Settings.GetSelfDefaultSettings()
 			[Private.Enum.Role.Damager] = true,
 		},
 		PlaySound = true,
-		Sound = "bloop",
+		Sound = 316493,
 		SoundChannel = Private.Enum.SoundChannel.Master,
 		LoadConditionSoundContentType = {
 			[Private.Enum.ContentType.OpenWorld] = false,
@@ -127,6 +138,7 @@ function Private.Settings.GetPartyDefaultSettings()
 		Enabled = true,
 		Width = 24,
 		Height = 24,
+		FontSize = 14,
 		Gap = 2,
 		Direction = Private.Enum.Direction.Horizontal,
 		LoadConditionContentType = {
@@ -403,6 +415,42 @@ table.insert(Private.LoginFnQueue, function()
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
+		-- Font Size
+		do
+			local key = Private.Settings.Keys.Self.FontSize
+			local defaultValue = Private.Settings.GetSelfDefaultSettings().FontSize
+			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Self.FontSize
+			end
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Self.FontSize = value
+
+				Private.EventRegistry:TriggerEvent(
+					Private.Enum.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Self.FontSize
+				)
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				"Font Size",
+				defaultValue,
+				GetValue,
+				SetValue
+			)
+			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
+			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
+
+			local initializer = Settings.CreateSlider(category, setting, options, "Tooltip")
+			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+		end
+
 		-- Frame Gap
 		do
 			local key = Private.Settings.Keys.Self.Gap
@@ -599,10 +647,11 @@ table.insert(Private.LoginFnQueue, function()
 		-- Sound
 		do
 			local key = Private.Settings.Keys.Self.Sound
-			local defaultValue = Private.Settings.GetSelfDefaultSettings().Sound
+
+			local defaultValue = tostring(Private.Settings.GetSelfDefaultSettings().Sound)
 
 			local function GetValue()
-				return TargetedSpellsSaved.Settings.Self.Sound
+				return tostring(TargetedSpellsSaved.Settings.Self.Sound)
 			end
 
 			local function IsNumeric(str)
@@ -622,7 +671,7 @@ table.insert(Private.LoginFnQueue, function()
 			local function RecursiveAddSounds(container, soundCategoryKeyToText, currentTable, categoryName)
 				for tableKey, value in pairs(currentTable) do
 					if value.soundKitID and value.text then
-						container:Add("" .. value.soundKitID, string.format("%s - %s", categoryName, value.text))
+						container:Add(tostring(value.soundKitID), string.format("%s - %s", categoryName, value.text))
 					elseif type(value) == "table" and soundCategoryKeyToText[tableKey] then
 						RecursiveAddSounds(container, soundCategoryKeyToText, value, soundCategoryKeyToText[tableKey])
 					end
@@ -978,6 +1027,42 @@ table.insert(Private.LoginFnQueue, function()
 				key,
 				Settings.VarType.Number,
 				"Height",
+				defaultValue,
+				GetValue,
+				SetValue
+			)
+			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
+			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
+
+			local initializer = Settings.CreateSlider(category, setting, options, "Tooltip")
+			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+		end
+
+		-- Font Size
+		do
+			local key = Private.Settings.Keys.Party.FontSize
+			local defaultValue = Private.Settings.GetPartyDefaultSettings().FontSize
+			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Party.FontSize
+			end
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Party.FontSize = value
+
+				Private.EventRegistry:TriggerEvent(
+					Private.Enum.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Party.FontSize
+				)
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				"Font Size",
 				defaultValue,
 				GetValue,
 				SetValue

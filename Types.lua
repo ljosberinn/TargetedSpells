@@ -64,10 +64,14 @@
 ---@class TargetedSpellsSelfPreviewFrame: Frame
 ---@field GetChildren fun(self: TargetedSpellsSelfPreviewFrame): TargetedSpellsMixin
 
+---@class ExtendedCooldownTypes : Cooldown
+---@field SetMinimumCountdownDuration fun(self: ExtendedCooldownTypes, minimumDuration: number)
+---@field GetCountdownFontString fun(self: ExtendedCooldownTypes): FontString
+
 ---@class TargetedSpellsMixin : Frame
 ---@field Overlay Texture
 ---@field Icon Texture
----@field Cooldown Cooldown
+---@field Cooldown ExtendedCooldownTypes
 ---@field soundHandle number?
 ---@field kind FrameKind
 ---@field unit string? -- secret?
@@ -90,6 +94,7 @@
 ---@field Reposition fun(self: TargetedSpellsMixin, point: string, relativeTo: Frame, relativePoint: string, offsetX: number, offsetY: number)
 ---@field AttemptToPlaySound fun(self: TargetedSpellsMixin)
 ---@field SetShowDuration fun(self: TargetedSpellsMixin, showDuration: boolean)
+---@field SetFontSize fun(self: TargetedSpellsMixin, fontSize: number)
 
 ---@class IconDataProviderMixin
 ---@field GetRandomIcon fun(self: IconDataProviderMixin): number

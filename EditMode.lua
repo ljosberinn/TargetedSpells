@@ -443,6 +443,30 @@ function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
 		}
 	end
 
+	if key == Private.Settings.Keys.Self.FontSize or key == Private.Settings.Keys.Party.FontSize then
+		local isSelf = key == Private.Settings.Keys.Self.FontSize
+		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
+		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+
+		---@type LibEditModeSlider
+		return {
+			name = "Font Size",
+			kind = Enum.EditModeSettingDisplayType.Slider,
+			default = isSelf and Private.Settings.GetSelfDefaultSettings().FontSize
+				or Private.Settings.GetPartyDefaultSettings().FontSize,
+			get = function(layoutName)
+				return tableRef.FontSize
+			end,
+			set = function(layoutName, value)
+				tableRef.FontSize = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end,
+			minValue = sliderSettings.min,
+			maxValue = sliderSettings.max,
+			valueStep = sliderSettings.step,
+		}
+	end
+
 	if key == Private.Settings.Keys.Self.Width or key == Private.Settings.Keys.Party.Width then
 		local isSelf = key == Private.Settings.Keys.Self.Width
 		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
@@ -878,6 +902,7 @@ function SelfEditModeMixin:AppendSettings()
 		self:CreateSetting(Private.Settings.Keys.Self.LoadConditionRole),
 		self:CreateSetting(Private.Settings.Keys.Self.Width),
 		self:CreateSetting(Private.Settings.Keys.Self.Height),
+		self:CreateSetting(Private.Settings.Keys.Self.FontSize),
 		self:CreateSetting(Private.Settings.Keys.Self.Gap),
 		self:CreateSetting(Private.Settings.Keys.Self.Direction),
 		self:CreateSetting(Private.Settings.Keys.Self.SortOrder),
@@ -956,7 +981,6 @@ function SelfEditModeMixin:StartDemo()
 
 	for index = 1, self.maxFrameCount do
 		self.frames[index] = self.frames[index] or self:AcquireFrame()
-
 		local frame = self.frames[index]
 
 		if frame then
@@ -1058,6 +1082,7 @@ function PartyEditModeMixin:AppendSettings()
 		self:CreateSetting(Private.Settings.Keys.Party.LoadConditionRole),
 		self:CreateSetting(Private.Settings.Keys.Party.Width),
 		self:CreateSetting(Private.Settings.Keys.Party.Height),
+		self:CreateSetting(Private.Settings.Keys.Party.FontSize),
 		self:CreateSetting(Private.Settings.Keys.Party.Gap),
 		self:CreateSetting(Private.Settings.Keys.Party.Direction),
 		self:CreateSetting(Private.Settings.Keys.Party.OffsetX),
@@ -1202,6 +1227,10 @@ function PartyEditModeMixin:StartDemo()
 		for index = 1, self.amountOfPreviewFramesPerUnit do
 			self.frames[unit][index] = self.frames[unit][index] or self:AcquireFrame()
 			local frame = self.frames[unit][index]
+
+			if math.random() >= 0.5 then
+				frame:SetReverse(true)
+			end
 
 			if frame then
 				table.insert(
