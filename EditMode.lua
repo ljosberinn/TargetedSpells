@@ -168,7 +168,11 @@ function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
 						)
 						MenuTemplates.SetUtilityButtonAnchor(playSampleButton, MenuVariants.GearButtonAnchor, button) -- gear means throw on the right
 						MenuTemplates.SetUtilityButtonClickHandler(playSampleButton, function()
-							PlaySound(value.soundKitID)
+							if type(value.soundKitID) == "number" then
+								PlaySound(value.soundKitID)
+							else
+								PlaySoundFile(value.soundKitID)
+							end
 						end)
 					end)
 				elseif type(value) == "table" and soundCategoryKeyToText[tableKey] then
@@ -195,14 +199,20 @@ function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
 		local function AddCustomSounds(rootDescription)
 			-- this follows the structure of `CooldownViewerSoundData` in `Blizzard_CooldownViewer/CooldownViewerSoundAlertData.lua` for ease of function reuse
 			local customSoundData = {
-				Custom = {
-					{ soundKitID = "bloop", text = "Bloop" },
-				},
+				Custom = {},
 			}
 
 			local soundCategoryKeyToText = {
 				Custom = "Custom",
 			}
+
+			local sounds = Private.Settings.GetCustomSoundList()
+
+			for name, path in pairs(sounds) do
+				if path ~= 1 then
+					table.insert(customSoundData.Custom, { soundKitID = path, text = name })
+				end
+			end
 
 			RecursiveAddSounds(rootDescription, soundCategoryKeyToText, customSoundData)
 		end

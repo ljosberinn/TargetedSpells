@@ -1,6 +1,8 @@
 ---@type string, TargetedSpells
 local addonName, Private = ...
+local LibSharedMedia = LibStub("LibSharedMedia-3.0")
 
+---@class TargetedSpellsSettings
 Private.Settings = {}
 
 Private.Settings.Keys = {
@@ -19,6 +21,7 @@ Private.Settings.Keys = {
 		PlaySound = "PLAY_SOUND_SELF",
 		Sound = "SOUND_SELF",
 		SoundChannel = "SOUND_CHANNEL_SELF",
+		ShowDuration = "SHOW_DURATION_SELF",
 	},
 	Party = {
 		Enabled = "ENABLED_PARTY",
@@ -35,6 +38,7 @@ Private.Settings.Keys = {
 		SortOrder = "FRAME_SORT_ORDER_PARTY",
 		Grow = "FRAME_GROW_PARTY",
 		IncludeSelfInParty = "INCLUDE_SELF_IN_PARTY_PARTY",
+		ShowDuration = "SHOW_DURATION_PARTY",
 	},
 }
 
@@ -113,6 +117,7 @@ function Private.Settings.GetSelfDefaultSettings()
 		},
 		SortOrder = Private.Enum.SortOrder.Ascending,
 		Grow = Private.Enum.Grow.Center,
+		ShowDuration = true,
 	}
 end
 
@@ -144,7 +149,12 @@ function Private.Settings.GetPartyDefaultSettings()
 		SortOrder = Private.Enum.SortOrder.Ascending,
 		Grow = Private.Enum.Grow.Center,
 		IncludeSelfInParty = true,
+		ShowDuration = true,
 	}
+end
+
+function Private.Settings.GetCustomSoundList()
+	return LibSharedMedia:HashTable(LibSharedMedia.MediaType.SOUND)
 end
 
 table.insert(Private.LoginFnQueue, function()
@@ -560,6 +570,10 @@ table.insert(Private.LoginFnQueue, function()
 			local key = Private.Settings.Keys.Self.PlaySound
 			local defaultValue = Private.Settings.GetSelfDefaultSettings().PlaySound
 
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Self.PlaySound
+			end
+
 			local function SetValue(value)
 				TargetedSpellsSaved.Settings.Self.PlaySound = not TargetedSpellsSaved.Settings.Self.PlaySound
 				Private.EventRegistry:TriggerEvent(
@@ -575,7 +589,7 @@ table.insert(Private.LoginFnQueue, function()
 				Settings.VarType.Boolean,
 				"Play Sound",
 				defaultValue,
-				IsSectionEnabled,
+				GetValue,
 				SetValue
 			)
 			local initializer = Settings.CreateCheckbox(category, setting, "Tooltip")
@@ -631,14 +645,20 @@ table.insert(Private.LoginFnQueue, function()
 			local function AddCustomSounds(container)
 				-- this follows the structure of `CooldownViewerSoundData` in `Blizzard_CooldownViewer/CooldownViewerSoundAlertData.lua` for ease of function reuse
 				local customSoundData = {
-					Custom = {
-						{ soundKitID = "bloop", text = "Bloop" },
-					},
+					Custom = {},
 				}
 
 				local soundCategoryKeyToText = {
 					Custom = "Custom",
 				}
+
+				local sounds = Private.Settings.GetCustomSoundList()
+
+				for name, path in pairs(sounds) do
+					if path ~= 1 then
+						table.insert(customSoundData.Custom, { soundKitID = path, text = name })
+					end
+				end
 
 				RecursiveAddSounds(container, soundCategoryKeyToText, customSoundData)
 			end

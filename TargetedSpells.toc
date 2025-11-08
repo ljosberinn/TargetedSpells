@@ -8,6 +8,7 @@
 
 Libs\LibStub\LibStub.lua
 Libs\LibEditMode\embed.xml
+Libs\LibSharedMedia-3.0\LibSharedMedia-3.0.lua
 
 Templates\TargetedSpellsFrameTemplate.xml
 

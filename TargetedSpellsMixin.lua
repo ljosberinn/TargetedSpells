@@ -189,16 +189,13 @@ function TargetedSpellsMixin:AttemptToPlaySound()
 		return
 	end
 
-	local channel = "Master"
-
 	-- todo: load condition check for sound
-	-- todo: add sound channel setting
 	local ok, result, handle = nil, nil, nil
 
 	if type(sound) == "number" then
-		ok, result, handle = pcall(PlaySound, sound, channel)
+		ok, result, handle = pcall(PlaySound, sound, TargetedSpellsSaved.Settings.Self.SoundChannel)
 	else
-		ok, result, handle = pcall(PlaySoundFile, sound, channel)
+		ok, result, handle = pcall(PlaySoundFile, sound, TargetedSpellsSaved.Settings.Self.SoundChannel)
 	end
 
 	if ok then
