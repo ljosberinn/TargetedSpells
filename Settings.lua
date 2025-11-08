@@ -1255,6 +1255,33 @@ table.insert(Private.LoginFnQueue, function()
 			local initializer = Settings.CreateDropdown(category, setting, GetOptions, "Tooltip")
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
+
+		-- Include Self in Party
+		do
+			local key = Private.Settings.Keys.Party.IncludeSelfInParty
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Party.IncludeSelfInParty =
+					not TargetedSpellsSaved.Settings.Party.IncludeSelfInParty
+				Private.EventRegistry:TriggerEvent(
+					Private.Enum.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Party.IncludeSelfInParty
+				)
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Boolean,
+				"Include Self In Party",
+				Settings.Default.True,
+				IsSectionEnabled,
+				SetValue
+			)
+			local initializer = Settings.CreateCheckbox(category, setting, "Tooltip")
+			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+		end
 	end
 
 	Settings.RegisterAddOnCategory(category)
