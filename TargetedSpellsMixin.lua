@@ -94,6 +94,9 @@ function TargetedSpellsMixin:OnSettingChanged(key, value)
 		elseif key == Private.Settings.Keys.Self.Height then
 			print("TargetedSpellsMixin:OnSettingChanged()", key, value)
 			self:SetSize(TargetedSpellsSaved.Settings.Self.Width, value)
+		elseif key == Private.Settings.Keys.Self.ShowDuration then
+			print("TargetedSpellsMixin:OnSettingChanged()", key, value)
+			self:SetShowDuration(value)
 		end
 	else
 		if key == Private.Settings.Keys.Party.Width then
@@ -102,6 +105,9 @@ function TargetedSpellsMixin:OnSettingChanged(key, value)
 		elseif key == Private.Settings.Keys.Party.Height then
 			print("TargetedSpellsMixin:OnSettingChanged()", key, value)
 			self:SetSize(TargetedSpellsSaved.Settings.Party.Width, value)
+		elseif key == Private.Settings.Keys.Party.ShowDuration then
+			print("TargetedSpellsMixin:OnSettingChanged()", key, value)
+			self:SetShowDuration(value)
 		end
 	end
 end
@@ -201,4 +207,8 @@ function TargetedSpellsMixin:AttemptToPlaySound()
 	if ok then
 		self.soundHandle = handle
 	end
+end
+
+function TargetedSpellsMixin:SetShowDuration(showDuration)
+	self.Cooldown:SetHideCountdownNumbers(not showDuration)
 end

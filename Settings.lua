@@ -726,6 +726,37 @@ table.insert(Private.LoginFnQueue, function()
 			local initializer = Settings.CreateDropdown(category, setting, GetOptions, "Tooltip")
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
+
+		-- Show Duration
+		do
+			local key = Private.Settings.Keys.Self.ShowDuration
+			local defaultValue = Private.Settings.GetSelfDefaultSettings().ShowDuration
+
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Self.ShowDuration
+			end
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Self.ShowDuration = not TargetedSpellsSaved.Settings.Self.ShowDuration
+				Private.EventRegistry:TriggerEvent(
+					Private.Enum.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Self.ShowDuration
+				)
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Boolean,
+				"Show Duration",
+				defaultValue,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateCheckbox(category, setting, "Tooltip")
+			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+		end
 	end
 
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Party"))
@@ -1297,6 +1328,37 @@ table.insert(Private.LoginFnQueue, function()
 				"Include Self In Party",
 				Settings.Default.True,
 				IsSectionEnabled,
+				SetValue
+			)
+			local initializer = Settings.CreateCheckbox(category, setting, "Tooltip")
+			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+		end
+
+		-- Show Duration
+		do
+			local key = Private.Settings.Keys.Party.ShowDuration
+			local defaultValue = Private.Settings.GetPartyDefaultSettings().ShowDuration
+
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Party.ShowDuration
+			end
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Party.ShowDuration = not TargetedSpellsSaved.Settings.Party.ShowDuration
+				Private.EventRegistry:TriggerEvent(
+					Private.Enum.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Party.ShowDuration
+				)
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Boolean,
+				"Show Duration",
+				defaultValue,
+				GetValue,
 				SetValue
 			)
 			local initializer = Settings.CreateCheckbox(category, setting, "Tooltip")

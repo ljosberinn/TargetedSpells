@@ -66,6 +66,38 @@ function TargetedSpellsEditModeParentFrameMixin:OnSettingsChanged(key, value)
 end
 
 function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
+	if key == Private.Settings.Keys.Self.ShowDuration or key == Private.Settings.Keys.Party.ShowDuration then
+		local isSelf = key == Private.Settings.Keys.Self.ShowDuration
+		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
+
+		---@type LibEditModeCheckbox
+		return {
+			name = "Show Duration",
+			kind = Enum.EditModeSettingDisplayType.Checkbox,
+			default = isSelf and Private.Settings.GetSelfDefaultSettings().ShowDuration
+				or Private.Settings.GetPartyDefaultSettings().ShowDuration,
+			get =
+				---@param layoutName string
+				function(layoutName)
+					return tableRef.ShowDuration
+				end,
+			---@param layoutName string
+			---@param value boolean
+			set = function(layoutName, value)
+				local hasChanges = false
+
+				if value ~= tableRef.ShowDuration then
+					tableRef.ShowDuration = value
+					hasChanges = true
+				end
+
+				if hasChanges then
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
+			end,
+		}
+	end
+
 	if key == Private.Settings.Keys.Self.PlaySound then
 		---@type LibEditModeCheckbox
 		return {
@@ -853,6 +885,7 @@ function SelfEditModeMixin:AppendSettings()
 		self:CreateSetting(Private.Settings.Keys.Self.PlaySound),
 		self:CreateSetting(Private.Settings.Keys.Self.Sound),
 		self:CreateSetting(Private.Settings.Keys.Self.SoundChannel),
+		self:CreateSetting(Private.Settings.Keys.Self.ShowDuration),
 	})
 end
 
@@ -1034,6 +1067,7 @@ function PartyEditModeMixin:AppendSettings()
 		self:CreateSetting(Private.Settings.Keys.Party.Grow),
 		self:CreateSetting(Private.Settings.Keys.Party.SortOrder),
 		self:CreateSetting(Private.Settings.Keys.Party.IncludeSelfInParty),
+		self:CreateSetting(Private.Settings.Keys.Party.ShowDuration),
 	})
 end
 

@@ -43,6 +43,7 @@
 ---@field LoadConditionSoundContentType boolean[]
 ---@field SortOrder SortOrder
 ---@field Grow Grow
+---@field ShowDuration boolean
 
 ---@class SavedVariablesSettingsParty
 ---@field Enabled boolean
@@ -58,6 +59,7 @@
 ---@field TargetAnchor Anchor
 ---@field SortOrder SortOrder
 ---@field Grow Grow
+---@field ShowDuration boolean
 
 ---@class TargetedSpellsSelfPreviewFrame: Frame
 ---@field GetChildren fun(self: TargetedSpellsSelfPreviewFrame): TargetedSpellsMixin
@@ -87,6 +89,7 @@
 ---@field ShouldBeShown fun(self: TargetedSpellsMixin): boolean
 ---@field Reposition fun(self: TargetedSpellsMixin, point: string, relativeTo: Frame, relativePoint: string, offsetX: number, offsetY: number)
 ---@field AttemptToPlaySound fun(self: TargetedSpellsMixin)
+---@field SetShowDuration fun(self: TargetedSpellsMixin, showDuration: boolean)
 
 ---@class IconDataProviderMixin
 ---@field GetRandomIcon fun(self: IconDataProviderMixin): number
