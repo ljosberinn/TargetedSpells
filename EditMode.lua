@@ -62,6 +62,13 @@ function TargetedSpellsEditModeParentFrameMixin:OnSettingsChanged(key, value)
 				self:EndDemo()
 			end
 		end
+	elseif key == Private.Settings.Keys.Party.IncludeSelfInParty and self.frameKind == Private.Enum.FrameKind.Party then
+		if not LEM:IsInEditMode() then
+			return
+		end
+
+		self:EndDemo()
+		self:StartDemo()
 	end
 end
 
@@ -1216,23 +1223,25 @@ function PartyEditModeMixin:StartDemo()
 	self.buildingFrames = true
 
 	for unit = 1, self.maxUnitCount do
-		self.frames[unit] = self.frames[unit] or {}
+		if unit > 1 or TargetedSpellsSaved.Settings.Party.IncludeSelfInParty then
+			self.frames[unit] = self.frames[unit] or {}
 
-		if unit == self.maxUnitCount and not self.useRaidStylePartyFrames then
-			break
-		end
+			if unit == self.maxUnitCount and not self.useRaidStylePartyFrames then
+				break
+			end
 
-		for index = 1, self.amountOfPreviewFramesPerUnit do
-			self.frames[unit][index] = self.frames[unit][index] or self:AcquireFrame()
-			local frame = self.frames[unit][index]
+			for index = 1, self.amountOfPreviewFramesPerUnit do
+				self.frames[unit][index] = self.frames[unit][index] or self:AcquireFrame()
+				local frame = self.frames[unit][index]
 
-			if frame then
-				table.insert(
-					self.demoTimers.tickers,
-					C_Timer.NewTicker(5 + index + unit, GenerateClosure(self.LoopFrame, self, frame, index + unit))
-				)
+				if frame then
+					table.insert(
+						self.demoTimers.tickers,
+						C_Timer.NewTicker(5 + index + unit, GenerateClosure(self.LoopFrame, self, frame, index + unit))
+					)
 
-				self:LoopFrame(frame, index + unit)
+					self:LoopFrame(frame, index + unit)
+				end
 			end
 		end
 	end
