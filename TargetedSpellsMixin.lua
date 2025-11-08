@@ -87,18 +87,20 @@ function TargetedSpellsMixin:OnSizeChanged(width, height)
 end
 
 function TargetedSpellsMixin:OnSettingChanged(key, value)
-	print("TargetedSpellsMixin:OnSettingChanged()", key, value)
-
 	if self.kind == Private.Enum.FrameKind.Self then
 		if key == Private.Settings.Keys.Self.Width then
+			print("TargetedSpellsMixin:OnSettingChanged()", key, value)
 			self:SetSize(value, TargetedSpellsSaved.Settings.Self.Height)
 		elseif key == Private.Settings.Keys.Self.Height then
+			print("TargetedSpellsMixin:OnSettingChanged()", key, value)
 			self:SetSize(TargetedSpellsSaved.Settings.Self.Width, value)
 		end
 	else
 		if key == Private.Settings.Keys.Party.Width then
+			print("TargetedSpellsMixin:OnSettingChanged()", key, value)
 			self:SetSize(value, TargetedSpellsSaved.Settings.Party.Height)
 		elseif key == Private.Settings.Keys.Party.Height then
+			print("TargetedSpellsMixin:OnSettingChanged()", key, value)
 			self:SetSize(TargetedSpellsSaved.Settings.Party.Width, value)
 		end
 	end

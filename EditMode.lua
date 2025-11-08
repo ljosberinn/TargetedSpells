@@ -130,58 +130,81 @@ function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
 	end
 
 	if key == Private.Settings.Keys.Self.Sound then
-		local function AddSoundAlertButton(description, buttonText, soundKitID)
-			local selectPayloadButton = description:CreateButton(buttonText, function()
-				if TargetedSpellsSaved.Settings.Self.Sound == soundKitID then
-					return
-				end
-
-				TargetedSpellsSaved.Settings.Self.Sound = soundKitID
-
-				Private.EventRegistry:TriggerEvent(
-					Private.Enum.Events.SETTING_CHANGED,
-					key,
-					TargetedSpellsSaved.Settings.Self.Sound
-				)
-			end, soundKitID)
-			selectPayloadButton:AddInitializer(function(button, description, menu)
-				local playSampleButton = MenuTemplates.AttachUtilityButton(button)
-				playSampleButton.Texture:Hide()
-				playSampleButton:SetNormalTexture("common-icon-sound")
-				playSampleButton:SetPushedTexture("common-icon-sound-pressed")
-				playSampleButton:SetDisabledTexture("common-icon-sound-disabled")
-				playSampleButton:SetHighlightTexture("common-icon-sound", "ADD")
-				playSampleButton:GetHighlightTexture():SetAlpha(0.4)
-
-				MenuTemplates.SetUtilityButtonTooltipText(
-					playSampleButton,
-					COOLDOWN_VIEWER_SETTINGS_ALERT_MENU_PLAY_SAMPLE
-				)
-				MenuTemplates.SetUtilityButtonAnchor(playSampleButton, MenuVariants.GearButtonAnchor, button) -- gear means throw on the right
-				MenuTemplates.SetUtilityButtonClickHandler(playSampleButton, function()
-					PlaySound(soundKitID)
-				end)
-			end)
-		end
-
-		local soundCategoryKeyToText = {
-			Animals = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_ANIMALS,
-			Devices = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_DEVICES,
-			Impacts = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_IMPACTS,
-			Instruments = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_INSTRUMENTS,
-			War2 = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_WAR2,
-			War3 = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_WAR3,
-		}
-
-		local function RecursiveAddCooldownViewerSounds(description, currentTable)
-			for key, value in pairs(currentTable) do
+		local function RecursiveAddSounds(description, soundCategoryKeyToText, currentTable)
+			for tableKey, value in pairs(currentTable) do
 				if value.soundKitID and value.text then
-					AddSoundAlertButton(description, value.text, value.soundKitID)
-				elseif type(value) == "table" and soundCategoryKeyToText[key] then
-					local nestedDescription = description:CreateButton(soundCategoryKeyToText[key], nop, -1)
-					RecursiveAddCooldownViewerSounds(nestedDescription, value)
+					local function IsEnabled()
+						return value.soundKitID == TargetedSpellsSaved.Settings.Self.Sound
+					end
+
+					local function Set()
+						if value.soundKitID ~= TargetedSpellsSaved.Settings.Self.Sound then
+							TargetedSpellsSaved.Settings.Self.Sound = value.soundKitID
+
+							Private.EventRegistry:TriggerEvent(
+								Private.Enum.Events.SETTING_CHANGED,
+								key,
+								TargetedSpellsSaved.Settings.Self.Sound
+							)
+						end
+					end
+
+					local selectPayloadCheckbox = description:CreateCheckbox(value.text, IsEnabled, Set, {
+						value = value.text,
+						isRadio = true,
+					})
+					selectPayloadCheckbox:AddInitializer(function(button, description, menu)
+						local playSampleButton = MenuTemplates.AttachUtilityButton(button)
+						playSampleButton.Texture:Hide()
+						playSampleButton:SetNormalTexture("common-icon-sound")
+						playSampleButton:SetPushedTexture("common-icon-sound-pressed")
+						playSampleButton:SetDisabledTexture("common-icon-sound-disabled")
+						playSampleButton:SetHighlightTexture("common-icon-sound", "ADD")
+						playSampleButton:GetHighlightTexture():SetAlpha(0.4)
+
+						MenuTemplates.SetUtilityButtonTooltipText(
+							playSampleButton,
+							COOLDOWN_VIEWER_SETTINGS_ALERT_MENU_PLAY_SAMPLE
+						)
+						MenuTemplates.SetUtilityButtonAnchor(playSampleButton, MenuVariants.GearButtonAnchor, button) -- gear means throw on the right
+						MenuTemplates.SetUtilityButtonClickHandler(playSampleButton, function()
+							PlaySound(value.soundKitID)
+						end)
+					end)
+				elseif type(value) == "table" and soundCategoryKeyToText[tableKey] then
+					local nestedDescription = description:CreateButton(soundCategoryKeyToText[tableKey], nop, -1)
+					RecursiveAddSounds(nestedDescription, soundCategoryKeyToText, value)
 				end
 			end
+		end
+
+		local function AddCooldownViewerSounds(rootDescription)
+			local soundCategoryKeyToText = {
+				Animals = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_ANIMALS,
+				Devices = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_DEVICES,
+				Impacts = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_IMPACTS,
+				Instruments = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_INSTRUMENTS,
+				War2 = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_WAR2,
+				War3 = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_WAR3,
+			}
+
+			RecursiveAddSounds(rootDescription, soundCategoryKeyToText, CooldownViewerSoundData)
+		end
+
+		-- TODO: custom sounds via Shared Media
+		local function AddCustomSounds(rootDescription)
+			-- this follows the structure of `CooldownViewerSoundData` in `Blizzard_CooldownViewer/CooldownViewerSoundAlertData.lua` for ease of function reuse
+			local customSoundData = {
+				Custom = {
+					{ soundKitID = "bloop", text = "Bloop" },
+				},
+			}
+
+			local soundCategoryKeyToText = {
+				Custom = "Custom",
+			}
+
+			RecursiveAddSounds(rootDescription, soundCategoryKeyToText, customSoundData)
 		end
 
 		---@type LibEditModeDropdown
@@ -190,30 +213,31 @@ function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
 			default = Private.Settings.GetSelfDefaultSettings().Sound,
 			generator = function(owner, rootDescription, data)
-				RecursiveAddCooldownViewerSounds(rootDescription, CooldownViewerSoundData)
+				-- pcall this to guard against internal changes on the cd viewer side
+				pcall(AddCooldownViewerSounds, rootDescription)
+				-- intentionally separated so if the above fails, we can always at least show Custom sounds
+				AddCustomSounds(rootDescription)
 			end,
 			-- technically is a reset only
 			set =
 				---@param layoutName string
 				---@param values table<string, boolean>
 				function(layoutName, values)
-					-- todo
-					-- local hasChanges = false
+					local hasChanges = false
+					local defaultSound = Private.Settings.GetSelfDefaultSettings().Sound
 
-					-- for id, bool in pairs(values) do
-					-- 	if TargetedSpellsSaved.Settings.Self.Sound[id] ~= bool then
-					-- 		TargetedSpellsSaved.Settings.Self.Sound[id] = bool
-					-- 		hasChanges = true
-					-- 	end
-					-- end
+					if defaultSound ~= TargetedSpellsSaved.Settings.Self.Sound then
+						TargetedSpellsSaved.Settings.Self.Sound = defaultSound
+						hasChanges = true
+					end
 
-					-- if hasChanges then
-					-- 	Private.EventRegistry:TriggerEvent(
-					-- 		Private.Enum.Events.SETTING_CHANGED,
-					-- 		key,
-					-- 		TargetedSpellsSaved.Settings.Self.Sound
-					-- 	)
-					-- end
+					if hasChanges then
+						Private.EventRegistry:TriggerEvent(
+							Private.Enum.Events.SETTING_CHANGED,
+							key,
+							TargetedSpellsSaved.Settings.Self.Sound
+						)
+					end
 				end,
 		}
 	end
