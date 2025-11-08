@@ -470,6 +470,242 @@ table.insert(Private.LoginFnQueue, function()
 			local initializer = Settings.CreateDropdown(category, setting, GetOptions, "Tooltip")
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
+
+		-- Frame Sort Order
+		do
+			local key = Private.Settings.Keys.Self.SortOrder
+			local defaultValue = Private.Settings.GetSelfDefaultSettings().SortOrder
+
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Self.SortOrder
+			end
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Self.SortOrder = value
+
+				Private.EventRegistry:TriggerEvent(
+					Private.Enum.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Self.SortOrder
+				)
+			end
+
+			local function GetOptions()
+				local container = Settings.CreateControlTextContainer()
+
+				for k, v in pairs(Private.Enum.SortOrder) do
+					container:Add(v, k)
+				end
+
+				return container:GetData()
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.String,
+				"Sort Order",
+				defaultValue,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, "Tooltip")
+			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+		end
+
+		-- Frame Grow
+		do
+			local key = Private.Settings.Keys.Self.Grow
+			local defaultValue = Private.Settings.GetSelfDefaultSettings().Grow
+
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Self.Grow
+			end
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Self.Grow = value
+
+				Private.EventRegistry:TriggerEvent(
+					Private.Enum.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Self.Grow
+				)
+			end
+
+			local function GetOptions()
+				local container = Settings.CreateControlTextContainer()
+
+				for k, v in pairs(Private.Enum.Grow) do
+					container:Add(v, k)
+				end
+
+				return container:GetData()
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.String,
+				"Grow",
+				defaultValue,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, "Tooltip")
+			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+		end
+
+		-- Play Sound
+		do
+			local key = Private.Settings.Keys.Self.PlaySound
+			local defaultValue = Private.Settings.GetSelfDefaultSettings().PlaySound
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Self.PlaySound = not TargetedSpellsSaved.Settings.Self.PlaySound
+				Private.EventRegistry:TriggerEvent(
+					Private.Enum.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Self.PlaySound
+				)
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Boolean,
+				"Play Sound",
+				defaultValue,
+				IsSectionEnabled,
+				SetValue
+			)
+			local initializer = Settings.CreateCheckbox(category, setting, "Tooltip")
+			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+		end
+
+		-- Sound
+		do
+			local key = Private.Settings.Keys.Self.Sound
+			local defaultValue = Private.Settings.GetSelfDefaultSettings().Sound
+
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Self.Sound
+			end
+
+			local function IsNumeric(str)
+				return tonumber(str) ~= nil
+			end
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Self.Sound = IsNumeric(value) and tonumber(value) or value
+
+				Private.EventRegistry:TriggerEvent(
+					Private.Enum.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Self.Sound
+				)
+			end
+
+			local function RecursiveAddSounds(container, soundCategoryKeyToText, currentTable, categoryName)
+				for tableKey, value in pairs(currentTable) do
+					if value.soundKitID and value.text then
+						container:Add("" .. value.soundKitID, string.format("%s - %s", categoryName, value.text))
+					elseif type(value) == "table" and soundCategoryKeyToText[tableKey] then
+						RecursiveAddSounds(container, soundCategoryKeyToText, value, soundCategoryKeyToText[tableKey])
+					end
+				end
+			end
+
+			local function AddCooldownViewerSounds(container)
+				local soundCategoryKeyToText = {
+					Animals = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_ANIMALS,
+					Devices = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_DEVICES,
+					Impacts = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_IMPACTS,
+					Instruments = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_INSTRUMENTS,
+					War2 = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_WAR2,
+					War3 = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_WAR3,
+				}
+
+				RecursiveAddSounds(container, soundCategoryKeyToText, CooldownViewerSoundData)
+			end
+
+			local function AddCustomSounds(container)
+				-- this follows the structure of `CooldownViewerSoundData` in `Blizzard_CooldownViewer/CooldownViewerSoundAlertData.lua` for ease of function reuse
+				local customSoundData = {
+					Custom = {
+						{ soundKitID = "bloop", text = "Bloop" },
+					},
+				}
+
+				local soundCategoryKeyToText = {
+					Custom = "Custom",
+				}
+
+				RecursiveAddSounds(container, soundCategoryKeyToText, customSoundData)
+			end
+
+			local function GetOptions()
+				local container = Settings.CreateControlTextContainer()
+
+				pcall(AddCooldownViewerSounds, container)
+				AddCustomSounds(container)
+
+				return container:GetData()
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.String,
+				"Sound",
+				defaultValue,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, "Tooltip")
+			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+		end
+
+		-- Sound Channel
+		do
+			local key = Private.Settings.Keys.Self.SoundChannel
+			local defaultValue = Private.Settings.GetSelfDefaultSettings().SoundChannel
+
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Self.SoundChannel
+			end
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Self.SoundChannel = value
+
+				Private.EventRegistry:TriggerEvent(
+					Private.Enum.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Self.SoundChannel
+				)
+			end
+
+			local function GetOptions()
+				local container = Settings.CreateControlTextContainer()
+
+				for k, v in pairs(Private.Enum.SoundChannel) do
+					container:Add(v, k)
+				end
+
+				return container:GetData()
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.String,
+				"Sound Channel",
+				defaultValue,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, "Tooltip")
+			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+		end
 	end
 
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Party"))
