@@ -66,6 +66,186 @@ function TargetedSpellsEditModeParentFrameMixin:OnSettingsChanged(key, value)
 end
 
 function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
+	if key == Private.Settings.Keys.Self.PlaySound then
+		---@type LibEditModeCheckbox
+		return {
+			name = "Play Sound",
+			kind = Enum.EditModeSettingDisplayType.Checkbox,
+			default = Private.Settings.GetSelfDefaultSettings().Enabled,
+			get =
+				---@param layoutName string
+				function(layoutName)
+					return TargetedSpellsSaved.Settings.Self.PlaySound
+				end,
+			---@param layoutName string
+			---@param value boolean
+			set = function(layoutName, value)
+				local hasChanges = false
+
+				if value ~= TargetedSpellsSaved.Settings.Self.PlaySound then
+					TargetedSpellsSaved.Settings.Self.PlaySound = value
+					hasChanges = true
+				end
+
+				if hasChanges then
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
+			end,
+		}
+	end
+
+	if key == Private.Settings.Keys.Self.SoundChannel then
+		---@param layoutName string
+		---@param value string
+		local function Set(layoutName, value)
+			if TargetedSpellsSaved.Settings.Self.SoundChannel ~= value then
+				TargetedSpellsSaved.Settings.Self.SoundChannel = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+		end
+
+		---@type LibEditModeDropdown
+		return {
+			name = "Sound Channel",
+			kind = Enum.EditModeSettingDisplayType.Dropdown,
+			default = Private.Settings.GetSelfDefaultSettings().SoundChannel,
+			generator = function(owner, rootDescription, data)
+				for label, enumValue in pairs(Private.Enum.SoundChannel) do
+					local function IsEnabled()
+						return TargetedSpellsSaved.Settings.Self.SoundChannel == enumValue
+					end
+
+					local function SetProxy()
+						Set(LEM:GetActiveLayoutName(), enumValue)
+					end
+
+					rootDescription:CreateCheckbox(label, IsEnabled, SetProxy, {
+						value = label,
+						isRadio = true,
+					})
+				end
+			end,
+			set = Set,
+		}
+	end
+
+	if key == Private.Settings.Keys.Self.Sound then
+		local function AddSoundAlertButton(description, buttonText, soundKitID)
+			local selectPayloadButton = description:CreateButton(buttonText, function()
+				if TargetedSpellsSaved.Settings.Self.Sound == soundKitID then
+					return
+				end
+
+				TargetedSpellsSaved.Settings.Self.Sound = soundKitID
+
+				Private.EventRegistry:TriggerEvent(
+					Private.Enum.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Self.Sound
+				)
+			end, soundKitID)
+			selectPayloadButton:AddInitializer(function(button, description, menu)
+				local playSampleButton = MenuTemplates.AttachUtilityButton(button)
+				playSampleButton.Texture:Hide()
+				playSampleButton:SetNormalTexture("common-icon-sound")
+				playSampleButton:SetPushedTexture("common-icon-sound-pressed")
+				playSampleButton:SetDisabledTexture("common-icon-sound-disabled")
+				playSampleButton:SetHighlightTexture("common-icon-sound", "ADD")
+				playSampleButton:GetHighlightTexture():SetAlpha(0.4)
+
+				MenuTemplates.SetUtilityButtonTooltipText(
+					playSampleButton,
+					COOLDOWN_VIEWER_SETTINGS_ALERT_MENU_PLAY_SAMPLE
+				)
+				MenuTemplates.SetUtilityButtonAnchor(playSampleButton, MenuVariants.GearButtonAnchor, button) -- gear means throw on the right
+				MenuTemplates.SetUtilityButtonClickHandler(playSampleButton, function()
+					PlaySound(soundKitID)
+				end)
+			end)
+		end
+
+		local soundCategoryKeyToText = {
+			Animals = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_ANIMALS,
+			Devices = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_DEVICES,
+			Impacts = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_IMPACTS,
+			Instruments = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_INSTRUMENTS,
+			War2 = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_WAR2,
+			War3 = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_WAR3,
+		}
+
+		local function RecursiveAddCooldownViewerSounds(description, currentTable)
+			for key, value in pairs(currentTable) do
+				if value.soundKitID and value.text then
+					AddSoundAlertButton(description, value.text, value.soundKitID)
+				elseif type(value) == "table" and soundCategoryKeyToText[key] then
+					local nestedDescription = description:CreateButton(soundCategoryKeyToText[key], nop, -1)
+					RecursiveAddCooldownViewerSounds(nestedDescription, value)
+				end
+			end
+		end
+
+		---@type LibEditModeDropdown
+		return {
+			name = "Sound",
+			kind = Enum.EditModeSettingDisplayType.Dropdown,
+			default = Private.Settings.GetSelfDefaultSettings().Sound,
+			generator = function(owner, rootDescription, data)
+				RecursiveAddCooldownViewerSounds(rootDescription, CooldownViewerSoundData)
+			end,
+			-- technically is a reset only
+			set =
+				---@param layoutName string
+				---@param values table<string, boolean>
+				function(layoutName, values)
+					-- todo
+					-- local hasChanges = false
+
+					-- for id, bool in pairs(values) do
+					-- 	if TargetedSpellsSaved.Settings.Self.Sound[id] ~= bool then
+					-- 		TargetedSpellsSaved.Settings.Self.Sound[id] = bool
+					-- 		hasChanges = true
+					-- 	end
+					-- end
+
+					-- if hasChanges then
+					-- 	Private.EventRegistry:TriggerEvent(
+					-- 		Private.Enum.Events.SETTING_CHANGED,
+					-- 		key,
+					-- 		TargetedSpellsSaved.Settings.Self.Sound
+					-- 	)
+					-- end
+				end,
+		}
+	end
+
+	if key == Private.Settings.Keys.Party.IncludeSelfInParty then
+		---@type LibEditModeCheckbox
+		return {
+			name = "Include Self in Party",
+			kind = Enum.EditModeSettingDisplayType.Checkbox,
+			default = Private.Settings.GetPartyDefaultSettings().IncludeSelfInParty,
+			get =
+				---@param layoutName string
+				function(layoutName)
+					return TargetedSpellsSaved.Settings.Party.IncludeSelfInParty
+				end,
+			---@param layoutName string
+			---@param value boolean
+			set = function(layoutName, value)
+				local hasChanges = false
+
+				if value ~= TargetedSpellsSaved.Settings.Party.IncludeSelfInParty then
+					TargetedSpellsSaved.Settings.Party.IncludeSelfInParty = value
+					hasChanges = true
+				end
+
+				if hasChanges then
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
+			end,
+		}
+	end
+
 	if key == Private.Settings.Keys.Self.Enabled or key == Private.Settings.Keys.Party.Enabled then
 		local isSelf = key == Private.Settings.Keys.Self.Enabled
 		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
@@ -502,6 +682,9 @@ function TargetedSpellsEditModeParentFrameMixin:ReleaseFrame(frame)
 end
 
 function TargetedSpellsEditModeParentFrameMixin:OnEditModePositionChanged(frame, layoutName, point, x, y)
+	if self.frameKind == Private.Enum.FrameKind.Party then
+		return
+	end
 	-- todo: restore position from layout
 end
 
@@ -633,6 +816,9 @@ function SelfEditModeMixin:AppendSettings()
 		self:CreateSetting(Private.Settings.Keys.Self.Direction),
 		self:CreateSetting(Private.Settings.Keys.Self.SortOrder),
 		self:CreateSetting(Private.Settings.Keys.Self.Grow),
+		self:CreateSetting(Private.Settings.Keys.Self.PlaySound),
+		self:CreateSetting(Private.Settings.Keys.Self.Sound),
+		self:CreateSetting(Private.Settings.Keys.Self.SoundChannel),
 	})
 end
 
@@ -752,8 +938,41 @@ function PartyEditModeMixin:Init()
 	TargetedSpellsEditModeParentFrameMixin.Init(self, "Targeted Spells Party", Private.Enum.FrameKind.Party)
 	self.maxUnitCount = 5
 	self.amountOfPreviewFramesPerUnit = 3
-	self.useRaidStylePartyFrames = self.useRaidStylePartyFrames or false
+	self.useRaidStylePartyFrames = self.useRaidStylePartyFrames or EditModeManagerFrame:UseRaidStylePartyFrames()
 	self:RepositionEditModeFrame()
+
+	-- when this executes, layouts aren't loaded yet
+	hooksecurefunc(EditModeManagerFrame, "UpdateLayoutInfo", function(editModeManagerSelf)
+		local useRaidStylePartyFrames = EditModeManagerFrame:UseRaidStylePartyFrames()
+
+		if useRaidStylePartyFrames == self.useRaidStylePartyFrames then
+			return
+		end
+
+		self.useRaidStylePartyFrames = useRaidStylePartyFrames
+		self:RepositionEditModeFrame()
+	end)
+
+	-- dirtying settings while edit mode is opened doesn't fire any events
+	hooksecurefunc(EditModeSystemSettingsDialog, "OnSettingValueChanged", function(settingsSelf, setting, checked)
+		if setting ~= Enum.EditModeUnitFrameSetting.UseRaidStylePartyFrames then
+			return
+		end
+
+		local useRaidStylePartyFrames = checked == 1
+
+		if useRaidStylePartyFrames == self.useRaidStylePartyFrames then
+			return
+		end
+
+		self.useRaidStylePartyFrames = useRaidStylePartyFrames
+		self:RepositionEditModeFrame()
+
+		if TargetedSpellsSaved.Settings.Party.Enabled then
+			self:EndDemo()
+			self:StartDemo()
+		end
+	end)
 
 	-- todo: show something in self.editModeFrame as it otherwise has no preview
 end
@@ -780,13 +999,19 @@ function PartyEditModeMixin:AppendSettings()
 		self:CreateSetting(Private.Settings.Keys.Party.TargetAnchor),
 		self:CreateSetting(Private.Settings.Keys.Party.Grow),
 		self:CreateSetting(Private.Settings.Keys.Party.SortOrder),
+		self:CreateSetting(Private.Settings.Keys.Party.IncludeSelfInParty),
 	})
 end
 
 function PartyEditModeMixin:RepositionEditModeFrame()
-	local parent = self.useRaidStylePartyFrames and CompactPartyFrame or PartyFrame
-	local width = self.useRaidStylePartyFrames and 250 or 125
-	local height = self.useRaidStylePartyFrames and 24 or 16
+	local parent = PartyFrame
+	local width = 125
+	local height = 16
+
+	if self.useRaidStylePartyFrames then
+		parent = CompactPartyFrame
+		width = CompactPartyFrame.memberUnitFrames[1]:GetWidth()
+	end
 
 	self.editModeFrame:SetSize(width, height)
 	self.editModeFrame:ClearAllPoints()
@@ -938,33 +1163,6 @@ function PartyEditModeMixin:ReleaseAllFrames()
 		end
 	end
 end
-
--- when this executes, layouts aren't loaded yet
-hooksecurefunc(EditModeManagerFrame, "UpdateLayoutInfo", function(self)
-	PartyEditModeMixin.useRaidStylePartyFrames = EditModeManagerFrame:UseRaidStylePartyFrames()
-	PartyEditModeMixin:RepositionEditModeFrame()
-end)
-
--- dirtying settings while edit mode is opened doesn't fire any events
-hooksecurefunc(EditModeSystemSettingsDialog, "OnSettingValueChanged", function(self, setting, checked)
-	if setting ~= Enum.EditModeUnitFrameSetting.UseRaidStylePartyFrames then
-		return
-	end
-
-	local useRaidStylePartyFrames = checked == 1
-
-	if useRaidStylePartyFrames == PartyEditModeMixin.useRaidStylePartyFrames then
-		return
-	end
-
-	PartyEditModeMixin.useRaidStylePartyFrames = useRaidStylePartyFrames
-	PartyEditModeMixin:RepositionEditModeFrame()
-
-	if TargetedSpellsSaved.Settings.Party.Enabled then
-		PartyEditModeMixin:EndDemo()
-		PartyEditModeMixin:StartDemo()
-	end
-end)
 
 table.insert(Private.LoginFnQueue, GenerateClosure(PartyEditModeMixin.Init, PartyEditModeMixin))
 

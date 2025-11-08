@@ -19,13 +19,13 @@ end
 Private.LoginFnQueue = {}
 
 EventUtil.ContinueOnAddOnLoaded(addonName, function()
-	---@type SavedVariables
+	---@class SavedVariables
 	TargetedSpellsSaved = TargetedSpellsSaved or {}
 	---@class TargetedSpellsSettings
 	TargetedSpellsSaved.Settings = TargetedSpellsSaved.Settings or {}
-	---@class TargetedSpellsSettingsSelf
+	---@class SavedVariablesSettingsSelf
 	TargetedSpellsSaved.Settings.Self = TargetedSpellsSaved.Settings.Self or {}
-	---@class TargetedSpellsSettingsParty
+	---@class SavedVariablesSettingsParty
 	TargetedSpellsSaved.Settings.Party = TargetedSpellsSaved.Settings.Party or {}
 
 	for key, value in pairs(Private.Settings.GetSelfDefaultSettings()) do

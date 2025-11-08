@@ -16,6 +16,9 @@ Private.Settings.Keys = {
 		OffsetY = "FRAME_OFFSET_Y_SELF",
 		SortOrder = "FRAME_SORT_ORDER_SELF",
 		Grow = "FRAME_GROW_SELF",
+		PlaySound = "PLAY_SOUND_SELF",
+		Sound = "SOUND_SELF",
+		SoundChannel = "SOUND_CHANNEL_SELF",
 	},
 	Party = {
 		Enabled = "ENABLED_PARTY",
@@ -31,6 +34,7 @@ Private.Settings.Keys = {
 		TargetAnchor = "FRAME_TARGET_ANCHOR_PARTY",
 		SortOrder = "FRAME_SORT_ORDER_PARTY",
 		Grow = "FRAME_GROW_PARTY",
+		IncludeSelfInParty = "INCLUDE_SELF_IN_PARTY_PARTY",
 	},
 }
 
@@ -98,6 +102,7 @@ function Private.Settings.GetSelfDefaultSettings()
 		},
 		PlaySound = true,
 		Sound = "bloop",
+		SoundChannel = Private.Enum.SoundChannel.Master,
 		LoadConditionSoundContentType = {
 			[Private.Enum.ContentType.OpenWorld] = false,
 			[Private.Enum.ContentType.Delve] = true,
@@ -138,6 +143,7 @@ function Private.Settings.GetPartyDefaultSettings()
 		TargetAnchor = Private.Enum.Anchor.Center,
 		SortOrder = Private.Enum.SortOrder.Ascending,
 		Grow = Private.Enum.Grow.Center,
+		IncludeSelfInParty = true,
 	}
 end
 

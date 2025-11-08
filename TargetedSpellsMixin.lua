@@ -161,6 +161,7 @@ function TargetedSpellsMixin:PostCreate(unit, kind)
 end
 
 function TargetedSpellsMixin:Reset()
+	self:ClearStartTime()
 	self.Cooldown:Clear()
 	self:ClearAllPoints()
 	self:Hide()
@@ -172,7 +173,7 @@ function TargetedSpellsMixin:Reset()
 end
 
 function TargetedSpellsMixin:AttemptToPlaySound()
-	if not self.kind == Private.Enum.FrameKind.Self then
+	if self.kind ~= Private.Enum.FrameKind.Self then
 		return
 	end
 
@@ -190,7 +191,13 @@ function TargetedSpellsMixin:AttemptToPlaySound()
 
 	-- todo: load condition check for sound
 	-- todo: add sound channel setting
-	local ok, _, handle = pcall(PlaySoundFile, sound, channel)
+	local ok, result, handle = nil, nil, nil
+
+	if type(sound) == "number" then
+		ok, result, handle = pcall(PlaySound, sound, channel)
+	else
+		ok, result, handle = pcall(PlaySoundFile, sound, channel)
+	end
 
 	if ok then
 		self.soundHandle = handle

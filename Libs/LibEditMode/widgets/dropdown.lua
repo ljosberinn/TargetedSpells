@@ -1,5 +1,5 @@
 local MINOR = 10
-local lib, minor = LibStub('LibEditMode')
+local lib, minor = LibStub("LibEditMode")
 if minor > MINOR then
 	return
 end
@@ -33,13 +33,13 @@ function dropdownMixin:Setup(data)
 					rootDescription:CreateRadio(value.text, get, set, {
 						get = data.get,
 						set = data.set,
-						value = value.text,
+						value = value.value or value.text,
 					})
 				else
 					rootDescription:CreateCheckbox(value.text, get, set, {
 						get = data.get,
 						set = data.set,
-						value = value.text
+						value = value.value or value.text,
 					})
 				end
 			end
@@ -48,18 +48,18 @@ function dropdownMixin:Setup(data)
 end
 
 lib.internal:CreatePool(lib.SettingType.Dropdown, function()
-	local frame = CreateFrame('Frame', nil, UIParent, 'ResizeLayoutFrame')
+	local frame = CreateFrame("Frame", nil, UIParent, "ResizeLayoutFrame")
 	frame.fixedHeight = 32
 	Mixin(frame, dropdownMixin)
 
-	local label = frame:CreateFontString(nil, nil, 'GameFontHighlightMedium')
-	label:SetPoint('LEFT')
+	local label = frame:CreateFontString(nil, nil, "GameFontHighlightMedium")
+	label:SetPoint("LEFT")
 	label:SetWidth(100)
-	label:SetJustifyH('LEFT')
+	label:SetJustifyH("LEFT")
 	frame.Label = label
 
-	local dropdown = CreateFrame('DropdownButton', nil, frame, 'WowStyle1DropdownTemplate')
-	dropdown:SetPoint('LEFT', label, 'RIGHT', 5, 0)
+	local dropdown = CreateFrame("DropdownButton", nil, frame, "WowStyle1DropdownTemplate")
+	dropdown:SetPoint("LEFT", label, "RIGHT", 5, 0)
 	dropdown:SetSize(200, 30)
 	frame.Dropdown = dropdown
 

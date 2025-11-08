@@ -38,6 +38,7 @@
 ---@field LoadConditionContentType boolean[]
 ---@field LoadConditionRole boolean[]
 ---@field PlaySound boolean
+---@field SoundChannel SoundChannel
 ---@field Sound string
 ---@field LoadConditionSoundContentType boolean[]
 ---@field SortOrder SortOrder

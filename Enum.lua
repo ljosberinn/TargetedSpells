@@ -65,3 +65,12 @@ Private.Enum.Grow = {
 	Start = "start",
 	End = "end",
 }
+
+---@enum SoundChannel
+Private.Enum.SoundChannel = {
+	Master = MASTER_VOLUME,
+	Music = MUSIC_VOLUME,
+	SFX = FX_VOLUME,
+	Ambience = AMBIENCE_VOLUME,
+	Dialog = DIALOG_VOLUME,
+}
