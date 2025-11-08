@@ -895,7 +895,6 @@ function SelfEditModeMixin:AppendSettings()
 		{ point = "CENTER", x = 0, y = 0 }
 	)
 
-	-- todo: layouting
 	LEM:AddFrameSettings(self.editModeFrame, {
 		self:CreateSetting(Private.Settings.Keys.Self.Enabled),
 		self:CreateSetting(Private.Settings.Keys.Self.LoadConditionContentType),
@@ -1075,7 +1074,6 @@ function PartyEditModeMixin:AppendSettings()
 		{ point = "CENTER", x = 0, y = 0 }
 	)
 
-	-- todo: layouting
 	LEM:AddFrameSettings(self.editModeFrame, {
 		self:CreateSetting(Private.Settings.Keys.Party.Enabled),
 		self:CreateSetting(Private.Settings.Keys.Party.LoadConditionContentType),
@@ -1228,10 +1226,6 @@ function PartyEditModeMixin:StartDemo()
 			self.frames[unit][index] = self.frames[unit][index] or self:AcquireFrame()
 			local frame = self.frames[unit][index]
 
-			if math.random() >= 0.5 then
-				frame:SetReverse(true)
-			end
-
 			if frame then
 				table.insert(
 					self.demoTimers.tickers,
@@ -1262,23 +1256,3 @@ function PartyEditModeMixin:ReleaseAllFrames()
 end
 
 table.insert(Private.LoginFnQueue, GenerateClosure(PartyEditModeMixin.Init, PartyEditModeMixin))
-
-local function SetupSelfEditMode()
-	local function RepositionPreviewFrames() end
-
-	-- todo: layouting
-
-	-- LEM:RegisterCallback("layout", function(layoutName)
-	--     if not TagsTrivialTweaks_Settings.LEM then
-	--         TagsTrivialTweaks_Settings.LEM = {}
-	--     end
-	--     if not TagsTrivialTweaks_Settings.LEM[layoutName] then
-	--         TagsTrivialTweaks_Settings.LEM[layoutName] = CopyTable(defaultPosition)
-	--     end
-
-	--     app.ArtifactAbility:SetScale(TagsTrivialTweaks_Settings.LEM[layoutName].scale or 1)
-	--     app.ArtifactAbility:ClearAllPoints()
-	--     app.ArtifactAbility:SetPoint(TagsTrivialTweaks_Settings.LEM[layoutName].point, TagsTrivialTweaks_Settings.LEM[layoutName].x, TagsTrivialTweaks_Settings.LEM[layoutName].y)
-	--     app.ArtifactAbility.Texture:SetAtlas(app.ButtonSkin[TagsTrivialTweaks_Settings.LEM[layoutName].style] or "stormwhite-extrabutton", true)
-	-- end)
-end
