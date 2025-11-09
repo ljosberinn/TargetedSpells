@@ -550,8 +550,10 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 				return tableRef.Height
 			end,
 			set = function(layoutName, value)
-				tableRef.Height = value
-				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				if value ~= tableRef.Height then
+					tableRef.Height = value
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
 			end,
 			minValue = sliderSettings.min,
 			maxValue = sliderSettings.max,
