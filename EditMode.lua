@@ -2,10 +2,10 @@
 local addonName, Private = ...
 local LEM = LibStub("LibEditMode")
 
----@class TargetedSpellsEditModeParentFrameMixin
-local TargetedSpellsEditModeParentFrameMixin = {}
+---@class TargetedSpellsEditModeMixin
+local TargetedSpellsEditModeMixin = {}
 
-function TargetedSpellsEditModeParentFrameMixin:Init(displayName, frameKind)
+function TargetedSpellsEditModeMixin:Init(displayName, frameKind)
 	self.frameKind = frameKind
 	self.demoPlaying = false
 	self.framePool = CreateFramePool("Frame", UIParent, "TargetedSpellsFrameTemplate")
@@ -25,7 +25,7 @@ function TargetedSpellsEditModeParentFrameMixin:Init(displayName, frameKind)
 	self:AppendSettings()
 end
 
-function TargetedSpellsEditModeParentFrameMixin:OnSettingsChanged(key, value)
+function TargetedSpellsEditModeMixin:OnSettingsChanged(key, value)
 	if
 		-- self
 		key == Private.Settings.Keys.Self.Gap
@@ -72,7 +72,7 @@ function TargetedSpellsEditModeParentFrameMixin:OnSettingsChanged(key, value)
 	end
 end
 
-function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
+function TargetedSpellsEditModeMixin:CreateSetting(key)
 	if key == Private.Settings.Keys.Self.ShowDuration or key == Private.Settings.Keys.Party.ShowDuration then
 		local isSelf = key == Private.Settings.Keys.Self.ShowDuration
 		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
@@ -744,11 +744,11 @@ function TargetedSpellsEditModeParentFrameMixin:CreateSetting(key)
 	)
 end
 
-function TargetedSpellsEditModeParentFrameMixin:OnLayoutSettingChange(key, value)
+function TargetedSpellsEditModeMixin:OnLayoutSettingChange(key, value)
 	-- Implement in your derived mixin.
 end
 
-function TargetedSpellsEditModeParentFrameMixin:SortFrames(frames, sortOrder)
+function TargetedSpellsEditModeMixin:SortFrames(frames, sortOrder)
 	local isAscending = sortOrder == Private.Enum.SortOrder.Ascending
 
 	table.sort(frames, function(a, b)
@@ -760,11 +760,11 @@ function TargetedSpellsEditModeParentFrameMixin:SortFrames(frames, sortOrder)
 	end)
 end
 
-function TargetedSpellsEditModeParentFrameMixin:AppendSettings()
+function TargetedSpellsEditModeMixin:AppendSettings()
 	-- Implement in your derived mixin.
 end
 
-function TargetedSpellsEditModeParentFrameMixin:AcquireFrame()
+function TargetedSpellsEditModeMixin:AcquireFrame()
 	local frame = self.framePool:Acquire()
 
 	frame:PostCreate("preview", self.frameKind)
@@ -772,24 +772,21 @@ function TargetedSpellsEditModeParentFrameMixin:AcquireFrame()
 	return frame
 end
 
-function TargetedSpellsEditModeParentFrameMixin:ReleaseFrame(frame)
+function TargetedSpellsEditModeMixin:ReleaseFrame(frame)
 	frame:Reset()
 
 	self.framePool:Release(frame)
 end
 
-function TargetedSpellsEditModeParentFrameMixin:OnEditModePositionChanged(frame, layoutName, point, x, y)
-	if self.frameKind == Private.Enum.FrameKind.Party then
-		return
-	end
-	-- todo: restore position from layout
-end
-
-function TargetedSpellsEditModeParentFrameMixin:RepositionPreviewFrames()
+function TargetedSpellsEditModeMixin:OnEditModePositionChanged(frame, layoutName, point, x, y)
 	-- Implement in your derived mixin.
 end
 
-function TargetedSpellsEditModeParentFrameMixin:LoopFrame(frame, index)
+function TargetedSpellsEditModeMixin:RepositionPreviewFrames()
+	-- Implement in your derived mixin.
+end
+
+function TargetedSpellsEditModeMixin:LoopFrame(frame, index)
 	frame:SetSpellTexture()
 	frame:SetStartTime()
 	local castTime = 4 + index / 2
@@ -808,15 +805,15 @@ function TargetedSpellsEditModeParentFrameMixin:LoopFrame(frame, index)
 	)
 end
 
-function TargetedSpellsEditModeParentFrameMixin:StartDemo()
+function TargetedSpellsEditModeMixin:StartDemo()
 	-- Implement in your derived mixin.
 end
 
-function TargetedSpellsEditModeParentFrameMixin:ReleaseAllFrames()
+function TargetedSpellsEditModeMixin:ReleaseAllFrames()
 	-- Implement in your derived mixin.
 end
 
-function TargetedSpellsEditModeParentFrameMixin:EndDemo()
+function TargetedSpellsEditModeMixin:EndDemo()
 	if not self.demoPlaying then
 		return
 	end
@@ -837,15 +834,7 @@ function TargetedSpellsEditModeParentFrameMixin:EndDemo()
 	self.demoPlaying = false
 end
 
-function TargetedSpellsEditModeParentFrameMixin:CalculateCoordinate(
-	index,
-	dimension,
-	gap,
-	parentDimension,
-	total,
-	offset,
-	grow
-)
+function TargetedSpellsEditModeMixin:CalculateCoordinate(index, dimension, gap, parentDimension, total, offset, grow)
 	if grow == Private.Enum.Grow.Start then
 		return (index - 1) * (dimension + gap) - parentDimension / 2 + offset
 	elseif grow == Private.Enum.Grow.Center then
@@ -857,11 +846,11 @@ function TargetedSpellsEditModeParentFrameMixin:CalculateCoordinate(
 	return 0
 end
 
----@class TargetedSpellsSelfEditModeFrame
-local SelfEditModeMixin = CreateFromMixins(TargetedSpellsEditModeParentFrameMixin)
+---@class TargetedSpellsSelfEditMode
+local SelfEditModeMixin = CreateFromMixins(TargetedSpellsEditModeMixin)
 
 function SelfEditModeMixin:Init()
-	TargetedSpellsEditModeParentFrameMixin.Init(self, "Targeted Spells Self", Private.Enum.FrameKind.Self)
+	TargetedSpellsEditModeMixin.Init(self, "Targeted Spells Self", Private.Enum.FrameKind.Self)
 	self.maxFrameCount = 5
 
 	self.editModeFrame:SetPoint("CENTER", UIParent)
@@ -899,8 +888,11 @@ function SelfEditModeMixin:AppendSettings()
 	LEM:AddFrame(
 		self.editModeFrame,
 		GenerateClosure(self.OnEditModePositionChanged, self),
-		{ point = "CENTER", x = 0, y = 0 }
+		Private.Settings.GetDefaultEditModeFramePosition(),
+		"Targeted Spells - Self"
 	)
+
+	LEM:RegisterCallback("layout", GenerateClosure(self.RestoreEditModePosition, self))
 
 	LEM:AddFrameSettings(self.editModeFrame, {
 		self:CreateSetting(Private.Settings.Keys.Self.Enabled),
@@ -920,8 +912,20 @@ function SelfEditModeMixin:AppendSettings()
 	})
 end
 
+function SelfEditModeMixin:RestoreEditModePosition()
+	self.editModeFrame:ClearAllPoints()
+	self.editModeFrame:SetPoint(
+		TargetedSpellsSaved.Settings.Self.Position.point,
+		TargetedSpellsSaved.Settings.Self.Position.x,
+		TargetedSpellsSaved.Settings.Self.Position.y
+	)
+end
+
+---@param frame Frame
 function SelfEditModeMixin:OnEditModePositionChanged(frame, layoutName, point, x, y)
-	-- todo: restore position from layout
+	TargetedSpellsSaved.Settings.Self.Position.point = point
+	TargetedSpellsSaved.Settings.Self.Position.x = x
+	TargetedSpellsSaved.Settings.Self.Position.y = y
 end
 
 function SelfEditModeMixin:RepositionPreviewFrames()
@@ -1028,11 +1032,11 @@ end
 
 table.insert(Private.LoginFnQueue, GenerateClosure(SelfEditModeMixin.Init, SelfEditModeMixin))
 
----@class TargetedSpellsPartyEditModeFrame
-local PartyEditModeMixin = CreateFromMixins(TargetedSpellsEditModeParentFrameMixin)
+---@class TargetedSpellsPartyEditMode
+local PartyEditModeMixin = CreateFromMixins(TargetedSpellsEditModeMixin)
 
 function PartyEditModeMixin:Init()
-	TargetedSpellsEditModeParentFrameMixin.Init(self, "Targeted Spells Party", Private.Enum.FrameKind.Party)
+	TargetedSpellsEditModeMixin.Init(self, "Targeted Spells Party", Private.Enum.FrameKind.Party)
 	self.maxUnitCount = 5
 	self.amountOfPreviewFramesPerUnit = 3
 	self.useRaidStylePartyFrames = self.useRaidStylePartyFrames or EditModeManagerFrame:UseRaidStylePartyFrames()
@@ -1078,7 +1082,8 @@ function PartyEditModeMixin:AppendSettings()
 	LEM:AddFrame(
 		self.editModeFrame,
 		GenerateClosure(self.OnEditModePositionChanged, self),
-		{ point = "CENTER", x = 0, y = 0 }
+		Private.Settings.GetDefaultEditModeFramePosition(),
+		"Targeted Spells - Party"
 	)
 
 	LEM:AddFrameSettings(self.editModeFrame, {

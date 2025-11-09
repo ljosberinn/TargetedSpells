@@ -44,6 +44,10 @@ Private.Settings.Keys = {
 	},
 }
 
+function Private.Settings.GetDefaultEditModeFramePosition()
+	return { point = "CENTER", x = 0, y = 0 }
+end
+
 function Private.Settings.GetSliderSettingsForOption(key)
 	if key == Private.Settings.Keys.Self.FontSize or key == Private.Settings.Keys.Party.FontSize then
 		return {
@@ -129,6 +133,7 @@ function Private.Settings.GetSelfDefaultSettings()
 		SortOrder = Private.Enum.SortOrder.Ascending,
 		Grow = Private.Enum.Grow.Center,
 		ShowDuration = true,
+		Position = Private.Settings.GetDefaultEditModeFramePosition(),
 	}
 end
 

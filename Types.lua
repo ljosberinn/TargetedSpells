@@ -21,6 +21,7 @@
 ---@field GetSelfDefaultSettings fun(): SavedVariablesSettingsSelf
 ---@field GetPartyDefaultSettings fun(): SavedVariablesSettingsParty
 ---@field GetSliderSettingsForOption fun(key: string): SliderSettings
+---@field GetDefaultEditModeFramePosition fun(): SelfFramePosition
 
 ---@class SavedVariables
 ---@field Settings SavedVariablesSettings
@@ -28,6 +29,11 @@
 ---@class SavedVariablesSettings
 ---@field Self SavedVariablesSettingsSelf
 ---@field Party SavedVariablesSettingsParty
+
+---@class SelfFramePosition
+---@field point Anchor
+---@field x number
+---@field y number
 
 ---@class SavedVariablesSettingsSelf
 ---@field Enabled boolean
@@ -44,6 +50,7 @@
 ---@field SortOrder SortOrder
 ---@field Grow Grow
 ---@field ShowDuration boolean
+---@field Position SelfFramePosition
 
 ---@class SavedVariablesSettingsParty
 ---@field Enabled boolean
@@ -123,42 +130,42 @@
 ---@field maxValue number
 ---@field valueStep number
 
----@class TargetedSpellsEditModeParentFrameMixin
----@field Init fun(self: TargetedSpellsEditModeParentFrameMixin, displayName: string, frameKind: FrameKind)
+---@class TargetedSpellsEditModeMixin
+---@field Init fun(self: TargetedSpellsEditModeMixin, displayName: string, frameKind: FrameKind)
 ---@field editModeFrame Frame
 ---@field demoPlaying boolean
 ---@field framePool FramePool
 ---@field frames table<number, TargetedSpellsMixin[]> | TargetedSpellsMixin[]
 ---@field demoTimers { tickers: table<number, FunctionContainer>, timers: table<number, FunctionContainer> }
----@field StartDemo fun(self: TargetedSpellsEditModeParentFrameMixin)
----@field EndDemo fun(self: TargetedSpellsEditModeParentFrameMixin, forceDisable: boolean?)
----@field OnEditModePositionChanged fun(self: TargetedSpellsEditModeParentFrameMixin, frame: Frame, layoutName: string, point: string, x: number, y: number)
----@field RepositionPreviewFrames fun(self: TargetedSpellsEditModeParentFrameMixin)
----@field SortFrames fun(self: TargetedSpellsEditModeParentFrameMixin, frames: TargetedSpellsMixin[], sortOrder: SortOrder)
+---@field StartDemo fun(self: TargetedSpellsEditModeMixin)
+---@field EndDemo fun(self: TargetedSpellsEditModeMixin, forceDisable: boolean?)
+---@field OnEditModePositionChanged fun(self: TargetedSpellsEditModeMixin, frame: Frame, layoutName: string, point: string, x: number, y: number)
+---@field RepositionPreviewFrames fun(self: TargetedSpellsEditModeMixin)
+---@field SortFrames fun(self: TargetedSpellsEditModeMixin, frames: TargetedSpellsMixin[], sortOrder: SortOrder)
 ---@field buildingFrames true|nil
----@field CreateSetting fun(self: TargetedSpellsEditModeParentFrameMixin, key: string): LibEditModeCheckbox | LibEditModeDropdown | LibEditModeSlider
----@field AcquireFrame fun(self: TargetedSpellsEditModeParentFrameMixin): TargetedSpellsMixin
----@field LoopFrame fun(self: TargetedSpellsEditModeParentFrameMixin, frame: TargetedSpellsMixin, index: number)
----@field ReleaseFrame fun(self: TargetedSpellsEditModeParentFrameMixin, frame: TargetedSpellsMixin)
----@field OnSettingsChanged fun(self: TargetedSpellsEditModeParentFrameMixin, key: string, value: number|string)
----@field ReleaseAllFrames fun(self: TargetedSpellsEditModeParentFrameMixin)
----@field CalculateCoordinate fun(self: TargetedSpellsEditModeParentFrameMixin, index: number, dimension: number, gap: number, parentDimension: number, total: number, offset: number, grow: Grow): number
+---@field CreateSetting fun(self: TargetedSpellsEditModeMixin, key: string): LibEditModeCheckbox | LibEditModeDropdown | LibEditModeSlider
+---@field AcquireFrame fun(self: TargetedSpellsEditModeMixin): TargetedSpellsMixin
+---@field LoopFrame fun(self: TargetedSpellsEditModeMixin, frame: TargetedSpellsMixin, index: number)
+---@field ReleaseFrame fun(self: TargetedSpellsEditModeMixin, frame: TargetedSpellsMixin)
+---@field OnSettingsChanged fun(self: TargetedSpellsEditModeMixin, key: string, value: number|string)
+---@field ReleaseAllFrames fun(self: TargetedSpellsEditModeMixin)
+---@field CalculateCoordinate fun(self: TargetedSpellsEditModeMixin, index: number, dimension: number, gap: number, parentDimension: number, total: number, offset: number, grow: Grow): number
 
----@class TargetedSpellsSelfEditModeFrame : TargetedSpellsEditModeParentFrameMixin
----@field Init fun(self: TargetedSpellsSelfEditModeFrame)
+---@class TargetedSpellsSelfEditMode : TargetedSpellsEditModeMixin
+---@field Init fun(self: TargetedSpellsSelfEditMode)
 ---@field maxFrameCount number
 ---@field frames TargetedSpellsMixin[]
----@field ResizeEditModeFrame fun(self: TargetedSpellsSelfEditModeFrame)
----@field StartDemo fun(self: TargetedSpellsSelfEditModeFrame)
+---@field ResizeEditModeFrame fun(self: TargetedSpellsSelfEditMode)
+---@field StartDemo fun(self: TargetedSpellsSelfEditMode)
 
----@class TargetedSpellsPartyEditModeFrame : TargetedSpellsEditModeParentFrameMixin
----@field Init fun(self: TargetedSpellsPartyEditModeFrame)
+---@class TargetedSpellsPartyEditMode : TargetedSpellsEditModeMixin
+---@field Init fun(self: TargetedSpellsPartyEditMode)
 ---@field maxUnitCount number
 ---@field useRaidStylePartyFrames boolean
 ---@field amountOfPreviewFramesPerUnit number
 ---@field frames table<number, TargetedSpellsMixin[]>
----@field RepositionEditModeFrame fun(self: TargetedSpellsPartyEditModeFrame)
----@field StartDemo fun(self: TargetedSpellsPartyEditModeFrame)
+---@field RepositionEditModeFrame fun(self: TargetedSpellsPartyEditMode)
+---@field StartDemo fun(self: TargetedSpellsPartyEditMode)
 
 ---@class CastMetaInformation
 ---@field castTime number -- secret
