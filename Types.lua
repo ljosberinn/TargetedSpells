@@ -131,6 +131,7 @@
 ---@field minValue number
 ---@field maxValue number
 ---@field valueStep number
+---@field formatter (fun(value: number): string)|nil
 
 ---@class TargetedSpellsEditModeMixin
 ---@field Init fun(self: TargetedSpellsEditModeMixin, displayName: string, frameKind: FrameKind)
@@ -168,17 +169,62 @@
 ---@field RepositionEditModeFrame fun(self: TargetedSpellsPartyEditMode)
 ---@field StartDemo fun(self: TargetedSpellsPartyEditMode)
 
----@class CastMetaInformation
----@field castTime number -- secret
----@field startTime number
----@field frames TargetedSpellsMixin[]
-
 ---@class TargetedSpellsDriver
 ---@field framePool FramePool
 ---@field listenerFrame Frame
----@field unitToCastMetaInformation table<string, CastMetaInformation>
+---@field frames table<string, TargetedSpellsMixin[]>
 ---@field OnSettingsChanged fun(self: TargetedSpellsDriver, key: string, value: number|string)
 ---@field OnFrameEvent fun(self: TargetedSpellsDriver, listenerFrame: Frame, event: WowEvent, ...)
----@field SetupListenerFrame fun(self: TargetedSpellsDriver)
+---@field SetupListenerFrame fun(self: TargetedSpellsDriver, isBoot: boolean)
 ---@field AcquireFrames fun(self: TargetedSpellsDriver, castingUnit: string): TargetedSpellsMixin
 ---@field SortFrames fun(self: TargetedSpellsDriver, frames: TargetedSpellsMixin[], sortOrder: SortOrder)
+
+---@return function?
+local function GenerateClosureInternal(generatorArray, f, ...)
+	local count = select("#", ...)
+	local generator = generatorArray[count + 1]
+	if generator then
+		return generator(f, ...)
+	end
+
+	assertsafe("Closure generation does not support more than " .. (#generatorArray - 1) .. " parameters")
+	return nil
+end
+
+local s_passThroughClosureGenerators = {
+	function(f)
+		return function(...)
+			return f(...)
+		end
+	end,
+	function(f, a)
+		return function(...)
+			return f(a, ...)
+		end
+	end,
+	function(f, a, b)
+		return function(...)
+			return f(a, b, ...)
+		end
+	end,
+	function(f, a, b, c)
+		return function(...)
+			return f(a, b, c, ...)
+		end
+	end,
+	function(f, a, b, c, d)
+		return function(...)
+			return f(a, b, c, d, ...)
+		end
+	end,
+	function(f, a, b, c, d, e)
+		return function(...)
+			return f(a, b, c, d, e, ...)
+		end
+	end,
+}
+
+-- Syntactic sugar for function(...) return f(a, b, c, ...); end
+function GenerateClosure(f, ...)
+	return GenerateClosureInternal(s_passThroughClosureGenerators, f, ...)
+end

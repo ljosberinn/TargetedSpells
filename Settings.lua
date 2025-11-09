@@ -24,6 +24,7 @@ Private.Settings.Keys = {
 		SoundChannel = "SOUND_CHANNEL_SELF",
 		ShowDuration = "SHOW_DURATION_SELF",
 		MaxFrames = "MAX_FRAMES_SELF",
+		Opacity = "OPACITY_SELF",
 	},
 	Party = {
 		Enabled = "ENABLED_PARTY",
@@ -42,11 +43,21 @@ Private.Settings.Keys = {
 		Grow = "FRAME_GROW_PARTY",
 		IncludeSelfInParty = "INCLUDE_SELF_IN_PARTY_PARTY",
 		ShowDuration = "SHOW_DURATION_PARTY",
+		Opacity = "OPACITY_PARTY",
 	},
 }
 
+-- todo: streamline edit mode and general settings
+function Private.Settings.GetSettingsDisplayOrder(kind)
+	if kind == Private.Enum.FrameKind.Self then
+		return {}
+	end
+
+	return {}
+end
+
 function Private.Settings.GetDefaultEditModeFramePosition()
-	-- if possible & present, pseudo-anchor to Encounter Warnings - Minor
+	-- if possible, position below Encounter Warnings - Minor
 	local encounterEventsEditModeSystemId = Enum.EditModeSystem.EncounterEvents
 	local encounterEventsSystemMapEntry = encounterEventsEditModeSystemId
 		and EDIT_MODE_MODERN_SYSTEM_MAP[encounterEventsEditModeSystemId]
@@ -73,6 +84,14 @@ function Private.Settings.GetSliderSettingsForOption(key)
 			min = 1,
 			max = 10,
 			step = 1,
+		}
+	end
+
+	if key == Private.Settings.Keys.Self.Opacity or key == Private.Settings.Keys.Party.Opacity then
+		return {
+			min = 0.2,
+			max = 1,
+			step = 0.01,
 		}
 	end
 
@@ -162,6 +181,7 @@ function Private.Settings.GetSelfDefaultSettings()
 		ShowDuration = true,
 		Position = Private.Settings.GetDefaultEditModeFramePosition(),
 		MaxFrames = 5,
+		Opacity = 1,
 	}
 end
 
@@ -195,6 +215,7 @@ function Private.Settings.GetPartyDefaultSettings()
 		Grow = Private.Enum.Grow.Center,
 		IncludeSelfInParty = true,
 		ShowDuration = true,
+		Opacity = 1,
 	}
 end
 
@@ -875,6 +896,42 @@ table.insert(Private.LoginFnQueue, function()
 			local initializer = Settings.CreateCheckbox(category, setting, "Tooltip")
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
+
+		-- Opacity
+		do
+			local key = Private.Settings.Keys.Self.Opacity
+			local defaultValue = Private.Settings.GetSelfDefaultSettings().Opacity
+			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Self.Opacity
+			end
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Self.Opacity = value
+
+				Private.EventRegistry:TriggerEvent(
+					Private.Enum.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Self.Opacity
+				)
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				"Opacity",
+				defaultValue,
+				GetValue,
+				SetValue
+			)
+			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
+			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, FormatPercentage)
+
+			local initializer = Settings.CreateSlider(category, setting, options, "Tooltip")
+			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+		end
 	end
 
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Party"))
@@ -1516,6 +1573,42 @@ table.insert(Private.LoginFnQueue, function()
 				SetValue
 			)
 			local initializer = Settings.CreateCheckbox(category, setting, "Tooltip")
+			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+		end
+
+		-- Opacity
+		do
+			local key = Private.Settings.Keys.Party.Opacity
+			local defaultValue = Private.Settings.GetPartyDefaultSettings().Opacity
+			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Party.Opacity
+			end
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Party.Opacity = value
+
+				Private.EventRegistry:TriggerEvent(
+					Private.Enum.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Party.Opacity
+				)
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				"Opacity",
+				defaultValue,
+				GetValue,
+				SetValue
+			)
+			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
+			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, FormatPercentage)
+
+			local initializer = Settings.CreateSlider(category, setting, options, "Tooltip")
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 	end

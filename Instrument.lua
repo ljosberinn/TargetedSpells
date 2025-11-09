@@ -1,39 +1,6 @@
 ---@type string, TargetedSpells
 local addonName, Private = ...
 
----@class TargetedSpellsDriver
-local TargetedSpellsDriver = {}
-
-function TargetedSpellsDriver:Init()
-	self.framePool = CreateFramePool("Frame", UIParent, "TargetedSpellsFrameTemplate")
-	self.hookedCastBars = {}
-	self.delay = 0.1
-	self.unitToCastMetaInformation = {}
-
-	self:SetupListenerFrame()
-end
-
-function TargetedSpellsDriver:SetupListenerFrame()
-	self.listenerFrame = self.listenerFrame or CreateFrame("Frame")
-
-	if
-		(Private.Settings.Keys.Self.Enabled or Private.Settings.Keys.Party.Enabled)
-		and not self.listenerFrame:IsEventRegistered("UNIT_SPELLCAST_START")
-	then
-		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_START")
-		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_STOP")
-		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_START")
-		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_STOP")
-		-- todo: empowered spells
-		-- self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_START")
-		-- self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_STOP")
-		self.listenerFrame:RegisterUnitEvent("NAME_PLATE_UNIT_ADDED")
-		self.listenerFrame:RegisterUnitEvent("NAME_PLATE_UNIT_REMOVED")
-		-- self.listenerFrame:RegisterUnitEvent("UNIT_DIED")
-		self.listenerFrame:SetScript("OnEvent", GenerateClosure(self.OnFrameEvent, self))
-	end
-end
-
 local last = GetTime()
 
 local function pprint(...)
@@ -43,11 +10,66 @@ local function pprint(...)
 	print(diff, ...)
 end
 
+---@class TargetedSpellsDriver
+local TargetedSpellsDriver = {}
+
+function TargetedSpellsDriver:Init()
+	self.framePool = CreateFramePool("Frame", UIParent, "TargetedSpellsFrameTemplate")
+	self.delay = 0.1
+	self.frames = {}
+
+	self:SetupListenerFrame(true)
+end
+
+function TargetedSpellsDriver:SetupListenerFrame(isBoot)
+	if isBoot then
+		local frame = CreateFrame("Frame", "TargetedSpellsDriverFrame", UIParent)
+		self.listenerFrame = frame
+
+		Private.EventRegistry:RegisterCallback(
+			Private.Enum.Events.EDIT_MODE_POSITION_CHANGED,
+			self.OnFrameEvent,
+			frame,
+			self,
+			frame,
+			Private.Enum.Events.EDIT_MODE_POSITION_CHANGED
+		)
+
+		frame:SetSize(1, 1)
+		frame:ClearAllPoints()
+		frame:SetPoint(
+			TargetedSpellsSaved.Settings.Self.Position.point,
+			TargetedSpellsSaved.Settings.Self.Position.x,
+			TargetedSpellsSaved.Settings.Self.Position.y
+		)
+		frame:Show()
+	end
+
+	if
+		(Private.Settings.Keys.Self.Enabled or Private.Settings.Keys.Party.Enabled)
+		and not self.listenerFrame:IsEventRegistered("UNIT_SPELLCAST_START")
+	then
+		self.listenerFrame:RegisterUnitEvent("CVAR_UPDATE")
+		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_START")
+		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED")
+		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_STOP")
+		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_START")
+		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_STOP")
+		-- todo: empowered spells
+		-- self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_START")
+		-- self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_STOP")
+		self.listenerFrame:RegisterUnitEvent("NAME_PLATE_UNIT_REMOVED")
+		-- self.listenerFrame:RegisterUnitEvent("UNIT_DIED")
+		self.listenerFrame:SetScript("OnEvent", GenerateClosure(self.OnFrameEvent, self))
+	end
+end
+
 function TargetedSpellsDriver:AcquireFrames(castingUnit)
 	local frames = {}
 
 	if UnitIsUnit("player", castingUnit .. "target") then
 		local selfTargetingFrame = self.framePool:Acquire()
+		selfTargetingFrame:SetParent(self.listenerFrame)
 		selfTargetingFrame:PostCreate("player", Private.Enum.FrameKind.Self)
 		table.insert(frames, selfTargetingFrame)
 	end
@@ -65,6 +87,8 @@ function TargetedSpellsDriver:AcquireFrames(castingUnit)
 			end
 		end
 	end
+
+	pprint("acquired", #frames, "frames for", castingUnit)
 
 	return frames
 end
@@ -94,70 +118,134 @@ function TargetedSpellsDriver:CalculateCoordinate(index, dimension, gap, parentD
 end
 
 function TargetedSpellsDriver:RepositionFrames()
-	local width, height, gap, direction, sortOrder, grow =
-		TargetedSpellsSaved.Settings.Self.Width,
-		TargetedSpellsSaved.Settings.Self.Height,
-		TargetedSpellsSaved.Settings.Self.Gap,
-		TargetedSpellsSaved.Settings.Self.Direction,
-		TargetedSpellsSaved.Settings.Self.SortOrder,
-		TargetedSpellsSaved.Settings.Self.Grow
+	local function impl()
+		---@type table<string, TargetedSpellsMixin[]>
+		local activeFrames = {}
+		local activeFrameCount = 0
 
-	---@type TargetedSpellsMixin[]
-	local activeFrames = {}
+		for sourceUnit, frames in pairs(self.frames) do
+			for i, frame in pairs(frames) do
+				if frame:ShouldBeShown() then
+					if frame:GetKind() == Private.Enum.FrameKind.Self then
+						if activeFrames.self == nil then
+							activeFrames.self = {}
+						end
 
-	for unit, castMetaInformation in pairs(self.unitToCastMetaInformation) do
-		if castMetaInformation.frames ~= nil then
-			for _, frame in pairs(castMetaInformation.frames) do
-				if frame ~= nil and frame:ShouldBeShown() then
-					table.insert(activeFrames, frame)
+						table.insert(activeFrames.self, frame)
+					else
+						local targetUnit = frame:GetUnit()
+
+						if activeFrames[targetUnit] == nil then
+							activeFrames[targetUnit] = {}
+						end
+
+						table.insert(activeFrames[targetUnit], frame)
+					end
+
+					activeFrameCount = activeFrameCount + 1
 				end
 			end
 		end
+
+		for targetUnit, frames in pairs(activeFrames) do
+			if targetUnit == Private.Enum.FrameKind.Self then
+				local width, height, gap, sortOrder, direction, grow =
+					TargetedSpellsSaved.Settings.Self.Width,
+					TargetedSpellsSaved.Settings.Self.Height,
+					TargetedSpellsSaved.Settings.Self.Gap,
+					TargetedSpellsSaved.Settings.Self.SortOrder,
+					TargetedSpellsSaved.Settings.Self.Direction,
+					TargetedSpellsSaved.Settings.Self.Grow
+				local isHorizontal = direction == Private.Enum.Direction.Horizontal
+				local parent = self.listenerFrame
+				local point = isHorizontal and "LEFT" or "BOTTOM"
+				local total = (#frames * (isHorizontal and width or height)) + (#frames - 1) * gap
+
+				self:SortFrames(frames, sortOrder)
+
+				for i, frame in ipairs(frames) do
+					local x = 0
+
+					if isHorizontal then
+						if grow == Private.Enum.Grow.Start then
+							local frameDimension = isHorizontal and frame:GetWidth() or frame:GetHeight()
+							x = (i - 1) * (width + gap) - frameDimension / 2 + 0
+						elseif grow == Private.Enum.Grow.Center then
+							x = (i - 1) * (width + gap) - total / 2 + 0
+						elseif grow == Private.Enum.Grow.End then
+							local frameDimension = isHorizontal and frame:GetWidth() or frame:GetHeight()
+							x = frameDimension / 2 - i * (width + gap) + 0
+						end
+					end
+
+					local y = -(height / 2)
+
+					if not isHorizontal then
+						if grow == Private.Enum.Grow.Start then
+							local frameDimension = isHorizontal and frame:GetWidth() or frame:GetHeight()
+							y = (i - 1) * (width + gap) - frameDimension / 2 + 0
+						elseif grow == Private.Enum.Grow.Center then
+							y = (i - 1) * (width + gap) - total / 2 + 0
+						elseif grow == Private.Enum.Grow.End then
+							local frameDimension = isHorizontal and frame:GetWidth() or frame:GetHeight()
+							y = frameDimension / 2 - i * (width + gap) + 0
+						end
+					end
+
+					frame:Reposition(point, parent, "CENTER", x, y)
+
+					-- frame:Reposition(
+					-- 	point,
+					-- 	parent,
+					-- 	"CENTER",
+					-- 	isHorizontal and self:CalculateCoordinate(i, width, gap, parentDimension, total, 0, grow) or 0,
+					-- 	isHorizontal and 0 or self:CalculateCoordinate(i, width, gap, parentDimension, total, 0, grow)
+					-- )
+				end
+			else
+				self:SortFrames(frames, TargetedSpellsSaved.Settings.Party.SortOrder)
+				local direction = TargetedSpellsSaved.Settings.Party.Direction
+				local isHorizontal = direction == Private.Enum.Direction.Horizontal
+				local index = tonumber(string.sub(targetUnit, 4, 1))
+				local parent = CompactPartyFrame.memberUnitFrames[index]
+			end
+		end
+
+		-- local point = isHorizontal and "LEFT" or "BOTTOM"
+		-- local total = (activeFrameCount * (isHorizontal and width or height)) + (activeFrameCount - 1) * gap
+		-- local parent = _G["Targeted Spells Self"]
+		-- local parentDimension = isHorizontal and 100 or 100
+		-- if parent then
+		-- 	parentDimension = isHorizontal and parent:GetWidth() or parent:GetHeight()
+		-- end
+
+		-- for i, frame in ipairs(activeFrames) do
+		-- 	frame:Reposition(
+		-- 		point,
+		-- 		UIParent,
+		-- 		"CENTER",
+		-- 		isHorizontal and self:CalculateCoordinate(i, width, gap, parentDimension, total, 0, grow) or 0,
+		-- 		isHorizontal and 0 or self:CalculateCoordinate(i, width, gap, parentDimension, total, 0, grow)
+		-- 	)
+		-- end
 	end
 
-	local activeFrameCount = #activeFrames
-
-	if activeFrameCount == 0 then
-		return
-	end
-
-	pprint("activeFrameCount", activeFrameCount)
-
-	self:SortFrames(activeFrames, sortOrder)
-
-	local isHorizontal = direction == Private.Enum.Direction.Horizontal
-
-	local point = isHorizontal and "LEFT" or "BOTTOM"
-	local total = (activeFrameCount * (isHorizontal and width or height)) + (activeFrameCount - 1) * gap
-	local parent = _G["Targeted Spells Self"]
-	local parentDimension = isHorizontal and 100 or 100
-	if parent then
-		parentDimension = isHorizontal and parent:GetWidth() or parent:GetHeight()
-	end
-
-	for i, frame in ipairs(activeFrames) do
-		frame:Reposition(
-			point,
-			UIParent,
-			"CENTER",
-			isHorizontal and self:CalculateCoordinate(i, width, gap, parentDimension, total, 0, grow) or 0,
-			isHorizontal and 0 or self:CalculateCoordinate(i, width, gap, parentDimension, total, 0, grow)
-		)
-	end
+	local results = C_AddOnProfiler.MeasureCall(impl)
+	print("RepositionFrames:", results.elapsedMilliseconds)
 end
 
 function TargetedSpellsDriver:CleanUpUnit(unit, event)
-	local castMetaInformation = self.unitToCastMetaInformation[unit]
+	local frames = self.frames[unit]
 
-	if castMetaInformation ~= nil and castMetaInformation.frames ~= nil then
-		for _, frame in pairs(castMetaInformation.frames) do
+	if frames ~= nil and #frames > 0 then
+		for _, frame in pairs(frames) do
 			frame:Reset()
 			self.framePool:Release(frame)
 		end
 
-		self.unitToCastMetaInformation[unit] = nil
+		table.wipe(self.frames[unit])
 
-		pprint("removed meta info for", unit, "through", event)
+		pprint("removed frames for", unit, "through", event)
 
 		return true
 	end
@@ -166,9 +254,15 @@ function TargetedSpellsDriver:CleanUpUnit(unit, event)
 end
 
 ---@param listenerFrame Frame -- identical to self.listenerFrame
----@param event "DELAYED_UNIT_SPELLCAST_START" | "DELAYED_UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_ADDED" | "NAME_PLATE_UNIT_REMOVED"
+---@param event "UNIT_SPELLCAST_SUCCEEDED" |"EDIT_MODE_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "DELAYED_UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED"
 function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
-	if event == "UNIT_SPELLCAST_START" or event == "UNIT_SPELLCAST_CHANNEL_START" then
+	if event == Private.Enum.Events.EDIT_MODE_POSITION_CHANGED then
+		local point, x, y = ...
+
+		self.listenerFrame:ClearAllPoints()
+		self.listenerFrame:SetPoint(point, x, y)
+		self.listenerFrame:Show()
+	elseif event == "UNIT_SPELLCAST_START" or event == "UNIT_SPELLCAST_CHANNEL_START" then
 		local unit, castGuid, spellId = ...
 
 		if
@@ -180,60 +274,21 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			return
 		end
 
-		local closure = GenerateClosure(
-			self.OnFrameEvent,
-			self,
-			listenerFrame,
-			event == "UNIT_SPELLCAST_START" and Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START
-				or Private.Enum.Events.DELAYED_UNIT_SPELLCAST_CHANNEL_START,
-			unit,
-			spellId
+		C_Timer.After(
+			self.delay,
+			GenerateClosure(
+				self.OnFrameEvent,
+				self,
+				listenerFrame,
+				event == "UNIT_SPELLCAST_START" and Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START
+					or Private.Enum.Events.DELAYED_UNIT_SPELLCAST_CHANNEL_START,
+				{
+					unit = unit,
+					spellId = spellId,
+					startTime = GetTime(),
+				}
+			)
 		)
-
-		C_Timer.After(self.delay, closure)
-	elseif event == "NAME_PLATE_UNIT_ADDED" then
-		local unit = ...
-
-		local nameplate = C_NamePlate.GetNamePlateForUnit(unit, issecure())
-
-		if nameplate == nil or UnitIsUnit("player", unit) or self.hookedCastBars[unit] ~= nil then
-			return
-		end
-
-		self.hookedCastBars[unit] = true
-
-		-- all of this wouldn't be necessary if C_Spell.GetSpellInfo(spellId).castTime provided by UNIT_SPELLCAST_START etc.
-		-- would would 1. not be hasted by player haste 2. not be milliseconds. since its secret, we cannot use the milliseconds
-		nameplate.UnitFrame.castBar:HookScript("OnShow", function(castBarSelf, ...)
-			pprint("CastBarOnShow", GetTime(), select(2, castBarSelf:GetMinMaxValues()))
-			if
-				TargetedSpellsSaved.Settings.Self.Enabled == false
-				and TargetedSpellsSaved.Settings.Party.Enabled == false
-			then
-				return
-			end
-
-			self.unitToCastMetaInformation[unit] = {
-				castTime = select(2, castBarSelf:GetMinMaxValues()),
-				startTime = GetTime(),
-				frames = nil,
-			}
-		end)
-
-		nameplate.UnitFrame.castBar:HookScript("OnHide", function(castBarSelf, ...)
-			if
-				TargetedSpellsSaved.Settings.Self.Enabled == false
-				and TargetedSpellsSaved.Settings.Party.Enabled == false
-			then
-				return
-			end
-
-			if self:CleanUpUnit(unit, event) then
-				self:RepositionFrames()
-			end
-		end)
-
-		pprint("cast bar hooked for", unit)
 	elseif event == "UNIT_DIED" then
 		-- todo: not registered yet, doesn't exist yet. once it does, check whether it provides the unit and then also try to clean up lingering state
 	elseif event == "NAME_PLATE_UNIT_REMOVED" then
@@ -252,7 +307,38 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		if self:CleanUpUnit(unit, event) then
 			self:RepositionFrames()
 		end
-	elseif event == "UNIT_SPELLCAST_STOP" or event == "UNIT_SPELLCAST_CHANNEL_STOP" then
+	elseif event == "CVAR_UPDATE" then
+		local name, value = ...
+
+		if name == "nameplateShowEnemies" then
+			if value ~= 0 then
+				return
+			end
+
+			local cleanedSomethingUp = false
+
+			for unit in pairs(self.frames) do
+				if self:CleanUpUnit(unit, event) then
+					cleanedSomethingUp = true
+				end
+			end
+
+			if cleanedSomethingUp then
+				self:RepositionFrames()
+			end
+			return
+		elseif name == "nameplateShowOffscreen" then
+			if value == "0" or value == 0 then
+				print(
+					"The CVar nameplateShowOffscreen is set to 0 - this will lead to TargetedSpells not working on offscreen enemies."
+				)
+			end
+		end
+	elseif
+		event == "UNIT_SPELLCAST_STOP"
+		or event == "UNIT_SPELLCAST_CHANNEL_STOP"
+		or event == "UNIT_SPELLCAST_SUCCEEDED"
+	then
 		local unit = ...
 
 		-- todo: decide whether we actually care about this
@@ -272,7 +358,10 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		event == Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START
 		or event == Private.Enum.Events.DELAYED_UNIT_SPELLCAST_CHANNEL_START
 	then
-		local unit, spellId = ...
+		local info = ...
+		local unit = info.unit
+		local spellId = info.spellId
+		local startTime = info.startTime
 
 		-- cast vanished during the delay
 		if event == Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START and UnitCastingInfo(unit) == nil then
@@ -285,8 +374,12 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		if TargetedSpellsSaved.Settings.Self.Enabled then
 			hasValidTarget = UnitIsUnit(unit .. "target", "player")
 		elseif TargetedSpellsSaved.Settings.Party.Enabled then
-			hasValidTarget = UnitInParty(unit .. "target")
-			-- todo: account for ignoring player in party (setting NYI)
+			local isInParty = UnitInParty(unit .. "target")
+			if TargetedSpellsSaved.Settings.Party.IncludeSelfInParty then
+				hasValidTarget = isInParty
+			else
+				hasValidTarget = isInParty and not UnitIsUnit(unit .. "target", "player")
+			end
 		end
 
 		if not hasValidTarget then
@@ -294,22 +387,28 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			return
 		end
 
-		local castMetaInformation = self.unitToCastMetaInformation[unit]
+		local nameplate = C_NamePlate.GetNamePlateForUnit(unit, issecure())
 
-		if castMetaInformation == nil then
+		-- without `nameplateShowOffscreen` active, it may be offscreen
+		if nameplate == nil then
 			return
 		end
 
-		pprint(event, unit, "matched info")
+		local castTime = select(2, nameplate.UnitFrame.castBar:GetMinMaxValues())
+
+		if self.frames[unit] == nil then
+			self.frames[unit] = {}
+		end
 
 		local frames = self:AcquireFrames(unit)
 
 		for _, frame in ipairs(frames) do
-			self.unitToCastMetaInformation[unit].frames = frames
-			frame:SetSpellTexture(C_Spell.GetSpellTexture(spellId))
-			frame:SetStartTime(castMetaInformation.startTime)
-			frame:SetCastTime(castMetaInformation.castTime)
+			table.insert(self.frames[unit], frame)
+			frame:SetSpellId(spellId)
+			frame:SetStartTime(startTime)
+			frame:SetCastTime(castTime)
 			frame:RefreshSpellCooldownInfo()
+			frame:AttemptToPlaySound()
 			frame:Show()
 		end
 
@@ -327,7 +426,7 @@ function TargetedSpellsDriver:OnSettingsChanged(key, value)
 			self.listenerFrame:SetScript("OnEvent", nil)
 			print("TargetedSpellsDriver:OnSettingsChanged: removed listeners")
 		else
-			self:SetupListenerFrame()
+			self:SetupListenerFrame(false)
 			print("TargetedSpellsDriver:OnSettingsChanged: reattached listeners")
 		end
 	elseif key == Private.Settings.Keys.Self.LoadConditionContentType then

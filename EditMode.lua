@@ -106,6 +106,33 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 		}
 	end
 
+	if key == Private.Settings.Keys.Self.Opacity or key == Private.Settings.Keys.Party.Opacity then
+		local isSelf = key == Private.Settings.Keys.Self.Opacity
+		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
+		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+
+		---@type LibEditModeSlider
+		return {
+			name = "Opacity",
+			kind = Enum.EditModeSettingDisplayType.Slider,
+			default = isSelf and Private.Settings.GetSelfDefaultSettings().Opacity
+				or Private.Settings.GetPartyDefaultSettings().Opacity,
+			get = function(layoutName)
+				return tableRef.Opacity
+			end,
+			set = function(layoutName, value)
+				if value ~= tableRef.Opacity then
+					tableRef.Opacity = value
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
+			end,
+			minValue = sliderSettings.min,
+			maxValue = sliderSettings.max,
+			valueStep = sliderSettings.step,
+			formatter = FormatPercentage,
+		}
+	end
+
 	if key == Private.Settings.Keys.Self.ShowDuration or key == Private.Settings.Keys.Party.ShowDuration then
 		local isSelf = key == Private.Settings.Keys.Self.ShowDuration
 		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
@@ -124,14 +151,8 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 			---@param layoutName string
 			---@param value boolean
 			set = function(layoutName, value)
-				local hasChanges = false
-
 				if value ~= tableRef.ShowDuration then
 					tableRef.ShowDuration = value
-					hasChanges = true
-				end
-
-				if hasChanges then
 					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 				end
 			end,
@@ -152,14 +173,8 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 			---@param layoutName string
 			---@param value boolean
 			set = function(layoutName, value)
-				local hasChanges = false
-
 				if value ~= TargetedSpellsSaved.Settings.Self.PlaySound then
 					TargetedSpellsSaved.Settings.Self.PlaySound = value
-					hasChanges = true
-				end
-
-				if hasChanges then
 					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 				end
 			end,
@@ -305,15 +320,10 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 				---@param layoutName string
 				---@param values table<string, boolean>
 				function(layoutName, values)
-					local hasChanges = false
 					local defaultSound = Private.Settings.GetSelfDefaultSettings().Sound
 
 					if defaultSound ~= TargetedSpellsSaved.Settings.Self.Sound then
 						TargetedSpellsSaved.Settings.Self.Sound = defaultSound
-						hasChanges = true
-					end
-
-					if hasChanges then
 						Private.EventRegistry:TriggerEvent(
 							Private.Enum.Events.SETTING_CHANGED,
 							key,
@@ -338,14 +348,8 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 			---@param layoutName string
 			---@param value boolean
 			set = function(layoutName, value)
-				local hasChanges = false
-
 				if value ~= TargetedSpellsSaved.Settings.Party.IncludeSelfInParty then
 					TargetedSpellsSaved.Settings.Party.IncludeSelfInParty = value
-					hasChanges = true
-				end
-
-				if hasChanges then
 					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 				end
 			end,
@@ -370,14 +374,8 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 			---@param layoutName string
 			---@param value boolean
 			set = function(layoutName, value)
-				local hasChanges = false
-
 				if value ~= tableRef.Enabled then
 					tableRef.Enabled = value
-					hasChanges = true
-				end
-
-				if hasChanges then
 					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 				end
 			end,
@@ -999,6 +997,7 @@ function SelfEditModeMixin:AppendSettings()
 		self:CreateSetting(Private.Settings.Keys.Self.Sound),
 		self:CreateSetting(Private.Settings.Keys.Self.SoundChannel),
 		self:CreateSetting(Private.Settings.Keys.Self.ShowDuration),
+		self:CreateSetting(Private.Settings.Keys.Self.Opacity),
 	})
 end
 
@@ -1016,6 +1015,8 @@ function SelfEditModeMixin:OnEditModePositionChanged(frame, layoutName, point, x
 	TargetedSpellsSaved.Settings.Self.Position.point = point
 	TargetedSpellsSaved.Settings.Self.Position.x = x
 	TargetedSpellsSaved.Settings.Self.Position.y = y
+
+	Private.EventRegistry:TriggerEvent(Private.Enum.Events.EDIT_MODE_POSITION_CHANGED, point, x, y)
 end
 
 function SelfEditModeMixin:RepositionPreviewFrames()
@@ -1194,6 +1195,7 @@ function PartyEditModeMixin:AppendSettings()
 		self:CreateSetting(Private.Settings.Keys.Party.SortOrder),
 		self:CreateSetting(Private.Settings.Keys.Party.IncludeSelfInParty),
 		self:CreateSetting(Private.Settings.Keys.Party.ShowDuration),
+		self:CreateSetting(Private.Settings.Keys.Party.Opacity),
 	})
 end
 

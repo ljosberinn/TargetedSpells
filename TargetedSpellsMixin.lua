@@ -103,6 +103,8 @@ function TargetedSpellsMixin:OnSettingChanged(key, value)
 		elseif key == Private.Settings.Keys.Self.FontSize then
 			print("TargetedSpellsMixin:OnSettingChanged->SetFontSize()", key, value)
 			self:SetFontSize(value)
+		elseif key == Private.Settings.Keys.Self.Opacity then
+			self:SetAlpha(value)
 		end
 	else
 		if key == Private.Settings.Keys.Party.Width then
@@ -117,6 +119,8 @@ function TargetedSpellsMixin:OnSettingChanged(key, value)
 		elseif key == Private.Settings.Keys.Party.FontSize then
 			print("TargetedSpellsMixin:OnSettingChanged->SetFontSize()", key, value)
 			self:SetFontSize(value)
+		elseif key == Private.Settings.Keys.Party.Opacity then
+			self:SetAlpha(value)
 		end
 	end
 end
