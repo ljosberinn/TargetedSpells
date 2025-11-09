@@ -51,6 +51,7 @@
 ---@field Grow Grow
 ---@field ShowDuration boolean
 ---@field Position SelfFramePosition
+---@field MaxElements number
 
 ---@class SavedVariablesSettingsParty
 ---@field Enabled boolean
@@ -80,20 +81,21 @@
 ---@field Icon Texture
 ---@field Cooldown ExtendedCooldownTypes
 ---@field soundHandle number?
----@field kind FrameKind
+---@field kind FrameKind?
 ---@field unit string? -- secret?
 ---@field startTime number?
 ---@field castTime number? -- secret
 ---@field OnLoad fun(self: TargetedSpellsMixin)
----@field SetKind fun(self: TargetedSpellsMixin, kind: string)
----@field OnKindChanged fun(self: TargetedSpellsMixin, kind: string)
+---@field SetKind fun(self: TargetedSpellsMixin, kind: FrameKind)
+---@field GetKind fun(self: TargetedSpellsMixin): FrameKind?
+---@field OnKindChanged fun(self: TargetedSpellsMixin, kind: FrameKind)
 ---@field SetUnit fun(self: TargetedSpellsMixin, unit: string)
 ---@field GetUnit fun(self: TargetedSpellsMixin): string
 ---@field ClearStartTime fun(self: TargetedSpellsMixin)
 ---@field GetStartTime fun(self: TargetedSpellsMixin): number
 ---@field SetStartTime fun(self: TargetedSpellsMixin, startTime: number?)
 ---@field SetCastTime fun(self: TargetedSpellsMixin, castTime: number)
----@field SetSpellTexture fun(self: TargetedSpellsMixin, texture: number?)
+---@field SetSpellId fun(self: TargetedSpellsMixin, spellId: number?)
 ---@field RefreshSpellCooldownInfo fun(self: TargetedSpellsMixin)
 ---@field OnSizeChanged fun(self: TargetedSpellsMixin, width: number, height: number)
 ---@field OnSettingChanged fun(self: TargetedSpellsMixin, key: string, value: number|string)
@@ -153,7 +155,6 @@
 
 ---@class TargetedSpellsSelfEditMode : TargetedSpellsEditModeMixin
 ---@field Init fun(self: TargetedSpellsSelfEditMode)
----@field maxFrameCount number
 ---@field frames TargetedSpellsMixin[]
 ---@field ResizeEditModeFrame fun(self: TargetedSpellsSelfEditMode)
 ---@field StartDemo fun(self: TargetedSpellsSelfEditMode)
@@ -170,7 +171,7 @@
 ---@class CastMetaInformation
 ---@field castTime number -- secret
 ---@field startTime number
----@field frames (TargetedSpellsMixin?)[]
+---@field frames TargetedSpellsMixin[]
 
 ---@class TargetedSpellsDriver
 ---@field framePool FramePool
@@ -180,3 +181,4 @@
 ---@field OnFrameEvent fun(self: TargetedSpellsDriver, listenerFrame: Frame, event: WowEvent, ...)
 ---@field SetupListenerFrame fun(self: TargetedSpellsDriver)
 ---@field AcquireFrames fun(self: TargetedSpellsDriver, castingUnit: string): TargetedSpellsMixin
+---@field SortFrames fun(self: TargetedSpellsDriver, frames: TargetedSpellsMixin[], sortOrder: SortOrder)

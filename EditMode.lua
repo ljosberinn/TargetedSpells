@@ -34,6 +34,7 @@ function TargetedSpellsEditModeMixin:OnSettingsChanged(key, value)
 		or key == Private.Settings.Keys.Self.Height
 		or key == Private.Settings.Keys.Self.SortOrder
 		or key == Private.Settings.Keys.Self.Grow
+		or key == Private.Settings.Keys.Self.MaxFrames
 		-- party
 		or key == Private.Settings.Keys.Party.Gap
 		or key == Private.Settings.Keys.Party.Direction
@@ -46,7 +47,16 @@ function TargetedSpellsEditModeMixin:OnSettingsChanged(key, value)
 		or key == Private.Settings.Keys.Party.SortOrder
 		or key == Private.Settings.Keys.Party.Grow
 	then
-		self:OnLayoutSettingChange(key, value)
+		self:OnLayoutSettingChanged(key, value)
+
+		if key == Private.Settings.Keys.Self.MaxFrames then
+			if not LEM:IsInEditMode() then
+				return
+			end
+
+			self:EndDemo()
+			self:StartDemo()
+		end
 	elseif key == Private.Settings.Keys.Self.Enabled or key == Private.Settings.Keys.Party.Enabled then
 		if not LEM:IsInEditMode() then
 			return
@@ -73,6 +83,29 @@ function TargetedSpellsEditModeMixin:OnSettingsChanged(key, value)
 end
 
 function TargetedSpellsEditModeMixin:CreateSetting(key)
+	if key == Private.Settings.Keys.Self.MaxFrames then
+		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+
+		---@type LibEditModeSlider
+		return {
+			name = "Max Frames",
+			kind = Enum.EditModeSettingDisplayType.Slider,
+			default = Private.Settings.GetSelfDefaultSettings().MaxFrames,
+			get = function(layoutName)
+				return TargetedSpellsSaved.Settings.Self.MaxFrames
+			end,
+			set = function(layoutName, value)
+				if value ~= TargetedSpellsSaved.Settings.Self.MaxFrames then
+					TargetedSpellsSaved.Settings.Self.MaxFrames = value
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
+			end,
+			minValue = sliderSettings.min,
+			maxValue = sliderSettings.max,
+			valueStep = sliderSettings.step,
+		}
+	end
+
 	if key == Private.Settings.Keys.Self.ShowDuration or key == Private.Settings.Keys.Party.ShowDuration then
 		local isSelf = key == Private.Settings.Keys.Self.ShowDuration
 		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
@@ -465,8 +498,10 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 				return tableRef.FontSize
 			end,
 			set = function(layoutName, value)
-				tableRef.FontSize = value
-				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				if value ~= tableRef.FontSize then
+					tableRef.FontSize = value
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
 			end,
 			minValue = sliderSettings.min,
 			maxValue = sliderSettings.max,
@@ -489,8 +524,10 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 				return tableRef.Width
 			end,
 			set = function(layoutName, value)
-				tableRef.Width = value
-				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				if value ~= tableRef.Width then
+					tableRef.Width = value
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
 			end,
 			minValue = sliderSettings.min,
 			maxValue = sliderSettings.max,
@@ -537,8 +574,10 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 				return tableRef.Gap
 			end,
 			set = function(layoutName, value)
-				tableRef.Gap = value
-				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				if value ~= tableRef.Gap then
+					tableRef.Gap = value
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
 			end,
 			minValue = sliderSettings.min,
 			maxValue = sliderSettings.max,
@@ -584,36 +623,27 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 		}
 	end
 
-	if key == Private.Settings.Keys.Party.OffsetX or key == Private.Settings.Keys.Party.OffsetY then
-		local isX = key == Private.Settings.Keys.Party.OffsetX
+	if key == Private.Settings.Keys.Party.OffsetX then
 		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
 
 		---@type LibEditModeSlider
 		return {
-			name = isX and "Offset X" or "Offset Y",
+			name = "Offset X",
 			kind = Enum.EditModeSettingDisplayType.Slider,
-			default = isX and Private.Settings.GetPartyDefaultSettings().OffsetX
-				or Private.Settings.GetPartyDefaultSettings().OffsetY,
+			default = Private.Settings.GetPartyDefaultSettings().OffsetX,
 			get =
 				---@param layoutName string
 				function(layoutName)
-					if isX then
-						return TargetedSpellsSaved.Settings.Party.OffsetX
-					end
-
-					return TargetedSpellsSaved.Settings.Party.OffsetY
+					return TargetedSpellsSaved.Settings.Party.OffsetX
 				end,
 			set =
 				---@param layoutName string
 				---@param value number
 				function(layoutName, value)
-					if isX then
+					if value ~= TargetedSpellsSaved.Settings.Party.OffsetX then
 						TargetedSpellsSaved.Settings.Party.OffsetX = value
-					else
-						TargetedSpellsSaved.Settings.Party.OffsetY = value
+						Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 					end
-
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 				end,
 			minValue = sliderSettings.min,
 			maxValue = sliderSettings.max,
@@ -621,29 +651,88 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 		}
 	end
 
-	if key == Private.Settings.Keys.Party.SourceAnchor or key == Private.Settings.Keys.Party.TargetAnchor then
-		local isSource = key == Private.Settings.Keys.Party.SourceAnchor
-		local tableKey = isSource and "SourceAnchor" or "TargetAnchor"
+	if key == Private.Settings.Keys.Party.OffsetY then
+		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
 
+		---@type LibEditModeSlider
+		return {
+			name = "Offset Y",
+			kind = Enum.EditModeSettingDisplayType.Slider,
+			default = Private.Settings.GetPartyDefaultSettings().OffsetY,
+			get =
+				---@param layoutName string
+				function(layoutName)
+					return TargetedSpellsSaved.Settings.Party.OffsetY
+				end,
+			set =
+				---@param layoutName string
+				---@param value number
+				function(layoutName, value)
+					if value ~= TargetedSpellsSaved.Settings.Party.OffsetY then
+						TargetedSpellsSaved.Settings.Party.OffsetY = value
+						Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+					end
+				end,
+			minValue = sliderSettings.min,
+			maxValue = sliderSettings.max,
+			valueStep = sliderSettings.step,
+		}
+	end
+
+	if key == Private.Settings.Keys.Party.SourceAnchor then
 		---@param layoutName string
 		---@param value string
 		local function Set(layoutName, value)
-			if TargetedSpellsSaved.Settings.Party[tableKey] ~= value then
-				TargetedSpellsSaved.Settings.Party[tableKey] = value
+			if TargetedSpellsSaved.Settings.Party.SourceAnchor ~= value then
+				TargetedSpellsSaved.Settings.Party.SourceAnchor = value
 				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 			end
 		end
 
 		---@type LibEditModeDropdown
 		return {
-			name = isSource and "Source Anchor" or "Target Anchor",
+			name = "Source Anchor",
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
-			default = isSource and Private.Settings.GetPartyDefaultSettings().SourceAnchor
-				or Private.Settings.GetPartyDefaultSettings().TargetAnchor,
+			default = Private.Settings.GetPartyDefaultSettings().SourceAnchor,
 			generator = function(owner, rootDescription, data)
 				for label, enumValue in pairs(Private.Enum.Anchor) do
 					local function IsEnabled()
-						return TargetedSpellsSaved.Settings.Party[tableKey] == enumValue
+						return TargetedSpellsSaved.Settings.Party.SourceAnchor == enumValue
+					end
+
+					local function SetProxy()
+						Set(LEM:GetActiveLayoutName(), enumValue)
+					end
+
+					rootDescription:CreateCheckbox(label, IsEnabled, SetProxy, {
+						value = label,
+						isRadio = true,
+					})
+				end
+			end,
+			set = Set,
+		}
+	end
+
+	if key == Private.Settings.Keys.Party.TargetAnchor then
+		---@param layoutName string
+		---@param value string
+		local function Set(layoutName, value)
+			if TargetedSpellsSaved.Settings.Party.TargetAnchor ~= value then
+				TargetedSpellsSaved.Settings.Party.TargetAnchor = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+		end
+
+		---@type LibEditModeDropdown
+		return {
+			name = "Target Anchor",
+			kind = Enum.EditModeSettingDisplayType.Dropdown,
+			default = Private.Settings.GetPartyDefaultSettings().TargetAnchor,
+			generator = function(owner, rootDescription, data)
+				for label, enumValue in pairs(Private.Enum.Anchor) do
+					local function IsEnabled()
+						return TargetedSpellsSaved.Settings.Party.TargetAnchor == enumValue
 					end
 
 					local function SetProxy()
@@ -744,7 +833,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 	)
 end
 
-function TargetedSpellsEditModeMixin:OnLayoutSettingChange(key, value)
+function TargetedSpellsEditModeMixin:OnLayoutSettingChanged(key, value)
 	-- Implement in your derived mixin.
 end
 
@@ -787,7 +876,7 @@ function TargetedSpellsEditModeMixin:RepositionPreviewFrames()
 end
 
 function TargetedSpellsEditModeMixin:LoopFrame(frame, index)
-	frame:SetSpellTexture()
+	frame:SetSpellId()
 	frame:SetStartTime()
 	local castTime = 4 + index / 2
 	frame:SetCastTime(castTime)
@@ -851,32 +940,30 @@ local SelfEditModeMixin = CreateFromMixins(TargetedSpellsEditModeMixin)
 
 function SelfEditModeMixin:Init()
 	TargetedSpellsEditModeMixin.Init(self, "Targeted Spells Self", Private.Enum.FrameKind.Self)
-	self.maxFrameCount = 5
 
 	self.editModeFrame:SetPoint("CENTER", UIParent)
 	self:ResizeEditModeFrame()
 end
 
 function SelfEditModeMixin:ResizeEditModeFrame()
-	local width, gap, height, direction =
+	local width, gap, height, direction, maxFrames =
 		TargetedSpellsSaved.Settings.Self.Width,
 		TargetedSpellsSaved.Settings.Self.Gap,
 		TargetedSpellsSaved.Settings.Self.Height,
-		TargetedSpellsSaved.Settings.Self.Direction
+		TargetedSpellsSaved.Settings.Self.Direction,
+		TargetedSpellsSaved.Settings.Self.MaxFrames
 
 	if direction == Private.Enum.Direction.Horizontal then
-		local totalWidth = (self.maxFrameCount * width) + (self.maxFrameCount - 1) * gap
+		local totalWidth = (maxFrames * width) + (maxFrames - 1) * gap
 		self.editModeFrame:SetSize(totalWidth, height)
 	else
-		local totalHeight = (self.maxFrameCount * height) + (self.maxFrameCount - 1) * gap
+		local totalHeight = (maxFrames * height) + (maxFrames - 1) * gap
 		self.editModeFrame:SetSize(width, totalHeight)
 	end
 end
 
 function SelfEditModeMixin:ReleaseAllFrames()
-	for index = 1, self.maxFrameCount do
-		local frame = self.frames[index]
-
+	for index, frame in pairs(self.frames) do
 		if frame then
 			self:ReleaseFrame(frame)
 			self.frames[index] = nil
@@ -898,6 +985,7 @@ function SelfEditModeMixin:AppendSettings()
 		self:CreateSetting(Private.Settings.Keys.Self.Enabled),
 		self:CreateSetting(Private.Settings.Keys.Self.LoadConditionContentType),
 		self:CreateSetting(Private.Settings.Keys.Self.LoadConditionRole),
+		self:CreateSetting(Private.Settings.Keys.Self.MaxFrames),
 		self:CreateSetting(Private.Settings.Keys.Self.Width),
 		self:CreateSetting(Private.Settings.Keys.Self.Height),
 		self:CreateSetting(Private.Settings.Keys.Self.FontSize),
@@ -949,8 +1037,7 @@ function SelfEditModeMixin:RepositionPreviewFrames()
 	---@type TargetedSpellsMixin[]
 	local activeFrames = {}
 
-	for i = 1, self.maxFrameCount do
-		local frame = self.frames[i]
+	for index, frame in pairs(self.frames) do
 		if frame and frame:ShouldBeShown() then
 			table.insert(activeFrames, frame)
 		end
@@ -989,7 +1076,7 @@ function SelfEditModeMixin:StartDemo()
 	self.demoPlaying = true
 	self.buildingFrames = true
 
-	for index = 1, self.maxFrameCount do
+	for index = 1, TargetedSpellsSaved.Settings.Self.MaxFrames do
 		self.frames[index] = self.frames[index] or self:AcquireFrame()
 		local frame = self.frames[index]
 
@@ -1008,7 +1095,7 @@ function SelfEditModeMixin:StartDemo()
 	self:RepositionPreviewFrames()
 end
 
-function SelfEditModeMixin:OnLayoutSettingChange(key, value)
+function SelfEditModeMixin:OnLayoutSettingChanged(key, value)
 	if
 		key == Private.Settings.Keys.Self.Gap
 		or key == Private.Settings.Keys.Self.Direction
@@ -1016,12 +1103,14 @@ function SelfEditModeMixin:OnLayoutSettingChange(key, value)
 		or key == Private.Settings.Keys.Self.Height
 		or key == Private.Settings.Keys.Self.SortOrder
 		or key == Private.Settings.Keys.Self.Grow
+		or key == Private.Settings.Keys.Self.MaxFrames
 	then
 		if
 			key == Private.Settings.Keys.Self.Width
 			or key == Private.Settings.Keys.Self.Height
 			or key == Private.Settings.Keys.Self.Gap
 			or key == Private.Settings.Keys.Self.Direction
+			or key == Private.Settings.Keys.Self.MaxFrames
 		then
 			self:ResizeEditModeFrame()
 		end
@@ -1121,7 +1210,7 @@ function PartyEditModeMixin:RepositionEditModeFrame()
 	self.editModeFrame:SetPoint("CENTER", parent, "TOP", 0, 16)
 end
 
-function PartyEditModeMixin:OnLayoutSettingChange(key, value)
+function PartyEditModeMixin:OnLayoutSettingChanged(key, value)
 	if
 		key == Private.Settings.Keys.Party.Gap
 		or key == Private.Settings.Keys.Party.Direction

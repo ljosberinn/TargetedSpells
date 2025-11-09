@@ -140,8 +140,9 @@ function TargetedSpellsMixin:SetCastTime(castTime)
 	self.castTime = castTime
 end
 
-function TargetedSpellsMixin:SetSpellTexture(texture)
-	self.Icon:SetTexture(texture or GetRandomIcon())
+function TargetedSpellsMixin:SetSpellId(spellId)
+	local texture = spellId and C_Spell.GetSpellTexture(spellId) or GetRandomIcon()
+	self.Icon:SetTexture(texture)
 end
 
 function TargetedSpellsMixin:ShouldBeShown()
@@ -166,6 +167,10 @@ function TargetedSpellsMixin:SetKind(kind)
 		self.kind = kind
 		self:OnKindChanged(kind)
 	end
+end
+
+function TargetedSpellsMixin:GetKind()
+	return self.kind
 end
 
 function TargetedSpellsMixin:GetUnit()

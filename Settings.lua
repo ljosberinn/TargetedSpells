@@ -23,6 +23,7 @@ Private.Settings.Keys = {
 		Sound = "SOUND_SELF",
 		SoundChannel = "SOUND_CHANNEL_SELF",
 		ShowDuration = "SHOW_DURATION_SELF",
+		MaxFrames = "MAX_FRAMES_SELF",
 	},
 	Party = {
 		Enabled = "ENABLED_PARTY",
@@ -49,6 +50,14 @@ function Private.Settings.GetDefaultEditModeFramePosition()
 end
 
 function Private.Settings.GetSliderSettingsForOption(key)
+	if key == Private.Settings.Keys.Self.MaxFrames then
+		return {
+			min = 1,
+			max = 10,
+			step = 1,
+		}
+	end
+
 	if key == Private.Settings.Keys.Self.FontSize or key == Private.Settings.Keys.Party.FontSize then
 		return {
 			min = 8,
@@ -134,6 +143,7 @@ function Private.Settings.GetSelfDefaultSettings()
 		Grow = Private.Enum.Grow.Center,
 		ShowDuration = true,
 		Position = Private.Settings.GetDefaultEditModeFramePosition(),
+		MaxFrames = 5,
 	}
 end
 
@@ -346,6 +356,42 @@ table.insert(Private.LoginFnQueue, function()
 				initializer.hideSteppers = true
 				initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 			end
+		end
+
+		-- Max Frames
+		do
+			local key = Private.Settings.Keys.Self.MaxFrames
+			local defaultValue = Private.Settings.GetSelfDefaultSettings().MaxFrames
+			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Self.MaxFrames
+			end
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Self.MaxFrames = value
+
+				Private.EventRegistry:TriggerEvent(
+					Private.Enum.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Self.MaxFrames
+				)
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				"Max Frames",
+				defaultValue,
+				GetValue,
+				SetValue
+			)
+			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
+			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
+
+			local initializer = Settings.CreateSlider(category, setting, options, "Tooltip")
+			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
 		-- Frame Width
