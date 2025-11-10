@@ -217,6 +217,12 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 	end
 
 	if key == Private.Settings.Keys.Self.Sound then
+		---@class CustomSound
+		---@field soundKitID number|string
+		---@field text string
+
+		---@param soundCategoryKeyToText table<string, string>
+		---@param currentTable table<string, CustomSound[]> | CustomSound[]
 		local function RecursiveAddSounds(description, soundCategoryKeyToText, currentTable)
 			for tableKey, value in pairs(currentTable) do
 				if value.soundKitID and value.text then
@@ -240,28 +246,35 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 						value = value.text,
 						isRadio = true,
 					})
-					selectPayloadCheckbox:AddInitializer(function(button, description, menu)
-						local playSampleButton = MenuTemplates.AttachUtilityButton(button)
-						playSampleButton.Texture:Hide()
-						playSampleButton:SetNormalTexture("common-icon-sound")
-						playSampleButton:SetPushedTexture("common-icon-sound-pressed")
-						playSampleButton:SetDisabledTexture("common-icon-sound-disabled")
-						playSampleButton:SetHighlightTexture("common-icon-sound", "ADD")
-						playSampleButton:GetHighlightTexture():SetAlpha(0.4)
 
-						MenuTemplates.SetUtilityButtonTooltipText(
-							playSampleButton,
-							COOLDOWN_VIEWER_SETTINGS_ALERT_MENU_PLAY_SAMPLE
-						)
-						MenuTemplates.SetUtilityButtonAnchor(playSampleButton, MenuVariants.GearButtonAnchor, button) -- gear means throw on the right
-						MenuTemplates.SetUtilityButtonClickHandler(playSampleButton, function()
-							if type(value.soundKitID) == "number" then
-								PlaySound(value.soundKitID)
-							else
-								PlaySoundFile(value.soundKitID)
-							end
+					if Private.IsMidnight then
+						selectPayloadCheckbox:AddInitializer(function(button, description, menu)
+							local playSampleButton = MenuTemplates.AttachUtilityButton(button)
+							playSampleButton.Texture:Hide()
+							playSampleButton:SetNormalTexture("common-icon-sound")
+							playSampleButton:SetPushedTexture("common-icon-sound-pressed")
+							playSampleButton:SetDisabledTexture("common-icon-sound-disabled")
+							playSampleButton:SetHighlightTexture("common-icon-sound", "ADD")
+							playSampleButton:GetHighlightTexture():SetAlpha(0.4)
+
+							MenuTemplates.SetUtilityButtonTooltipText(
+								playSampleButton,
+								COOLDOWN_VIEWER_SETTINGS_ALERT_MENU_PLAY_SAMPLE
+							)
+							MenuTemplates.SetUtilityButtonAnchor(
+								playSampleButton,
+								MenuVariants.GearButtonAnchor,
+								button
+							) -- gear means throw on the right
+							MenuTemplates.SetUtilityButtonClickHandler(playSampleButton, function()
+								if type(value.soundKitID) == "number" then
+									PlaySound(value.soundKitID)
+								else
+									PlaySoundFile(value.soundKitID)
+								end
+							end)
 						end)
-					end)
+					end
 				elseif type(value) == "table" and soundCategoryKeyToText[tableKey] then
 					local nestedDescription = description:CreateButton(soundCategoryKeyToText[tableKey], nop, -1)
 					RecursiveAddSounds(nestedDescription, soundCategoryKeyToText, value)
@@ -282,7 +295,6 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 			RecursiveAddSounds(rootDescription, soundCategoryKeyToText, CooldownViewerSoundData)
 		end
 
-		-- TODO: custom sounds via Shared Media
 		local function AddCustomSounds(rootDescription)
 			-- this follows the structure of `CooldownViewerSoundData` in `Blizzard_CooldownViewer/CooldownViewerSoundAlertData.lua` for ease of function reuse
 			local customSoundData = {
@@ -294,10 +306,26 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 			}
 
 			local sounds = Private.Settings.GetCustomSoundList()
+			local groupThreshold = 34 -- todo: verify how this behaves in alpha. this is the dropdown max size on retail currently
+			local groupCount = 0
+			local targetTable = customSoundData.Custom
 
 			for name, path in pairs(sounds) do
 				if path ~= 1 then
-					table.insert(customSoundData.Custom, { soundKitID = path, text = name })
+					while #targetTable >= groupThreshold do
+						groupCount = groupCount + 1
+
+						local tableKey = string.format("Custom %d", groupCount)
+
+						if customSoundData[tableKey] == nil then
+							customSoundData[tableKey] = {}
+							soundCategoryKeyToText[tableKey] = tableKey
+						end
+
+						targetTable = customSoundData[tableKey]
+					end
+
+					table.insert(targetTable, { soundKitID = path, text = name })
 				end
 			end
 

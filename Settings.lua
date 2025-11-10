@@ -166,7 +166,7 @@ function Private.Settings.GetSelfDefaultSettings()
 			[Private.Enum.Role.Damager] = true,
 		},
 		PlaySound = true,
-		Sound = 316493,
+		Sound = Private.IsMidnight and 316493 or "Interface\\AddOns\\WeakAuras\\Media\\Sounds\\WaterDrop.ogg",
 		SoundChannel = Private.Enum.SoundChannel.Master,
 		LoadConditionSoundContentType = {
 			[Private.Enum.ContentType.OpenWorld] = false,

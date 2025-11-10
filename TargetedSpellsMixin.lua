@@ -232,7 +232,7 @@ function TargetedSpellsMixin:SetShowDuration(showDuration)
 end
 
 function TargetedSpellsMixin:SetFontSize(fontSize)
-	local fontString = self.Cooldown:GetCountdownFontString()
+	local fontString = Private.IsMidnight and self.Cooldown:GetCountdownFontString() or self.Cooldown:GetRegions()
 	local font, size, flags = fontString:GetFont()
 
 	if size == fontSize then
