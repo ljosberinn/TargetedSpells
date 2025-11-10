@@ -14,8 +14,8 @@ Templates\TargetedSpellsFrameTemplate.xml
 
 Enum.lua
 Init.lua
+Localization.lua
 Settings.lua
-Frame.lua
 TargetedSpellsMixin.lua
 EditMode.lua
 Instrument.lua

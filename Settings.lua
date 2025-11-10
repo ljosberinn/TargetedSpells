@@ -224,6 +224,7 @@ function Private.Settings.GetCustomSoundList()
 end
 
 table.insert(Private.LoginFnQueue, function()
+	local L = Private.L
 	local settingsName = C_AddOns.GetAddOnMetadata(addonName, "Title")
 	local category, layout = Settings.RegisterVerticalLayoutCategory(settingsName)
 
@@ -253,12 +254,12 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.Boolean,
-				"Enabled",
+				L.Settings.EnabledLabel,
 				Settings.Default.True,
 				IsSectionEnabled,
 				SetValue
 			)
-			generalCategoryEnabledInitializer = Settings.CreateCheckbox(category, setting, "Tooltip")
+			generalCategoryEnabledInitializer = Settings.CreateCheckbox(category, setting, L.Settings.EnabledTooltip)
 		end
 
 		-- Load Condition Content Type
@@ -298,7 +299,7 @@ table.insert(Private.LoginFnQueue, function()
 					category,
 					key,
 					Settings.VarType.Number,
-					"Load Condition: Content Type",
+					L.Settings.LoadConditionContentTypeLabel,
 					ResetToDefault,
 					GetValueDummy,
 					SetValueDummy
@@ -323,7 +324,8 @@ table.insert(Private.LoginFnQueue, function()
 					return container:GetData()
 				end
 
-				local initializer = Settings.CreateDropdown(category, setting, GetOptions, "Tooltip")
+				local initializer =
+					Settings.CreateDropdown(category, setting, GetOptions, L.Settings.LoadConditionContentTypeTooltip)
 				initializer.hideSteppers = true
 				initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 			end
@@ -366,7 +368,7 @@ table.insert(Private.LoginFnQueue, function()
 					category,
 					key,
 					Settings.VarType.Number,
-					"Load Condition: Role",
+					L.Settings.LoadConditionRoleLabel,
 					ResetToDefault,
 					GetValueDummy,
 					SetValueDummy
@@ -391,7 +393,8 @@ table.insert(Private.LoginFnQueue, function()
 					return container:GetData()
 				end
 
-				local initializer = Settings.CreateDropdown(category, setting, GetOptions, "Tooltip")
+				local initializer =
+					Settings.CreateDropdown(category, setting, GetOptions, L.Settings.LoadConditionRoleTooltip)
 				initializer.hideSteppers = true
 				initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 			end
@@ -421,7 +424,7 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.Number,
-				"Max Frames",
+				L.Settings.MaxFramesLabel,
 				defaultValue,
 				GetValue,
 				SetValue
@@ -429,7 +432,7 @@ table.insert(Private.LoginFnQueue, function()
 			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
 			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
 
-			local initializer = Settings.CreateSlider(category, setting, options, "Tooltip")
+			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.MaxFramesTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
@@ -457,7 +460,7 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.Number,
-				"Width",
+				L.Settings.FrameWidthLabel,
 				defaultValue,
 				GetValue,
 				SetValue
@@ -465,7 +468,7 @@ table.insert(Private.LoginFnQueue, function()
 			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
 			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
 
-			local initializer = Settings.CreateSlider(category, setting, options, "Tooltip")
+			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FrameWidthTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
@@ -493,7 +496,7 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.Number,
-				"Height",
+				L.Settings.FrameHeightLabel,
 				defaultValue,
 				GetValue,
 				SetValue
@@ -501,7 +504,7 @@ table.insert(Private.LoginFnQueue, function()
 			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
 			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
 
-			local initializer = Settings.CreateSlider(category, setting, options, "Tooltip")
+			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FrameHeightTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
@@ -529,7 +532,7 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.Number,
-				"Font Size",
+				L.Settings.FontSizeLabel,
 				defaultValue,
 				GetValue,
 				SetValue
@@ -537,7 +540,7 @@ table.insert(Private.LoginFnQueue, function()
 			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
 			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
 
-			local initializer = Settings.CreateSlider(category, setting, options, "Tooltip")
+			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FontSizeTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
@@ -565,7 +568,7 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.Number,
-				"Gap",
+				L.Settings.FrameGapLabel,
 				defaultValue,
 				GetValue,
 				SetValue
@@ -573,7 +576,7 @@ table.insert(Private.LoginFnQueue, function()
 			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
 			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
 
-			local initializer = Settings.CreateSlider(category, setting, options, "Tooltip")
+			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FrameGapTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
@@ -610,12 +613,12 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.String,
-				"Direction",
+				L.Settings.FrameDirectionLabel,
 				defaultValue,
 				GetValue,
 				SetValue
 			)
-			local initializer = Settings.CreateDropdown(category, setting, GetOptions, "Tooltip")
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.FrameDirectionTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
@@ -652,12 +655,12 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.String,
-				"Sort Order",
+				L.Settings.FrameSortOrderLabel,
 				defaultValue,
 				GetValue,
 				SetValue
 			)
-			local initializer = Settings.CreateDropdown(category, setting, GetOptions, "Tooltip")
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.FrameSortOrderTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
@@ -694,12 +697,12 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.String,
-				"Grow",
+				L.Settings.FrameGrowLabel,
 				defaultValue,
 				GetValue,
 				SetValue
 			)
-			local initializer = Settings.CreateDropdown(category, setting, GetOptions, "Tooltip")
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.FrameGrowTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
@@ -725,12 +728,12 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.Boolean,
-				"Play Sound",
+				L.Settings.PlaySoundLabel,
 				defaultValue,
 				GetValue,
 				SetValue
 			)
-			local initializer = Settings.CreateCheckbox(category, setting, "Tooltip")
+			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.PlaySoundTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
@@ -788,7 +791,7 @@ table.insert(Private.LoginFnQueue, function()
 				}
 
 				local soundCategoryKeyToText = {
-					Custom = "Custom",
+					Custom = L.Settings.SoundCategoryCustom,
 				}
 
 				local sounds = Private.Settings.GetCustomSoundList()
@@ -820,7 +823,7 @@ table.insert(Private.LoginFnQueue, function()
 				GetValue,
 				SetValue
 			)
-			local initializer = Settings.CreateDropdown(category, setting, GetOptions, "Tooltip")
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.SoundTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
@@ -857,12 +860,12 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.String,
-				"Sound Channel",
+				L.Settings.SoundChannelLabel,
 				defaultValue,
 				GetValue,
 				SetValue
 			)
-			local initializer = Settings.CreateDropdown(category, setting, GetOptions, "Tooltip")
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.SoundChannelTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
@@ -888,12 +891,12 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.Boolean,
-				"Show Duration",
+				L.Settings.ShowDurationLabel,
 				defaultValue,
 				GetValue,
 				SetValue
 			)
-			local initializer = Settings.CreateCheckbox(category, setting, "Tooltip")
+			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.ShowDurationTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
@@ -921,7 +924,7 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.Number,
-				"Opacity",
+				L.Settings.OpacityLabel,
 				defaultValue,
 				GetValue,
 				SetValue
@@ -929,7 +932,7 @@ table.insert(Private.LoginFnQueue, function()
 			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
 			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, FormatPercentage)
 
-			local initializer = Settings.CreateSlider(category, setting, options, "Tooltip")
+			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.OpacityTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 	end
@@ -960,12 +963,12 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.Boolean,
-				"Enabled",
+				L.Settings.EnabledLabel,
 				Settings.Default.True,
 				IsSectionEnabled,
 				SetValue
 			)
-			generalCategoryEnabledInitializer = Settings.CreateCheckbox(category, setting, "Tooltip")
+			generalCategoryEnabledInitializer = Settings.CreateCheckbox(category, setting, L.Settings.EnabledTooltip)
 		end
 
 		-- Load Condition: Content Type
@@ -1018,13 +1021,14 @@ table.insert(Private.LoginFnQueue, function()
 					category,
 					key,
 					Settings.VarType.Number,
-					"Load Condition: Content Type",
+					L.Settings.LoadConditionContentTypeLabel,
 					ResetToDefault,
 					GetValueDummy,
 					SetValueDummy
 				)
 
-				local initializer = Settings.CreateDropdown(category, setting, GetOptions, "Tooltip")
+				local initializer =
+					Settings.CreateDropdown(category, setting, GetOptions, L.Settings.LoadConditionContentTypeTooltip)
 				initializer.hideSteppers = true
 				initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 			end
@@ -1080,13 +1084,14 @@ table.insert(Private.LoginFnQueue, function()
 					category,
 					key,
 					Settings.VarType.Number,
-					"Load Condition: Role",
+					L.Settings.LoadConditionRoleLabel,
 					ResetToDefault,
 					GetValueDummy,
 					SetValueDummy
 				)
 
-				local initializer = Settings.CreateDropdown(category, setting, GetOptions, "Tooltip")
+				local initializer =
+					Settings.CreateDropdown(category, setting, GetOptions, L.Settings.LoadConditionRoleTooltip)
 				initializer.hideSteppers = true
 				initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 			end
@@ -1116,7 +1121,7 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.Number,
-				"Width",
+				L.Settings.FrameWidthLabel,
 				defaultValue,
 				GetValue,
 				SetValue
@@ -1124,7 +1129,7 @@ table.insert(Private.LoginFnQueue, function()
 			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
 			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
 
-			local initializer = Settings.CreateSlider(category, setting, options, "Tooltip")
+			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FrameWidthTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
@@ -1152,7 +1157,7 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.Number,
-				"Height",
+				L.Settings.FrameHeightLabel,
 				defaultValue,
 				GetValue,
 				SetValue
@@ -1160,7 +1165,7 @@ table.insert(Private.LoginFnQueue, function()
 			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
 			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
 
-			local initializer = Settings.CreateSlider(category, setting, options, "Tooltip")
+			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FrameHeightTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
@@ -1188,7 +1193,7 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.Number,
-				"Font Size",
+				L.Settings.FontSizeLabel,
 				defaultValue,
 				GetValue,
 				SetValue
@@ -1196,7 +1201,7 @@ table.insert(Private.LoginFnQueue, function()
 			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
 			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
 
-			local initializer = Settings.CreateSlider(category, setting, options, "Tooltip")
+			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FontSizeTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
@@ -1224,7 +1229,7 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.Number,
-				"Gap",
+				L.Settings.FrameGapLabel,
 				defaultValue,
 				GetValue,
 				SetValue
@@ -1232,7 +1237,7 @@ table.insert(Private.LoginFnQueue, function()
 			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
 			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
 
-			local initializer = Settings.CreateSlider(category, setting, options, "Tooltip")
+			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FrameGapTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
@@ -1269,12 +1274,12 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.String,
-				"Direction",
+				L.Settings.FrameDirectionLabel,
 				defaultValue,
 				GetValue,
 				SetValue
 			)
-			local initializer = Settings.CreateDropdown(category, setting, GetOptions, "Tooltip")
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.FrameDirectionTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
@@ -1302,7 +1307,7 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.Number,
-				"Offset X",
+				L.Settings.FrameOffsetXLabel,
 				defaultValue,
 				GetValue,
 				SetValue
@@ -1310,7 +1315,7 @@ table.insert(Private.LoginFnQueue, function()
 			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
 			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
 
-			local initializer = Settings.CreateSlider(category, setting, options, "Tooltip")
+			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FrameOffsetXTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
@@ -1338,7 +1343,7 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.Number,
-				"Offset Y",
+				L.Settings.FrameOffsetYLabel,
 				defaultValue,
 				GetValue,
 				SetValue
@@ -1346,7 +1351,7 @@ table.insert(Private.LoginFnQueue, function()
 			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
 			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
 
-			local initializer = Settings.CreateSlider(category, setting, options, "Tooltip")
+			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FrameOffsetYTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
@@ -1383,12 +1388,13 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.String,
-				"Source Anchor",
+				L.Settings.FrameSourceAnchorLabel,
 				defaultValue,
 				GetValue,
 				SetValue
 			)
-			local initializer = Settings.CreateDropdown(category, setting, GetOptions, "Tooltip")
+			local initializer =
+				Settings.CreateDropdown(category, setting, GetOptions, L.Settings.FrameSourceAnchorTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
@@ -1425,12 +1431,13 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.String,
-				"Target Anchor",
+				L.Settings.FrameTargetAnchorLabel,
 				defaultValue,
 				GetValue,
 				SetValue
 			)
-			local initializer = Settings.CreateDropdown(category, setting, GetOptions, "Tooltip")
+			local initializer =
+				Settings.CreateDropdown(category, setting, GetOptions, L.Settings.FrameTargetAnchorTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
@@ -1467,12 +1474,12 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.String,
-				"Grow",
+				L.Settings.FrameGrowLabel,
 				defaultValue,
 				GetValue,
 				SetValue
 			)
-			local initializer = Settings.CreateDropdown(category, setting, GetOptions, "Tooltip")
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.FrameGrowTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
@@ -1509,12 +1516,12 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.String,
-				"Sort Order",
+				L.Settings.FrameSortOrderLabel,
 				defaultValue,
 				GetValue,
 				SetValue
 			)
-			local initializer = Settings.CreateDropdown(category, setting, GetOptions, "Tooltip")
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.FrameSortOrderTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
@@ -1536,12 +1543,12 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.Boolean,
-				"Include Self In Party",
+				L.Settings.IncludeSelfInPartyLabel,
 				Settings.Default.True,
 				IsSectionEnabled,
 				SetValue
 			)
-			local initializer = Settings.CreateCheckbox(category, setting, "Tooltip")
+			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.IncludeSelfInPartyTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
@@ -1567,12 +1574,12 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.Boolean,
-				"Show Duration",
+				L.Settings.ShowDurationLabel,
 				defaultValue,
 				GetValue,
 				SetValue
 			)
-			local initializer = Settings.CreateCheckbox(category, setting, "Tooltip")
+			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.ShowDurationTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
@@ -1600,7 +1607,7 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.Number,
-				"Opacity",
+				L.Settings.OpacityLabel,
 				defaultValue,
 				GetValue,
 				SetValue
@@ -1608,7 +1615,7 @@ table.insert(Private.LoginFnQueue, function()
 			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
 			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, FormatPercentage)
 
-			local initializer = Settings.CreateSlider(category, setting, options, "Tooltip")
+			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.OpacityTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 	end
@@ -1628,7 +1635,7 @@ table.insert(Private.LoginFnQueue, function()
 		funcOnEnter = function()
 			MenuUtil.ShowTooltip(AddonCompartmentFrame, function(tooltip)
 				tooltip:SetText(settingsName, 1, 1, 1)
-				tooltip:AddLine("Click to open settings")
+				tooltip:AddLine(L.Settings.ClickToOpenSettingsLabel)
 			end)
 		end,
 		funcOnLeave = function()

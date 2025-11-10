@@ -2,6 +2,7 @@
 local addonName, Private = ...
 
 Private.IsMidnight = select(4, GetBuildInfo()) >= 120000
+Private.L = {}
 
 Private.EventRegistry = CreateFromMixins(CallbackRegistryMixin)
 Private.EventRegistry:OnLoad()

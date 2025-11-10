@@ -14,7 +14,7 @@ local function GetRandomIcon()
 		return PreviewIconDataProvider:GetRandomIcon()
 	end
 
-	-- backport of GetRandomIcon() frmo 12.0
+	-- backport of GetRandomIcon() from 12.0
 	local numIcons = PreviewIconDataProvider:GetNumIcons()
 	local avoidQuestionMarkIndex = 2
 	return PreviewIconDataProvider:GetIconByIndex(math.random(avoidQuestionMarkIndex, numIcons))

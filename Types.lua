@@ -7,6 +7,7 @@
 ---@field Enum TargetedSpellsEnums
 ---@field Settings TargetedSpellsSettings
 ---@field LoginFnQueue table<string, function>
+---@field L table<string, table<string, string>>
 
 ---@class TargetedSpellsEnums
 

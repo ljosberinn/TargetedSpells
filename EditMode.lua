@@ -83,12 +83,14 @@ function TargetedSpellsEditModeMixin:OnSettingsChanged(key, value)
 end
 
 function TargetedSpellsEditModeMixin:CreateSetting(key)
+	local L = Private.L
+
 	if key == Private.Settings.Keys.Self.MaxFrames then
 		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
 
 		---@type LibEditModeSlider
 		return {
-			name = "Max Frames",
+			name = L.Settings.MaxFramesLabel,
 			kind = Enum.EditModeSettingDisplayType.Slider,
 			default = Private.Settings.GetSelfDefaultSettings().MaxFrames,
 			get = function(layoutName)
@@ -113,7 +115,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 		---@type LibEditModeSlider
 		return {
-			name = "Opacity",
+			name = L.Settings.OpacityLabel,
 			kind = Enum.EditModeSettingDisplayType.Slider,
 			default = isSelf and Private.Settings.GetSelfDefaultSettings().Opacity
 				or Private.Settings.GetPartyDefaultSettings().Opacity,
@@ -139,7 +141,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 		---@type LibEditModeCheckbox
 		return {
-			name = "Show Duration",
+			name = L.Settings.ShowDurationLabel,
 			kind = Enum.EditModeSettingDisplayType.Checkbox,
 			default = isSelf and Private.Settings.GetSelfDefaultSettings().ShowDuration
 				or Private.Settings.GetPartyDefaultSettings().ShowDuration,
@@ -162,7 +164,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 	if key == Private.Settings.Keys.Self.PlaySound then
 		---@type LibEditModeCheckbox
 		return {
-			name = "Play Sound",
+			name = L.Settings.PlaySoundLabel,
 			kind = Enum.EditModeSettingDisplayType.Checkbox,
 			default = Private.Settings.GetSelfDefaultSettings().Enabled,
 			get =
@@ -193,7 +195,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 		---@type LibEditModeDropdown
 		return {
-			name = "Sound Channel",
+			name = L.Settings.SoundChannelLabel,
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
 			default = Private.Settings.GetSelfDefaultSettings().SoundChannel,
 			generator = function(owner, rootDescription, data)
@@ -302,7 +304,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 			}
 
 			local soundCategoryKeyToText = {
-				Custom = "Custom",
+				Custom = L.Settings.SoundCategoryCustom,
 			}
 
 			local sounds = Private.Settings.GetCustomSoundList()
@@ -315,7 +317,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 					while #targetTable >= groupThreshold do
 						groupCount = groupCount + 1
 
-						local tableKey = string.format("Custom %d", groupCount)
+						local tableKey = string.format("%s %d", L.Settings.SoundCategoryCustom, groupCount)
 
 						if customSoundData[tableKey] == nil then
 							customSoundData[tableKey] = {}
@@ -334,7 +336,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 		---@type LibEditModeDropdown
 		return {
-			name = "Sound",
+			name = L.Settings.SoundLabel,
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
 			default = Private.Settings.GetSelfDefaultSettings().Sound,
 			generator = function(owner, rootDescription, data)
@@ -365,7 +367,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 	if key == Private.Settings.Keys.Party.IncludeSelfInParty then
 		---@type LibEditModeCheckbox
 		return {
-			name = "Include Self in Party",
+			name = L.Settings.IncludeSelfInPartyLabel,
 			kind = Enum.EditModeSettingDisplayType.Checkbox,
 			default = Private.Settings.GetPartyDefaultSettings().IncludeSelfInParty,
 			get =
@@ -390,7 +392,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 		---@type LibEditModeCheckbox
 		return {
-			name = "Enabled",
+			name = L.Settings.EnabledLabel,
 			kind = Enum.EditModeSettingDisplayType.Checkbox,
 			default = isSelf and Private.Settings.GetSelfDefaultSettings().Enabled
 				or Private.Settings.GetPartyDefaultSettings().Enabled,
@@ -420,7 +422,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 		---@type LibEditModeDropdown
 		return {
-			name = "Load in Content",
+			name = L.Settings.LoadConditionContentTypeLabelAbbreviated,
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
 			default = isSelf and Private.Settings.GetSelfDefaultSettings().LoadConditionContentType
 				or Private.Settings.GetPartyDefaultSettings().LoadConditionContentType,
@@ -436,6 +438,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 						Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef)
 					end
 
+					-- todo: localize
 					rootDescription:CreateCheckbox(label, IsEnabled, Toggle, {
 						value = label,
 						isRadio = false,
@@ -470,7 +473,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 		---@type LibEditModeDropdown
 		return {
-			name = "Load on Role",
+			name = L.Settings.LoadConditionRoleLabelAbbreviated,
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
 			default = Private.Settings.GetSelfDefaultSettings().LoadConditionRole,
 			generator = function(owner, rootDescription, data)
@@ -485,6 +488,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 						Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef)
 					end
 
+					-- todo: localize
 					rootDescription:CreateCheckbox(label, IsEnabled, Toggle, {
 						value = label,
 						isRadio = false,
@@ -516,7 +520,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 		---@type LibEditModeSlider
 		return {
-			name = "Font Size",
+			name = L.Settings.FontSizeLabel,
 			kind = Enum.EditModeSettingDisplayType.Slider,
 			default = isSelf and Private.Settings.GetSelfDefaultSettings().FontSize
 				or Private.Settings.GetPartyDefaultSettings().FontSize,
@@ -542,7 +546,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 		---@type LibEditModeSlider
 		return {
-			name = "Width",
+			name = L.Settings.FrameWidthLabel,
 			kind = Enum.EditModeSettingDisplayType.Slider,
 			default = isSelf and Private.Settings.GetSelfDefaultSettings().Width
 				or Private.Settings.GetPartyDefaultSettings().Width,
@@ -568,7 +572,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 		---@type LibEditModeSlider
 		return {
-			name = "Height",
+			name = L.Settings.FrameHeightLabel,
 			kind = Enum.EditModeSettingDisplayType.Slider,
 			default = isSelf and Private.Settings.GetSelfDefaultSettings().Height
 				or Private.Settings.GetPartyDefaultSettings().Height,
@@ -594,7 +598,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 		---@type LibEditModeSlider
 		return {
-			name = "Gap",
+			name = L.Settings.FrameGapLabel,
 			kind = Enum.EditModeSettingDisplayType.Slider,
 			default = isSelf and Private.Settings.GetSelfDefaultSettings().Gap
 				or Private.Settings.GetPartyDefaultSettings().Gap,
@@ -628,7 +632,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 		---@type LibEditModeDropdown
 		return {
-			name = "Direction",
+			name = L.Settings.FrameDirectionLabel,
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
 			default = Private.Settings.GetPartyDefaultSettings().Direction,
 			generator = function(owner, rootDescription, data)
@@ -656,7 +660,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 		---@type LibEditModeSlider
 		return {
-			name = "Offset X",
+			name = L.Settings.FrameOffsetXLabel,
 			kind = Enum.EditModeSettingDisplayType.Slider,
 			default = Private.Settings.GetPartyDefaultSettings().OffsetX,
 			get =
@@ -684,7 +688,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 		---@type LibEditModeSlider
 		return {
-			name = "Offset Y",
+			name = L.Settings.FrameOffsetYLabel,
 			kind = Enum.EditModeSettingDisplayType.Slider,
 			default = Private.Settings.GetPartyDefaultSettings().OffsetY,
 			get =
@@ -719,7 +723,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 		---@type LibEditModeDropdown
 		return {
-			name = "Source Anchor",
+			name = L.Settings.FrameSourceAnchorLabel,
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
 			default = Private.Settings.GetPartyDefaultSettings().SourceAnchor,
 			generator = function(owner, rootDescription, data)
@@ -754,7 +758,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 		---@type LibEditModeDropdown
 		return {
-			name = "Target Anchor",
+			name = L.Settings.FrameTargetAnchorLabel,
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
 			default = Private.Settings.GetPartyDefaultSettings().TargetAnchor,
 			generator = function(owner, rootDescription, data)
@@ -792,7 +796,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 		---@type LibEditModeDropdown
 		return {
-			name = "Sort Order",
+			name = L.Settings.FrameSortOrderLabel,
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
 			default = Private.Settings.GetPartyDefaultSettings().SortOrder,
 			generator = function(owner, rootDescription, data)
@@ -830,7 +834,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 		---@type LibEditModeDropdown
 		return {
-			name = "Grow",
+			name = L.Settings.FrameGrowLabel,
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
 			default = Private.Settings.GetPartyDefaultSettings().Grow,
 			generator = function(owner, rootDescription, data)
@@ -1195,7 +1199,7 @@ function PartyEditModeMixin:Init()
 		end
 	end)
 
-	-- todo: show something in self.editModeFrame as it otherwise has no preview
+	-- todo: show something in self.editModeFrame as it otherwise has no preview. desaturate and set opacity to 50?
 end
 
 function PartyEditModeMixin:AppendSettings()

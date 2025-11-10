@@ -55,9 +55,8 @@ function TargetedSpellsDriver:SetupListenerFrame(isBoot)
 		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_STOP")
 		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_START")
 		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_STOP")
-		-- todo: empowered spells
-		-- self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_START")
-		-- self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_STOP")
+		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_START")
+		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_STOP")
 		self.listenerFrame:RegisterUnitEvent("NAME_PLATE_UNIT_REMOVED")
 		-- self.listenerFrame:RegisterUnitEvent("UNIT_DIED")
 		self.listenerFrame:SetScript("OnEvent", GenerateClosure(self.OnFrameEvent, self))
@@ -169,12 +168,12 @@ function TargetedSpellsDriver:RepositionFrames()
 					if isHorizontal then
 						if grow == Private.Enum.Grow.Start then
 							local frameDimension = isHorizontal and frame:GetWidth() or frame:GetHeight()
-							x = (i - 1) * (width + gap) - frameDimension / 2 + 0
+							x = (i - 1) * (width + gap) - frameDimension / 2
 						elseif grow == Private.Enum.Grow.Center then
-							x = (i - 1) * (width + gap) - total / 2 + 0
+							x = (i - 1) * (width + gap) - total / 2
 						elseif grow == Private.Enum.Grow.End then
 							local frameDimension = isHorizontal and frame:GetWidth() or frame:GetHeight()
-							x = frameDimension / 2 - i * (width + gap) + 0
+							x = frameDimension / 2 - i * (width + gap)
 						end
 					end
 
@@ -193,14 +192,6 @@ function TargetedSpellsDriver:RepositionFrames()
 					end
 
 					frame:Reposition(point, parent, "CENTER", x, y)
-
-					-- frame:Reposition(
-					-- 	point,
-					-- 	parent,
-					-- 	"CENTER",
-					-- 	isHorizontal and self:CalculateCoordinate(i, width, gap, parentDimension, total, 0, grow) or 0,
-					-- 	isHorizontal and 0 or self:CalculateCoordinate(i, width, gap, parentDimension, total, 0, grow)
-					-- )
 				end
 			else
 				self:SortFrames(frames, TargetedSpellsSaved.Settings.Party.SortOrder)
@@ -254,7 +245,7 @@ function TargetedSpellsDriver:CleanUpUnit(unit, event)
 end
 
 ---@param listenerFrame Frame -- identical to self.listenerFrame
----@param event "UNIT_SPELLCAST_SUCCEEDED" |"EDIT_MODE_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "DELAYED_UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED"
+---@param event "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" | "UNIT_SPELLCAST_SUCCEEDED" |"EDIT_MODE_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "DELAYED_UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED"
 function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 	if event == Private.Enum.Events.EDIT_MODE_POSITION_CHANGED then
 		local point, x, y = ...
@@ -262,7 +253,11 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		self.listenerFrame:ClearAllPoints()
 		self.listenerFrame:SetPoint(point, x, y)
 		self.listenerFrame:Show()
-	elseif event == "UNIT_SPELLCAST_START" or event == "UNIT_SPELLCAST_CHANNEL_START" then
+	elseif
+		event == "UNIT_SPELLCAST_START"
+		or event == "UNIT_SPELLCAST_CHANNEL_START"
+		or event == "UNIT_SPELLCAST_EMPOWER_START"
+	then
 		local unit, castGuid, spellId = ...
 
 		if
@@ -338,6 +333,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		event == "UNIT_SPELLCAST_STOP"
 		or event == "UNIT_SPELLCAST_CHANNEL_STOP"
 		or event == "UNIT_SPELLCAST_SUCCEEDED"
+		or event == "UNIT_SPELLCAST_EMPOWER_STOP"
 	then
 		local unit = ...
 
