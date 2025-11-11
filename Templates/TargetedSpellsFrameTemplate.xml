@@ -1,6 +1,6 @@
 <!-- this is CooldownViewerEssentialItemTemplate with minor modifications -->
 <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/ https://raw.githubusercontent.com/Gethe/wow-ui-source/beta/Interface/AddOns/Blizzard_SharedXML/UI.xsd">
-    <Frame name="TargetedSpellsFrameTemplate" mixin="TargetedSpellsMixin" virtual="true">
+    <Frame name="TargetedSpellsFrameTemplate" inherits="BackdropTemplate" mixin="TargetedSpellsMixin" virtual="true">
         <Layers>
             <Layer level="ARTWORK">
                 <Texture parentKey="Icon" setAllPoints="true" />

@@ -25,6 +25,7 @@ Private.Settings.Keys = {
 		ShowDuration = "SHOW_DURATION_SELF",
 		MaxFrames = "MAX_FRAMES_SELF",
 		Opacity = "OPACITY_SELF",
+		ShowBorder = "BORDER_SELF",
 	},
 	Party = {
 		Enabled = "ENABLED_PARTY",
@@ -44,6 +45,7 @@ Private.Settings.Keys = {
 		IncludeSelfInParty = "INCLUDE_SELF_IN_PARTY_PARTY",
 		ShowDuration = "SHOW_DURATION_PARTY",
 		Opacity = "OPACITY_PARTY",
+		ShowBorder = "BORDER_PARTY",
 	},
 }
 
@@ -182,6 +184,7 @@ function Private.Settings.GetSelfDefaultSettings()
 		Position = Private.Settings.GetDefaultEditModeFramePosition(),
 		MaxFrames = 5,
 		Opacity = 1,
+		ShowBorder = false,
 	}
 end
 
@@ -216,6 +219,7 @@ function Private.Settings.GetPartyDefaultSettings()
 		IncludeSelfInParty = true,
 		ShowDuration = true,
 		Opacity = 1,
+		ShowBorder = false,
 	}
 end
 
@@ -900,6 +904,37 @@ table.insert(Private.LoginFnQueue, function()
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
+		-- Show Border
+		do
+			local key = Private.Settings.Keys.Self.ShowBorder
+			local defaultValue = Private.Settings.GetSelfDefaultSettings().ShowBorder
+
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Self.ShowBorder
+			end
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Self.ShowBorder = not TargetedSpellsSaved.Settings.Self.ShowBorder
+				Private.EventRegistry:TriggerEvent(
+					Private.Enum.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Self.ShowBorder
+				)
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Boolean,
+				L.Settings.ShowBorderLabel,
+				defaultValue,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.ShowBorderTooltip)
+			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+		end
+
 		-- Opacity
 		do
 			local key = Private.Settings.Keys.Self.Opacity
@@ -1580,6 +1615,37 @@ table.insert(Private.LoginFnQueue, function()
 				SetValue
 			)
 			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.ShowDurationTooltip)
+			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+		end
+
+		-- Show Border
+		do
+			local key = Private.Settings.Keys.Party.ShowBorder
+			local defaultValue = Private.Settings.GetPartyDefaultSettings().ShowBorder
+
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Party.ShowBorder
+			end
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Party.ShowBorder = not TargetedSpellsSaved.Settings.Party.ShowBorder
+				Private.EventRegistry:TriggerEvent(
+					Private.Enum.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Party.ShowBorder
+				)
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Boolean,
+				L.Settings.ShowBorderLabel,
+				defaultValue,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.ShowBorderTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 

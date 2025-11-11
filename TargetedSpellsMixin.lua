@@ -89,6 +89,17 @@ function TargetedSpellsMixin:OnSizeChanged(width, height)
 	end
 end
 
+-- literally the defaults from https://warcraft.wiki.gg/wiki/BackdropTemplate
+local backdropTemplate = {
+	bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+	edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+	tile = true,
+	tileEdge = true,
+	tileSize = 8,
+	edgeSize = 8,
+	insets = { left = 1, right = 1, top = 1, bottom = 1 },
+}
+
 function TargetedSpellsMixin:OnSettingChanged(key, value)
 	if self.kind == Private.Enum.FrameKind.Self then
 		if key == Private.Settings.Keys.Self.Width then
@@ -105,6 +116,12 @@ function TargetedSpellsMixin:OnSettingChanged(key, value)
 			self:SetFontSize(value)
 		elseif key == Private.Settings.Keys.Self.Opacity then
 			self:SetAlpha(value)
+		elseif key == Private.Settings.Keys.Self.ShowBorder then
+			if value then
+				self:SetBackdrop(backdropTemplate)
+			else
+				self:ClearBackdrop()
+			end
 		end
 	else
 		if key == Private.Settings.Keys.Party.Width then
@@ -121,6 +138,12 @@ function TargetedSpellsMixin:OnSettingChanged(key, value)
 			self:SetFontSize(value)
 		elseif key == Private.Settings.Keys.Party.Opacity then
 			self:SetAlpha(value)
+		elseif key == Private.Settings.Keys.Party.ShowBorder then
+			if value then
+				self:SetBackdrop(backdropTemplate)
+			else
+				self:ClearBackdrop()
+			end
 		end
 	end
 end

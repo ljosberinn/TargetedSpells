@@ -7,7 +7,7 @@
 ---@field Enum TargetedSpellsEnums
 ---@field Settings TargetedSpellsSettings
 ---@field LoginFnQueue table<string, function>
----@field L table<string, table<string, string>>
+---@field L table<string, table<string, string|nil>>
 
 ---@class TargetedSpellsEnums
 
@@ -53,6 +53,7 @@
 ---@field ShowDuration boolean
 ---@field Position SelfFramePosition
 ---@field MaxElements number
+---@field ShowBorder boolean
 
 ---@class SavedVariablesSettingsParty
 ---@field Enabled boolean
@@ -69,6 +70,7 @@
 ---@field SortOrder SortOrder
 ---@field Grow Grow
 ---@field ShowDuration boolean
+---@field ShowBorder boolean
 
 ---@class TargetedSpellsSelfPreviewFrame: Frame
 ---@field GetChildren fun(self: TargetedSpellsSelfPreviewFrame): TargetedSpellsMixin
@@ -77,7 +79,7 @@
 ---@field SetMinimumCountdownDuration fun(self: ExtendedCooldownTypes, minimumDuration: number)
 ---@field GetCountdownFontString fun(self: ExtendedCooldownTypes): FontString
 
----@class TargetedSpellsMixin : Frame
+---@class TargetedSpellsMixin : Frame, BackdropTemplate
 ---@field Overlay Texture
 ---@field Icon Texture
 ---@field Cooldown ExtendedCooldownTypes

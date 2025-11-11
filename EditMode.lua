@@ -135,6 +135,32 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 		}
 	end
 
+	if key == Private.Settings.Keys.Self.ShowBorder or key == Private.Settings.Keys.Party.ShowBorder then
+		local isSelf = key == Private.Settings.Keys.Self.ShowBorder
+		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
+
+		---@type LibEditModeCheckbox
+		return {
+			name = L.Settings.ShowBorderLabel,
+			kind = Enum.EditModeSettingDisplayType.Checkbox,
+			default = isSelf and Private.Settings.GetSelfDefaultSettings().ShowBorder
+				or Private.Settings.GetPartyDefaultSettings().ShowBorder,
+			get =
+				---@param layoutName string
+				function(layoutName)
+					return tableRef.ShowBorder
+				end,
+			---@param layoutName string
+			---@param value boolean
+			set = function(layoutName, value)
+				if value ~= tableRef.ShowBorder then
+					tableRef.ShowBorder = value
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
+			end,
+		}
+	end
+
 	if key == Private.Settings.Keys.Self.ShowDuration or key == Private.Settings.Keys.Party.ShowDuration then
 		local isSelf = key == Private.Settings.Keys.Self.ShowDuration
 		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
@@ -1029,6 +1055,7 @@ function SelfEditModeMixin:AppendSettings()
 		self:CreateSetting(Private.Settings.Keys.Self.Sound),
 		self:CreateSetting(Private.Settings.Keys.Self.SoundChannel),
 		self:CreateSetting(Private.Settings.Keys.Self.ShowDuration),
+		self:CreateSetting(Private.Settings.Keys.Self.ShowBorder),
 		self:CreateSetting(Private.Settings.Keys.Self.Opacity),
 	})
 end
@@ -1227,6 +1254,7 @@ function PartyEditModeMixin:AppendSettings()
 		self:CreateSetting(Private.Settings.Keys.Party.SortOrder),
 		self:CreateSetting(Private.Settings.Keys.Party.IncludeSelfInParty),
 		self:CreateSetting(Private.Settings.Keys.Party.ShowDuration),
+		self:CreateSetting(Private.Settings.Keys.Party.ShowBorder),
 		self:CreateSetting(Private.Settings.Keys.Party.Opacity),
 	})
 end
