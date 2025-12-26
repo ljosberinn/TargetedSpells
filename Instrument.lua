@@ -66,25 +66,24 @@ end
 function TargetedSpellsDriver:AcquireFrames(castingUnit)
 	local frames = {}
 
-	if UnitIsUnit("player", castingUnit .. "target") then
-		local selfTargetingFrame = self.framePool:Acquire()
-		selfTargetingFrame:SetParent(self.listenerFrame)
-		selfTargetingFrame:PostCreate("player", Private.Enum.FrameKind.Self)
-		table.insert(frames, selfTargetingFrame)
-	end
+	local selfTargetingFrame = self.framePool:Acquire()
+	selfTargetingFrame:SetParent(self.listenerFrame)
+	selfTargetingFrame:PostCreate("player", Private.Enum.FrameKind.Self, castingUnit)
+	table.insert(frames, selfTargetingFrame)
 
 	-- todo: account for showing/ignoring self on party frame too
 	if TargetedSpellsSaved.Settings.Party.Enabled and IsInGroup() then
 		for i = 1, GetNumGroupMembers() do
-			local unit = "party" .. i
-
-			if UnitIsUnit(castingUnit .. "target", unit) then
-				local frame = self.framePool:Acquire()
-				frame:PostCreate(unit, Private.Enum.FrameKind.Party)
-				table.insert(frames, frame)
-				break
-			end
+			local frame = self.framePool:Acquire()
+			frame:PostCreate("party" .. i, Private.Enum.FrameKind.Party, castingUnit)
+			table.insert(frames, frame)
 		end
+	end
+
+	if TargetedSpellsSaved.Settings.Party.IncludeSelfInParty then
+		local frame = self.framePool:Acquire()
+		frame:PostCreate("player", Private.Enum.FrameKind.Party, castingUnit)
+		table.insert(frames, frame)
 	end
 
 	pprint("acquired", #frames, "frames for", castingUnit)
@@ -117,112 +116,160 @@ function TargetedSpellsDriver:CalculateCoordinate(index, dimension, gap, parentD
 end
 
 function TargetedSpellsDriver:RepositionFrames()
-	local function impl()
-		---@type table<string, TargetedSpellsMixin[]>
-		local activeFrames = {}
-		local activeFrameCount = 0
+	---@type table<string, TargetedSpellsMixin[]>
+	local activeFrames = {}
+	local activeFrameCount = 0
 
-		for sourceUnit, frames in pairs(self.frames) do
-			for i, frame in pairs(frames) do
-				if frame:ShouldBeShown() then
-					if frame:GetKind() == Private.Enum.FrameKind.Self then
-						if activeFrames.self == nil then
-							activeFrames.self = {}
-						end
-
-						table.insert(activeFrames.self, frame)
-					else
-						local targetUnit = frame:GetUnit()
-
-						if activeFrames[targetUnit] == nil then
-							activeFrames[targetUnit] = {}
-						end
-
-						table.insert(activeFrames[targetUnit], frame)
+	for sourceUnit, frames in pairs(self.frames) do
+		for i, frame in pairs(frames) do
+			if frame:ShouldBeShown() then
+				if frame:GetKind() == Private.Enum.FrameKind.Self then
+					if activeFrames.self == nil then
+						activeFrames.self = {}
 					end
 
-					activeFrameCount = activeFrameCount + 1
+					table.insert(activeFrames.self, frame)
+				else
+					local targetUnit = frame:GetUnit()
+
+					if activeFrames[targetUnit] == nil then
+						activeFrames[targetUnit] = {}
+					end
+
+					table.insert(activeFrames[targetUnit], frame)
 				end
+
+				activeFrameCount = activeFrameCount + 1
 			end
 		end
-
-		for targetUnit, frames in pairs(activeFrames) do
-			if targetUnit == Private.Enum.FrameKind.Self then
-				local width, height, gap, sortOrder, direction, grow =
-					TargetedSpellsSaved.Settings.Self.Width,
-					TargetedSpellsSaved.Settings.Self.Height,
-					TargetedSpellsSaved.Settings.Self.Gap,
-					TargetedSpellsSaved.Settings.Self.SortOrder,
-					TargetedSpellsSaved.Settings.Self.Direction,
-					TargetedSpellsSaved.Settings.Self.Grow
-				local isHorizontal = direction == Private.Enum.Direction.Horizontal
-				local parent = self.listenerFrame
-				local point = isHorizontal and "LEFT" or "BOTTOM"
-				local total = (#frames * (isHorizontal and width or height)) + (#frames - 1) * gap
-
-				self:SortFrames(frames, sortOrder)
-
-				for i, frame in ipairs(frames) do
-					local x = 0
-
-					if isHorizontal then
-						if grow == Private.Enum.Grow.Start then
-							local frameDimension = isHorizontal and frame:GetWidth() or frame:GetHeight()
-							x = (i - 1) * (width + gap) - frameDimension / 2
-						elseif grow == Private.Enum.Grow.Center then
-							x = (i - 1) * (width + gap) - total / 2
-						elseif grow == Private.Enum.Grow.End then
-							local frameDimension = isHorizontal and frame:GetWidth() or frame:GetHeight()
-							x = frameDimension / 2 - i * (width + gap)
-						end
-					end
-
-					local y = -(height / 2)
-
-					if not isHorizontal then
-						if grow == Private.Enum.Grow.Start then
-							local frameDimension = isHorizontal and frame:GetWidth() or frame:GetHeight()
-							y = (i - 1) * (width + gap) - frameDimension / 2 + 0
-						elseif grow == Private.Enum.Grow.Center then
-							y = (i - 1) * (width + gap) - total / 2 + 0
-						elseif grow == Private.Enum.Grow.End then
-							local frameDimension = isHorizontal and frame:GetWidth() or frame:GetHeight()
-							y = frameDimension / 2 - i * (width + gap) + 0
-						end
-					end
-
-					frame:Reposition(point, parent, "CENTER", x, y)
-				end
-			else
-				self:SortFrames(frames, TargetedSpellsSaved.Settings.Party.SortOrder)
-				local direction = TargetedSpellsSaved.Settings.Party.Direction
-				local isHorizontal = direction == Private.Enum.Direction.Horizontal
-				local index = tonumber(string.sub(targetUnit, 4, 1))
-				local parent = CompactPartyFrame.memberUnitFrames[index]
-			end
-		end
-
-		-- local point = isHorizontal and "LEFT" or "BOTTOM"
-		-- local total = (activeFrameCount * (isHorizontal and width or height)) + (activeFrameCount - 1) * gap
-		-- local parent = _G["Targeted Spells Self"]
-		-- local parentDimension = isHorizontal and 100 or 100
-		-- if parent then
-		-- 	parentDimension = isHorizontal and parent:GetWidth() or parent:GetHeight()
-		-- end
-
-		-- for i, frame in ipairs(activeFrames) do
-		-- 	frame:Reposition(
-		-- 		point,
-		-- 		UIParent,
-		-- 		"CENTER",
-		-- 		isHorizontal and self:CalculateCoordinate(i, width, gap, parentDimension, total, 0, grow) or 0,
-		-- 		isHorizontal and 0 or self:CalculateCoordinate(i, width, gap, parentDimension, total, 0, grow)
-		-- 	)
-		-- end
 	end
 
-	local results = C_AddOnProfiler.MeasureCall(impl)
-	print("RepositionFrames:", results.elapsedMilliseconds)
+	for targetUnit, frames in pairs(activeFrames) do
+		if targetUnit == Private.Enum.FrameKind.Self then
+			local width, height, gap, sortOrder, direction, grow =
+				TargetedSpellsSaved.Settings.Self.Width,
+				TargetedSpellsSaved.Settings.Self.Height,
+				TargetedSpellsSaved.Settings.Self.Gap,
+				TargetedSpellsSaved.Settings.Self.SortOrder,
+				TargetedSpellsSaved.Settings.Self.Direction,
+				TargetedSpellsSaved.Settings.Self.Grow
+			local isHorizontal = direction == Private.Enum.Direction.Horizontal
+			local parent = self.listenerFrame
+			local point = isHorizontal and "LEFT" or "BOTTOM"
+			local total = (#frames * (isHorizontal and width or height)) + (#frames - 1) * gap
+
+			self:SortFrames(frames, sortOrder)
+
+			for i, frame in ipairs(frames) do
+				local x = 0
+				local y = -(height / 2)
+
+				if isHorizontal then
+					if grow == Private.Enum.Grow.Start then
+						local frameDimension = isHorizontal and frame:GetWidth() or frame:GetHeight()
+						x = (i - 1) * (width + gap) - frameDimension / 2
+					elseif grow == Private.Enum.Grow.Center then
+						x = (i - 1) * (width + gap) - total / 2
+					elseif grow == Private.Enum.Grow.End then
+						local frameDimension = isHorizontal and frame:GetWidth() or frame:GetHeight()
+						x = frameDimension / 2 - i * (width + gap)
+					end
+				else
+					if grow == Private.Enum.Grow.Start then
+						local frameDimension = isHorizontal and frame:GetWidth() or frame:GetHeight()
+						y = (i - 1) * (width + gap) - frameDimension / 2 + 0
+					elseif grow == Private.Enum.Grow.Center then
+						y = (i - 1) * (width + gap) - total / 2 + 0
+					elseif grow == Private.Enum.Grow.End then
+						local frameDimension = isHorizontal and frame:GetWidth() or frame:GetHeight()
+						y = frameDimension / 2 - i * (width + gap) + 0
+					end
+				end
+
+				frame:Reposition(point, parent, "CENTER", x, y)
+			end
+		else
+			local parentFrame = nil
+
+			if targetUnit == "player" then
+				if not EditModeManagerFrame:UseRaidStylePartyFrames() then
+					-- non-raid style party frames don't include the player
+					return
+				end
+
+				for _, frame in pairs(CompactPartyFrame.memberUnitFrames) do
+					if frame.unit == "player" then
+						parentFrame = frame
+						break
+					end
+				end
+			else
+				local index = tonumber(string.sub(targetUnit, 6))
+
+				if EditModeManagerFrame:UseRaidStylePartyFrames() then
+					parentFrame = CompactPartyFrame.memberUnitFrames[index]
+				else
+					for memberFrame in PartyFrame.PartyMemberFramePool:EnumerateActive() do
+						if memberFrame.layoutIndex == index then
+							parentFrame = memberFrame
+							break
+						end
+					end
+				end
+			end
+
+			-- no unit frame addon support at this time
+			if parentFrame == nil then
+				pprint("could not establish a parent frame for", targetUnit)
+				return
+			end
+
+			local width, height, gap, sortOrder, sourceAnchor, targetAnchor, direction, grow, offsetX, offsetY =
+				TargetedSpellsSaved.Settings.Party.Width,
+				TargetedSpellsSaved.Settings.Party.Height,
+				TargetedSpellsSaved.Settings.Party.Gap,
+				TargetedSpellsSaved.Settings.Party.SortOrder,
+				TargetedSpellsSaved.Settings.Party.SourceAnchor,
+				TargetedSpellsSaved.Settings.Party.TargetAnchor,
+				TargetedSpellsSaved.Settings.Party.Direction,
+				TargetedSpellsSaved.Settings.Party.Grow,
+				TargetedSpellsSaved.Settings.Party.OffsetX,
+				TargetedSpellsSaved.Settings.Party.OffsetY
+			self:SortFrames(frames, sortOrder)
+
+			local isHorizontal = direction == Private.Enum.Direction.Horizontal
+			local total = (#frames * (isHorizontal and width or height)) + (#frames - 1) * gap
+			local parentDimension = isHorizontal and parentFrame:GetWidth() or parentFrame:GetHeight()
+
+			for j, frame in ipairs(frames) do
+				local x = 0
+				local y = 0
+
+				if isHorizontal then
+					if grow == Private.Enum.Grow.Start then
+						x = (j - 1) * (width + gap) - parentDimension / 2
+					elseif grow == Private.Enum.Grow.Center then
+						x = (j - 1) * (width + gap) - total / 2
+					else
+						x = parentDimension / 2 - j * (width + gap)
+					end
+				else
+					if grow == Private.Enum.Grow.Start then
+						y = (j - 1) * (width + gap) - parentDimension / 2 + 0
+					elseif grow == Private.Enum.Grow.Center then
+						y = (j - 1) * (width + gap) - total / 2 + 0
+					else
+						y = parentDimension / 2 - j * (width + gap) + 0
+					end
+				end
+
+				x = x + offsetX
+				y = y + offsetY
+
+				frame:Reposition(sourceAnchor, parentFrame, targetAnchor, x, y)
+			end
+		end
+	end
 end
 
 function TargetedSpellsDriver:CleanUpUnit(unit, event)
@@ -234,9 +281,11 @@ function TargetedSpellsDriver:CleanUpUnit(unit, event)
 			self.framePool:Release(frame)
 		end
 
+		local nFrames = #frames
+
 		table.wipe(self.frames[unit])
 
-		pprint("removed frames for", unit, "through", event)
+		pprint("removed " .. nFrames .. " frames for", unit, "through", event)
 
 		return true
 	end
@@ -264,6 +313,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			UnitInParty(unit)
 			or not UnitExists(unit)
 			or UnitIsUnit("player", unit)
+			or not UnitAffectingCombat(unit) -- todo: needs testing. intended to skip rp casts
 			or string.find(unit, "nameplate") == nil
 		then
 			return
@@ -363,23 +413,6 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		if event == Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START and UnitCastingInfo(unit) == nil then
 			return
 		elseif event == Private.Enum.Events.DELAYED_UNIT_SPELLCAST_CHANNEL_START and UnitChannelInfo(unit) == nil then
-			return
-		end
-
-		local hasValidTarget = false
-		if TargetedSpellsSaved.Settings.Self.Enabled then
-			hasValidTarget = UnitIsUnit(unit .. "target", "player")
-		elseif TargetedSpellsSaved.Settings.Party.Enabled then
-			local isInParty = UnitInParty(unit .. "target")
-			if TargetedSpellsSaved.Settings.Party.IncludeSelfInParty then
-				hasValidTarget = isInParty
-			else
-				hasValidTarget = isInParty and not UnitIsUnit(unit .. "target", "player")
-			end
-		end
-
-		if not hasValidTarget then
-			pprint(event, unit, "target is irrelevant")
 			return
 		end
 

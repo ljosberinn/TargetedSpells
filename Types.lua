@@ -54,6 +54,7 @@
 ---@field Position SelfFramePosition
 ---@field MaxElements number
 ---@field ShowBorder boolean
+---@field GlowImportant boolean
 
 ---@class SavedVariablesSettingsParty
 ---@field Enabled boolean
@@ -71,6 +72,7 @@
 ---@field Grow Grow
 ---@field ShowDuration boolean
 ---@field ShowBorder boolean
+---@field GlowImportant boolean
 
 ---@class TargetedSpellsSelfPreviewFrame: Frame
 ---@field GetChildren fun(self: TargetedSpellsSelfPreviewFrame): TargetedSpellsMixin
@@ -83,6 +85,7 @@
 ---@field Overlay Texture
 ---@field Icon Texture
 ---@field Cooldown ExtendedCooldownTypes
+---@field SpellActivationAlert ActionButtonSpellAlertTemplate? -- only present if important spells should be highlighted
 ---@field soundHandle number?
 ---@field kind FrameKind?
 ---@field unit string? -- secret?
@@ -107,6 +110,7 @@
 ---@field AttemptToPlaySound fun(self: TargetedSpellsMixin)
 ---@field SetShowDuration fun(self: TargetedSpellsMixin, showDuration: boolean)
 ---@field SetFontSize fun(self: TargetedSpellsMixin, fontSize: number)
+---@field PostCreate fun(self: TargetedSpellsMixin, unit: string, kind: FrameKind, castingUnit: string?)
 
 ---@class IconDataProviderMixin
 ---@field GetRandomIcon fun(self: IconDataProviderMixin): number
@@ -136,7 +140,12 @@
 ---@field valueStep number
 ---@field formatter (fun(value: number): string)|nil
 
----@class TargetedSpellsEditModeMixin
+---@class Frame
+---@field SetAlphaFromBoolean fun(self: Frame, value: boolean)
+
+---@class ActionButtonSpellAlertTemplate: Frame
+
+---@class TargetedSpellsEditModeMixin : Frame
 ---@field Init fun(self: TargetedSpellsEditModeMixin, displayName: string, frameKind: FrameKind)
 ---@field editModeFrame Frame
 ---@field demoPlaying boolean

@@ -135,6 +135,32 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 		}
 	end
 
+	if key == Private.Settings.Keys.Self.GlowImportant or key == Private.Settings.Keys.Party.GlowImportant then
+		local isSelf = key == Private.Settings.Keys.Self.GlowImportant
+		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
+
+		---@type LibEditModeCheckbox
+		return {
+			name = L.Settings.GlowImportantLabel,
+			kind = Enum.EditModeSettingDisplayType.Checkbox,
+			default = isSelf and Private.Settings.GetSelfDefaultSettings().GlowImportant
+				or Private.Settings.GetPartyDefaultSettings().GlowImportant,
+			get =
+				---@param layoutName string
+				function(layoutName)
+					return tableRef.GlowImportant
+				end,
+			---@param layoutName string
+			---@param value boolean
+			set = function(layoutName, value)
+				if value ~= tableRef.GlowImportant then
+					tableRef.GlowImportant = value
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
+			end,
+		}
+	end
+
 	if key == Private.Settings.Keys.Self.ShowBorder or key == Private.Settings.Keys.Party.ShowBorder then
 		local isSelf = key == Private.Settings.Keys.Self.ShowBorder
 		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
@@ -914,7 +940,7 @@ end
 function TargetedSpellsEditModeMixin:AcquireFrame()
 	local frame = self.framePool:Acquire()
 
-	frame:PostCreate("preview", self.frameKind)
+	frame:PostCreate("preview", self.frameKind, nil)
 
 	return frame
 end
@@ -1041,8 +1067,8 @@ function SelfEditModeMixin:AppendSettings()
 
 	LEM:AddFrameSettings(self.editModeFrame, {
 		self:CreateSetting(Private.Settings.Keys.Self.Enabled),
-		self:CreateSetting(Private.Settings.Keys.Self.LoadConditionContentType),
-		self:CreateSetting(Private.Settings.Keys.Self.LoadConditionRole),
+		-- self:CreateSetting(Private.Settings.Keys.Self.LoadConditionContentType),
+		-- self:CreateSetting(Private.Settings.Keys.Self.LoadConditionRole),
 		self:CreateSetting(Private.Settings.Keys.Self.MaxFrames),
 		self:CreateSetting(Private.Settings.Keys.Self.Width),
 		self:CreateSetting(Private.Settings.Keys.Self.Height),
@@ -1051,6 +1077,7 @@ function SelfEditModeMixin:AppendSettings()
 		self:CreateSetting(Private.Settings.Keys.Self.Direction),
 		self:CreateSetting(Private.Settings.Keys.Self.SortOrder),
 		self:CreateSetting(Private.Settings.Keys.Self.Grow),
+		self:CreateSetting(Private.Settings.Keys.Self.GlowImportant),
 		self:CreateSetting(Private.Settings.Keys.Self.PlaySound),
 		self:CreateSetting(Private.Settings.Keys.Self.Sound),
 		self:CreateSetting(Private.Settings.Keys.Self.SoundChannel),
@@ -1239,8 +1266,8 @@ function PartyEditModeMixin:AppendSettings()
 
 	LEM:AddFrameSettings(self.editModeFrame, {
 		self:CreateSetting(Private.Settings.Keys.Party.Enabled),
-		self:CreateSetting(Private.Settings.Keys.Party.LoadConditionContentType),
-		self:CreateSetting(Private.Settings.Keys.Party.LoadConditionRole),
+		-- self:CreateSetting(Private.Settings.Keys.Party.LoadConditionContentType),
+		-- self:CreateSetting(Private.Settings.Keys.Party.LoadConditionRole),
 		self:CreateSetting(Private.Settings.Keys.Party.Width),
 		self:CreateSetting(Private.Settings.Keys.Party.Height),
 		self:CreateSetting(Private.Settings.Keys.Party.FontSize),
@@ -1252,6 +1279,7 @@ function PartyEditModeMixin:AppendSettings()
 		self:CreateSetting(Private.Settings.Keys.Party.TargetAnchor),
 		self:CreateSetting(Private.Settings.Keys.Party.Grow),
 		self:CreateSetting(Private.Settings.Keys.Party.SortOrder),
+		self:CreateSetting(Private.Settings.Keys.Party.GlowImportant),
 		self:CreateSetting(Private.Settings.Keys.Party.IncludeSelfInParty),
 		self:CreateSetting(Private.Settings.Keys.Party.ShowDuration),
 		self:CreateSetting(Private.Settings.Keys.Party.ShowBorder),

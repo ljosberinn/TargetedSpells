@@ -18,6 +18,7 @@ Private.Settings.Keys = {
 		OffsetX = "FRAME_OFFSET_X_SELF",
 		OffsetY = "FRAME_OFFSET_Y_SELF",
 		SortOrder = "FRAME_SORT_ORDER_SELF",
+		GlowImportant = "GLOW_IMPORTANT_SELF",
 		Grow = "FRAME_GROW_SELF",
 		PlaySound = "PLAY_SOUND_SELF",
 		Sound = "SOUND_SELF",
@@ -42,6 +43,7 @@ Private.Settings.Keys = {
 		TargetAnchor = "FRAME_TARGET_ANCHOR_PARTY",
 		SortOrder = "FRAME_SORT_ORDER_PARTY",
 		Grow = "FRAME_GROW_PARTY",
+		GlowImportant = "GLOW_IMPORTANT_PARTY",
 		IncludeSelfInParty = "INCLUDE_SELF_IN_PARTY_PARTY",
 		ShowDuration = "SHOW_DURATION_PARTY",
 		Opacity = "OPACITY_PARTY",
@@ -185,6 +187,7 @@ function Private.Settings.GetSelfDefaultSettings()
 		MaxFrames = 5,
 		Opacity = 1,
 		ShowBorder = false,
+		GlowImportant = true,
 	}
 end
 
@@ -220,6 +223,7 @@ function Private.Settings.GetPartyDefaultSettings()
 		ShowDuration = true,
 		Opacity = 1,
 		ShowBorder = false,
+		GlowImportant = true,
 	}
 end
 
@@ -267,7 +271,7 @@ table.insert(Private.LoginFnQueue, function()
 		end
 
 		-- Load Condition Content Type
-		if Private.IsMidnight then
+		if Private.IsMidnight and false then
 			do
 				local key = Private.Settings.Keys.Self.LoadConditionContentType
 
@@ -336,7 +340,7 @@ table.insert(Private.LoginFnQueue, function()
 		end
 
 		-- Load Condition: Role
-		if Private.IsMidnight then
+		if Private.IsMidnight and false then
 			do
 				local key = Private.Settings.Keys.Self.LoadConditionRole
 
@@ -710,6 +714,36 @@ table.insert(Private.LoginFnQueue, function()
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
+		-- Glow Important
+		do
+			local key = Private.Settings.Keys.Self.GlowImportant
+
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Self.GlowImportant
+			end
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Self.GlowImportant = not TargetedSpellsSaved.Settings.Self.GlowImportant
+				Private.EventRegistry:TriggerEvent(
+					Private.Enum.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Self.GlowImportant
+				)
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Boolean,
+				L.Settings.GlowImportantLabel,
+				Settings.Default.True,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.GlowImportantTooltip)
+			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+		end
+
 		-- Play Sound
 		do
 			local key = Private.Settings.Keys.Self.PlaySound
@@ -1007,7 +1041,7 @@ table.insert(Private.LoginFnQueue, function()
 		end
 
 		-- Load Condition: Content Type
-		if Private.IsMidnight then
+		if Private.IsMidnight and false then
 			do
 				local key = Private.Settings.Keys.Party.LoadConditionContentType
 
@@ -1070,7 +1104,7 @@ table.insert(Private.LoginFnQueue, function()
 		end
 
 		-- Load Condition: Role
-		if Private.IsMidnight then
+		if Private.IsMidnight and false then
 			do
 				local key = Private.Settings.Keys.Party.LoadConditionRole
 
@@ -1557,6 +1591,32 @@ table.insert(Private.LoginFnQueue, function()
 				SetValue
 			)
 			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.FrameSortOrderTooltip)
+			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+		end
+
+		-- Glow Important
+		do
+			local key = Private.Settings.Keys.Party.GlowImportant
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Party.GlowImportant = not TargetedSpellsSaved.Settings.Party.GlowImportant
+				Private.EventRegistry:TriggerEvent(
+					Private.Enum.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Party.GlowImportant
+				)
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Boolean,
+				L.Settings.GlowImportantLabel,
+				Settings.Default.True,
+				IsSectionEnabled,
+				SetValue
+			)
+			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.GlowImportantTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 

@@ -89,16 +89,60 @@ function TargetedSpellsMixin:OnSizeChanged(width, height)
 	end
 end
 
--- literally the defaults from https://warcraft.wiki.gg/wiki/BackdropTemplate
-local backdropTemplate = {
-	bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-	edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-	tile = true,
-	tileEdge = true,
-	tileSize = 8,
-	edgeSize = 8,
-	insets = { left = 1, right = 1, top = 1, bottom = 1 },
-}
+local actionButtonSpellAlertManagerPatched = false
+local warnedAboutGlowImportantToggle = false
+
+---@param bool boolean
+local function MaybePatchActionButtonSpellAlertManager(bool)
+	if actionButtonSpellAlertManagerPatched then
+		if bool == false and warnedAboutGlowImportantToggle == false then
+			warnedAboutGlowImportantToggle = true
+			print(Private.L.Settings.GlowImportantWarning)
+		end
+
+		return
+	end
+
+	if bool == false then
+		return
+	end
+
+	actionButtonSpellAlertManagerPatched = true
+
+	hooksecurefunc(ActionButtonSpellAlertManager, "ShowAlert", function(self, button)
+		local alertFrame = button.SpellActivationAlert
+
+		if alertFrame == nil then
+			return
+		end
+
+		local width, height = button:GetSize()
+
+		alertFrame.ProcStartFlipbook:ClearAllPoints()
+		alertFrame.ProcStartFlipbook:SetPoint("TOPLEFT", button, -width * 0.9, height * 0.9)
+		alertFrame.ProcStartFlipbook:SetPoint("BOTTOMRIGHT", button, height * 0.9, -width * 0.9)
+		alertFrame.ProcLoop:Play()
+	end)
+end
+
+table.insert(Private.LoginFnQueue, function()
+	MaybePatchActionButtonSpellAlertManager(
+		TargetedSpellsSaved.Settings.Self.GlowImportant or TargetedSpellsSaved.Settings.Party.GlowImportant
+	)
+end)
+
+local function GetBackdropTemplate()
+	-- literally the defaults from https://warcraft.wiki.gg/wiki/BackdropTemplate
+	return {
+		bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+		tile = true,
+		tileEdge = true,
+		tileSize = 8,
+		edgeSize = 8,
+		insets = { left = 1, right = 1, top = 1, bottom = 1 },
+	}
+end
 
 function TargetedSpellsMixin:OnSettingChanged(key, value)
 	if self.kind == Private.Enum.FrameKind.Self then
@@ -118,10 +162,12 @@ function TargetedSpellsMixin:OnSettingChanged(key, value)
 			self:SetAlpha(value)
 		elseif key == Private.Settings.Keys.Self.ShowBorder then
 			if value then
-				self:SetBackdrop(backdropTemplate)
+				self:SetBackdrop(GetBackdropTemplate())
 			else
 				self:ClearBackdrop()
 			end
+		elseif key == Private.Settings.Keys.Self.GlowImportant then
+			MaybePatchActionButtonSpellAlertManager(value)
 		end
 	else
 		if key == Private.Settings.Keys.Party.Width then
@@ -140,10 +186,12 @@ function TargetedSpellsMixin:OnSettingChanged(key, value)
 			self:SetAlpha(value)
 		elseif key == Private.Settings.Keys.Party.ShowBorder then
 			if value then
-				self:SetBackdrop(backdropTemplate)
+				self:SetBackdrop(GetBackdropTemplate())
 			else
 				self:ClearBackdrop()
 			end
+		elseif key == Private.Settings.Keys.Party.GlowImportant then
+			MaybePatchActionButtonSpellAlertManager(value)
 		end
 	end
 end
@@ -170,6 +218,24 @@ end
 function TargetedSpellsMixin:SetSpellId(spellId)
 	local texture = spellId and C_Spell.GetSpellTexture(spellId) or GetRandomIcon()
 	self.Icon:SetTexture(texture)
+
+	local glowEnabled = false
+
+	if self.kind == Private.Enum.FrameKind.Self then
+		glowEnabled = TargetedSpellsSaved.Settings.Self.GlowImportant
+	else
+		glowEnabled = TargetedSpellsSaved.Settings.Party.GlowImportant
+	end
+
+	if not glowEnabled then
+		return
+	end
+
+	-- todo: verify this is fine with secret values
+	if spellId ~= nil then
+		ActionButtonSpellAlertManager:ShowAlert(self)
+		self.SpellActivationAlert:SetAlphaFromBoolean(C_Spell.IsSpellImportant(spellId))
+	end
 end
 
 function TargetedSpellsMixin:ShouldBeShown()
@@ -204,9 +270,13 @@ function TargetedSpellsMixin:GetUnit()
 	return self.unit
 end
 
-function TargetedSpellsMixin:PostCreate(unit, kind)
+function TargetedSpellsMixin:PostCreate(unit, kind, castingUnit)
 	self:SetUnit(unit)
 	self:SetKind(kind)
+
+	if castingUnit ~= nil then
+		self:SetAlphaFromBoolean(UnitIsUnit(string.format("%starget", castingUnit), unit))
+	end
 end
 
 function TargetedSpellsMixin:Reset()
@@ -219,6 +289,9 @@ function TargetedSpellsMixin:Reset()
 		StopSound(self.soundHandle)
 		self.soundHandle = nil
 	end
+
+	-- internally nilchecks so safe to call unconditionally
+	ActionButtonSpellAlertManager:HideAlert(self)
 end
 
 function TargetedSpellsMixin:AttemptToPlaySound()
