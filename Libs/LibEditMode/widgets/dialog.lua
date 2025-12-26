@@ -1,4 +1,4 @@
-local MINOR = 10
+local MINOR = 12
 local lib, minor = LibStub("LibEditMode")
 if minor > MINOR then
 	return
@@ -20,12 +20,6 @@ function dialogMixin:Update(selection)
 	self.Title:SetText(selection.system:GetSystemName())
 	self:UpdateSettings()
 	self:UpdateButtons()
-
-	-- reset position
-	if not self:IsShown() then
-		self:ClearAllPoints()
-		self:SetPoint("BOTTOMRIGHT", UIParent, -250, 250)
-	end
 
 	-- show and update layout
 	self:Show()
@@ -51,6 +45,12 @@ function dialogMixin:UpdateSettings()
 	self.Settings.ResetButton.layoutIndex = num + 1
 	self.Settings.Divider.layoutIndex = num + 2
 	self.Settings.ResetButton:SetEnabled(num > 0)
+end
+
+function dialogMixin:Reset()
+	self.selection = nil
+	self:ClearAllPoints()
+	self:SetPoint("BOTTOMRIGHT", UIParent, -250, 250)
 end
 
 local function closeEnough(a, b)
@@ -95,7 +95,7 @@ function dialogMixin:ResetSettings()
 	if num > 0 then
 		for _, data in next, settings do
 			if data.set then
-				data.set(lib.activeLayoutName, data.default)
+				data.set(lib:GetActiveLayoutName(), data.default, true)
 			end
 		end
 
@@ -157,6 +157,8 @@ function internal:CreateDialog()
 	dialog:Hide()
 	dialog.widthPadding = 40
 	dialog.heightPadding = 40
+
+	dialog:Reset()
 
 	-- make draggable
 	dialog:EnableMouse(true)

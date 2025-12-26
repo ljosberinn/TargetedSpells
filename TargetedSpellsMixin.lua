@@ -49,6 +49,31 @@ function TargetedSpellsMixin:OnKindChanged(kind)
 	end
 end
 
+---@param element TargetedSpellsMixin
+---@param width number
+---@param height number
+local function ResizeSpellActivationAlert(element, width, height, startPlay)
+	local alertFrame = element.SpellActivationAlert
+
+	if alertFrame == nil then
+		return
+	end
+
+	-- default scaling as per `ActionButtonSpellAlerts` > `GetAlertFrame`
+	alertFrame:SetSize(width * 1.4, height * 1.4)
+
+	-- this may need adjusting further down the line
+	local factor = 1
+
+	alertFrame.ProcStartFlipbook:ClearAllPoints()
+	alertFrame.ProcStartFlipbook:SetPoint("TOPLEFT", element, -width * factor, height * factor)
+	alertFrame.ProcStartFlipbook:SetPoint("BOTTOMRIGHT", element, height * factor, -width * factor)
+
+	if startPlay then
+		alertFrame.ProcLoop:Play()
+	end
+end
+
 --- shamelessly ~~stolen~~ repurposed from WeakAuras2
 ---@param width number
 ---@param height number
@@ -87,41 +112,35 @@ function TargetedSpellsMixin:OnSizeChanged(width, height)
 		local fifteenPercent = 0.15 * height
 		self.Overlay:SetPoint("BOTTOMRIGHT", bottomrightRelativePoint, "BOTTOMRIGHT", fifteenPercent, -fifteenPercent)
 	end
+
+	ResizeSpellActivationAlert(self, width, height, false)
 end
 
 local actionButtonSpellAlertManagerPatched = false
-local warnedAboutGlowImportantToggle = false
 
 ---@param bool boolean
 local function MaybePatchActionButtonSpellAlertManager(bool)
-	if actionButtonSpellAlertManagerPatched then
-		if bool == false and warnedAboutGlowImportantToggle == false then
-			warnedAboutGlowImportantToggle = true
-			print(Private.L.Settings.GlowImportantWarning)
-		end
-
-		return
-	end
-
-	if bool == false then
+	if actionButtonSpellAlertManagerPatched or bool == false then
 		return
 	end
 
 	actionButtonSpellAlertManagerPatched = true
 
-	hooksecurefunc(ActionButtonSpellAlertManager, "ShowAlert", function(self, button)
-		local alertFrame = button.SpellActivationAlert
-
-		if alertFrame == nil then
+	hooksecurefunc(ActionButtonSpellAlertManager, "ShowAlert", function(self, element)
+		if element.kind == nil then
 			return
 		end
 
-		local width, height = button:GetSize()
+		if element.kind == Private.Enum.FrameKind.Self and not TargetedSpellsSaved.Settings.Self.GlowImportant then
+			return
+		end
 
-		alertFrame.ProcStartFlipbook:ClearAllPoints()
-		alertFrame.ProcStartFlipbook:SetPoint("TOPLEFT", button, -width * 0.9, height * 0.9)
-		alertFrame.ProcStartFlipbook:SetPoint("BOTTOMRIGHT", button, height * 0.9, -width * 0.9)
-		alertFrame.ProcLoop:Play()
+		if element.kind == Private.Enum.FrameKind.Party and not TargetedSpellsSaved.Settings.Party.GlowImportant then
+			return
+		end
+
+		local width, height = element:GetSize()
+		ResizeSpellActivationAlert(element, width, height, true)
 	end)
 end
 

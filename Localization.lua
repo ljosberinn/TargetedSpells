@@ -43,8 +43,6 @@ L.Settings.FrameGrowTooltip = nil
 
 L.Settings.GlowImportantLabel = "Glow Important Spells"
 L.Settings.GlowImportantTooltip = "What's important and what isn't is declared by the game."
-L.Settings.GlowImportantWarning =
-	"[Targeted Spells] this addon patched action button glows to fix a bug when they show. As you just disabled this feature, you may want to /reload to disable the fix too."
 
 L.Settings.PlaySoundLabel = "Play Sound"
 L.Settings.PlaySoundTooltip = nil

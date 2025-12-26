@@ -264,7 +264,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 					rootDescription:CreateCheckbox(label, IsEnabled, SetProxy, {
 						value = label,
-						isRadio = true,
+						multiple = false,
 					})
 				end
 			end,
@@ -300,7 +300,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 					local selectPayloadCheckbox = description:CreateCheckbox(value.text, IsEnabled, Set, {
 						value = value.text,
-						isRadio = true,
+						multiple = false,
 					})
 
 					if Private.IsMidnight then
@@ -495,7 +495,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 					-- todo: localize
 					rootDescription:CreateCheckbox(label, IsEnabled, Toggle, {
 						value = label,
-						isRadio = false,
+						multiple = true,
 					})
 				end
 			end,
@@ -545,7 +545,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 					-- todo: localize
 					rootDescription:CreateCheckbox(label, IsEnabled, Toggle, {
 						value = label,
-						isRadio = false,
+						multiple = true,
 					})
 				end
 			end,
@@ -701,7 +701,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 					rootDescription:CreateCheckbox(label, IsEnabled, SetProxy, {
 						value = label,
-						isRadio = true,
+						multiple = false,
 					})
 				end
 			end,
@@ -792,7 +792,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 					rootDescription:CreateCheckbox(label, IsEnabled, SetProxy, {
 						value = label,
-						isRadio = true,
+						multiple = false,
 					})
 				end
 			end,
@@ -827,7 +827,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 					rootDescription:CreateCheckbox(label, IsEnabled, SetProxy, {
 						value = label,
-						isRadio = true,
+						multiple = false,
 					})
 				end
 			end,
@@ -865,7 +865,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 					rootDescription:CreateCheckbox(label, IsEnabled, SetProxy, {
 						value = label,
-						isRadio = true,
+						multiple = false,
 					})
 				end
 			end,
@@ -903,7 +903,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 					rootDescription:CreateCheckbox(label, IsEnabled, SetProxy, {
 						value = label,
-						isRadio = true,
+						multiple = false,
 					})
 				end
 			end,
@@ -972,7 +972,7 @@ function TargetedSpellsEditModeMixin:LoopFrame(frame, index)
 
 	if
 		(self.frameKind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self.GlowImportant)
-		or TargetedSpellsSaved.Settings.Party.GlowImportant
+		or (self.frameKind == Private.Enum.FrameKind.Party and TargetedSpellsSaved.Settings.Party.GlowImportant)
 	then
 		if Private.Utils.FlipCoin() then
 			frame:ShowGlow()

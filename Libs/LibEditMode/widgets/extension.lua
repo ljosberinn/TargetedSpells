@@ -1,4 +1,4 @@
-local MINOR = 10
+local MINOR = 12
 local lib, minor = LibStub("LibEditMode")
 if minor > MINOR then
 	return
@@ -79,7 +79,7 @@ function extensionMixin:ResetSettings()
 	if num > 0 then
 		for _, data in next, settings do
 			if data.set then
-				data.set(lib.activeLayoutName, data.default)
+				data.set(lib:GetActiveLayoutName(), data.default)
 			end
 		end
 
