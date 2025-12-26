@@ -8,6 +8,11 @@
 ---@field Settings TargetedSpellsSettings
 ---@field LoginFnQueue table<string, function>
 ---@field L table<string, table<string, string|nil>>
+---@field Utils TargetedSpellsUtils
+
+---@class TargetedSpellsUtils
+---@field FlipCoin fun(): boolean
+---@field CalculateCoordinate fun(index: number, dimension: number, gap: number, parentDimension: number, total: number, offset: number, grow: Grow): number
 
 ---@class TargetedSpellsEnums
 

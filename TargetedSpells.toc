@@ -13,6 +13,7 @@ Libs\LibSharedMedia-3.0\LibSharedMedia-3.0.lua
 Templates\TargetedSpellsFrameTemplate.xml
 
 Enum.lua
+Utils.lua
 Init.lua
 Localization.lua
 Settings.lua

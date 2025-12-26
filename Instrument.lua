@@ -165,25 +165,9 @@ function TargetedSpellsDriver:RepositionFrames()
 				local y = -(height / 2)
 
 				if isHorizontal then
-					if grow == Private.Enum.Grow.Start then
-						local frameDimension = isHorizontal and frame:GetWidth() or frame:GetHeight()
-						x = (i - 1) * (width + gap) - frameDimension / 2
-					elseif grow == Private.Enum.Grow.Center then
-						x = (i - 1) * (width + gap) - total / 2
-					elseif grow == Private.Enum.Grow.End then
-						local frameDimension = isHorizontal and frame:GetWidth() or frame:GetHeight()
-						x = frameDimension / 2 - i * (width + gap)
-					end
+					x = Private.Utils.CalculateCoordinate(i, width, gap, width, total, 0, grow)
 				else
-					if grow == Private.Enum.Grow.Start then
-						local frameDimension = isHorizontal and frame:GetWidth() or frame:GetHeight()
-						y = (i - 1) * (width + gap) - frameDimension / 2 + 0
-					elseif grow == Private.Enum.Grow.Center then
-						y = (i - 1) * (width + gap) - total / 2 + 0
-					elseif grow == Private.Enum.Grow.End then
-						local frameDimension = isHorizontal and frame:GetWidth() or frame:GetHeight()
-						y = frameDimension / 2 - i * (width + gap) + 0
-					end
+					y = Private.Utils.CalculateCoordinate(i, width, gap, height, total, 0, grow)
 				end
 
 				frame:Reposition(point, parent, "CENTER", x, y)
@@ -219,54 +203,36 @@ function TargetedSpellsDriver:RepositionFrames()
 			end
 
 			-- no unit frame addon support at this time
-			if parentFrame == nil then
-				pprint("could not establish a parent frame for", targetUnit)
-				return
-			end
+			if parentFrame ~= nil then
+				local width, height, gap, sortOrder, sourceAnchor, targetAnchor, direction, grow, offsetX, offsetY =
+					TargetedSpellsSaved.Settings.Party.Width,
+					TargetedSpellsSaved.Settings.Party.Height,
+					TargetedSpellsSaved.Settings.Party.Gap,
+					TargetedSpellsSaved.Settings.Party.SortOrder,
+					TargetedSpellsSaved.Settings.Party.SourceAnchor,
+					TargetedSpellsSaved.Settings.Party.TargetAnchor,
+					TargetedSpellsSaved.Settings.Party.Direction,
+					TargetedSpellsSaved.Settings.Party.Grow,
+					TargetedSpellsSaved.Settings.Party.OffsetX,
+					TargetedSpellsSaved.Settings.Party.OffsetY
+				self:SortFrames(frames, sortOrder)
 
-			local width, height, gap, sortOrder, sourceAnchor, targetAnchor, direction, grow, offsetX, offsetY =
-				TargetedSpellsSaved.Settings.Party.Width,
-				TargetedSpellsSaved.Settings.Party.Height,
-				TargetedSpellsSaved.Settings.Party.Gap,
-				TargetedSpellsSaved.Settings.Party.SortOrder,
-				TargetedSpellsSaved.Settings.Party.SourceAnchor,
-				TargetedSpellsSaved.Settings.Party.TargetAnchor,
-				TargetedSpellsSaved.Settings.Party.Direction,
-				TargetedSpellsSaved.Settings.Party.Grow,
-				TargetedSpellsSaved.Settings.Party.OffsetX,
-				TargetedSpellsSaved.Settings.Party.OffsetY
-			self:SortFrames(frames, sortOrder)
+				local isHorizontal = direction == Private.Enum.Direction.Horizontal
+				local total = (#frames * (isHorizontal and width or height)) + (#frames - 1) * gap
+				local parentDimension = isHorizontal and parentFrame:GetWidth() or parentFrame:GetHeight()
 
-			local isHorizontal = direction == Private.Enum.Direction.Horizontal
-			local total = (#frames * (isHorizontal and width or height)) + (#frames - 1) * gap
-			local parentDimension = isHorizontal and parentFrame:GetWidth() or parentFrame:GetHeight()
+				for j, frame in ipairs(frames) do
+					local x = offsetX
+					local y = offsetY
 
-			for j, frame in ipairs(frames) do
-				local x = 0
-				local y = 0
-
-				if isHorizontal then
-					if grow == Private.Enum.Grow.Start then
-						x = (j - 1) * (width + gap) - parentDimension / 2
-					elseif grow == Private.Enum.Grow.Center then
-						x = (j - 1) * (width + gap) - total / 2
+					if isHorizontal then
+						x = Private.Utils.CalculateCoordinate(j, width, gap, parentDimension, total, offsetX, grow)
 					else
-						x = parentDimension / 2 - j * (width + gap)
+						y = Private.Utils.CalculateCoordinate(j, width, gap, parentDimension, total, offsetY, grow)
 					end
-				else
-					if grow == Private.Enum.Grow.Start then
-						y = (j - 1) * (width + gap) - parentDimension / 2 + 0
-					elseif grow == Private.Enum.Grow.Center then
-						y = (j - 1) * (width + gap) - total / 2 + 0
-					else
-						y = parentDimension / 2 - j * (width + gap) + 0
-					end
+
+					frame:Reposition(sourceAnchor, parentFrame, targetAnchor, x, y)
 				end
-
-				x = x + offsetX
-				y = y + offsetY
-
-				frame:Reposition(sourceAnchor, parentFrame, targetAnchor, x, y)
 			end
 		end
 	end
@@ -371,7 +337,6 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			if cleanedSomethingUp then
 				self:RepositionFrames()
 			end
-			return
 		elseif name == "nameplateShowOffscreen" then
 			if value == "0" or value == 0 then
 				print(

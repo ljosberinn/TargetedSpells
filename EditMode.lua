@@ -1018,18 +1018,6 @@ function TargetedSpellsEditModeMixin:EndDemo()
 	self.demoPlaying = false
 end
 
-function TargetedSpellsEditModeMixin:CalculateCoordinate(index, dimension, gap, parentDimension, total, offset, grow)
-	if grow == Private.Enum.Grow.Start then
-		return (index - 1) * (dimension + gap) - parentDimension / 2 + offset
-	elseif grow == Private.Enum.Grow.Center then
-		return (index - 1) * (dimension + gap) - total / 2 + offset
-	elseif grow == Private.Enum.Grow.End then
-		return parentDimension / 2 - index * (dimension + gap) + offset
-	end
-
-	return 0
-end
-
 ---@class TargetedSpellsSelfEditMode
 local SelfEditModeMixin = CreateFromMixins(TargetedSpellsEditModeMixin)
 
@@ -1158,13 +1146,16 @@ function SelfEditModeMixin:RepositionPreviewFrames()
 	local parentDimension = isHorizontal and self.editModeFrame:GetWidth() or self.editModeFrame:GetHeight()
 
 	for i, frame in ipairs(activeFrames) do
-		frame:Reposition(
-			point,
-			self.editModeFrame,
-			"CENTER",
-			isHorizontal and self:CalculateCoordinate(i, width, gap, parentDimension, total, 0, grow) or 0,
-			isHorizontal and 0 or self:CalculateCoordinate(i, width, gap, parentDimension, total, 0, grow)
-		)
+		local x = 0
+		local y = 0
+
+		if isHorizontal then
+			x = Private.Utils.CalculateCoordinate(i, width, gap, parentDimension, total, 0, grow)
+		else
+			y = Private.Utils.CalculateCoordinate(i, width, gap, parentDimension, total, 0, grow)
+		end
+
+		frame:Reposition(point, self.editModeFrame, "CENTER", x, y)
 	end
 end
 
@@ -1427,15 +1418,16 @@ function PartyEditModeMixin:RepositionPreviewFrames()
 			local parentDimension = isHorizontal and parentFrame:GetWidth() or parentFrame:GetHeight()
 
 			for j, frame in ipairs(activeFrames) do
-				frame:Reposition(
-					sourceAnchor,
-					parentFrame,
-					targetAnchor,
-					isHorizontal and self:CalculateCoordinate(j, width, gap, parentDimension, total, offsetX, grow)
-						or offsetX,
-					isHorizontal and offsetY
-						or self:CalculateCoordinate(j, width, gap, parentDimension, total, offsetX, grow)
-				)
+				local x = offsetX
+				local y = offsetY
+
+				if isHorizontal then
+					x = Private.Utils.CalculateCoordinate(j, width, gap, parentDimension, total, offsetX, grow)
+				else
+					y = Private.Utils.CalculateCoordinate(j, width, gap, parentDimension, total, offsetX, grow)
+				end
+
+				frame:Reposition(sourceAnchor, parentFrame, targetAnchor, x, y)
 			end
 		end
 	end
