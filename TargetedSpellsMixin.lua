@@ -215,6 +215,15 @@ function TargetedSpellsMixin:SetCastTime(castTime)
 	self.castTime = castTime
 end
 
+function TargetedSpellsMixin:ShowGlow()
+	ActionButtonSpellAlertManager:ShowAlert(self)
+end
+
+function TargetedSpellsMixin:HideGlow()
+	-- internally nilchecks so safe to call unconditionally
+	ActionButtonSpellAlertManager:HideAlert(self)
+end
+
 function TargetedSpellsMixin:SetSpellId(spellId)
 	local texture = spellId and C_Spell.GetSpellTexture(spellId) or GetRandomIcon()
 	self.Icon:SetTexture(texture)
@@ -233,7 +242,7 @@ function TargetedSpellsMixin:SetSpellId(spellId)
 
 	-- todo: verify this is fine with secret values
 	if spellId ~= nil then
-		ActionButtonSpellAlertManager:ShowAlert(self)
+		self:ShowGlow()
 		self.SpellActivationAlert:SetAlphaFromBoolean(C_Spell.IsSpellImportant(spellId))
 	end
 end
@@ -290,8 +299,7 @@ function TargetedSpellsMixin:Reset()
 		self.soundHandle = nil
 	end
 
-	-- internally nilchecks so safe to call unconditionally
-	ActionButtonSpellAlertManager:HideAlert(self)
+	self:HideGlow()
 end
 
 function TargetedSpellsMixin:AttemptToPlaySound()

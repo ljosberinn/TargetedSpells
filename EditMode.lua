@@ -35,6 +35,7 @@ function TargetedSpellsEditModeMixin:OnSettingsChanged(key, value)
 		or key == Private.Settings.Keys.Self.SortOrder
 		or key == Private.Settings.Keys.Self.Grow
 		or key == Private.Settings.Keys.Self.MaxFrames
+		or key == Private.Settings.Keys.Self.GlowImportant
 		-- party
 		or key == Private.Settings.Keys.Party.Gap
 		or key == Private.Settings.Keys.Party.Direction
@@ -46,6 +47,7 @@ function TargetedSpellsEditModeMixin:OnSettingsChanged(key, value)
 		or key == Private.Settings.Keys.Party.TargetAnchor
 		or key == Private.Settings.Keys.Party.SortOrder
 		or key == Private.Settings.Keys.Party.Grow
+		or key == Private.Settings.Keys.Party.GlowImportant
 	then
 		self:OnLayoutSettingChanged(key, value)
 
@@ -968,6 +970,15 @@ function TargetedSpellsEditModeMixin:LoopFrame(frame, index)
 	frame:Show()
 	self:RepositionPreviewFrames()
 
+	if
+		(self.frameKind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self.GlowImportant)
+		or TargetedSpellsSaved.Settings.Party.GlowImportant
+	then
+		if Private.Utils.FlipCoin() then
+			frame:ShowGlow()
+		end
+	end
+
 	table.insert(
 		self.demoTimers.timers,
 		C_Timer.NewTimer(castTime, function()
@@ -1205,6 +1216,20 @@ function SelfEditModeMixin:OnLayoutSettingChanged(key, value)
 		end
 
 		self:RepositionPreviewFrames()
+	elseif key == Private.Settings.Keys.Self.GlowImportant then
+		local glowEnabled = value
+
+		for _, frame in pairs(self.frames) do
+			if frame then
+				if glowEnabled then
+					if Private.Utils.FlipCoin() then
+						frame:ShowGlow()
+					end
+				else
+					frame:HideGlow()
+				end
+			end
+		end
 	end
 end
 
@@ -1316,6 +1341,22 @@ function PartyEditModeMixin:OnLayoutSettingChanged(key, value)
 		or key == Private.Settings.Keys.Party.Grow
 	then
 		self:RepositionPreviewFrames()
+	elseif key == Private.Settings.Keys.Party.GlowImportant then
+		local glowEnabled = value
+
+		for _, frames in pairs(self.frames) do
+			for _, frame in pairs(frames) do
+				if frame then
+					if glowEnabled then
+						if Private.Utils.FlipCoin() then
+							frame:ShowGlow()
+						end
+					else
+						frame:HideGlow()
+					end
+				end
+			end
+		end
 	end
 end
 
