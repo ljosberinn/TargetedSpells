@@ -1,25 +1,6 @@
 ---@type string, TargetedSpells
 local addonName, Private = ...
 
-local PreviewIconDataProvider = nil
-
----@return IconDataProviderMixin
-local function GetRandomIcon()
-	if PreviewIconDataProvider == nil then
-		PreviewIconDataProvider =
-			CreateAndInitFromMixin(IconDataProviderMixin, IconDataProviderExtraType.Spellbook, true)
-	end
-
-	if Private.IsMidnight then
-		return PreviewIconDataProvider:GetRandomIcon()
-	end
-
-	-- backport of GetRandomIcon() from 12.0
-	local numIcons = PreviewIconDataProvider:GetNumIcons()
-	local avoidQuestionMarkIndex = 2
-	return PreviewIconDataProvider:GetIconByIndex(math.random(avoidQuestionMarkIndex, numIcons))
-end
-
 ---@class TargetedSpellsMixin
 TargetedSpellsMixin = {}
 
@@ -244,7 +225,7 @@ function TargetedSpellsMixin:HideGlow()
 end
 
 function TargetedSpellsMixin:SetSpellId(spellId)
-	local texture = spellId and C_Spell.GetSpellTexture(spellId) or GetRandomIcon()
+	local texture = spellId and C_Spell.GetSpellTexture(spellId) or Private.Utils.GetRandomIcon()
 	self.Icon:SetTexture(texture)
 
 	local glowEnabled = false
@@ -337,13 +318,8 @@ function TargetedSpellsMixin:AttemptToPlaySound()
 	end
 
 	-- todo: load condition check for sound
-	local ok, result, handle = nil, nil, nil
 
-	if type(sound) == "number" then
-		ok, result, handle = pcall(PlaySound, sound, TargetedSpellsSaved.Settings.Self.SoundChannel)
-	else
-		ok, result, handle = pcall(PlaySoundFile, sound, TargetedSpellsSaved.Settings.Self.SoundChannel)
-	end
+	local ok, result, handle = Private.Utils.AttemptToPlaySound(sound, TargetedSpellsSaved.Settings.Self.SoundChannel)
 
 	if ok then
 		self.soundHandle = handle

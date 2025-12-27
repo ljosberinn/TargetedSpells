@@ -14,8 +14,8 @@ Private.Enum.Events = {
 
 ---@enum Direction
 Private.Enum.Direction = {
-	Horizontal = "horizontal",
-	Vertical = "vertical",
+	Horizontal = 1,
+	Vertical = 2,
 }
 
 ---@enum ContentType
@@ -56,15 +56,15 @@ Private.Enum.Anchor = {
 
 ---@enum SortOrder
 Private.Enum.SortOrder = {
-	Ascending = "ascending",
-	Descending = "descending",
+	Ascending = 1,
+	Descending = 2,
 }
 
 ---@enum Grow
 Private.Enum.Grow = {
-	Center = "center",
-	Start = "start",
-	End = "end",
+	Center = 1,
+	Start = 2,
+	End = 3,
 }
 
 ---@enum SoundChannel

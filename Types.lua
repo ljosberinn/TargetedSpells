@@ -13,6 +13,9 @@
 ---@class TargetedSpellsUtils
 ---@field FlipCoin fun(): boolean
 ---@field CalculateCoordinate fun(index: number, dimension: number, gap: number, parentDimension: number, total: number, offset: number, grow: Grow): number
+---@field GetRandomIcon fun(): number
+---@field SortFrames fun(frames: TargetedSpellsMixin[], sortOrder: SortOrder)
+---@field AttemptToPlaySound fun(sound: string|number, channel: SoundChannel): boolean, boolean, number
 
 ---@class TargetedSpellsEnums
 
@@ -47,12 +50,12 @@
 ---@field Height number
 ---@field Gap number
 ---@field Direction Direction
----@field LoadConditionContentType boolean[]
----@field LoadConditionRole boolean[]
+---@field LoadConditionContentType table<number, boolean>
+---@field LoadConditionRole table<number, boolean>
 ---@field PlaySound boolean
 ---@field SoundChannel SoundChannel
 ---@field Sound string
----@field LoadConditionSoundContentType boolean[]
+---@field LoadConditionSoundContentType table<number, boolean>
 ---@field SortOrder SortOrder
 ---@field Grow Grow
 ---@field ShowDuration boolean
@@ -67,8 +70,8 @@
 ---@field Height number
 ---@field Gap number
 ---@field Direction Direction
----@field LoadConditionContentType boolean[]
----@field LoadConditionRole boolean[]
+---@field LoadConditionContentType table<number, boolean>
+---@field LoadConditionRole table<number, boolean>
 ---@field OffsetX number
 ---@field OffsetY number
 ---@field SourceAnchor Anchor

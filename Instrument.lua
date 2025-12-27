@@ -91,18 +91,6 @@ function TargetedSpellsDriver:AcquireFrames(castingUnit)
 	return frames
 end
 
-function TargetedSpellsDriver:SortFrames(frames, sortOrder)
-	local isAscending = sortOrder == Private.Enum.SortOrder.Ascending
-
-	table.sort(frames, function(a, b)
-		if isAscending then
-			return a:GetStartTime() < b:GetStartTime()
-		end
-
-		return a:GetStartTime() > b:GetStartTime()
-	end)
-end
-
 function TargetedSpellsDriver:RepositionFrames()
 	---@type table<string, TargetedSpellsMixin[]>
 	local activeFrames = {}
@@ -146,7 +134,7 @@ function TargetedSpellsDriver:RepositionFrames()
 			local point = isHorizontal and "LEFT" or "BOTTOM"
 			local total = (#frames * (isHorizontal and width or height)) + (#frames - 1) * gap
 
-			self:SortFrames(frames, sortOrder)
+			Private.Utils.SortFrames(frames, sortOrder)
 
 			for i, frame in ipairs(frames) do
 				local x = 0
@@ -203,7 +191,7 @@ function TargetedSpellsDriver:RepositionFrames()
 					TargetedSpellsSaved.Settings.Party.Grow,
 					TargetedSpellsSaved.Settings.Party.OffsetX,
 					TargetedSpellsSaved.Settings.Party.OffsetY
-				self:SortFrames(frames, sortOrder)
+				Private.Utils.SortFrames(frames, sortOrder)
 
 				local isHorizontal = direction == Private.Enum.Direction.Horizontal
 				local total = (#frames * (isHorizontal and width or height)) + (#frames - 1) * gap

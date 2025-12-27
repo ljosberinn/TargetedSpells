@@ -18,3 +18,39 @@ function Private.Utils.CalculateCoordinate(index, dimension, gap, parentDimensio
 
 	return 0
 end
+
+local PreviewIconDataProvider = nil
+
+---@return IconDataProviderMixin
+function Private.Utils.GetRandomIcon()
+	if PreviewIconDataProvider == nil then
+		PreviewIconDataProvider =
+			CreateAndInitFromMixin(IconDataProviderMixin, IconDataProviderExtraType.Spellbook, true)
+	end
+
+	return PreviewIconDataProvider:GetRandomIcon()
+end
+
+function Private.Utils.SortFrames(frames, sortOrder)
+	local isAscending = sortOrder == Private.Enum.SortOrder.Ascending
+
+	table.sort(frames, function(a, b)
+		if isAscending then
+			return a:GetStartTime() < b:GetStartTime()
+		end
+
+		return a:GetStartTime() > b:GetStartTime()
+	end)
+end
+
+function Private.Utils.AttemptToPlaySound(sound, channel)
+	local ok, result, handle = nil, nil, nil
+
+	if type(sound) == "number" then
+		ok, result, handle = pcall(PlaySound, sound, channel)
+	else
+		ok, result, handle = pcall(PlaySoundFile, sound, channel)
+	end
+
+	return ok, result, handle
+end

@@ -492,8 +492,8 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 						Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef)
 					end
 
-					-- todo: localize
-					rootDescription:CreateCheckbox(label, IsEnabled, Toggle, {
+					local translated = L.Settings.LoadConditionContentTypeLabels[id]
+					rootDescription:CreateCheckbox(translated, IsEnabled, Toggle, {
 						value = label,
 						multiple = true,
 					})
@@ -542,8 +542,9 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 						Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef)
 					end
 
-					-- todo: localize
-					rootDescription:CreateCheckbox(label, IsEnabled, Toggle, {
+					local translated = L.Settings.LoadConditionRoleLabels[id]
+
+					rootDescription:CreateCheckbox(translated, IsEnabled, Toggle, {
 						value = label,
 						multiple = true,
 					})
@@ -676,7 +677,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
 
 		---@param layoutName string
-		---@param value string
+		---@param value number
 		local function Set(layoutName, value)
 			if tableRef.Direction ~= value then
 				tableRef.Direction = value
@@ -690,17 +691,20 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
 			default = Private.Settings.GetPartyDefaultSettings().Direction,
 			generator = function(owner, rootDescription, data)
-				for label, enumValue in pairs(Private.Enum.Direction) do
+				for label, id in pairs(Private.Enum.Direction) do
 					local function IsEnabled()
-						return tableRef.Direction == enumValue
+						return tableRef.Direction == id
 					end
 
 					local function SetProxy()
-						Set(LEM:GetActiveLayoutName(), enumValue)
+						Set(LEM:GetActiveLayoutName(), id)
 					end
 
-					rootDescription:CreateCheckbox(label, IsEnabled, SetProxy, {
-						value = label,
+					local translated = id == Private.Enum.Direction.Horizontal and L.Settings.FrameDirectionHorizontal
+						or L.Settings.FrameDirectionVertical
+
+					rootDescription:CreateCheckbox(translated, IsEnabled, SetProxy, {
+						value = id,
 						multiple = false,
 					})
 				end
@@ -840,7 +844,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
 
 		---@param layoutName string
-		---@param value string
+		---@param value number
 		local function Set(layoutName, value)
 			if tableRef.SortOrder ~= value then
 				tableRef.SortOrder = value
@@ -854,17 +858,20 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
 			default = Private.Settings.GetPartyDefaultSettings().SortOrder,
 			generator = function(owner, rootDescription, data)
-				for label, enumValue in pairs(Private.Enum.SortOrder) do
+				for label, id in pairs(Private.Enum.SortOrder) do
 					local function IsEnabled()
-						return tableRef.SortOrder == enumValue
+						return tableRef.SortOrder == id
 					end
 
 					local function SetProxy()
-						Set(LEM:GetActiveLayoutName(), enumValue)
+						Set(LEM:GetActiveLayoutName(), id)
 					end
 
-					rootDescription:CreateCheckbox(label, IsEnabled, SetProxy, {
-						value = label,
+					local translated = id == Private.Enum.SortOrder.Ascending and L.Settings.FrameSortOrderAscending
+						or L.Settings.FrameSortOrderDescending
+
+					rootDescription:CreateCheckbox(translated, IsEnabled, SetProxy, {
+						value = id,
 						multiple = false,
 					})
 				end
@@ -892,17 +899,19 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
 			default = Private.Settings.GetPartyDefaultSettings().Grow,
 			generator = function(owner, rootDescription, data)
-				for label, enumValue in pairs(Private.Enum.Grow) do
+				for label, id in pairs(Private.Enum.Grow) do
 					local function IsEnabled()
-						return tableRef.Grow == enumValue
+						return tableRef.Grow == id
 					end
 
 					local function SetProxy()
-						Set(LEM:GetActiveLayoutName(), enumValue)
+						Set(LEM:GetActiveLayoutName(), id)
 					end
 
-					rootDescription:CreateCheckbox(label, IsEnabled, SetProxy, {
-						value = label,
+					local translated = L.Settings.FrameGrowLabels[id]
+
+					rootDescription:CreateCheckbox(translated, IsEnabled, SetProxy, {
+						value = id,
 						multiple = false,
 					})
 				end
@@ -921,18 +930,6 @@ end
 
 function TargetedSpellsEditModeMixin:OnLayoutSettingChanged(key, value)
 	-- Implement in your derived mixin.
-end
-
-function TargetedSpellsEditModeMixin:SortFrames(frames, sortOrder)
-	local isAscending = sortOrder == Private.Enum.SortOrder.Ascending
-
-	table.sort(frames, function(a, b)
-		if isAscending then
-			return a:GetStartTime() < b:GetStartTime()
-		end
-
-		return a:GetStartTime() > b:GetStartTime()
-	end)
 end
 
 function TargetedSpellsEditModeMixin:AppendSettings()
@@ -971,12 +968,12 @@ function TargetedSpellsEditModeMixin:LoopFrame(frame, index)
 	self:RepositionPreviewFrames()
 
 	if
-		(self.frameKind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self.GlowImportant)
-		or (self.frameKind == Private.Enum.FrameKind.Party and TargetedSpellsSaved.Settings.Party.GlowImportant)
+		(
+			(self.frameKind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self.GlowImportant)
+			or (self.frameKind == Private.Enum.FrameKind.Party and TargetedSpellsSaved.Settings.Party.GlowImportant)
+		) and Private.Utils.FlipCoin()
 	then
-		if Private.Utils.FlipCoin() then
-			frame:ShowGlow()
-		end
+		frame:ShowGlow()
 	end
 
 	table.insert(
@@ -1022,7 +1019,7 @@ end
 local SelfEditModeMixin = CreateFromMixins(TargetedSpellsEditModeMixin)
 
 function SelfEditModeMixin:Init()
-	TargetedSpellsEditModeMixin.Init(self, "Targeted Spells Self", Private.Enum.FrameKind.Self)
+	TargetedSpellsEditModeMixin.Init(self, Private.L.EditMode.TargetedSpellsSelfLabel, Private.Enum.FrameKind.Self)
 
 	self.editModeFrame:SetPoint("CENTER", UIParent)
 	self:ResizeEditModeFrame()
@@ -1059,15 +1056,15 @@ function SelfEditModeMixin:AppendSettings()
 		self.editModeFrame,
 		GenerateClosure(self.OnEditModePositionChanged, self),
 		Private.Settings.GetDefaultEditModeFramePosition(),
-		"Targeted Spells - Self"
+		Private.L.EditMode.TargetedSpellsSelfLabel
 	)
 
 	LEM:RegisterCallback("layout", GenerateClosure(self.RestoreEditModePosition, self))
 
 	LEM:AddFrameSettings(self.editModeFrame, {
 		self:CreateSetting(Private.Settings.Keys.Self.Enabled),
-		-- self:CreateSetting(Private.Settings.Keys.Self.LoadConditionContentType),
-		-- self:CreateSetting(Private.Settings.Keys.Self.LoadConditionRole),
+		self:CreateSetting(Private.Settings.Keys.Self.LoadConditionContentType),
+		self:CreateSetting(Private.Settings.Keys.Self.LoadConditionRole),
 		self:CreateSetting(Private.Settings.Keys.Self.MaxFrames),
 		self:CreateSetting(Private.Settings.Keys.Self.Width),
 		self:CreateSetting(Private.Settings.Keys.Self.Height),
@@ -1114,14 +1111,6 @@ function SelfEditModeMixin:RepositionPreviewFrames()
 		return
 	end
 
-	local width, height, gap, direction, sortOrder, grow =
-		TargetedSpellsSaved.Settings.Self.Width,
-		TargetedSpellsSaved.Settings.Self.Height,
-		TargetedSpellsSaved.Settings.Self.Gap,
-		TargetedSpellsSaved.Settings.Self.Direction,
-		TargetedSpellsSaved.Settings.Self.SortOrder,
-		TargetedSpellsSaved.Settings.Self.Grow
-
 	---@type TargetedSpellsMixin[]
 	local activeFrames = {}
 
@@ -1137,7 +1126,15 @@ function SelfEditModeMixin:RepositionPreviewFrames()
 		return
 	end
 
-	self:SortFrames(activeFrames, sortOrder)
+	local width, height, gap, direction, sortOrder, grow =
+		TargetedSpellsSaved.Settings.Self.Width,
+		TargetedSpellsSaved.Settings.Self.Height,
+		TargetedSpellsSaved.Settings.Self.Gap,
+		TargetedSpellsSaved.Settings.Self.Direction,
+		TargetedSpellsSaved.Settings.Self.SortOrder,
+		TargetedSpellsSaved.Settings.Self.Grow
+
+	Private.Utils.SortFrames(activeFrames, sortOrder)
 
 	local isHorizontal = direction == Private.Enum.Direction.Horizontal
 
@@ -1230,7 +1227,7 @@ table.insert(Private.LoginFnQueue, GenerateClosure(SelfEditModeMixin.Init, SelfE
 local PartyEditModeMixin = CreateFromMixins(TargetedSpellsEditModeMixin)
 
 function PartyEditModeMixin:Init()
-	TargetedSpellsEditModeMixin.Init(self, "Targeted Spells Party", Private.Enum.FrameKind.Party)
+	TargetedSpellsEditModeMixin.Init(self, Private.L.EditMode.TargetedSpellsPartyLabel, Private.Enum.FrameKind.Party)
 	self.maxUnitCount = 5
 	self.amountOfPreviewFramesPerUnit = 3
 	self.useRaidStylePartyFrames = self.useRaidStylePartyFrames or EditModeManagerFrame:UseRaidStylePartyFrames()
@@ -1268,8 +1265,6 @@ function PartyEditModeMixin:Init()
 			self:StartDemo()
 		end
 	end)
-
-	-- todo: show something in self.editModeFrame as it otherwise has no preview. desaturate and set opacity to 50?
 end
 
 function PartyEditModeMixin:AppendSettings()
@@ -1282,8 +1277,8 @@ function PartyEditModeMixin:AppendSettings()
 
 	LEM:AddFrameSettings(self.editModeFrame, {
 		self:CreateSetting(Private.Settings.Keys.Party.Enabled),
-		-- self:CreateSetting(Private.Settings.Keys.Party.LoadConditionContentType),
-		-- self:CreateSetting(Private.Settings.Keys.Party.LoadConditionRole),
+		self:CreateSetting(Private.Settings.Keys.Party.LoadConditionContentType),
+		self:CreateSetting(Private.Settings.Keys.Party.LoadConditionRole),
 		self:CreateSetting(Private.Settings.Keys.Party.Width),
 		self:CreateSetting(Private.Settings.Keys.Party.Height),
 		self:CreateSetting(Private.Settings.Keys.Party.FontSize),
@@ -1394,7 +1389,7 @@ function PartyEditModeMixin:RepositionPreviewFrames()
 		local activeFrameCount = #activeFrames
 
 		if activeFrameCount > 0 then
-			self:SortFrames(activeFrames, sortOrder)
+			Private.Utils.SortFrames(activeFrames, sortOrder)
 
 			local parentFrame = nil
 
