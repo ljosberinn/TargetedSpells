@@ -2,6 +2,10 @@
 local addonName, Private = ...
 local LibSharedMedia = LibStub("LibSharedMedia-3.0")
 
+table.insert(Private.LoginFnQueue, function()
+	LibSharedMedia:Register("sound", "Water Drop", "Interface\\AddOns\\TargetedSpells\\Media\\Sounds\\WaterDrop.ogg")
+end)
+
 ---@class TargetedSpellsSettings
 Private.Settings = {}
 
@@ -170,7 +174,7 @@ function Private.Settings.GetSelfDefaultSettings()
 			[Private.Enum.Role.Damager] = true,
 		},
 		PlaySound = true,
-		Sound = Private.IsMidnight and 316493 or "Interface\\AddOns\\WeakAuras\\Media\\Sounds\\WaterDrop.ogg",
+		Sound = "Interface\\AddOns\\TargetedSpells\\Media\\Sounds\\WaterDrop.ogg",
 		SoundChannel = Private.Enum.SoundChannel.Master,
 		LoadConditionSoundContentType = {
 			[Private.Enum.ContentType.OpenWorld] = false,
