@@ -103,18 +103,6 @@ function TargetedSpellsDriver:SortFrames(frames, sortOrder)
 	end)
 end
 
-function TargetedSpellsDriver:CalculateCoordinate(index, dimension, gap, parentDimension, total, offset, grow)
-	if grow == Private.Enum.Grow.Start then
-		return (index - 1) * (dimension + gap) - parentDimension / 2 + offset
-	elseif grow == Private.Enum.Grow.Center then
-		return (index - 1) * (dimension + gap) - total / 2 + offset
-	elseif grow == Private.Enum.Grow.End then
-		return parentDimension / 2 - index * (dimension + gap) + offset
-	end
-
-	return 0
-end
-
 function TargetedSpellsDriver:RepositionFrames()
 	---@type table<string, TargetedSpellsMixin[]>
 	local activeFrames = {}
