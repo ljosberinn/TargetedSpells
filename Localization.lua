@@ -107,7 +107,7 @@ L.Settings.FrameTargetAnchorLabel = "Target Anchor"
 L.Settings.FrameTargetAnchorTooltip = nil
 
 L.Settings.IncludeSelfInPartyLabel = "Include Self In Party"
-L.Settings.IncludeSelfInPartyTooltip = nil
+L.Settings.IncludeSelfInPartyTooltip = "Only works when using Raid-Style Party Frames."
 
 L.Settings.ClickToOpenSettingsLabel = "Click to open settings"
 

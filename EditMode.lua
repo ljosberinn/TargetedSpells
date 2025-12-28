@@ -145,6 +145,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 		return {
 			name = L.Settings.GlowImportantLabel,
 			kind = Enum.EditModeSettingDisplayType.Checkbox,
+			desc = L.Settings.GlowImportantTooltip,
 			default = isSelf and Private.Settings.GetSelfDefaultSettings().GlowImportant
 				or Private.Settings.GetPartyDefaultSettings().GlowImportant,
 			get =
@@ -391,6 +392,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 		return {
 			name = L.Settings.IncludeSelfInPartyLabel,
 			kind = Enum.EditModeSettingDisplayType.Checkbox,
+			desc = L.Settings.IncludeSelfInPartyTooltip,
 			default = Private.Settings.GetPartyDefaultSettings().IncludeSelfInParty,
 			get =
 				---@param layoutName string
@@ -1036,7 +1038,6 @@ function SelfEditModeMixin:AppendSettings()
 		self:CreateSetting(Private.Settings.Keys.Self.MaxFrames),
 		self:CreateSetting(Private.Settings.Keys.Self.Width),
 		self:CreateSetting(Private.Settings.Keys.Self.Height),
-		self:CreateSetting(Private.Settings.Keys.Self.FontSize),
 		self:CreateSetting(Private.Settings.Keys.Self.Gap),
 		self:CreateSetting(Private.Settings.Keys.Self.Direction),
 		self:CreateSetting(Private.Settings.Keys.Self.SortOrder),
@@ -1046,6 +1047,7 @@ function SelfEditModeMixin:AppendSettings()
 		self:CreateSetting(Private.Settings.Keys.Self.Sound),
 		self:CreateSetting(Private.Settings.Keys.Self.SoundChannel),
 		self:CreateSetting(Private.Settings.Keys.Self.ShowDuration),
+		self:CreateSetting(Private.Settings.Keys.Self.FontSize),
 		self:CreateSetting(Private.Settings.Keys.Self.ShowBorder),
 		self:CreateSetting(Private.Settings.Keys.Self.Opacity),
 	})
@@ -1252,7 +1254,6 @@ function PartyEditModeMixin:AppendSettings()
 		self:CreateSetting(Private.Settings.Keys.Party.LoadConditionRole),
 		self:CreateSetting(Private.Settings.Keys.Party.Width),
 		self:CreateSetting(Private.Settings.Keys.Party.Height),
-		self:CreateSetting(Private.Settings.Keys.Party.FontSize),
 		self:CreateSetting(Private.Settings.Keys.Party.Gap),
 		self:CreateSetting(Private.Settings.Keys.Party.Direction),
 		self:CreateSetting(Private.Settings.Keys.Party.OffsetX),
@@ -1264,6 +1265,7 @@ function PartyEditModeMixin:AppendSettings()
 		self:CreateSetting(Private.Settings.Keys.Party.GlowImportant),
 		self:CreateSetting(Private.Settings.Keys.Party.IncludeSelfInParty),
 		self:CreateSetting(Private.Settings.Keys.Party.ShowDuration),
+		self:CreateSetting(Private.Settings.Keys.Party.FontSize),
 		self:CreateSetting(Private.Settings.Keys.Party.ShowBorder),
 		self:CreateSetting(Private.Settings.Keys.Party.Opacity),
 	})
