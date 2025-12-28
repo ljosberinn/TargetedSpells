@@ -13,11 +13,14 @@
 ---@class TargetedSpellsUtils
 ---@field FlipCoin fun(): boolean
 ---@field CalculateCoordinate fun(index: number, dimension: number, gap: number, parentDimension: number, total: number, offset: number, grow: Grow): number
----@field GetRandomIcon fun(): number
 ---@field SortFrames fun(frames: TargetedSpellsMixin[], sortOrder: SortOrder)
----@field AttemptToPlaySound fun(sound: string|number, channel: SoundChannel): boolean, boolean, number
+---@field AttemptToPlaySound fun(sound: string|number, channel: SoundChannel)
 
 ---@class TargetedSpellsEnums
+
+---@class CustomSound
+---@field soundKitID number|string
+---@field text string
 
 ---@class SliderSettings
 ---@field min number
@@ -31,6 +34,12 @@
 ---@field GetPartyDefaultSettings fun(): SavedVariablesSettingsParty
 ---@field GetSliderSettingsForOption fun(key: string): SliderSettings
 ---@field GetDefaultEditModeFramePosition fun(): SelfFramePosition
+---@field GetCustomSoundGroups fun(groupThreshold: number?):  SoundInfo
+---@field GetCooldownViewerSounds fun(): SoundInfo
+
+---@class SoundInfo
+---@field soundCategoryKeyToLabel table<string, string>
+---@field data table<string, CustomSound[]>
 
 ---@class SavedVariables
 ---@field Settings SavedVariablesSettings
@@ -94,7 +103,6 @@
 ---@field Icon Texture
 ---@field Cooldown ExtendedCooldownTypes
 ---@field SpellActivationAlert ActionButtonSpellAlertTemplate? -- only present if important spells should be highlighted
----@field soundHandle number?
 ---@field kind FrameKind?
 ---@field unit string? -- secret?
 ---@field startTime number?

@@ -71,19 +71,18 @@ function TargetedSpellsDriver:AcquireFrames(castingUnit)
 	selfTargetingFrame:PostCreate("player", Private.Enum.FrameKind.Self, castingUnit)
 	table.insert(frames, selfTargetingFrame)
 
-	-- todo: account for showing/ignoring self on party frame too
 	if TargetedSpellsSaved.Settings.Party.Enabled and IsInGroup() then
 		for i = 1, GetNumGroupMembers() do
 			local frame = self.framePool:Acquire()
 			frame:PostCreate("party" .. i, Private.Enum.FrameKind.Party, castingUnit)
 			table.insert(frames, frame)
 		end
-	end
 
-	if TargetedSpellsSaved.Settings.Party.IncludeSelfInParty then
-		local frame = self.framePool:Acquire()
-		frame:PostCreate("player", Private.Enum.FrameKind.Party, castingUnit)
-		table.insert(frames, frame)
+		if TargetedSpellsSaved.Settings.Party.IncludeSelfInParty then
+			local frame = self.framePool:Acquire()
+			frame:PostCreate("player", Private.Enum.FrameKind.Party, castingUnit)
+			table.insert(frames, frame)
+		end
 	end
 
 	pprint("acquired", #frames, "frames for", castingUnit)

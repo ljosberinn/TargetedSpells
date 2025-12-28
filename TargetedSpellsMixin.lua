@@ -30,6 +30,25 @@ function TargetedSpellsMixin:OnKindChanged(kind)
 	end
 end
 
+local PreviewIconDataProvider = nil
+
+---@return IconDataProviderMixin
+local function GetRandomIcon()
+	if PreviewIconDataProvider == nil then
+		PreviewIconDataProvider =
+			CreateAndInitFromMixin(IconDataProviderMixin, IconDataProviderExtraType.Spellbook, true)
+	end
+
+	if Private.IsMidnight then
+		return PreviewIconDataProvider:GetRandomIcon()
+	end
+
+	-- backport of GetRandomIcon() from 12.0
+	local numIcons = PreviewIconDataProvider:GetNumIcons()
+	local avoidQuestionMarkIndex = 2
+	return PreviewIconDataProvider:GetIconByIndex(math.random(avoidQuestionMarkIndex, numIcons))
+end
+
 ---@param element TargetedSpellsMixin
 ---@param width number
 ---@param height number
@@ -224,26 +243,50 @@ function TargetedSpellsMixin:HideGlow()
 	ActionButtonSpellAlertManager:HideAlert(self)
 end
 
-function TargetedSpellsMixin:SetSpellId(spellId)
-	local texture = spellId and C_Spell.GetSpellTexture(spellId) or Private.Utils.GetRandomIcon()
-	self.Icon:SetTexture(texture)
+do
+	---@type table<number, boolean>
+	local platerProfileImportantCastsCache = Private.IsMidnight and nil or {}
+	local cacheInitialized = false
 
-	local glowEnabled = false
+	function TargetedSpellsMixin:SetSpellId(spellId)
+		local texture = spellId and C_Spell.GetSpellTexture(spellId) or GetRandomIcon()
+		self.Icon:SetTexture(texture)
 
-	if self.kind == Private.Enum.FrameKind.Self then
-		glowEnabled = TargetedSpellsSaved.Settings.Self.GlowImportant
-	else
-		glowEnabled = TargetedSpellsSaved.Settings.Party.GlowImportant
-	end
+		if
+			-- todo: verify this is fine with secret values
+			spellId == nil
+			or (self.kind == Private.Enum.FrameKind.Self and not TargetedSpellsSaved.Settings.Self.GlowImportant)
+			or (self.kind == Private.Enum.FrameKind.Party and not TargetedSpellsSaved.Settings.Party.GlowImportant)
+		then
+			return
+		end
 
-	if not glowEnabled then
-		return
-	end
+		if Private.IsMidnight then
+			self:ShowGlow()
+			self.SpellActivationAlert:SetAlphaFromBoolean(C_Spell.IsSpellImportant(spellId))
+		elseif Plater and Plater.db and Plater.db.profile and Plater.db.profile.script_data then
+			if cacheInitialized then
+				if platerProfileImportantCastsCache[spellId] == true then
+					self:ShowGlow()
+				end
+			else
+				cacheInitialized = true
 
-	-- todo: verify this is fine with secret values
-	if spellId ~= nil then
-		self:ShowGlow()
-		self.SpellActivationAlert:SetAlphaFromBoolean(C_Spell.IsSpellImportant(spellId))
+				local importantCastsScripts = {
+					["Cast - Very Important [Plater]"] = true,
+					["Important Casts - Jundies"] = true,
+					["Quazii MUST INTERRUPT"] = true,
+				}
+
+				for _, script in pairs(Plater.db.profile.script_data) do
+					if script and importantCastsScripts[script.Name] == true then
+						for _, id in pairs(script.SpellIds) do
+							platerProfileImportantCastsCache[id] = true
+						end
+					end
+				end
+			end
+		end
 	end
 end
 
@@ -284,7 +327,13 @@ function TargetedSpellsMixin:PostCreate(unit, kind, castingUnit)
 	self:SetKind(kind)
 
 	if castingUnit ~= nil then
-		self:SetAlphaFromBoolean(UnitIsUnit(string.format("%starget", castingUnit), unit))
+		if Private.IsMidnight then
+			local isSpellTarget = UnitIsSpellTarget(castingUnit, unit)
+			print("isSpellTarget", isSpellTarget, castingUnit, unit)
+			self:SetAlphaFromBoolean(UnitIsUnit(string.format("%starget", castingUnit), unit))
+		elseif not UnitIsUnit(string.format("%starget", castingUnit), unit) then
+			self:Reset()
+		end
 	end
 end
 
@@ -293,11 +342,6 @@ function TargetedSpellsMixin:Reset()
 	self.Cooldown:Clear()
 	self:ClearAllPoints()
 	self:Hide()
-
-	if self.soundHandle then
-		StopSound(self.soundHandle)
-		self.soundHandle = nil
-	end
 
 	self:HideGlow()
 end
@@ -319,11 +363,7 @@ function TargetedSpellsMixin:AttemptToPlaySound()
 
 	-- todo: load condition check for sound
 
-	local ok, result, handle = Private.Utils.AttemptToPlaySound(sound, TargetedSpellsSaved.Settings.Self.SoundChannel)
-
-	if ok then
-		self.soundHandle = handle
-	end
+	Private.Utils.AttemptToPlaySound(sound, TargetedSpellsSaved.Settings.Self.SoundChannel)
 end
 
 function TargetedSpellsMixin:SetShowDuration(showDuration)

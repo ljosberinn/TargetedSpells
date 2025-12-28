@@ -273,10 +273,6 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 	end
 
 	if key == Private.Settings.Keys.Self.Sound then
-		---@class CustomSound
-		---@field soundKitID number|string
-		---@field text string
-
 		---@param soundCategoryKeyToText table<string, string>
 		---@param currentTable table<string, CustomSound[]> | CustomSound[]
 		---@param forcePlayOnSelection boolean
@@ -344,53 +340,15 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 		end
 
 		local function AddCooldownViewerSounds(rootDescription)
-			local soundCategoryKeyToText = {
-				Animals = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_ANIMALS,
-				Devices = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_DEVICES,
-				Impacts = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_IMPACTS,
-				Instruments = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_INSTRUMENTS,
-				War2 = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_WAR2,
-				War3 = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_WAR3,
-			}
+			local soundInfo = Private.Settings.GetCooldownViewerSounds()
 
-			RecursiveAddSounds(rootDescription, soundCategoryKeyToText, CooldownViewerSoundData, false)
+			RecursiveAddSounds(rootDescription, soundInfo.soundCategoryKeyToLabel, soundInfo.data, false)
 		end
 
 		local function AddCustomSounds(rootDescription)
-			-- this follows the structure of `CooldownViewerSoundData` in `Blizzard_CooldownViewer/CooldownViewerSoundAlertData.lua` for ease of function reuse
-			local customSoundData = {
-				Custom = {},
-			}
+			local soundInfo = Private.Settings.GetCustomSoundGroups(34)
 
-			local soundCategoryKeyToText = {
-				Custom = L.Settings.SoundCategoryCustom,
-			}
-
-			local sounds = Private.Settings.GetCustomSoundList()
-			local groupThreshold = 34
-			local groupCount = 0
-			local targetTable = customSoundData.Custom
-
-			for name, path in pairs(sounds) do
-				if path ~= 1 then
-					while #targetTable >= groupThreshold do
-						groupCount = groupCount + 1
-
-						local tableKey = string.format("%s %d", L.Settings.SoundCategoryCustom, groupCount)
-
-						if customSoundData[tableKey] == nil then
-							customSoundData[tableKey] = {}
-							soundCategoryKeyToText[tableKey] = tableKey
-						end
-
-						targetTable = customSoundData[tableKey]
-					end
-
-					table.insert(targetTable, { soundKitID = path, text = name })
-				end
-			end
-
-			RecursiveAddSounds(rootDescription, soundCategoryKeyToText, customSoundData, true)
+			RecursiveAddSounds(rootDescription, soundInfo.soundCategoryKeyToLabel, soundInfo.data, true)
 		end
 
 		---@type LibEditModeDropdown
@@ -1281,6 +1239,9 @@ function PartyEditModeMixin:AppendSettings()
 		"Targeted Spells - Party"
 	)
 
+	self.editModeFrame:SetScript("OnDragStart", nil)
+	self.editModeFrame:SetScript("OnDragStop", nil)
+
 	LEM:AddFrameSettings(self.editModeFrame, {
 		self:CreateSetting(Private.Settings.Keys.Party.Enabled),
 		self:CreateSetting(Private.Settings.Keys.Party.LoadConditionContentType),
@@ -1317,6 +1278,10 @@ function PartyEditModeMixin:RepositionEditModeFrame()
 	self.editModeFrame:SetSize(width, height)
 	self.editModeFrame:ClearAllPoints()
 	self.editModeFrame:SetPoint("CENTER", parent, "TOP", 0, 16)
+end
+
+function PartyEditModeMixin:OnEditModePositionChanged()
+	self:RepositionEditModeFrame()
 end
 
 function PartyEditModeMixin:OnLayoutSettingChanged(key, value)

@@ -231,8 +231,119 @@ function Private.Settings.GetPartyDefaultSettings()
 	}
 end
 
-function Private.Settings.GetCustomSoundList()
-	return LibSharedMedia:HashTable(LibSharedMedia.MediaType.SOUND)
+function Private.Settings.GetCooldownViewerSounds()
+	local soundCategoryKeyToLabel = {
+		Animals = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_ANIMALS,
+		Devices = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_DEVICES,
+		Impacts = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_IMPACTS,
+		Instruments = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_INSTRUMENTS,
+		War2 = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_WAR2,
+		War3 = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_WAR3,
+	}
+
+	return {
+		soundCategoryKeyToLabel = soundCategoryKeyToLabel,
+		data = CooldownViewerSoundData,
+	}
+end
+
+-- this follows the structure of `CooldownViewerSoundData` in `Blizzard_CooldownViewer/CooldownViewerSoundAlertData.lua` for ease of function reuse
+function Private.Settings.GetCustomSoundGroups(groupThreshold)
+	---@type SoundInfo
+	local soundInfo = {
+		data = {},
+		soundCategoryKeyToLabel = {},
+	}
+
+	local source = LibSharedMedia:HashTable(LibSharedMedia.MediaType.SOUND)
+
+	local groupedSounds = {}
+
+	---@param str string
+	---@param prefix string
+	---@return boolean
+	local function StartsWith(str, prefix)
+		return str:find(prefix, 1, true) == 1
+	end
+
+	for label, path in pairs(source) do
+		if path ~= 1 then
+			---@type string
+			local key = Private.L.Settings.SoundCategoryCustom
+
+			if type(path) == "string" and StartsWith(path, "Interface") then
+				-- path is case insensitive, normalize it
+				path = path:gsub([[\Addons\]], "\\AddOns\\")
+
+				---@type string|nil
+				local maybeAddonName = path:match([[AddOns[\/]([^\/]+)]])
+
+				if maybeAddonName then
+					key = maybeAddonName
+				end
+			elseif StartsWith(label, "BigWigs") then -- BW ships a couple game sound id references that are still prefixed with "BigWigs: (...)"
+				key = "BigWigs"
+			end
+
+			-- some sounds are labelled e.g. `Plater Steel` and get patched to only render `Steel`
+			if string.find(label, key) ~= nil then
+				label = label:gsub(key .. ": ", ""):gsub(key, ""):trim()
+			end
+
+			if groupedSounds[key] == nil then
+				groupedSounds[key] = {}
+			end
+
+			table.insert(groupedSounds[key], {
+				name = label,
+				path = path,
+			})
+		end
+	end
+
+	for groupName, sounds in pairs(groupedSounds) do
+		local needsSplitting = groupThreshold ~= nil and #sounds > groupThreshold or false
+		local groupCount = 0
+		local isCustomGroup = groupName == Private.L.Settings.SoundCategoryCustom
+		local tableKey = groupName
+
+		-- edit mode dropdowns need splitting as there's a max amount of elements to render within a dropdown
+		if needsSplitting then
+			groupCount = groupCount + 1
+			tableKey = isCustomGroup and string.format("%s %d", Private.L.Settings.SoundCategoryCustom, groupCount)
+				or string.format("%s %d", groupName, groupCount)
+		end
+
+		if soundInfo.data[tableKey] == nil then
+			soundInfo.data[tableKey] = {}
+			soundInfo.soundCategoryKeyToLabel[tableKey] = tableKey
+		end
+
+		local targetTable = soundInfo.data[tableKey]
+
+		for _, sound in pairs(sounds) do
+			if groupThreshold ~= nil then
+				if #targetTable >= groupThreshold then
+					groupCount = groupCount + 1
+
+					tableKey = isCustomGroup
+							and string.format("%s %d", Private.L.Settings.SoundCategoryCustom, groupCount)
+						or string.format("%s %d", groupName, groupCount)
+
+					if soundInfo.data[tableKey] == nil then
+						soundInfo.data[tableKey] = {}
+						soundInfo.soundCategoryKeyToLabel[tableKey] = tableKey
+					end
+
+					targetTable = soundInfo.data[tableKey]
+				end
+			end
+
+			table.insert(targetTable, { soundKitID = sound.path, text = sound.name })
+		end
+	end
+
+	return soundInfo
 end
 
 table.insert(Private.LoginFnQueue, function()
@@ -844,6 +955,9 @@ table.insert(Private.LoginFnQueue, function()
 				end
 			end
 
+			---@param soundCategoryKeyToText table<string, string>
+			---@param currentTable table<string, CustomSound[]> | CustomSound[]
+			---@param categoryName string?
 			local function RecursiveAddSounds(container, soundCategoryKeyToText, currentTable, categoryName)
 				for tableKey, value in pairs(currentTable) do
 					if value.soundKitID and value.text then
@@ -855,37 +969,15 @@ table.insert(Private.LoginFnQueue, function()
 			end
 
 			local function AddCooldownViewerSounds(container)
-				local soundCategoryKeyToText = {
-					Animals = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_ANIMALS,
-					Devices = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_DEVICES,
-					Impacts = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_IMPACTS,
-					Instruments = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_INSTRUMENTS,
-					War2 = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_WAR2,
-					War3 = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_WAR3,
-				}
+				local soundInfo = Private.Settings.GetCooldownViewerSounds()
 
-				RecursiveAddSounds(container, soundCategoryKeyToText, CooldownViewerSoundData)
+				RecursiveAddSounds(container, soundInfo.soundCategoryKeyToLabel, soundInfo.data)
 			end
 
 			local function AddCustomSounds(container)
-				-- this follows the structure of `CooldownViewerSoundData` in `Blizzard_CooldownViewer/CooldownViewerSoundAlertData.lua` for ease of function reuse
-				local customSoundData = {
-					Custom = {},
-				}
+				local soundInfo = Private.Settings.GetCustomSoundGroups()
 
-				local soundCategoryKeyToText = {
-					Custom = L.Settings.SoundCategoryCustom,
-				}
-
-				local sounds = Private.Settings.GetCustomSoundList()
-
-				for name, path in pairs(sounds) do
-					if path ~= 1 then
-						table.insert(customSoundData.Custom, { soundKitID = path, text = name })
-					end
-				end
-
-				RecursiveAddSounds(container, soundCategoryKeyToText, customSoundData)
+				RecursiveAddSounds(container, soundInfo.soundCategoryKeyToLabel, soundInfo.data)
 			end
 
 			local function GetOptions()

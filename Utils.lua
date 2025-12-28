@@ -19,25 +19,6 @@ function Private.Utils.CalculateCoordinate(index, dimension, gap, parentDimensio
 	return 0
 end
 
-local PreviewIconDataProvider = nil
-
----@return IconDataProviderMixin
-function Private.Utils.GetRandomIcon()
-	if PreviewIconDataProvider == nil then
-		PreviewIconDataProvider =
-			CreateAndInitFromMixin(IconDataProviderMixin, IconDataProviderExtraType.Spellbook, true)
-	end
-
-	if Private.IsMidnight then
-		return PreviewIconDataProvider:GetRandomIcon()
-	end
-
-	-- backport of GetRandomIcon() from 12.0
-	local numIcons = PreviewIconDataProvider:GetNumIcons()
-	local avoidQuestionMarkIndex = 2
-	return PreviewIconDataProvider:GetIconByIndex(math.random(avoidQuestionMarkIndex, numIcons))
-end
-
 function Private.Utils.SortFrames(frames, sortOrder)
 	local isAscending = sortOrder == Private.Enum.SortOrder.Ascending
 
@@ -50,14 +31,19 @@ function Private.Utils.SortFrames(frames, sortOrder)
 	end)
 end
 
-function Private.Utils.AttemptToPlaySound(sound, channel)
-	local ok, result, handle = nil, nil, nil
+do
+	local handle = nil
 
-	if type(sound) == "number" then
-		ok, result, handle = pcall(PlaySound, sound, channel)
-	else
-		ok, result, handle = pcall(PlaySoundFile, sound, channel)
+	function Private.Utils.AttemptToPlaySound(sound, channel)
+		if handle ~= nil then
+			StopSound(handle)
+			handle = nil
+		end
+
+		if type(sound) == "number" then
+			handle = select(3, pcall(PlaySound, sound, channel, false))
+		else
+			handle = select(3, pcall(PlaySoundFile, sound, channel))
+		end
 	end
-
-	return ok, result, handle
 end
