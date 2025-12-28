@@ -285,7 +285,11 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 					local function Set()
 						if forcePlayOnSelection then
-							Private.Utils.AttemptToPlaySound(value.soundKitID, Private.Enum.SoundChannel.Master)
+							Private.Utils.AttemptToPlaySound(
+								value.soundKitID,
+								Private.Enum.SoundChannel.Master,
+								value.isFile or false
+							)
 						end
 
 						if value.soundKitID ~= TargetedSpellsSaved.Settings.Self.Sound then
@@ -324,11 +328,11 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 								button
 							) -- gear means throw on the right
 							MenuTemplates.SetUtilityButtonClickHandler(playSampleButton, function()
-								if type(value.soundKitID) == "number" then
-									PlaySound(value.soundKitID)
-								else
-									PlaySoundFile(value.soundKitID)
-								end
+								Private.Utils.AttemptToPlaySound(
+									value.soundKitID,
+									Private.Enum.SoundChannel.Master,
+									value.isFile or false
+								)
 							end)
 						end)
 					end

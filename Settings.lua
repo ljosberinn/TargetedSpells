@@ -297,6 +297,7 @@ function Private.Settings.GetCustomSoundGroups(groupThreshold)
 			table.insert(groupedSounds[key], {
 				name = label,
 				path = path,
+				isFile = true,
 			})
 		end
 	end
@@ -339,7 +340,11 @@ function Private.Settings.GetCustomSoundGroups(groupThreshold)
 				end
 			end
 
-			table.insert(targetTable, { soundKitID = sound.path, text = sound.name })
+			table.insert(targetTable, {
+				soundKitID = sound.path,
+				text = sound.name,
+				isFile = sound.isFile or false,
+			})
 		end
 	end
 
@@ -939,10 +944,13 @@ table.insert(Private.LoginFnQueue, function()
 				return tonumber(str) ~= nil
 			end
 
+			---@type table<number, boolean>
+			local fileSounds = {}
+
 			local function SetValue(value)
 				local sound = IsNumeric(value) and tonumber(value) or value
 
-				Private.Utils.AttemptToPlaySound(sound, Private.Enum.SoundChannel.Master)
+				Private.Utils.AttemptToPlaySound(sound, Private.Enum.SoundChannel.Master, fileSounds[sound] or false)
 
 				if TargetedSpellsSaved.Settings.Self.Sound ~= sound then
 					TargetedSpellsSaved.Settings.Self.Sound = sound
@@ -961,6 +969,10 @@ table.insert(Private.LoginFnQueue, function()
 			local function RecursiveAddSounds(container, soundCategoryKeyToText, currentTable, categoryName)
 				for tableKey, value in pairs(currentTable) do
 					if value.soundKitID and value.text then
+						if value.isFile then
+							fileSounds[value.soundKitID] = true
+						end
+
 						container:Add(tostring(value.soundKitID), string.format("%s - %s", categoryName, value.text))
 					elseif type(value) == "table" and soundCategoryKeyToText[tableKey] then
 						RecursiveAddSounds(container, soundCategoryKeyToText, value, soundCategoryKeyToText[tableKey])

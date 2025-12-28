@@ -14,13 +14,14 @@
 ---@field FlipCoin fun(): boolean
 ---@field CalculateCoordinate fun(index: number, dimension: number, gap: number, parentDimension: number, total: number, offset: number, grow: Grow): number
 ---@field SortFrames fun(frames: TargetedSpellsMixin[], sortOrder: SortOrder)
----@field AttemptToPlaySound fun(sound: string|number, channel: SoundChannel)
+---@field AttemptToPlaySound fun(sound: string|number, channel: SoundChannel, isFile: boolean)
 
 ---@class TargetedSpellsEnums
 
 ---@class CustomSound
 ---@field soundKitID number|string
 ---@field text string
+---@field isFile boolean?
 
 ---@class SliderSettings
 ---@field min number

@@ -34,13 +34,13 @@ end
 do
 	local handle = nil
 
-	function Private.Utils.AttemptToPlaySound(sound, channel)
+	function Private.Utils.AttemptToPlaySound(sound, channel, isFile)
 		if handle ~= nil then
 			StopSound(handle)
 			handle = nil
 		end
 
-		if type(sound) == "number" then
+		if not isFile and type(sound) == "number" then
 			handle = select(3, pcall(PlaySound, sound, channel, false))
 		else
 			handle = select(3, pcall(PlaySoundFile, sound, channel))
