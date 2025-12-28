@@ -58,7 +58,7 @@ function TargetedSpellsDriver:SetupListenerFrame(isBoot)
 		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_START")
 		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_STOP")
 		self.listenerFrame:RegisterUnitEvent("NAME_PLATE_UNIT_REMOVED")
-		-- self.listenerFrame:RegisterUnitEvent("UNIT_DIED")
+		self.listenerFrame:RegisterUnitEvent("NAME_PLATE_UNIT_ADDED")
 		self.listenerFrame:SetScript("OnEvent", GenerateClosure(self.OnFrameEvent, self))
 	end
 end
@@ -235,7 +235,7 @@ function TargetedSpellsDriver:CleanUpUnit(unit, event)
 end
 
 ---@param listenerFrame Frame -- identical to self.listenerFrame
----@param event "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" | "UNIT_SPELLCAST_SUCCEEDED" |"EDIT_MODE_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "DELAYED_UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED"
+---@param event "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" | "UNIT_SPELLCAST_SUCCEEDED" |"EDIT_MODE_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "DELAYED_UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED"
 function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 	if event == Private.Enum.Events.EDIT_MODE_POSITION_CHANGED then
 		local point, x, y = ...
@@ -275,15 +275,15 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 				}
 			)
 		)
-	elseif event == "UNIT_DIED" then
-		-- todo: not registered yet, doesn't exist yet. once it does, check whether it provides the unit and then also try to clean up lingering state
+	elseif event == "NAME_PLATE_UNIT_ADDED" then
+		-- todo: check whether the unit is casting. this matters on quick camera turns
 	elseif event == "NAME_PLATE_UNIT_REMOVED" then
 		local unit = ...
 
 		-- todo: decide whether we actually care about this
 		if
 			UnitInParty(unit)
-			-- or not UnitExists(unit) -- ? this might not make sense here
+			or not UnitExists(unit)
 			or UnitIsUnit("player", unit)
 			or string.find(unit, "nameplate") == nil
 		then
@@ -345,36 +345,35 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		or event == Private.Enum.Events.DELAYED_UNIT_SPELLCAST_CHANNEL_START
 	then
 		local info = ...
-		local unit = info.unit
-		local spellId = info.spellId
-		local startTime = info.startTime
 
 		-- cast vanished during the delay
-		if event == Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START and UnitCastingInfo(unit) == nil then
+		if event == Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START and UnitCastingInfo(info.unit) == nil then
 			return
-		elseif event == Private.Enum.Events.DELAYED_UNIT_SPELLCAST_CHANNEL_START and UnitChannelInfo(unit) == nil then
+		elseif
+			event == Private.Enum.Events.DELAYED_UNIT_SPELLCAST_CHANNEL_START and UnitChannelInfo(info.unit) == nil
+		then
 			return
 		end
 
-		local nameplate = C_NamePlate.GetNamePlateForUnit(unit, issecure())
+		local nameplate = C_NamePlate.GetNamePlateForUnit(info.unit, issecure())
 
 		-- without `nameplateShowOffscreen` active, it may be offscreen
 		if nameplate == nil then
 			return
 		end
 
-		local castTime = select(2, nameplate.UnitFrame.castBar:GetMinMaxValues())
-
-		if self.frames[unit] == nil then
-			self.frames[unit] = {}
+		if self.frames[info.unit] == nil then
+			self.frames[info.unit] = {}
 		end
 
-		local frames = self:AcquireFrames(unit)
+		local frames = self:AcquireFrames(info.unit)
+
+		local castTime = select(2, nameplate.UnitFrame.castBar:GetMinMaxValues())
 
 		for _, frame in ipairs(frames) do
-			table.insert(self.frames[unit], frame)
-			frame:SetSpellId(spellId)
-			frame:SetStartTime(startTime)
+			table.insert(self.frames[info.unit], frame)
+			frame:SetSpellId(info.spellId)
+			frame:SetStartTime(info.startTime)
 			frame:SetCastTime(castTime)
 			frame:RefreshSpellCooldownInfo()
 			frame:AttemptToPlaySound()

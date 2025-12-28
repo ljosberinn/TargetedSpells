@@ -8,7 +8,7 @@
 - support for both raid-style and classic party frames
 - while it lasts: integration for Plater scripts indicating important spells (**becomes obsolete with Midnight Pre-Patch**)
 - blizzlike look - built on top of the Cooldown Viewer design
-- not vibecoded, no
+- not vibecoded
 
 ### Self
 
@@ -55,4 +55,4 @@
 
 ## Legal
 
-See [LICENSE](LICENSE)
+See [LICENSE](LICENSE.txt)
