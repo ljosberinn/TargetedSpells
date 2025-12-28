@@ -130,23 +130,37 @@
 ---@class LibEditModeSetting
 ---@field name string
 ---@field kind string
+---@field desc string?
 ---@field default number|string|boolean|table
+---@field disabled boolean?
 
----@class LibEditModeCheckbox : LibEditModeSetting
+---@class LibEditModeGetterSetter
+---@field set fun(layoutName: string, value: number|string|boolean|table, fromReset: boolean)
 ---@field get fun(layoutName: string): number|string|boolean|table
----@field set fun(layoutName: string, value: number|string|boolean|table)
 
----@class LibEditModeDropdown : LibEditModeSetting
+---@class LibEditModeCheckbox : LibEditModeSetting, LibEditModeGetterSetter
+
+---@class LibEditModeDropdownBase : LibEditModeSetting
 ---@field generator fun(owner, rootDescription, data)
----@field set fun(layoutName: string, value: number|string|boolean|table)
+---@field height number?
+---@field multiple boolean?
 
----@class LibEditModeSlider : LibEditModeSetting
----@field get fun(layoutName: string): number|string|boolean|table
----@field set fun(layoutName: string, value: number|string|boolean|table)
----@field minValue number
----@field maxValue number
----@field valueStep number
+---@class LibEditModeDropdownGenerator : LibEditModeDropdownBase
+---@field generator fun(owner, rootDescription, data)
+
+---@class LibEditModeDropdownSet : LibEditModeDropdownBase
+---@field set fun(layoutName: string, value: number|string|boolean|table, fromReset: boolean)
+
+---@alias LibEditModeDropdown LibEditModeDropdownGenerator | LibEditModeDropdownSet
+
+---@class LibEditModeSlider : LibEditModeSetting, LibEditModeGetterSetter
+---@field minValue number?
+---@field maxValue number?
+---@field valueStep number?
 ---@field formatter (fun(value: number): string)|nil
+
+---@class LibEditModeColorPicker : LibEditModeSetting, LibEditModeGetterSetter
+---@field hasOpacity boolean?
 
 ---@class Frame
 ---@field SetAlphaFromBoolean fun(self: Frame, value: boolean)

@@ -279,7 +279,8 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 		---@param soundCategoryKeyToText table<string, string>
 		---@param currentTable table<string, CustomSound[]> | CustomSound[]
-		local function RecursiveAddSounds(description, soundCategoryKeyToText, currentTable)
+		---@param forcePlayOnSelection boolean
+		local function RecursiveAddSounds(description, soundCategoryKeyToText, currentTable, forcePlayOnSelection)
 			for tableKey, value in pairs(currentTable) do
 				if value.soundKitID and value.text then
 					local function IsEnabled()
@@ -287,6 +288,10 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 					end
 
 					local function Set()
+						if forcePlayOnSelection then
+							Private.Utils.AttemptToPlaySound(value.soundKitID, Private.Enum.SoundChannel.Master)
+						end
+
 						if value.soundKitID ~= TargetedSpellsSaved.Settings.Self.Sound then
 							TargetedSpellsSaved.Settings.Self.Sound = value.soundKitID
 
@@ -333,7 +338,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 					end
 				elseif type(value) == "table" and soundCategoryKeyToText[tableKey] then
 					local nestedDescription = description:CreateButton(soundCategoryKeyToText[tableKey], nop, -1)
-					RecursiveAddSounds(nestedDescription, soundCategoryKeyToText, value)
+					RecursiveAddSounds(nestedDescription, soundCategoryKeyToText, value, forcePlayOnSelection)
 				end
 			end
 		end
@@ -348,7 +353,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 				War3 = COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_WAR3,
 			}
 
-			RecursiveAddSounds(rootDescription, soundCategoryKeyToText, CooldownViewerSoundData)
+			RecursiveAddSounds(rootDescription, soundCategoryKeyToText, CooldownViewerSoundData, false)
 		end
 
 		local function AddCustomSounds(rootDescription)
@@ -362,7 +367,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 			}
 
 			local sounds = Private.Settings.GetCustomSoundList()
-			local groupThreshold = 34 -- todo: verify how this behaves in alpha. this is the dropdown max size on retail currently
+			local groupThreshold = 34
 			local groupCount = 0
 			local targetTable = customSoundData.Custom
 
@@ -385,13 +390,14 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 				end
 			end
 
-			RecursiveAddSounds(rootDescription, soundCategoryKeyToText, customSoundData)
+			RecursiveAddSounds(rootDescription, soundCategoryKeyToText, customSoundData, true)
 		end
 
 		---@type LibEditModeDropdown
 		return {
 			name = L.Settings.SoundLabel,
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
+			desc = L.Settings.SoundTooltip,
 			default = Private.Settings.GetSelfDefaultSettings().Sound,
 			generator = function(owner, rootDescription, data)
 				-- pcall this to guard against internal changes on the cd viewer side

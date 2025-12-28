@@ -28,7 +28,14 @@ function Private.Utils.GetRandomIcon()
 			CreateAndInitFromMixin(IconDataProviderMixin, IconDataProviderExtraType.Spellbook, true)
 	end
 
-	return PreviewIconDataProvider:GetRandomIcon()
+	if Private.IsMidnight then
+		return PreviewIconDataProvider:GetRandomIcon()
+	end
+
+	-- backport of GetRandomIcon() from 12.0
+	local numIcons = PreviewIconDataProvider:GetNumIcons()
+	local avoidQuestionMarkIndex = 2
+	return PreviewIconDataProvider:GetIconByIndex(math.random(avoidQuestionMarkIndex, numIcons))
 end
 
 function Private.Utils.SortFrames(frames, sortOrder)
