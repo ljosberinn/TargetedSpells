@@ -1,10 +1,9 @@
-## Interface: 1125000, 120000
+## Interface: 110207, 120000, 120001
 ## Title: Targeted Spells
 ## DefaultState: Enabled
 ## SavedVariables: TargetedSpellsSaved
-## IconTexture: Interface\Icons\ability_hunter_mastermarksman
+## IconTexture: Interface\Icons\Ability_hunter_snipershot
 ## OptionalDeps: !!AddonLocale
-## Category: Archon
 
 Libs\LibStub\LibStub.lua
 Libs\LibEditMode\embed.xml
