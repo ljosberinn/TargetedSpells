@@ -3,7 +3,7 @@
 ## Features
 
 - no sound overlap if multiple spells target the player at the same time
-- deep Edit Mode integration thanks to [LibEditMode](https://github.com/LibEditMode/LibEditMode)
+- deep Edit Mode integration thanks to [LibEditMode](https://github.com/p3lim-wow/LibEditMode/wiki/LibEditMode)
   - additional exhaustive Settings menu integration
 - support for both raid-style and classic party frames
 - while it lasts: integration for Plater scripts indicating important spells (**becomes obsolete with Midnight Pre-Patch**)
@@ -52,3 +52,7 @@
 ## Sounds
 
 [WaterDrop - Attribution 3.0 - Mike Koenig](https://soundbible.com/1126-Water-Drop.html)
+
+## Legal
+
+See [LICENSE](LICENSE)
