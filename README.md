@@ -6,11 +6,14 @@
 - deep Edit Mode integration thanks to [LibEditMode](https://github.com/LibEditMode/LibEditMode)
   - additional exhaustive Settings menu integration
 - support for both raid-style and classic party frames
+- while it lasts: integration for Plater scripts indicating important spells (**becomes obsolete with Midnight Pre-Patch**)
+- blizzlike look - built on top of the Cooldown Viewer design
+- not vibecoded, no
 
 ### Self
 
 - customization options for:
-
+  - enabled state
   - frame dimensions
   - gap between frames
   - direction
@@ -30,6 +33,7 @@
 ### Party
 
 - customization options for:
+  - enabled state
   - frame dimensions
   - gap between frames
   - direction
