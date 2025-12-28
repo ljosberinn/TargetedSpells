@@ -7,8 +7,10 @@
   - additional exhaustive Settings menu integration
 - support for both raid-style and classic party frames
 - while it lasts: integration for Plater scripts indicating important spells (**becomes obsolete with Midnight Pre-Patch**)
-- blizzlike look - built on top of the Cooldown Viewer design
+- blizzlike look - built on top of the Cooldown Manager design
+- customization options are heavily inspired by what's available in WeakAuras - that's where the aura lived before, so resurrecting most of that functionality only makes sense
 - not vibecoded
+- performance profiled - tiny footprint and doesn't do more than it should
 
 ### Self
 
