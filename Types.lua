@@ -14,7 +14,7 @@
 ---@field FlipCoin fun(): boolean
 ---@field CalculateCoordinate fun(index: number, dimension: number, gap: number, parentDimension: number, total: number, offset: number, grow: Grow): number
 ---@field SortFrames fun(frames: TargetedSpellsMixin[], sortOrder: SortOrder)
----@field AttemptToPlaySound fun(sound: string|number, channel: SoundChannel, isFile: boolean)
+---@field AttemptToPlaySound fun(sound: string|number, channel: SoundChannel)
 
 ---@class TargetedSpellsEnums
 
@@ -270,4 +270,11 @@ local s_passThroughClosureGenerators = {
 -- Syntactic sugar for function(...) return f(a, b, c, ...); end
 function GenerateClosure(f, ...)
 	return GenerateClosureInternal(s_passThroughClosureGenerators, f, ...)
+end
+
+---@param castingUnit string
+---@param unit string
+---@return boolean
+function UnitIsSpellTarget(castingUnit, unit)
+	return true
 end

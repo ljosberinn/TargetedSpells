@@ -6,14 +6,15 @@
 ## OptionalDeps: !!AddonLocale
 
 Libs\LibStub\LibStub.lua
+Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
 Libs\LibEditMode\embed.xml
 Libs\LibSharedMedia-3.0\LibSharedMedia-3.0.lua
 
 Templates\TargetedSpellsFrameTemplate.xml
 
 Enum.lua
-Utils.lua
 Init.lua
+Utils.lua
 Localization.lua
 Settings.lua
 TargetedSpellsMixin.lua

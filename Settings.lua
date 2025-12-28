@@ -247,6 +247,41 @@ function Private.Settings.GetCooldownViewerSounds()
 	}
 end
 
+do
+	---@type table<string|number, true>
+	local soundIsFileCache = {}
+
+	function Private.Settings.SoundIsFile(sound)
+		return soundIsFileCache[sound] or false
+	end
+
+	local function CacheCustomSoundsByPath()
+		local soundInfo = Private.Settings.GetCustomSoundGroups()
+
+		for group, sounds in pairs(soundInfo.data) do
+			for _, sound in pairs(sounds) do
+				soundIsFileCache[sound.soundKitID] = true
+			end
+		end
+	end
+
+	table.insert(Private.LoginFnQueue, CacheCustomSoundsByPath)
+
+	LibSharedMedia.RegisterCallback(Private, "LibSharedMedia_Registered", function(_, mediaType, key)
+		if mediaType ~= "sound" then
+			return
+		end
+
+		local path = LibSharedMedia:Fetch("sound", key)
+
+		if path == nil or path == 1 then
+			return
+		end
+
+		soundIsFileCache[path] = true
+	end)
+end
+
 -- this follows the structure of `CooldownViewerSoundData` in `Blizzard_CooldownViewer/CooldownViewerSoundAlertData.lua` for ease of function reuse
 function Private.Settings.GetCustomSoundGroups(groupThreshold)
 	---@type SoundInfo
@@ -256,7 +291,6 @@ function Private.Settings.GetCustomSoundGroups(groupThreshold)
 	}
 
 	local source = LibSharedMedia:HashTable(LibSharedMedia.MediaType.SOUND)
-
 	local groupedSounds = {}
 
 	---@param str string
@@ -297,7 +331,6 @@ function Private.Settings.GetCustomSoundGroups(groupThreshold)
 			table.insert(groupedSounds[key], {
 				name = label,
 				path = path,
-				isFile = true,
 			})
 		end
 	end
@@ -343,7 +376,6 @@ function Private.Settings.GetCustomSoundGroups(groupThreshold)
 			table.insert(targetTable, {
 				soundKitID = sound.path,
 				text = sound.name,
-				isFile = sound.isFile or false,
 			})
 		end
 	end
@@ -944,13 +976,10 @@ table.insert(Private.LoginFnQueue, function()
 				return tonumber(str) ~= nil
 			end
 
-			---@type table<number, boolean>
-			local fileSounds = {}
-
 			local function SetValue(value)
 				local sound = IsNumeric(value) and tonumber(value) or value
 
-				Private.Utils.AttemptToPlaySound(sound, Private.Enum.SoundChannel.Master, fileSounds[sound] or false)
+				Private.Utils.AttemptToPlaySound(sound, Private.Enum.SoundChannel.Master)
 
 				if TargetedSpellsSaved.Settings.Self.Sound ~= sound then
 					TargetedSpellsSaved.Settings.Self.Sound = sound
@@ -969,10 +998,6 @@ table.insert(Private.LoginFnQueue, function()
 			local function RecursiveAddSounds(container, soundCategoryKeyToText, currentTable, categoryName)
 				for tableKey, value in pairs(currentTable) do
 					if value.soundKitID and value.text then
-						if value.isFile then
-							fileSounds[value.soundKitID] = true
-						end
-
 						container:Add(tostring(value.soundKitID), string.format("%s - %s", categoryName, value.text))
 					elseif type(value) == "table" and soundCategoryKeyToText[tableKey] then
 						RecursiveAddSounds(container, soundCategoryKeyToText, value, soundCategoryKeyToText[tableKey])
