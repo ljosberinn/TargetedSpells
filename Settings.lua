@@ -1829,14 +1829,41 @@ table.insert(Private.LoginFnQueue, function()
 		registerForAnyClick = true,
 		notCheckable = true,
 		func = OpenSettings,
-		funcOnEnter = function()
-			MenuUtil.ShowTooltip(AddonCompartmentFrame, function(tooltip)
+		funcOnEnter = function(button)
+			MenuUtil.ShowTooltip(button, function(tooltip)
 				tooltip:SetText(settingsName, 1, 1, 1)
 				tooltip:AddLine(L.Settings.ClickToOpenSettingsLabel)
+				tooltip:AddLine(" ")
+
+				local enabledColor = "FF00FF00"
+				local disabledColor = "00FF0000"
+
+				tooltip:AddLine(
+					L.Settings.AddonCompartmentTooltipLine1:format(
+						WrapTextInColorCode(
+							string.lower(
+								TargetedSpellsSaved.Settings.Self.Enabled and L.Settings.EnabledLabel
+									or L.Settings.DisabledLabel
+							),
+							TargetedSpellsSaved.Settings.Self.Enabled and enabledColor or disabledColor
+						)
+					)
+				)
+				tooltip:AddLine(
+					L.Settings.AddonCompartmentTooltipLine2:format(
+						WrapTextInColorCode(
+							string.lower(
+								TargetedSpellsSaved.Settings.Party.Enabled and L.Settings.EnabledLabel
+									or L.Settings.DisabledLabel
+							),
+							TargetedSpellsSaved.Settings.Party.Enabled and enabledColor or disabledColor
+						)
+					)
+				)
 			end)
 		end,
-		funcOnLeave = function()
-			MenuUtil.HideTooltip(AddonCompartmentFrame)
+		funcOnLeave = function(button)
+			MenuUtil.HideTooltip(button)
 		end,
 	})
 

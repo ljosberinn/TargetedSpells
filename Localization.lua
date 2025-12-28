@@ -11,6 +11,12 @@ L.EditMode.TargetedSpellsPartyLabel = "Targeted Spells - Party"
 
 L.Settings.EnabledLabel = "Enabled"
 L.Settings.EnabledTooltip = nil
+L.Settings.DisabledLabel = "Disabled"
+
+L.Settings.AddonCompartmentTooltipLine1 =
+	string.format("%s is %s", WrapTextInColorCode(L.EditMode.TargetedSpellsSelfLabel, "ffeda55f"), "%s")
+L.Settings.AddonCompartmentTooltipLine2 =
+	string.format("%s is %s", WrapTextInColorCode(L.EditMode.TargetedSpellsPartyLabel, "ffeda55f"), "%s")
 
 L.Settings.LoadConditionContentTypeLabel = "Load Condition: Content Type"
 L.Settings.LoadConditionContentTypeLabelAbbreviated = "Load in Content"
@@ -113,6 +119,12 @@ if locale == "deDE" then
 
 	L.Settings.EnabledLabel = "Aktiviert"
 	L.Settings.EnabledTooltip = nil
+	L.Settings.DisabledLabel = "Deaktiviert"
+
+	L.Settings.AddonCompartmentTooltipLine1 =
+		string.format("%s ist %s", WrapTextInColorCode(L.EditMode.TargetedSpellsSelfLabel, "ffeda55f"), "%s")
+	L.Settings.AddonCompartmentTooltipLine2 =
+		string.format("%s ist %s", WrapTextInColorCode(L.EditMode.TargetedSpellsPartyLabel, "ffeda55f"), "%s")
 
 	L.Settings.LoadConditionContentTypeLabel = "Ladebedingung: Spielbereich"
 	L.Settings.LoadConditionContentTypeLabelAbbreviated = "In Spielbereich laden"
