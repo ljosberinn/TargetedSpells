@@ -21,7 +21,7 @@ L.Settings.AddonCompartmentTooltipLine2 =
 L.Settings.LoadConditionContentTypeLabel = "Load Condition: Content Type"
 L.Settings.LoadConditionContentTypeLabelAbbreviated = "Load in Content"
 L.Settings.LoadConditionContentTypeTooltip = Private.IsMidnight and nil
-	or "This setting will become available with the Midnight Pre-Patch due to lacking the settings primitives until then."
+	or "This setting is only configurable via Edit Mode until the Midnight Pre-Patch due to lacking the settings primitives until then."
 L.Settings.LoadConditionContentTypeLabels = {
 	[Private.Enum.ContentType.OpenWorld] = "Open World",
 	[Private.Enum.ContentType.Delve] = "Delves",
@@ -34,7 +34,7 @@ L.Settings.LoadConditionContentTypeLabels = {
 L.Settings.LoadConditionRoleLabel = "Load Condition: Role"
 L.Settings.LoadConditionRoleLabelAbbreviated = "Load on Role"
 L.Settings.LoadConditionRoleTooltip = Private.IsMidnight and nil
-	or "This setting will become available with the Midnight Pre-Patch due to lacking the settings primitives until then."
+	or "This setting is only configurable via Edit Mode until the Midnight Pre-Patch due to lacking the settings primitives until then."
 
 L.Settings.LoadConditionRoleLabels = {
 	[Private.Enum.Role.Healer] = "Healer",

@@ -19,8 +19,6 @@ Private.Settings.Keys = {
 		FontSize = "FONT_SIZE_SELF",
 		Gap = "FRAME_GAP_SELF",
 		Direction = "GROW_DIRECTION_SELF",
-		OffsetX = "FRAME_OFFSET_X_SELF",
-		OffsetY = "FRAME_OFFSET_Y_SELF",
 		SortOrder = "FRAME_SORT_ORDER_SELF",
 		GlowImportant = "GLOW_IMPORTANT_SELF",
 		Grow = "FRAME_GROW_SELF",
@@ -83,7 +81,7 @@ function Private.Settings.GetDefaultEditModeFramePosition()
 		}
 	end
 
-	return { point = "CENTER", x = 0, y = 0 }
+	return { point = "CENTER", x = 0, y = 100 }
 end
 
 function Private.Settings.GetSliderSettingsForOption(key)
@@ -115,7 +113,7 @@ function Private.Settings.GetSliderSettingsForOption(key)
 		return {
 			min = 36,
 			max = 100,
-			step = 2,
+			step = 1,
 		}
 	end
 
@@ -123,7 +121,7 @@ function Private.Settings.GetSliderSettingsForOption(key)
 		return {
 			min = 16,
 			max = 60,
-			step = 2,
+			step = 1,
 		}
 	end
 
@@ -131,7 +129,7 @@ function Private.Settings.GetSliderSettingsForOption(key)
 		return {
 			min = -10,
 			max = 40,
-			step = 2,
+			step = 1,
 		}
 	end
 
@@ -139,7 +137,7 @@ function Private.Settings.GetSliderSettingsForOption(key)
 		return {
 			min = -100,
 			max = 100,
-			step = 2,
+			step = 1,
 		}
 	end
 

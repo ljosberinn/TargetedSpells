@@ -329,8 +329,6 @@ function TargetedSpellsMixin:PostCreate(unit, kind, castingUnit)
 	if castingUnit ~= nil then
 		if Private.IsMidnight then
 			self:SetAlphaFromBoolean(UnitIsSpellTarget(castingUnit, unit))
-		elseif not UnitIsUnit(string.format("%starget", castingUnit), unit) then
-			self:Reset()
 		end
 	end
 end

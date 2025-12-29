@@ -30,7 +30,6 @@ function TargetedSpellsDriver:SetupListenerFrame(isBoot)
 			Private.Enum.Events.EDIT_MODE_POSITION_CHANGED,
 			self.OnFrameEvent,
 			frame,
-			self,
 			frame,
 			Private.Enum.Events.EDIT_MODE_POSITION_CHANGED
 		)
@@ -63,31 +62,73 @@ function TargetedSpellsDriver:SetupListenerFrame(isBoot)
 	end
 end
 
-function TargetedSpellsDriver:AcquireFrames(castingUnit)
-	local frames = {}
+if Private.IsMidnight then
+	function TargetedSpellsDriver:AcquireFrames(castingUnit)
+		local frames = {}
 
-	local selfTargetingFrame = self.framePool:Acquire()
-	selfTargetingFrame:SetParent(self.listenerFrame)
-	selfTargetingFrame:PostCreate("player", Private.Enum.FrameKind.Self, castingUnit)
-	table.insert(frames, selfTargetingFrame)
+		local selfTargetingFrame = self.framePool:Acquire()
+		selfTargetingFrame:SetParent(self.listenerFrame)
+		selfTargetingFrame:PostCreate("player", Private.Enum.FrameKind.Self, castingUnit)
+		table.insert(frames, selfTargetingFrame)
 
-	if TargetedSpellsSaved.Settings.Party.Enabled and IsInGroup() then
-		for i = 1, GetNumGroupMembers() do
-			local frame = self.framePool:Acquire()
-			frame:PostCreate("party" .. i, Private.Enum.FrameKind.Party, castingUnit)
-			table.insert(frames, frame)
+		if TargetedSpellsSaved.Settings.Party.Enabled and IsInGroup() then
+			local partyMemberCount = GetNumGroupMembers()
+
+			for i = 1, partyMemberCount do
+				local token = i == partyMemberCount and "player" or "party" .. i
+
+				if
+					(token == "player" and TargetedSpellsSaved.Settings.Party.IncludeSelfInParty)
+					or token ~= "player"
+				then
+					local frame = self.framePool:Acquire()
+					frame:PostCreate(token, Private.Enum.FrameKind.Party, castingUnit)
+					table.insert(frames, frame)
+					pprint("added frame for", token)
+				end
+			end
 		end
 
-		if TargetedSpellsSaved.Settings.Party.IncludeSelfInParty then
-			local frame = self.framePool:Acquire()
-			frame:PostCreate("player", Private.Enum.FrameKind.Party, castingUnit)
-			table.insert(frames, frame)
-		end
+		pprint("acquired", #frames, "frames for", castingUnit)
+
+		return frames
 	end
+else
+	function TargetedSpellsDriver:AcquireFrames(castingUnit)
+		local frames = {}
 
-	pprint("acquired", #frames, "frames for", castingUnit)
+		if UnitIsUnit(string.format("%starget", castingUnit), "player") then
+			local selfTargetingFrame = self.framePool:Acquire()
+			selfTargetingFrame:SetParent(self.listenerFrame)
+			selfTargetingFrame:PostCreate("player", Private.Enum.FrameKind.Self, castingUnit)
+			table.insert(frames, selfTargetingFrame)
+		end
 
-	return frames
+		if TargetedSpellsSaved.Settings.Party.Enabled and IsInGroup() then
+			local partyMemberCount = GetNumGroupMembers()
+
+			for i = 1, partyMemberCount do
+				local token = i == partyMemberCount and "player" or "party" .. i
+
+				if
+					UnitIsUnit(string.format("%starget", castingUnit), token)
+					and (
+						(token == "player" and TargetedSpellsSaved.Settings.Party.IncludeSelfInParty)
+						or token ~= "player"
+					)
+				then
+					local frame = self.framePool:Acquire()
+					frame:PostCreate(token, Private.Enum.FrameKind.Party, castingUnit)
+					table.insert(frames, frame)
+					pprint("added frame for", token)
+				end
+			end
+		end
+
+		pprint("acquired", #frames, "frames for", castingUnit)
+
+		return frames
+	end
 end
 
 function TargetedSpellsDriver:RepositionFrames()
@@ -166,7 +207,12 @@ function TargetedSpellsDriver:RepositionFrames()
 				local index = tonumber(string.sub(targetUnit, 6))
 
 				if EditModeManagerFrame:UseRaidStylePartyFrames() then
-					parentFrame = CompactPartyFrame.memberUnitFrames[index]
+					for _, frame in pairs(CompactPartyFrame.memberUnitFrames) do
+						if frame.unit == targetUnit then
+							parentFrame = frame
+							break
+						end
+					end
 				else
 					for memberFrame in PartyFrame.PartyMemberFramePool:EnumerateActive() do
 						if memberFrame.layoutIndex == index then
@@ -190,6 +236,7 @@ function TargetedSpellsDriver:RepositionFrames()
 					TargetedSpellsSaved.Settings.Party.Grow,
 					TargetedSpellsSaved.Settings.Party.OffsetX,
 					TargetedSpellsSaved.Settings.Party.OffsetY
+
 				Private.Utils.SortFrames(frames, sortOrder)
 
 				local isHorizontal = direction == Private.Enum.Direction.Horizontal
@@ -240,9 +287,9 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 	if event == Private.Enum.Events.EDIT_MODE_POSITION_CHANGED then
 		local point, x, y = ...
 
-		self.listenerFrame:ClearAllPoints()
-		self.listenerFrame:SetPoint(point, x, y)
-		self.listenerFrame:Show()
+		listenerFrame:ClearAllPoints()
+		listenerFrame:SetPoint(point, x, y)
+		listenerFrame:Show()
 	elseif
 		event == "UNIT_SPELLCAST_START"
 		or event == "UNIT_SPELLCAST_CHANNEL_START"
@@ -254,7 +301,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			UnitInParty(unit)
 			or not UnitExists(unit)
 			or UnitIsUnit("player", unit)
-			or not UnitAffectingCombat(unit) -- todo: needs testing. intended to skip rp casts
+			or not UnitAffectingCombat(unit)
 			or string.find(unit, "nameplate") == nil
 		then
 			return
@@ -276,7 +323,59 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			)
 		)
 	elseif event == "NAME_PLATE_UNIT_ADDED" then
-		-- todo: check whether the unit is casting. this matters on quick camera turns
+		local unit = ...
+		local spellId = nil
+		local castTime = nil
+		local startTime = nil
+
+		if Private.IsMidnight then
+			spellId = select(9, UnitCastingInfo(unit)) or select(8, UnitChannelInfo(unit))
+
+			if spellId == nil then
+				return
+			end
+
+			local nameplate = C_NamePlate.GetNamePlateForUnit(unit, issecure())
+
+			if nameplate == nil then
+				return
+			end
+
+			castTime = select(2, nameplate.UnitFrame.castBar:GetMinMaxValues())
+			startTime = GetTime() -- todo: this is wrong
+		else
+			local _, _, _, startTimeMs, endTimeMs, _, _, _, castingSpellId = UnitCastingInfo(unit)
+
+			if castingSpellId == nil then
+				_, _, _, startTimeMs, endTimeMs, _, _, castingSpellId = UnitChannelInfo(unit)
+			end
+
+			if castingSpellId == nil then
+				return
+			end
+
+			spellId = castingSpellId
+			startTime = startTimeMs / 1000
+			castTime = (endTimeMs - startTimeMs) / 1000
+		end
+
+		if self.frames[unit] == nil then
+			self.frames[unit] = {}
+		end
+
+		local frames = self:AcquireFrames(unit)
+
+		for _, frame in ipairs(frames) do
+			table.insert(self.frames[unit], frame)
+			frame:SetSpellId(spellId)
+			frame:SetStartTime(startTime)
+			frame:SetCastTime(castTime)
+			frame:RefreshSpellCooldownInfo()
+			frame:AttemptToPlaySound()
+			frame:Show()
+		end
+
+		self:RepositionFrames()
 	elseif event == "NAME_PLATE_UNIT_REMOVED" then
 		local unit = ...
 

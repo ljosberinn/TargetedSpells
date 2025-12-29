@@ -94,6 +94,8 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 		return {
 			name = L.Settings.MaxFramesLabel,
 			kind = Enum.EditModeSettingDisplayType.Slider,
+			disabled = true,
+			desc = "NYI",
 			default = Private.Settings.GetSelfDefaultSettings().MaxFrames,
 			get = function(layoutName)
 				return TargetedSpellsSaved.Settings.Self.MaxFrames
@@ -1388,7 +1390,7 @@ function PartyEditModeMixin:RepositionPreviewFrames()
 				if isHorizontal then
 					x = Private.Utils.CalculateCoordinate(j, width, gap, parentDimension, total, offsetX, grow)
 				else
-					y = Private.Utils.CalculateCoordinate(j, width, gap, parentDimension, total, offsetX, grow)
+					y = Private.Utils.CalculateCoordinate(j, width, gap, parentDimension, total, offsetY, grow)
 				end
 
 				frame:Reposition(sourceAnchor, parentFrame, targetAnchor, x, y)
