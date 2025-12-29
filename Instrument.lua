@@ -17,6 +17,8 @@ function TargetedSpellsDriver:Init()
 	self.framePool = CreateFramePool("Frame", UIParent, "TargetedSpellsFrameTemplate")
 	self.delay = 0.1
 	self.frames = {}
+	self.playerRole = nil
+	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingsChanged, self)
 
 	self:SetupListenerFrame(true)
 end
@@ -48,7 +50,8 @@ function TargetedSpellsDriver:SetupListenerFrame(isBoot)
 		(Private.Settings.Keys.Self.Enabled or Private.Settings.Keys.Party.Enabled)
 		and not self.listenerFrame:IsEventRegistered("UNIT_SPELLCAST_START")
 	then
-		self.listenerFrame:RegisterUnitEvent("CVAR_UPDATE")
+		self.listenerFrame:RegisterEvent("LOADING_SCREEN_DISABLED")
+		self.listenerFrame:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
 		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_START")
 		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED")
 		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_STOP")
@@ -58,7 +61,17 @@ function TargetedSpellsDriver:SetupListenerFrame(isBoot)
 		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_STOP")
 		self.listenerFrame:RegisterUnitEvent("NAME_PLATE_UNIT_REMOVED")
 		self.listenerFrame:RegisterUnitEvent("NAME_PLATE_UNIT_ADDED")
+		if Private.IsMidnight then
+			self.listenerFrame:RegisterUnitEvent("CVAR_UPDATE")
+		end
 		self.listenerFrame:SetScript("OnEvent", GenerateClosure(self.OnFrameEvent, self))
+
+		print(
+			format(
+				"TargetedSpellsDriver:OnSettingsChanged: %sattached listeners, the role is %d",
+				isBoot and "" or "re"
+			)
+		)
 	end
 end
 
@@ -281,16 +294,38 @@ function TargetedSpellsDriver:CleanUpUnit(unit, event)
 	return false
 end
 
----@param listenerFrame Frame -- identical to self.listenerFrame
----@param event "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" | "UNIT_SPELLCAST_SUCCEEDED" |"EDIT_MODE_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "DELAYED_UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED"
-function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
-	if event == Private.Enum.Events.EDIT_MODE_POSITION_CHANGED then
-		local point, x, y = ...
+function TargetedSpellsDriver:OnRoleChange(newRole)
+	print("TargetedSpellsDriver:OnRoleChange()", newRole)
+end
 
-		listenerFrame:ClearAllPoints()
-		listenerFrame:SetPoint(point, x, y)
-		listenerFrame:Show()
-	elseif
+function TargetedSpellsDriver:OnCVarChange(value)
+	local staticPopupDialogKey = addonName
+
+	if StaticPopupDialogs[staticPopupDialogKey] == nil then
+		StaticPopupDialogs[staticPopupDialogKey] = {
+			id = addonName,
+			button1 = ACCEPT,
+			button2 = CLOSE,
+			whileDead = true,
+			text = Private.L.Functionality.CVarWarning,
+			OnAccept = function(dialog, data)
+				C_CVar.SetCVar("nameplateShowOffscreen", 1)
+				-- Settings.OpenToCategory(Settings.NAMEPLATE_OPTIONS_CATEGORY_ID, UNIT_NAMEPLATES_SHOW_OFFSCREEN)
+			end,
+		}
+	end
+
+	if value == "1" or value == 1 then
+		StaticPopup_Hide(staticPopupDialogKey)
+	else
+		StaticPopup_Show(addonName)
+	end
+end
+
+---@param listenerFrame Frame -- identical to self.listenerFrame
+---@param event "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" | "UNIT_SPELLCAST_SUCCEEDED" |"EDIT_MODE_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "DELAYED_UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED"
+function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
+	if
 		event == "UNIT_SPELLCAST_START"
 		or event == "UNIT_SPELLCAST_CHANNEL_START"
 		or event == "UNIT_SPELLCAST_EMPOWER_START"
@@ -412,11 +447,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 				self:RepositionFrames()
 			end
 		elseif name == "nameplateShowOffscreen" then
-			if value == "0" or value == 0 then
-				print(
-					"The CVar nameplateShowOffscreen is set to 0 - this will lead to TargetedSpells not working on offscreen enemies."
-				)
-			end
+			self:OnCVarChange(value)
 		end
 	elseif
 		event == "UNIT_SPELLCAST_STOP"
@@ -480,6 +511,30 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		end
 
 		self:RepositionFrames()
+	elseif event == "LOADING_SCREEN_DISABLED" then
+		local newRole = Private.Utils.GetCurrentRole()
+
+		if newRole ~= self.playerRole then
+			self:OnRoleChange(newRole)
+		end
+	elseif event == "PLAYER_SPECIALIZATION_CHANGED" then
+		local unit = ...
+
+		if unit ~= "player" then
+			return
+		end
+
+		local newRole = Private.Utils.GetCurrentRole()
+
+		if newRole ~= self.playerRole then
+			self:OnRoleChange(newRole)
+		end
+	elseif event == Private.Enum.Events.EDIT_MODE_POSITION_CHANGED then
+		local point, x, y = ...
+
+		listenerFrame:ClearAllPoints()
+		listenerFrame:SetPoint(point, x, y)
+		listenerFrame:Show()
 	end
 end
 
@@ -494,7 +549,6 @@ function TargetedSpellsDriver:OnSettingsChanged(key, value)
 			print("TargetedSpellsDriver:OnSettingsChanged: removed listeners")
 		else
 			self:SetupListenerFrame(false)
-			print("TargetedSpellsDriver:OnSettingsChanged: reattached listeners")
 		end
 	elseif key == Private.Settings.Keys.Self.LoadConditionContentType then
 	elseif key == Private.Settings.Keys.Self.LoadConditionRole then

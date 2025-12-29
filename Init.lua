@@ -22,6 +22,10 @@ Private.LoginFnQueue = {}
 EventUtil.ContinueOnAddOnLoaded(addonName, function()
 	---@class SavedVariables
 	TargetedSpellsSaved = TargetedSpellsSaved or {}
+	if TargetedSpellsSaved.nameplateShowOffscreenWasInitialized == nil and Private.IsMidnight then
+		TargetedSpellsSaved.nameplateShowOffscreenWasInitialized = true
+		C_CVar.SetCVar("nameplateShowOffscreen", 1)
+	end
 	---@class TargetedSpellsSettings
 	TargetedSpellsSaved.Settings = TargetedSpellsSaved.Settings or {}
 	---@class SavedVariablesSettingsSelf

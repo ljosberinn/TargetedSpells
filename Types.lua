@@ -15,6 +15,7 @@
 ---@field CalculateCoordinate fun(index: number, dimension: number, gap: number, parentDimension: number, total: number, offset: number, grow: Grow): number
 ---@field SortFrames fun(frames: TargetedSpellsMixin[], sortOrder: SortOrder)
 ---@field AttemptToPlaySound fun(sound: string|number, channel: SoundChannel)
+---@field GetCurrentRole fun(): Role
 
 ---@class TargetedSpellsEnums
 
@@ -44,6 +45,7 @@
 
 ---@class SavedVariables
 ---@field Settings SavedVariablesSettings
+---@field nameplateShowOffscreenWasInitialized boolean
 
 ---@class SavedVariablesSettings
 ---@field Self SavedVariablesSettingsSelf
@@ -215,12 +217,15 @@
 ---@class TargetedSpellsDriver
 ---@field framePool FramePool
 ---@field listenerFrame Frame
+---@field playerRole Role?
 ---@field frames table<string, TargetedSpellsMixin[]>
 ---@field OnSettingsChanged fun(self: TargetedSpellsDriver, key: string, value: number|string)
 ---@field OnFrameEvent fun(self: TargetedSpellsDriver, listenerFrame: Frame, event: WowEvent, ...)
 ---@field SetupListenerFrame fun(self: TargetedSpellsDriver, isBoot: boolean)
 ---@field AcquireFrames fun(self: TargetedSpellsDriver, castingUnit: string): TargetedSpellsMixin
 ---@field SortFrames fun(self: TargetedSpellsDriver, frames: TargetedSpellsMixin[], sortOrder: SortOrder)
+---@field OnRoleChange fun(self: TargetedSpellsDriver, newRole: Role)
+---@field OnCVarChange fun(self: TargetedSpellsDriver, value: number|string)
 
 ---@return function?
 local function GenerateClosureInternal(generatorArray, f, ...)
@@ -278,3 +283,17 @@ end
 function UnitIsSpellTarget(castingUnit, unit)
 	return true
 end
+
+---@class PlayerUtil
+---@field GetCurrentSpecID fun(): number?
+---@field GetSpecName fun(specId: number): string
+
+---@type PlayerUtil
+PlayerUtil = {
+	GetCurrentSpecID = function()
+		return nil
+	end,
+	GetSpecName = function()
+		return ""
+	end,
+}
