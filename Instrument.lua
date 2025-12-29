@@ -144,6 +144,44 @@ else
 	end
 end
 
+-- this is where 3rd party unit frames would need addition
+---@param unit string
+---@return Frame?
+local function FindParentFrameForUnit(unit)
+	if unit == "player" then
+		if not EditModeManagerFrame:UseRaidStylePartyFrames() then
+			-- non-raid style party frames don't include the player
+			return nil
+		end
+
+		for _, frame in pairs(CompactPartyFrame.memberUnitFrames) do
+			if frame.unit == "player" then
+				return frame
+			end
+		end
+
+		return nil
+	end
+
+	if EditModeManagerFrame:UseRaidStylePartyFrames() then
+		for _, frame in pairs(CompactPartyFrame.memberUnitFrames) do
+			if frame.unit == unit then
+				return frame
+			end
+		end
+
+		return nil
+	end
+
+	for memberFrame in PartyFrame.PartyMemberFramePool:EnumerateActive() do
+		if memberFrame.unitToken == unit then
+			return memberFrame
+		end
+	end
+
+	return nil
+end
+
 function TargetedSpellsDriver:RepositionFrames()
 	---@type table<string, TargetedSpellsMixin[]>
 	local activeFrames = {}
@@ -202,39 +240,7 @@ function TargetedSpellsDriver:RepositionFrames()
 				frame:Reposition(point, parent, "CENTER", x, y)
 			end
 		else
-			local parentFrame = nil
-
-			if targetUnit == "player" then
-				if not EditModeManagerFrame:UseRaidStylePartyFrames() then
-					-- non-raid style party frames don't include the player
-					return
-				end
-
-				for _, frame in pairs(CompactPartyFrame.memberUnitFrames) do
-					if frame.unit == "player" then
-						parentFrame = frame
-						break
-					end
-				end
-			else
-				local index = tonumber(string.sub(targetUnit, 6))
-
-				if EditModeManagerFrame:UseRaidStylePartyFrames() then
-					for _, frame in pairs(CompactPartyFrame.memberUnitFrames) do
-						if frame.unit == targetUnit then
-							parentFrame = frame
-							break
-						end
-					end
-				else
-					for memberFrame in PartyFrame.PartyMemberFramePool:EnumerateActive() do
-						if memberFrame.layoutIndex == index then
-							parentFrame = memberFrame
-							break
-						end
-					end
-				end
-			end
+			local parentFrame = FindParentFrameForUnit(targetUnit)
 
 			-- no unit frame addon support at this time
 			if parentFrame ~= nil then
@@ -298,7 +304,7 @@ function TargetedSpellsDriver:OnRoleChange(newRole)
 	print("TargetedSpellsDriver:OnRoleChange()", newRole)
 end
 
-function TargetedSpellsDriver:OnCVarChange(value)
+local function OnCVarChange(value)
 	local staticPopupDialogKey = addonName
 
 	if StaticPopupDialogs[staticPopupDialogKey] == nil then
@@ -447,7 +453,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 				self:RepositionFrames()
 			end
 		elseif name == "nameplateShowOffscreen" then
-			self:OnCVarChange(value)
+			OnCVarChange(value)
 		end
 	elseif
 		event == "UNIT_SPELLCAST_STOP"
