@@ -128,7 +128,7 @@ if locale == "deDE" then
 	L.EditMode.TargetedSpellsPartyLabel = "Targeted Spells - Gruppe"
 
 	L.Functionality.CVarWarning = string.format(
-		"Die Namensplaketteneinstellung '%s' wurde deaktiviert.\n\nOhne sie funktioniert %s nicht bei Gegnern die außerhalb des Bildschirms stehen.\n\nKlicke '%s' um die Einstellung zu aktivieren.",
+		"Die Namensplaketteneinstellung '%s' wurde deaktiviert.\n\nOhne funktioniert %s nicht bei Gegnern die außerhalb des Bildschirms wirken.\n\nKlicke '%s' um die Einstellung zu aktivieren.",
 		UNIT_NAMEPLATES_SHOW_OFFSCREEN,
 		addonName,
 		ACCEPT
