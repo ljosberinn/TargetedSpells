@@ -15,9 +15,11 @@ local TargetedSpellsDriver = {}
 
 function TargetedSpellsDriver:Init()
 	self.framePool = CreateFramePool("Frame", UIParent, "TargetedSpellsFrameTemplate")
-	self.delay = 0.1
+	self.delay = 0.2
 	self.frames = {}
-	self.playerRole = nil
+	self.role = nil
+	self.contentType = nil
+
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingsChanged, self)
 
 	self:SetupListenerFrame(true)
@@ -50,6 +52,7 @@ function TargetedSpellsDriver:SetupListenerFrame(isBoot)
 		(Private.Settings.Keys.Self.Enabled or Private.Settings.Keys.Party.Enabled)
 		and not self.listenerFrame:IsEventRegistered("UNIT_SPELLCAST_START")
 	then
+		self.listenerFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 		self.listenerFrame:RegisterEvent("LOADING_SCREEN_DISABLED")
 		self.listenerFrame:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
 		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_START")
@@ -66,12 +69,7 @@ function TargetedSpellsDriver:SetupListenerFrame(isBoot)
 		end
 		self.listenerFrame:SetScript("OnEvent", GenerateClosure(self.OnFrameEvent, self))
 
-		print(
-			format(
-				"TargetedSpellsDriver:OnSettingsChanged: %sattached listeners, the role is %d",
-				isBoot and "" or "re"
-			)
-		)
+		print(format("TargetedSpellsDriver:OnSettingsChanged: %sattached listeners", isBoot and "" or "re"))
 	end
 end
 
@@ -79,12 +77,21 @@ if Private.IsMidnight then
 	function TargetedSpellsDriver:AcquireFrames(castingUnit)
 		local frames = {}
 
-		local selfTargetingFrame = self.framePool:Acquire()
-		selfTargetingFrame:SetParent(self.listenerFrame)
-		selfTargetingFrame:PostCreate("player", Private.Enum.FrameKind.Self, castingUnit)
-		table.insert(frames, selfTargetingFrame)
+		if
+			TargetedSpellsSaved.Settings.Self.Enabled
+			and not self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Self)
+		then
+			local selfTargetingFrame = self.framePool:Acquire()
+			selfTargetingFrame:SetParent(self.listenerFrame)
+			selfTargetingFrame:PostCreate("player", Private.Enum.FrameKind.Self, castingUnit)
+			table.insert(frames, selfTargetingFrame)
+		end
 
-		if TargetedSpellsSaved.Settings.Party.Enabled and IsInGroup() then
+		if
+			TargetedSpellsSaved.Settings.Party.Enabled
+			and IsInGroup()
+			and not self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Party)
+		then
 			local partyMemberCount = GetNumGroupMembers()
 
 			for i = 1, partyMemberCount do
@@ -110,14 +117,22 @@ else
 	function TargetedSpellsDriver:AcquireFrames(castingUnit)
 		local frames = {}
 
-		if UnitIsUnit(string.format("%starget", castingUnit), "player") then
+		if
+			TargetedSpellsSaved.Settings.Self.Enabled
+			and not self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Self)
+			and UnitIsUnit(string.format("%starget", castingUnit), "player")
+		then
 			local selfTargetingFrame = self.framePool:Acquire()
 			selfTargetingFrame:SetParent(self.listenerFrame)
 			selfTargetingFrame:PostCreate("player", Private.Enum.FrameKind.Self, castingUnit)
 			table.insert(frames, selfTargetingFrame)
 		end
 
-		if TargetedSpellsSaved.Settings.Party.Enabled and IsInGroup() then
+		if
+			TargetedSpellsSaved.Settings.Party.Enabled
+			and IsInGroup()
+			and not self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Party)
+		then
 			local partyMemberCount = GetNumGroupMembers()
 
 			for i = 1, partyMemberCount do
@@ -191,11 +206,11 @@ function TargetedSpellsDriver:RepositionFrames()
 		for i, frame in pairs(frames) do
 			if frame:ShouldBeShown() then
 				if frame:GetKind() == Private.Enum.FrameKind.Self then
-					if activeFrames.self == nil then
-						activeFrames.self = {}
+					if activeFrames.player == nil then
+						activeFrames.player = {}
 					end
 
-					table.insert(activeFrames.self, frame)
+					table.insert(activeFrames.player, frame)
 				else
 					local targetUnit = frame:GetUnit()
 
@@ -212,7 +227,7 @@ function TargetedSpellsDriver:RepositionFrames()
 	end
 
 	for targetUnit, frames in pairs(activeFrames) do
-		if targetUnit == Private.Enum.FrameKind.Self then
+		if targetUnit == "player" then
 			local width, height, gap, sortOrder, direction, grow =
 				TargetedSpellsSaved.Settings.Self.Width,
 				TargetedSpellsSaved.Settings.Self.Height,
@@ -288,11 +303,7 @@ function TargetedSpellsDriver:CleanUpUnit(unit, event)
 			self.framePool:Release(frame)
 		end
 
-		local nFrames = #frames
-
 		table.wipe(self.frames[unit])
-
-		pprint("removed " .. nFrames .. " frames for", unit, "through", event)
 
 		return true
 	end
@@ -300,8 +311,21 @@ function TargetedSpellsDriver:CleanUpUnit(unit, event)
 	return false
 end
 
-function TargetedSpellsDriver:OnRoleChange(newRole)
-	print("TargetedSpellsDriver:OnRoleChange()", newRole)
+function TargetedSpellsDriver:LoadConditionsProhibitExecution(kind)
+	local tableRef = kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
+		or TargetedSpellsSaved.Settings.Party
+
+	if not tableRef.LoadConditionRole[self.role] then
+		print("role not allowed", kind, self.role)
+		return true
+	end
+
+	if not tableRef.LoadConditionContentType[self.contentType] then
+		print("content type not allowed", kind, self.contentType)
+		return true
+	end
+
+	return false
 end
 
 local function OnCVarChange(value)
@@ -329,7 +353,7 @@ local function OnCVarChange(value)
 end
 
 ---@param listenerFrame Frame -- identical to self.listenerFrame
----@param event "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" | "UNIT_SPELLCAST_SUCCEEDED" |"EDIT_MODE_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "DELAYED_UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED"
+---@param event "ZONE_CHANGED_NEW_AREA" | "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" | "UNIT_SPELLCAST_SUCCEEDED" |"EDIT_MODE_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "DELAYED_UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED"
 function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 	if
 		event == "UNIT_SPELLCAST_START"
@@ -400,11 +424,15 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			castTime = (endTimeMs - startTimeMs) / 1000
 		end
 
+		local frames = self:AcquireFrames(unit)
+
+		if #frames == 0 then
+			return
+		end
+
 		if self.frames[unit] == nil then
 			self.frames[unit] = {}
 		end
-
-		local frames = self:AcquireFrames(unit)
 
 		for _, frame in ipairs(frames) do
 			table.insert(self.frames[unit], frame)
@@ -412,7 +440,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			frame:SetStartTime(startTime)
 			frame:SetCastTime(castTime)
 			frame:RefreshSpellCooldownInfo()
-			frame:AttemptToPlaySound()
+			frame:AttemptToPlaySound(self.contentType)
 			frame:Show()
 		end
 
@@ -463,7 +491,6 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 	then
 		local unit = ...
 
-		-- todo: decide whether we actually care about this
 		if
 			UnitInParty(unit)
 			or not UnitExists(unit)
@@ -498,11 +525,15 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			return
 		end
 
+		local frames = self:AcquireFrames(info.unit)
+
+		if #frames == 0 then
+			return
+		end
+
 		if self.frames[info.unit] == nil then
 			self.frames[info.unit] = {}
 		end
-
-		local frames = self:AcquireFrames(info.unit)
 
 		local castTime = select(2, nameplate.UnitFrame.castBar:GetMinMaxValues())
 
@@ -512,28 +543,79 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			frame:SetStartTime(info.startTime)
 			frame:SetCastTime(castTime)
 			frame:RefreshSpellCooldownInfo()
-			frame:AttemptToPlaySound()
+			frame:AttemptToPlaySound(self.contentType)
 			frame:Show()
 		end
 
 		self:RepositionFrames()
-	elseif event == "LOADING_SCREEN_DISABLED" then
-		local newRole = Private.Utils.GetCurrentRole()
+	elseif
+		event == "ZONE_CHANGED_NEW_AREA"
+		or event == "LOADING_SCREEN_DISABLED"
+		or event == "PLAYER_SPECIALIZATION_CHANGED"
+	then
+		local name, instanceType, difficultyID = GetInstanceInfo()
 
-		if newRole ~= self.playerRole then
-			self:OnRoleChange(newRole)
+		if instanceType == "raid" then
+			self.contentType = Private.Enum.ContentType.Raid
+		elseif instanceType == "party" then
+			if
+				difficultyID == DifficultyUtil.ID.DungeonNormal
+				or difficultyID == DifficultyUtil.ID.DungeonHeroic
+				or difficultyID == DifficultyUtil.ID.DungeonMythic
+				or difficultyID == DifficultyUtil.ID.DungeonChallenge
+			then
+				self.contentType = Private.Enum.ContentType.Dungeon
+			end
+		elseif instanceType == "pvp" then
+			self.contentType = Private.Enum.ContentType.Battleground
+		elseif instanceType == "arena" then
+			self.contentType = Private.Enum.ContentType.Arena
+		elseif instanceType == "scenario" then
+			if difficultyID == 208 then
+				self.contentType = Private.Enum.ContentType.Delve
+			end
+		else
+			-- equivalent to `instanceType == "none"`
+			self.contentType = Private.Enum.ContentType.OpenWorld
 		end
-	elseif event == "PLAYER_SPECIALIZATION_CHANGED" then
-		local unit = ...
 
-		if unit ~= "player" then
-			return
+		for label, id in pairs(Private.Enum.ContentType) do
+			if id == self.contentType then
+				print("detected content type", label)
+				break
+			end
 		end
 
-		local newRole = Private.Utils.GetCurrentRole()
+		local specId = PlayerUtil.GetCurrentSpecID()
 
-		if newRole ~= self.playerRole then
-			self:OnRoleChange(newRole)
+		if
+			specId == 105 -- restoration druid
+			or specId == 1468 -- preservation evoker
+			or specId == 270 -- mistweaver monk
+			or specId == 65 -- holy paladin
+			or specId == 256 -- discipline priest
+			or specId == 257 -- holy priest
+			or specId == 264 -- restoration shaman
+		then
+			self.role = Private.Enum.Role.Healer
+		elseif
+			specId == 250 -- blood death knight
+			or specId == 581 -- vengeance demon hunter
+			or specId == 104 -- guardian druid
+			or specId == 268 -- brewmaster monk
+			or specId == 66 -- protection paladin
+			or specId == 73 -- protection warrior
+		then
+			self.role = Private.Enum.Role.Tank
+		else
+			self.role = Private.Enum.Role.Damager
+		end
+
+		for label, id in pairs(Private.Enum.Role) do
+			if id == self.role then
+				print("detected role", label)
+				break
+			end
 		end
 	elseif event == Private.Enum.Events.EDIT_MODE_POSITION_CHANGED then
 		local point, x, y = ...
@@ -556,10 +638,6 @@ function TargetedSpellsDriver:OnSettingsChanged(key, value)
 		else
 			self:SetupListenerFrame(false)
 		end
-	elseif key == Private.Settings.Keys.Self.LoadConditionContentType then
-	elseif key == Private.Settings.Keys.Self.LoadConditionRole then
-	elseif key == Private.Settings.Keys.Party.LoadConditionContentType then
-	elseif key == Private.Settings.Keys.Party.LoadConditionRole then
 	end
 end
 

@@ -15,7 +15,6 @@
 ---@field CalculateCoordinate fun(index: number, dimension: number, gap: number, parentDimension: number, total: number, offset: number, grow: Grow): number
 ---@field SortFrames fun(frames: TargetedSpellsMixin[], sortOrder: SortOrder)
 ---@field AttemptToPlaySound fun(sound: string|number, channel: SoundChannel)
----@field GetCurrentRole fun(): Role
 
 ---@class TargetedSpellsEnums
 
@@ -71,8 +70,8 @@
 ---@field SortOrder SortOrder
 ---@field Grow Grow
 ---@field ShowDuration boolean
+---@field FontSize number
 ---@field Position SelfFramePosition
----@field MaxElements number
 ---@field ShowBorder boolean
 ---@field GlowImportant boolean
 
@@ -91,6 +90,7 @@
 ---@field SortOrder SortOrder
 ---@field Grow Grow
 ---@field ShowDuration boolean
+---@field FontSize number
 ---@field ShowBorder boolean
 ---@field GlowImportant boolean
 
@@ -126,7 +126,7 @@
 ---@field OnSettingChanged fun(self: TargetedSpellsMixin, key: string, value: number|string)
 ---@field ShouldBeShown fun(self: TargetedSpellsMixin): boolean
 ---@field Reposition fun(self: TargetedSpellsMixin, point: string, relativeTo: Frame, relativePoint: string, offsetX: number, offsetY: number)
----@field AttemptToPlaySound fun(self: TargetedSpellsMixin)
+---@field AttemptToPlaySound fun(self: TargetedSpellsMixin, contentType: ContentType)
 ---@field SetShowDuration fun(self: TargetedSpellsMixin, showDuration: boolean)
 ---@field SetFontSize fun(self: TargetedSpellsMixin, fontSize: number)
 ---@field PostCreate fun(self: TargetedSpellsMixin, unit: string, kind: FrameKind, castingUnit: string?)
@@ -177,6 +177,8 @@
 ---@field SetAlphaFromBoolean fun(self: Frame, value: boolean)
 
 ---@class ActionButtonSpellAlertTemplate: Frame
+---@field ProcStartFlipbook Frame
+---@field ProcLoop Animation
 
 ---@class TargetedSpellsEditModeMixin : Frame
 ---@field Init fun(self: TargetedSpellsEditModeMixin, displayName: string, frameKind: FrameKind)
@@ -217,15 +219,14 @@
 ---@class TargetedSpellsDriver
 ---@field framePool FramePool
 ---@field listenerFrame Frame
----@field playerRole Role?
+---@field role Role?
+---@field contentType ContentType?
 ---@field frames table<string, TargetedSpellsMixin[]>
----@field OnSettingsChanged fun(self: TargetedSpellsDriver, key: string, value: number|string)
+---@field OnSettingsChanged fun(self: TargetedSpellsDriver, key: string, value: number|string|table)
 ---@field OnFrameEvent fun(self: TargetedSpellsDriver, listenerFrame: Frame, event: WowEvent, ...)
 ---@field SetupListenerFrame fun(self: TargetedSpellsDriver, isBoot: boolean)
 ---@field AcquireFrames fun(self: TargetedSpellsDriver, castingUnit: string): TargetedSpellsMixin
----@field SortFrames fun(self: TargetedSpellsDriver, frames: TargetedSpellsMixin[], sortOrder: SortOrder)
----@field OnRoleChange fun(self: TargetedSpellsDriver, newRole: Role)
----@field OnCVarChange fun(self: TargetedSpellsDriver, value: number|string)
+---@field LoadConditionsProhibitExecution fun(self: TargetedSpellsDriver, kind: FrameKind): boolean
 
 ---@return function?
 local function GenerateClosureInternal(generatorArray, f, ...)
@@ -297,3 +298,21 @@ PlayerUtil = {
 		return ""
 	end,
 }
+
+COOLDOWN_VIEWER_SETTINGS_ALERT_MENU_PLAY_SAMPLE = ""
+COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_ANIMALS = ""
+COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_DEVICES = ""
+COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_IMPACTS = ""
+COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_INSTRUMENTS = ""
+COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_WAR2 = ""
+COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_WAR3 = ""
+
+---@class Plater
+---@field db { profile: { script_data: PlaterScriptData[] } }?
+
+---@class PlaterScriptData
+---@field Name string
+---@field SpellIds number[]
+
+---@type Plater
+Plater = {}

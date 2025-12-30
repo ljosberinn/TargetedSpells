@@ -342,24 +342,26 @@ function TargetedSpellsMixin:Reset()
 	self:HideGlow()
 end
 
-function TargetedSpellsMixin:AttemptToPlaySound()
-	if self.kind ~= Private.Enum.FrameKind.Self then
-		return
+function TargetedSpellsMixin:AttemptToPlaySound(contentType)
+	if
+		self.kind == Private.Enum.FrameKind.Self
+		and TargetedSpellsSaved.Settings.Self.PlaySound
+		and TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[contentType]
+		and TargetedSpellsSaved.Settings.Self.Sound ~= nil
+	then
+		Private.Utils.AttemptToPlaySound(
+			TargetedSpellsSaved.Settings.Self.Sound,
+			TargetedSpellsSaved.Settings.Self.SoundChannel
+		)
+	else
+		print(
+			"not playing sound because:",
+			self.kind == Private.Enum.FrameKind.Self and "isnt self" or nil,
+			TargetedSpellsSaved.Settings.Self.PlaySound and "disabled" or nil,
+			TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[contentType] and "content type doesnt apply"
+				or nil
+		)
 	end
-
-	if not TargetedSpellsSaved.Settings.Self.PlaySound then
-		return
-	end
-
-	local sound = TargetedSpellsSaved.Settings.Self.Sound
-
-	if sound == nil then
-		return
-	end
-
-	-- todo: load condition check for sound
-
-	Private.Utils.AttemptToPlaySound(sound, TargetedSpellsSaved.Settings.Self.SoundChannel)
 end
 
 function TargetedSpellsMixin:SetShowDuration(showDuration)

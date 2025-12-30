@@ -49,35 +49,3 @@ do
 		end
 	end
 end
-
-function Private.Utils.GetCurrentRole()
-	local specId = PlayerUtil.GetCurrentSpecID()
-
-	if
-		specId == 105 -- restoration druid
-		or specId == 1468 -- preservation evoker
-		or specId == 270 -- mistweaver monk
-		or specId == 65 -- holy paladin
-		or specId == 256 -- discipline priest
-		or specId == 257 -- holy priest
-		or specId == 264 -- restoration shaman
-	then
-		print("is healer")
-		return Private.Enum.Role.Healer
-	end
-
-	if
-		specId == 250 -- blood death knight
-		or specId == 581 -- vengeance demon hunter
-		or specId == 104 -- guardian druid
-		or specId == 268 -- brewmaster monk
-		or specId == 66 -- protection paladin
-		or specId == 73 -- protection warrior
-	then
-		print("is tank")
-		return Private.Enum.Role.Tank
-	end
-
-	print("is dps")
-	return Private.Enum.Role.Damager
-end

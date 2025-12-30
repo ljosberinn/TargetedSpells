@@ -10,12 +10,14 @@ L.Settings = {}
 L.EditMode.TargetedSpellsSelfLabel = "Targeted Spells - Self"
 L.EditMode.TargetedSpellsPartyLabel = "Targeted Spells - Party"
 
-L.Functionality.CVarWarning = string.format(
-	"The Nameplate Setting '%s' was disabled.\n\nWithout it, %s will not work on off-screen enemies.\n\nClick '%s' to enable it.",
-	UNIT_NAMEPLATES_SHOW_OFFSCREEN,
-	addonName,
-	ACCEPT
-)
+L.Functionality.CVarWarning = Private.IsMidnight
+		and string.format(
+			"The Nameplate Setting '%s' was disabled.\n\nWithout it, %s will not work on off-screen enemies.\n\nClick '%s' to enable it.",
+			UNIT_NAMEPLATES_SHOW_OFFSCREEN,
+			addonName,
+			ACCEPT
+		)
+	or nil
 
 L.Settings.EnabledLabel = "Enabled"
 L.Settings.EnabledTooltip = nil
@@ -28,8 +30,9 @@ L.Settings.AddonCompartmentTooltipLine2 =
 
 L.Settings.LoadConditionContentTypeLabel = "Load Condition: Content Type"
 L.Settings.LoadConditionContentTypeLabelAbbreviated = "Load in Content"
-L.Settings.LoadConditionContentTypeTooltip = Private.IsMidnight and nil
-	or "This setting is only configurable via Edit Mode until the Midnight Pre-Patch due to lacking the settings primitives until then."
+L.Settings.LoadConditionContentTypeTooltip = not Private.IsMidnight
+		and "This setting is only configurable via Edit Mode until the Midnight Pre-Patch due to lacking the settings primitives until then."
+	or nil
 L.Settings.LoadConditionContentTypeLabels = {
 	[Private.Enum.ContentType.OpenWorld] = "Open World",
 	[Private.Enum.ContentType.Delve] = "Delves",
@@ -41,16 +44,14 @@ L.Settings.LoadConditionContentTypeLabels = {
 
 L.Settings.LoadConditionRoleLabel = "Load Condition: Role"
 L.Settings.LoadConditionRoleLabelAbbreviated = "Load on Role"
-L.Settings.LoadConditionRoleTooltip = Private.IsMidnight and nil
-	or "This setting is only configurable via Edit Mode until the Midnight Pre-Patch due to lacking the settings primitives until then."
+L.Settings.LoadConditionRoleTooltip = not Private.IsMidnight
+		and "This setting is only configurable via Edit Mode until the Midnight Pre-Patch due to lacking the settings primitives until then."
+	or nil
 L.Settings.LoadConditionRoleLabels = {
 	[Private.Enum.Role.Healer] = "Healer",
 	[Private.Enum.Role.Tank] = "Tank",
 	[Private.Enum.Role.Damager] = "DPS",
 }
-
-L.Settings.MaxFramesLabel = "Max Frames"
-L.Settings.MaxFramesTooltip = nil
 
 L.Settings.FrameWidthLabel = "Width"
 L.Settings.FrameWidthTooltip = nil
@@ -95,6 +96,13 @@ L.Settings.SoundTooltip = "Click to change, but also click to preview sound. War
 L.Settings.SoundChannelLabel = "Sound Channel"
 L.Settings.SoundChannelTooltip = nil
 
+L.Settings.LoadConditionSoundContentTypeLabel = "Load Condition: Sound"
+L.Settings.LoadConditionSoundContentTypeLabelAbbreviated = "Play Sound in Content"
+L.Settings.LoadConditionSoundContentTypeTooltip = not Private.IsMidnight
+		and "This setting is only configurable via Edit Mode until the Midnight Pre-Patch due to lacking the settings primitives until then."
+	or nil
+L.Settings.LoadConditionSoundContentTypeLabels = L.Settings.LoadConditionContentTypeLabels
+
 L.Settings.ShowDurationLabel = "Show Duration"
 L.Settings.ShowDurationTooltip = nil
 
@@ -127,12 +135,14 @@ if locale == "deDE" then
 	L.EditMode.TargetedSpellsSelfLabel = "Targeted Spells - Spieler"
 	L.EditMode.TargetedSpellsPartyLabel = "Targeted Spells - Gruppe"
 
-	L.Functionality.CVarWarning = string.format(
-		"Die Namensplaketteneinstellung '%s' wurde deaktiviert.\n\nOhne funktioniert %s nicht bei Gegnern die außerhalb des Bildschirms wirken.\n\nKlicke '%s' um die Einstellung zu aktivieren.",
-		UNIT_NAMEPLATES_SHOW_OFFSCREEN,
-		addonName,
-		ACCEPT
-	)
+	L.Functionality.CVarWarning = Private.IsMidnight
+			and string.format(
+				"Die Namensplaketteneinstellung '%s' wurde deaktiviert.\n\nOhne funktioniert %s nicht bei Gegnern die außerhalb des Bildschirms wirken.\n\nKlicke '%s' um die Einstellung zu aktivieren.",
+				UNIT_NAMEPLATES_SHOW_OFFSCREEN,
+				addonName,
+				ACCEPT
+			)
+		or nil
 
 	L.Settings.EnabledLabel = "Aktiviert"
 	L.Settings.EnabledTooltip = nil
@@ -145,8 +155,9 @@ if locale == "deDE" then
 
 	L.Settings.LoadConditionContentTypeLabel = "Ladebedingung: Spielbereich"
 	L.Settings.LoadConditionContentTypeLabelAbbreviated = "In Spielbereich laden"
-	L.Settings.LoadConditionContentTypeTooltip = Private.IsMidnight and nil
-		or "Diese Einstellung ist bis zum Midnight Pre-Patch nur via Edit Mode konfigurierbar."
+	L.Settings.LoadConditionContentTypeTooltip = not Private.IsMidnight
+			and "Diese Einstellung ist bis zum Midnight Pre-Patch nur via Bearbeitungsmodus konfigurierbar."
+		or nil
 	L.Settings.LoadConditionContentTypeLabels = {
 		[Private.Enum.ContentType.OpenWorld] = "Offene Welt",
 		[Private.Enum.ContentType.Delve] = "Tiefen",
@@ -158,16 +169,15 @@ if locale == "deDE" then
 
 	L.Settings.LoadConditionRoleLabel = "Ladebedingung: Rolle"
 	L.Settings.LoadConditionRoleLabelAbbreviated = "In Rolle laden"
-	L.Settings.LoadConditionRoleTooltip = Private.IsMidnight and nil
-		or "Diese Einstellung ist bis zum Midnight Pre-Patch nur via Edit Mode konfigurierbar."
+	L.Settings.LoadConditionRoleTooltip = not Private.IsMidnight
+			and "Diese Einstellung ist bis zum Midnight Pre-Patch nur via Bearbeitungsmodus konfigurierbar."
+		or nil
+
 	L.Settings.LoadConditionRoleLabels = {
 		[Private.Enum.Role.Healer] = "Heiler",
 		[Private.Enum.Role.Tank] = "Panzer",
 		[Private.Enum.Role.Damager] = "Schadensverursacher",
 	}
-
-	L.Settings.MaxFramesLabel = "Maximalanzahl angezeigter Zauber"
-	L.Settings.MaxFramesTooltip = nil
 
 	L.Settings.FrameWidthLabel = "Breite"
 	L.Settings.FrameWidthTooltip = nil
@@ -214,6 +224,13 @@ if locale == "deDE" then
 	L.Settings.SoundChannelLabel = "Tonkanal"
 	L.Settings.SoundChannelTooltip = nil
 
+	L.Settings.LoadConditionSoundContentTypeLabel = "Ladebedinging: Ton"
+	L.Settings.LoadConditionSoundContentTypeLabelAbbreviated = "Ton in Spielbereich abspielen"
+	L.Settings.LoadConditionSoundContentTypeTooltip = not Private.IsMidnight
+			and "Diese Einstellung ist bis zum Midnight Pre-Patch nur via Bearbeitungsmodus konfigurierbar."
+		or nil
+	L.Settings.LoadConditionSoundContentTypeLabels = L.Settings.LoadConditionContentTypeLabels
+
 	L.Settings.ShowDurationLabel = "Dauer anzeigen"
 	L.Settings.ShowDurationTooltip = nil
 
@@ -245,12 +262,14 @@ elseif locale == "frFR" then
 	L.EditMode.TargetedSpellsSelfLabel = "Targeted Spells - Self"
 	L.EditMode.TargetedSpellsPartyLabel = "Targeted Spells - Party"
 
-	L.Functionality.CVarWarning = string.format(
-		"The Nameplate Setting '%s' was disabled.\n\nWithout it, %s will not work on off-screen enemies.\n\nClick '%s' to enable it.",
-		UNIT_NAMEPLATES_SHOW_OFFSCREEN,
-		addonName,
-		ACCEPT
-	)
+	L.Functionality.CVarWarning = Private.IsMidnight
+			and string.format(
+				"The Nameplate Setting '%s' was disabled.\n\nWithout it, %s will not work on off-screen enemies.\n\nClick '%s' to enable it.",
+				UNIT_NAMEPLATES_SHOW_OFFSCREEN,
+				addonName,
+				ACCEPT
+			)
+		or nil
 
 	L.Settings.EnabledLabel = "Actif/Activé"
 	L.Settings.EnabledTooltip = nil
@@ -263,8 +282,9 @@ elseif locale == "frFR" then
 
 	L.Settings.LoadConditionContentTypeLabel = "Condition de chargement: Type de contenu"
 	L.Settings.LoadConditionContentTypeLabelAbbreviated = "Charger dans le contenu"
-	L.Settings.LoadConditionContentTypeTooltip = Private.IsMidnight and nil
-		or "This setting is only configurable via Edit Mode until the Midnight Pre-Patch due to lacking the settings primitives until then."
+	L.Settings.LoadConditionContentTypeTooltip = not Private.IsMidnight
+			and "This setting is only configurable via Edit Mode until the Midnight Pre-Patch due to lacking the settings primitives until then."
+		or nil
 	L.Settings.LoadConditionContentTypeLabels = {
 		[Private.Enum.ContentType.OpenWorld] = "Open World",
 		[Private.Enum.ContentType.Delve] = "Delves",
@@ -276,16 +296,14 @@ elseif locale == "frFR" then
 
 	L.Settings.LoadConditionRoleLabel = "Condition de chargement: Rôle"
 	L.Settings.LoadConditionRoleLabelAbbreviated = "Chargement sur Rôle"
-	L.Settings.LoadConditionRoleTooltip = Private.IsMidnight and nil
-		or "This setting is only configurable via Edit Mode until the Midnight Pre-Patch due to lacking the settings primitives until then."
+	L.Settings.LoadConditionRoleTooltip = not Private.IsMidnight
+			and "This setting is only configurable via Edit Mode until the Midnight Pre-Patch due to lacking the settings primitives until then."
+		or nil
 	L.Settings.LoadConditionRoleLabels = {
 		[Private.Enum.Role.Healer] = "Healer",
 		[Private.Enum.Role.Tank] = "Tank",
 		[Private.Enum.Role.Damager] = "DPS",
 	}
-
-	L.Settings.MaxFramesLabel = "Max Frames"
-	L.Settings.MaxFramesTooltip = nil
 
 	L.Settings.FrameWidthLabel = "Largeur"
 	L.Settings.FrameWidthTooltip = nil
@@ -328,6 +346,13 @@ elseif locale == "frFR" then
 	L.Settings.SoundCategoryCustom = "Personnalisé"
 
 	L.Settings.SoundChannelLabel = "Sound Channel"
+
+	L.Settings.LoadConditionSoundContentTypeLabel = "Load Condition: Sound"
+	L.Settings.LoadConditionSoundContentTypeLabelAbbreviated = "Play Sound in Content"
+	L.Settings.LoadConditionSoundContentTypeTooltip = not Private.IsMidnight
+			and "This setting is only configurable via Edit Mode until the Midnight Pre-Patch due to lacking the settings primitives until then."
+		or nil
+	L.Settings.LoadConditionSoundContentTypeLabels = L.Settings.LoadConditionContentTypeLabels
 
 	L.Settings.ShowDurationLabel = "Montrer la durée"
 

@@ -87,31 +87,6 @@ end
 function TargetedSpellsEditModeMixin:CreateSetting(key)
 	local L = Private.L
 
-	if key == Private.Settings.Keys.Self.MaxFrames then
-		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
-
-		---@type LibEditModeSlider
-		return {
-			name = L.Settings.MaxFramesLabel,
-			kind = Enum.EditModeSettingDisplayType.Slider,
-			disabled = true,
-			desc = "NYI",
-			default = Private.Settings.GetSelfDefaultSettings().MaxFrames,
-			get = function(layoutName)
-				return TargetedSpellsSaved.Settings.Self.MaxFrames
-			end,
-			set = function(layoutName, value)
-				if value ~= TargetedSpellsSaved.Settings.Self.MaxFrames then
-					TargetedSpellsSaved.Settings.Self.MaxFrames = value
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-				end
-			end,
-			minValue = sliderSettings.min,
-			maxValue = sliderSettings.max,
-			valueStep = sliderSettings.step,
-		}
-	end
-
 	if key == Private.Settings.Keys.Self.Opacity or key == Private.Settings.Keys.Party.Opacity then
 		local isSelf = key == Private.Settings.Keys.Self.Opacity
 		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
@@ -435,6 +410,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 		or key == Private.Settings.Keys.Party.LoadConditionContentType
 	then
 		local isSelf = key == Private.Settings.Keys.Self.LoadConditionContentType
+		local kindTableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
 		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self.LoadConditionContentType
 			or TargetedSpellsSaved.Settings.Party.LoadConditionContentType
 
@@ -454,6 +430,25 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 						tableRef[id] = not tableRef[id]
 
 						Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef)
+
+						local anyEnabled = false
+						for role, loadCondition in pairs(tableRef) do
+							if loadCondition then
+								anyEnabled = true
+								break
+							end
+						end
+
+						if anyEnabled ~= kindTableRef.Enabled then
+							kindTableRef.Enabled = anyEnabled
+							local enabledKey = isSelf and Private.Settings.Keys.Self.Enabled
+								or Private.Settings.Keys.Party.Enabled
+							Private.EventRegistry:TriggerEvent(
+								Private.Enum.Events.SETTING_CHANGED,
+								enabledKey,
+								anyEnabled
+							)
+						end
 					end
 
 					local translated = L.Settings.LoadConditionContentTypeLabels[id]
@@ -479,6 +474,80 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 					if hasChanges then
 						Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef)
+					end
+				end,
+		}
+	end
+
+	if key == Private.Settings.Keys.Self.LoadConditionSoundContentType then
+		---@type LibEditModeDropdown
+		return {
+			name = L.Settings.LoadConditionSoundContentTypeLabelAbbreviated,
+			kind = Enum.EditModeSettingDisplayType.Dropdown,
+			default = Private.Settings.GetSelfDefaultSettings().LoadConditionSoundContentType,
+			generator = function(owner, rootDescription, data)
+				for label, id in pairs(Private.Enum.ContentType) do
+					local function IsEnabled()
+						return TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id]
+					end
+
+					local function Toggle()
+						TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id] =
+							not TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id]
+
+						Private.EventRegistry:TriggerEvent(
+							Private.Enum.Events.SETTING_CHANGED,
+							key,
+							TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType
+						)
+
+						local anyEnabled = false
+						for role, loadCondition in
+							pairs(TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType)
+						do
+							if loadCondition then
+								anyEnabled = true
+								break
+							end
+						end
+
+						if anyEnabled ~= TargetedSpellsSaved.Settings.Self.PlaySound then
+							TargetedSpellsSaved.Settings.Self.PlaySound = anyEnabled
+							Private.EventRegistry:TriggerEvent(
+								Private.Enum.Events.SETTING_CHANGED,
+								Private.Settings.Keys.Self.PlaySound,
+								anyEnabled
+							)
+						end
+					end
+
+					local translated = L.Settings.LoadConditionSoundContentTypeLabels[id]
+					rootDescription:CreateCheckbox(translated, IsEnabled, Toggle, {
+						value = label,
+						multiple = true,
+					})
+				end
+			end,
+			-- technically is a reset only
+			set =
+				---@param layoutName string
+				---@param values table<string, boolean>
+				function(layoutName, values)
+					local hasChanges = false
+
+					for id, bool in pairs(values) do
+						if TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id] ~= bool then
+							TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id] = bool
+							hasChanges = true
+						end
+					end
+
+					if hasChanges then
+						Private.EventRegistry:TriggerEvent(
+							Private.Enum.Events.SETTING_CHANGED,
+							key,
+							TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType
+						)
 					end
 				end,
 		}
@@ -1029,7 +1098,6 @@ function SelfEditModeMixin:AppendSettings()
 		self:CreateSetting(Private.Settings.Keys.Self.Enabled),
 		self:CreateSetting(Private.Settings.Keys.Self.LoadConditionContentType),
 		self:CreateSetting(Private.Settings.Keys.Self.LoadConditionRole),
-		self:CreateSetting(Private.Settings.Keys.Self.MaxFrames),
 		self:CreateSetting(Private.Settings.Keys.Self.Width),
 		self:CreateSetting(Private.Settings.Keys.Self.Height),
 		self:CreateSetting(Private.Settings.Keys.Self.Gap),
@@ -1040,6 +1108,7 @@ function SelfEditModeMixin:AppendSettings()
 		self:CreateSetting(Private.Settings.Keys.Self.PlaySound),
 		self:CreateSetting(Private.Settings.Keys.Self.Sound),
 		self:CreateSetting(Private.Settings.Keys.Self.SoundChannel),
+		self:CreateSetting(Private.Settings.Keys.Self.LoadConditionSoundContentType),
 		self:CreateSetting(Private.Settings.Keys.Self.ShowDuration),
 		self:CreateSetting(Private.Settings.Keys.Self.FontSize),
 		self:CreateSetting(Private.Settings.Keys.Self.ShowBorder),

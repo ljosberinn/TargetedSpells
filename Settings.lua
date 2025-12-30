@@ -26,7 +26,7 @@ Private.Settings.Keys = {
 		Sound = "SOUND_SELF",
 		SoundChannel = "SOUND_CHANNEL_SELF",
 		ShowDuration = "SHOW_DURATION_SELF",
-		MaxFrames = "MAX_FRAMES_SELF",
+		LoadConditionSoundContentType = "LOAD_CONDITION_SOUND_CONTENT_TYPE_SELF",
 		Opacity = "OPACITY_SELF",
 		ShowBorder = "BORDER_SELF",
 	},
@@ -85,14 +85,6 @@ function Private.Settings.GetDefaultEditModeFramePosition()
 end
 
 function Private.Settings.GetSliderSettingsForOption(key)
-	if key == Private.Settings.Keys.Self.MaxFrames then
-		return {
-			min = 1,
-			max = 10,
-			step = 1,
-		}
-	end
-
 	if key == Private.Settings.Keys.Self.Opacity or key == Private.Settings.Keys.Party.Opacity then
 		return {
 			min = 0.2,
@@ -155,7 +147,6 @@ function Private.Settings.GetSelfDefaultSettings()
 		Enabled = true,
 		Width = 48,
 		Height = 48,
-		FontSize = 20,
 		Gap = 2,
 		Direction = Private.Enum.Direction.Horizontal,
 		LoadConditionContentType = {
@@ -185,8 +176,8 @@ function Private.Settings.GetSelfDefaultSettings()
 		SortOrder = Private.Enum.SortOrder.Ascending,
 		Grow = Private.Enum.Grow.Center,
 		ShowDuration = true,
+		FontSize = 20,
 		Position = Private.Settings.GetDefaultEditModeFramePosition(),
-		MaxFrames = 5,
 		Opacity = 1,
 		ShowBorder = false,
 		GlowImportant = true,
@@ -459,6 +450,7 @@ table.insert(Private.LoginFnQueue, function()
 
 				local function SetValue(mask)
 					local hasChanges = false
+					local anyEnabled = false
 
 					for label, id in pairs(Private.Enum.ContentType) do
 						local enabled = DecodeBitToBool(mask, id)
@@ -467,13 +459,28 @@ table.insert(Private.LoginFnQueue, function()
 							TargetedSpellsSaved.Settings.Self.LoadConditionContentType[id] = enabled
 							hasChanges = true
 						end
+
+						if enabled then
+							anyEnabled = true
+						end
 					end
 
-					if hasChanges then
+					if not hasChanges then
+						return
+					end
+
+					Private.EventRegistry:TriggerEvent(
+						Private.Enum.Events.SETTING_CHANGED,
+						key,
+						TargetedSpellsSaved.Settings.Self.LoadConditionContentType
+					)
+
+					if anyEnabled ~= TargetedSpellsSaved.Settings.Self.Enabled then
+						TargetedSpellsSaved.Settings.Self.Enabled = anyEnabled
 						Private.EventRegistry:TriggerEvent(
 							Private.Enum.Events.SETTING_CHANGED,
-							key,
-							TargetedSpellsSaved.Settings.Self.LoadConditionContentType
+							Private.Settings.Keys.Self.Enabled,
+							anyEnabled
 						)
 					end
 				end
@@ -542,7 +549,7 @@ table.insert(Private.LoginFnQueue, function()
 			local function GetOptions()
 				local container = Settings.CreateControlTextContainer()
 
-				for label, id in pairs(Private.Enum.Role) do
+				for label, id in pairs(Private.Enum.ContentType) do
 					local translated = L.Settings.LoadConditionRoleLabels[id]
 
 					container:Add(id, translated, L.Settings.LoadConditionContentTypeTooltip)
@@ -577,6 +584,7 @@ table.insert(Private.LoginFnQueue, function()
 
 				local function SetValue(mask)
 					local hasChanges = false
+					local anyEnabled = false
 
 					for label, id in pairs(Private.Enum.Role) do
 						local enabled = DecodeBitToBool(mask, id)
@@ -585,13 +593,28 @@ table.insert(Private.LoginFnQueue, function()
 							TargetedSpellsSaved.Settings.Self.LoadConditionRole[id] = enabled
 							hasChanges = true
 						end
+
+						if enabled then
+							anyEnabled = true
+						end
 					end
 
-					if hasChanges then
+					if not hasChanges then
+						return
+					end
+
+					Private.EventRegistry:TriggerEvent(
+						Private.Enum.Events.SETTING_CHANGED,
+						key,
+						TargetedSpellsSaved.Settings.Self.LoadConditionRole
+					)
+
+					if anyEnabled ~= TargetedSpellsSaved.Settings.Self.Enabled then
+						TargetedSpellsSaved.Settings.Self.Enabled = anyEnabled
 						Private.EventRegistry:TriggerEvent(
 							Private.Enum.Events.SETTING_CHANGED,
-							key,
-							TargetedSpellsSaved.Settings.Self.LoadConditionRole
+							Private.Settings.Keys.Self.Enabled,
+							anyEnabled
 						)
 					end
 				end
@@ -660,44 +683,6 @@ table.insert(Private.LoginFnQueue, function()
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, function()
 				return false
 			end)
-		end
-
-		-- Max Frames
-		do
-			local key = Private.Settings.Keys.Self.MaxFrames
-			local defaultValue = Private.Settings.GetSelfDefaultSettings().MaxFrames
-			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Self.MaxFrames
-			end
-
-			local function SetValue(value)
-				if value ~= TargetedSpellsSaved.Settings.Self.MaxFrames then
-					TargetedSpellsSaved.Settings.Self.MaxFrames = value
-
-					Private.EventRegistry:TriggerEvent(
-						Private.Enum.Events.SETTING_CHANGED,
-						key,
-						TargetedSpellsSaved.Settings.Self.MaxFrames
-					)
-				end
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Number,
-				L.Settings.MaxFramesLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
-			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
-
-			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.MaxFramesTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
 		-- Frame Width
@@ -1163,6 +1148,143 @@ table.insert(Private.LoginFnQueue, function()
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
+		if Private.IsMidnight then
+			do
+				local key = Private.Settings.Keys.Self.LoadConditionSoundContentType
+				local defaults = Private.Settings.GetSelfDefaultSettings().LoadConditionSoundContentType
+
+				local defaultValue = GetMask(Private.Enum.ContentType, function(id)
+					return defaults[id]
+				end)
+
+				local function GetValue()
+					return GetMask(Private.Enum.ContentType, function(id)
+						return TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id]
+					end)
+				end
+
+				local function SetValue(mask)
+					local hasChanges = false
+					local anyEnabled = false
+
+					for label, id in pairs(Private.Enum.ContentType) do
+						local enabled = DecodeBitToBool(mask, id)
+
+						if enabled ~= TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id] then
+							TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id] = enabled
+							hasChanges = true
+						end
+
+						if enabled then
+							anyEnabled = true
+						end
+					end
+
+					if not hasChanges then
+						return
+					end
+
+					Private.EventRegistry:TriggerEvent(
+						Private.Enum.Events.SETTING_CHANGED,
+						key,
+						TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType
+					)
+
+					if anyEnabled ~= TargetedSpellsSaved.Settings.Self.PlaySound then
+						TargetedSpellsSaved.Settings.Self.PlaySound = anyEnabled
+						Private.EventRegistry:TriggerEvent(
+							Private.Enum.Events.SETTING_CHANGED,
+							Private.Settings.Keys.Self.PlaySound,
+							anyEnabled
+						)
+					end
+				end
+
+				local setting = Settings.RegisterProxySetting(
+					category,
+					key,
+					Settings.VarType.Number,
+					L.Settings.LoadConditionSoundContentTypeLabel,
+					defaultValue,
+					GetValue,
+					SetValue
+				)
+
+				local function GetOptions()
+					local container = Settings.CreateControlTextContainer()
+
+					for label, id in pairs(Private.Enum.ContentType) do
+						local function IsEnabled()
+							return TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id]
+						end
+
+						local function Toggle()
+							TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id] =
+								not TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id]
+						end
+
+						local translated = L.Settings.LoadConditionSoundContentTypeLabels[id]
+
+						container:AddCheckbox(
+							id,
+							translated,
+							L.Settings.LoadConditionSoundContentTypeTooltip,
+							IsEnabled,
+							Toggle
+						)
+					end
+
+					return container:GetData()
+				end
+
+				local initializer = Settings.CreateDropdown(
+					category,
+					setting,
+					GetOptions,
+					L.Settings.LoadConditionSoundContentTypeTooltip
+				)
+				initializer.hideSteppers = true
+				initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+			end
+		else
+			local key = Private.Settings.Keys.Self.LoadConditionSoundContentType
+
+			local function GetValue()
+				return 0
+			end
+
+			local function SetValue() end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				L.Settings.LoadConditionSoundContentTypeLabel,
+				0,
+				GetValue,
+				SetValue
+			)
+
+			local function GetOptions()
+				local container = Settings.CreateControlTextContainer()
+
+				for label, id in pairs(Private.Enum.ContentType) do
+					local translated = L.Settings.LoadConditionSoundContentTypeLabels[id]
+
+					container:Add(id, translated, L.Settings.LoadConditionSoundContentTypeTooltip)
+				end
+
+				return container:GetData()
+			end
+
+			local initializer =
+				Settings.CreateDropdown(category, setting, GetOptions, L.Settings.LoadConditionSoundContentTypeTooltip)
+			initializer.hideSteppers = true
+			initializer:SetParentInitializer(generalCategoryEnabledInitializer, function()
+				return false
+			end)
+		end
+
 		-- Show Duration
 		do
 			local key = Private.Settings.Keys.Self.ShowDuration
@@ -1316,6 +1438,7 @@ table.insert(Private.LoginFnQueue, function()
 
 				local function SetValue(mask)
 					local hasChanges = false
+					local anyEnabled = false
 
 					for label, id in pairs(Private.Enum.ContentType) do
 						local enabled = DecodeBitToBool(mask, id)
@@ -1324,13 +1447,28 @@ table.insert(Private.LoginFnQueue, function()
 							TargetedSpellsSaved.Settings.Party.LoadConditionContentType[id] = enabled
 							hasChanges = true
 						end
+
+						if enabled then
+							anyEnabled = true
+						end
 					end
 
-					if hasChanges then
+					if not hasChanges then
+						return
+					end
+
+					Private.EventRegistry:TriggerEvent(
+						Private.Enum.Events.SETTING_CHANGED,
+						key,
+						TargetedSpellsSaved.Settings.Party.LoadConditionContentType
+					)
+
+					if anyEnabled ~= TargetedSpellsSaved.Settings.Party.Enabled then
+						TargetedSpellsSaved.Settings.Party.Enabled = anyEnabled
 						Private.EventRegistry:TriggerEvent(
 							Private.Enum.Events.SETTING_CHANGED,
-							key,
-							TargetedSpellsSaved.Settings.Party.LoadConditionContentType
+							Private.Settings.Keys.Party.Enabled,
+							anyEnabled
 						)
 					end
 				end
@@ -1420,6 +1558,7 @@ table.insert(Private.LoginFnQueue, function()
 
 				local function SetValue(mask)
 					local hasChanges = false
+					local anyEnabled = false
 
 					for label, id in pairs(Private.Enum.Role) do
 						local enabled = DecodeBitToBool(mask, id)
@@ -1428,13 +1567,28 @@ table.insert(Private.LoginFnQueue, function()
 							TargetedSpellsSaved.Settings.Party.LoadConditionRole[id] = enabled
 							hasChanges = true
 						end
+
+						if enabled then
+							anyEnabled = true
+						end
 					end
 
-					if hasChanges then
+					if not hasChanges then
+						return
+					end
+
+					Private.EventRegistry:TriggerEvent(
+						Private.Enum.Events.SETTING_CHANGED,
+						key,
+						TargetedSpellsSaved.Settings.Party.LoadConditionRole
+					)
+
+					if anyEnabled ~= TargetedSpellsSaved.Settings.Party.Enabled then
+						TargetedSpellsSaved.Settings.Party.Enabled = anyEnabled
 						Private.EventRegistry:TriggerEvent(
 							Private.Enum.Events.SETTING_CHANGED,
-							key,
-							TargetedSpellsSaved.Settings.Party.LoadConditionRole
+							Private.Settings.Keys.Party.Enabled,
+							anyEnabled
 						)
 					end
 				end
@@ -2128,28 +2282,22 @@ table.insert(Private.LoginFnQueue, function()
 				local enabledColor = "FF00FF00"
 				local disabledColor = "00FF0000"
 
-				tooltip:AddLine(
-					L.Settings.AddonCompartmentTooltipLine1:format(
-						WrapTextInColorCode(
-							string.lower(
-								TargetedSpellsSaved.Settings.Self.Enabled and L.Settings.EnabledLabel
-									or L.Settings.DisabledLabel
-							),
-							TargetedSpellsSaved.Settings.Self.Enabled and enabledColor or disabledColor
-						)
-					)
-				)
-				tooltip:AddLine(
-					L.Settings.AddonCompartmentTooltipLine2:format(
-						WrapTextInColorCode(
-							string.lower(
-								TargetedSpellsSaved.Settings.Party.Enabled and L.Settings.EnabledLabel
-									or L.Settings.DisabledLabel
-							),
-							TargetedSpellsSaved.Settings.Party.Enabled and enabledColor or disabledColor
-						)
-					)
-				)
+				tooltip:AddLine(L.Settings.AddonCompartmentTooltipLine1:format(WrapTextInColorCode(
+					string.lower(
+						---@diagnostic disable-next-line: param-type-mismatch
+						TargetedSpellsSaved.Settings.Self.Enabled and L.Settings.EnabledLabel
+							or L.Settings.DisabledLabel
+					),
+					TargetedSpellsSaved.Settings.Self.Enabled and enabledColor or disabledColor
+				)))
+				tooltip:AddLine(L.Settings.AddonCompartmentTooltipLine2:format(WrapTextInColorCode(
+					string.lower(
+						---@diagnostic disable-next-line: param-type-mismatch
+						TargetedSpellsSaved.Settings.Party.Enabled and L.Settings.EnabledLabel
+							or L.Settings.DisabledLabel
+					),
+					TargetedSpellsSaved.Settings.Party.Enabled and enabledColor or disabledColor
+				)))
 			end)
 		end,
 		funcOnLeave = function(button)
