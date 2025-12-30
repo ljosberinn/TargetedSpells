@@ -452,6 +452,8 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 								enabledKey,
 								anyEnabled
 							)
+
+							LEM:RefreshFrameSettings(self.editModeFrame)
 						end
 					end
 
@@ -522,6 +524,8 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 								Private.Settings.Keys.Self.PlaySound,
 								anyEnabled
 							)
+
+							LEM:RefreshFrameSettings(self.editModeFrame)
 						end
 					end
 
@@ -559,6 +563,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 
 	if key == Private.Settings.Keys.Self.LoadConditionRole or key == Private.Settings.Keys.Party.LoadConditionRole then
 		local isSelf = key == Private.Settings.Keys.Self.LoadConditionRole
+		local kindTableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
 		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self.LoadConditionRole
 			or TargetedSpellsSaved.Settings.Party.LoadConditionRole
 
@@ -577,6 +582,27 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 						tableRef[id] = not tableRef[id]
 
 						Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef)
+
+						local anyEnabled = false
+						for role, loadCondition in pairs(tableRef) do
+							if loadCondition then
+								anyEnabled = true
+								break
+							end
+						end
+
+						if anyEnabled ~= kindTableRef.Enabled then
+							kindTableRef.Enabled = anyEnabled
+							local enabledKey = isSelf and Private.Settings.Keys.Self.Enabled
+								or Private.Settings.Keys.Party.Enabled
+							Private.EventRegistry:TriggerEvent(
+								Private.Enum.Events.SETTING_CHANGED,
+								enabledKey,
+								anyEnabled
+							)
+
+							LEM:RefreshFrameSettings(self.editModeFrame)
+						end
 					end
 
 					local translated = L.Settings.LoadConditionRoleLabels[id]
