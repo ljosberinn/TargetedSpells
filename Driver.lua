@@ -22,52 +22,52 @@ function TargetedSpellsDriver:Init()
 
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingsChanged, self)
 
-	self:SetupListenerFrame(true)
+	self:SetupFrame(true)
 end
 
-function TargetedSpellsDriver:SetupListenerFrame(isBoot)
+function TargetedSpellsDriver:SetupFrame(isBoot)
 	if isBoot then
-		local frame = CreateFrame("Frame", "TargetedSpellsDriverFrame", UIParent)
-		self.listenerFrame = frame
+		self.frame = CreateFrame("Frame", "TargetedSpellsDriverFrame", UIParent)
 
+		-- awkward due to the need to pass self.frame to the callback
 		Private.EventRegistry:RegisterCallback(
 			Private.Enum.Events.EDIT_MODE_POSITION_CHANGED,
 			self.OnFrameEvent,
-			frame,
-			frame,
+			self,
+			self,
 			Private.Enum.Events.EDIT_MODE_POSITION_CHANGED
 		)
 
-		frame:SetSize(1, 1)
-		frame:ClearAllPoints()
-		frame:SetPoint(
+		self.frame:SetSize(1, 1)
+		self.frame:ClearAllPoints()
+		self.frame:SetPoint(
 			TargetedSpellsSaved.Settings.Self.Position.point,
 			TargetedSpellsSaved.Settings.Self.Position.x,
 			TargetedSpellsSaved.Settings.Self.Position.y
 		)
-		frame:Show()
+		self.frame:Show()
 	end
 
 	if
 		(Private.Settings.Keys.Self.Enabled or Private.Settings.Keys.Party.Enabled)
-		and not self.listenerFrame:IsEventRegistered("UNIT_SPELLCAST_START")
+		and not self.frame:IsEventRegistered("UNIT_SPELLCAST_START")
 	then
-		self.listenerFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
-		self.listenerFrame:RegisterEvent("LOADING_SCREEN_DISABLED")
-		self.listenerFrame:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
-		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_START")
-		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED")
-		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_STOP")
-		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_START")
-		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_STOP")
-		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_START")
-		self.listenerFrame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_STOP")
-		self.listenerFrame:RegisterUnitEvent("NAME_PLATE_UNIT_REMOVED")
-		self.listenerFrame:RegisterUnitEvent("NAME_PLATE_UNIT_ADDED")
+		self.frame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+		self.frame:RegisterEvent("LOADING_SCREEN_DISABLED")
+		self.frame:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
+		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_START")
+		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED")
+		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_STOP")
+		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_START")
+		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_STOP")
+		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_START")
+		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_STOP")
+		self.frame:RegisterUnitEvent("NAME_PLATE_UNIT_REMOVED")
+		self.frame:RegisterUnitEvent("NAME_PLATE_UNIT_ADDED")
 		if Private.IsMidnight then
-			self.listenerFrame:RegisterUnitEvent("CVAR_UPDATE")
+			self.frame:RegisterUnitEvent("CVAR_UPDATE")
 		end
-		self.listenerFrame:SetScript("OnEvent", GenerateClosure(self.OnFrameEvent, self))
+		self.frame:SetScript("OnEvent", GenerateClosure(self.OnFrameEvent, self))
 
 		print(format("TargetedSpellsDriver:OnSettingsChanged: %sattached listeners", isBoot and "" or "re"))
 	end
@@ -82,7 +82,7 @@ if Private.IsMidnight then
 			and not self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Self)
 		then
 			local selfTargetingFrame = self.framePool:Acquire()
-			selfTargetingFrame:SetParent(self.listenerFrame)
+			selfTargetingFrame:SetParent(self.frame)
 			selfTargetingFrame:PostCreate("player", Private.Enum.FrameKind.Self, castingUnit)
 			table.insert(frames, selfTargetingFrame)
 		end
@@ -123,7 +123,7 @@ else
 			and UnitIsUnit(string.format("%starget", castingUnit), "player")
 		then
 			local selfTargetingFrame = self.framePool:Acquire()
-			selfTargetingFrame:SetParent(self.listenerFrame)
+			selfTargetingFrame:SetParent(self.frame)
 			selfTargetingFrame:PostCreate("player", Private.Enum.FrameKind.Self, castingUnit)
 			table.insert(frames, selfTargetingFrame)
 		end
@@ -236,7 +236,6 @@ function TargetedSpellsDriver:RepositionFrames()
 				TargetedSpellsSaved.Settings.Self.Direction,
 				TargetedSpellsSaved.Settings.Self.Grow
 			local isHorizontal = direction == Private.Enum.Direction.Horizontal
-			local parent = self.listenerFrame
 			local point = isHorizontal and "LEFT" or "BOTTOM"
 			local total = (#frames * (isHorizontal and width or height)) + (#frames - 1) * gap
 
@@ -252,7 +251,7 @@ function TargetedSpellsDriver:RepositionFrames()
 					y = Private.Utils.CalculateCoordinate(i, width, gap, height, total, 0, grow)
 				end
 
-				frame:Reposition(point, parent, "CENTER", x, y)
+				frame:Reposition(point, self.frame, "CENTER", x, y)
 			end
 		else
 			local parentFrame = FindParentFrameForUnit(targetUnit)
@@ -352,7 +351,7 @@ local function OnCVarChange(value)
 	end
 end
 
----@param listenerFrame Frame -- identical to self.listenerFrame
+---@param listenerFrame Frame -- identical to self.frame
 ---@param event "ZONE_CHANGED_NEW_AREA" | "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" | "UNIT_SPELLCAST_SUCCEEDED" |"EDIT_MODE_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "DELAYED_UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED"
 function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 	if
@@ -377,7 +376,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			GenerateClosure(
 				self.OnFrameEvent,
 				self,
-				listenerFrame,
+				self.listenerFrame,
 				event == "UNIT_SPELLCAST_START" and Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START
 					or Private.Enum.Events.DELAYED_UNIT_SPELLCAST_CHANNEL_START,
 				{
@@ -622,9 +621,9 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 	elseif event == Private.Enum.Events.EDIT_MODE_POSITION_CHANGED then
 		local point, x, y = ...
 
-		listenerFrame:ClearAllPoints()
-		listenerFrame:SetPoint(point, x, y)
-		listenerFrame:Show()
+		self.frame:ClearAllPoints()
+		self.frame:SetPoint(point, x, y)
+		self.frame:Show()
 	end
 end
 
@@ -634,11 +633,11 @@ function TargetedSpellsDriver:OnSettingsChanged(key, value)
 			and TargetedSpellsSaved.Settings.Party.Enabled == false
 
 		if allDisabled then
-			self.listenerFrame:UnregisterAllEvents()
-			self.listenerFrame:SetScript("OnEvent", nil)
+			self.frame:UnregisterAllEvents()
+			self.frame:SetScript("OnEvent", nil)
 			print("TargetedSpellsDriver:OnSettingsChanged: removed listeners")
 		else
-			self:SetupListenerFrame(false)
+			self:SetupFrame(false)
 		end
 	end
 end
