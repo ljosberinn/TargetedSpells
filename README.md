@@ -27,10 +27,12 @@
     - using all available sounds of Blizzards Cooldown Manager
     - as well as all available third party sounds through `LibSharedMedia`
   - sound channel selection
+  - option to selectively play sound based on content type you're in
   - show duration
   - font size
   - show border
   - opacity
+  - option to selectively toggle this feature based on player role or content type
 
 ### Party
 
@@ -50,6 +52,7 @@
   - font size
   - show border
   - opacity
+  - option to selectively toggle this feature based on player role or content type
 
 ## Sounds
 
