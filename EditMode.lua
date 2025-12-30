@@ -2,6 +2,10 @@
 local addonName, Private = ...
 local LEM = LibStub("LibEditMode")
 
+local function FlipCoin()
+	return math.random(1, 10) >= 5
+end
+
 ---@class TargetedSpellsEditModeMixin
 local TargetedSpellsEditModeMixin = {}
 
@@ -1004,7 +1008,7 @@ function TargetedSpellsEditModeMixin:LoopFrame(frame, index)
 		(
 			(self.frameKind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self.GlowImportant)
 			or (self.frameKind == Private.Enum.FrameKind.Party and TargetedSpellsSaved.Settings.Party.GlowImportant)
-		) and Private.Utils.FlipCoin()
+		) and FlipCoin()
 	then
 		frame:ShowGlow()
 	end
@@ -1243,7 +1247,7 @@ function SelfEditModeMixin:OnLayoutSettingChanged(key, value)
 		for _, frame in pairs(self.frames) do
 			if frame then
 				if glowEnabled then
-					if Private.Utils.FlipCoin() then
+					if FlipCoin() then
 						frame:ShowGlow()
 					end
 				else
@@ -1374,7 +1378,7 @@ function PartyEditModeMixin:OnLayoutSettingChanged(key, value)
 			for _, frame in pairs(frames) do
 				if frame then
 					if glowEnabled then
-						if Private.Utils.FlipCoin() then
+						if FlipCoin() then
 							frame:ShowGlow()
 						end
 					else

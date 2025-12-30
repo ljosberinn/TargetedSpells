@@ -11,7 +11,6 @@
 ---@field Utils TargetedSpellsUtils
 
 ---@class TargetedSpellsUtils
----@field FlipCoin fun(): boolean
 ---@field CalculateCoordinate fun(index: number, dimension: number, gap: number, parentDimension: number, total: number, offset: number, grow: Grow): number
 ---@field SortFrames fun(frames: TargetedSpellsMixin[], sortOrder: SortOrder)
 ---@field AttemptToPlaySound fun(sound: string|number, channel: SoundChannel)
