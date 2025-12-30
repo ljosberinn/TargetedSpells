@@ -126,6 +126,7 @@
 ---@field ShouldBeShown fun(self: TargetedSpellsMixin): boolean
 ---@field Reposition fun(self: TargetedSpellsMixin, point: string, relativeTo: Frame, relativePoint: string, offsetX: number, offsetY: number)
 ---@field AttemptToPlaySound fun(self: TargetedSpellsMixin, contentType: ContentType)
+---@field AttemptToPlayTTS fun(self: TargetedSpellsMixin, contentType: ContentType)
 ---@field SetShowDuration fun(self: TargetedSpellsMixin, showDuration: boolean)
 ---@field SetFontSize fun(self: TargetedSpellsMixin, fontSize: number)
 ---@field PostCreate fun(self: TargetedSpellsMixin, unit: string, kind: FrameKind, castingUnit: string?)

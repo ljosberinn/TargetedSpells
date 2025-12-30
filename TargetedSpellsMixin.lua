@@ -116,101 +116,105 @@ function TargetedSpellsMixin:OnSizeChanged(width, height)
 	ResizeSpellActivationAlert(self, width, height, false)
 end
 
-local actionButtonSpellAlertManagerPatched = false
+do
+	local actionButtonSpellAlertManagerPatched = false
 
----@param bool boolean
-local function MaybePatchActionButtonSpellAlertManager(bool)
-	if actionButtonSpellAlertManagerPatched or bool == false then
-		return
+	---@param bool boolean
+	local function MaybePatchActionButtonSpellAlertManager(bool)
+		if actionButtonSpellAlertManagerPatched or bool == false then
+			return
+		end
+
+		actionButtonSpellAlertManagerPatched = true
+
+		hooksecurefunc(ActionButtonSpellAlertManager, "ShowAlert", function(self, element)
+			if element.kind == nil then
+				return
+			end
+
+			if element.kind == Private.Enum.FrameKind.Self and not TargetedSpellsSaved.Settings.Self.GlowImportant then
+				return
+			end
+
+			if
+				element.kind == Private.Enum.FrameKind.Party and not TargetedSpellsSaved.Settings.Party.GlowImportant
+			then
+				return
+			end
+
+			local width, height = element:GetSize()
+			ResizeSpellActivationAlert(element, width, height, true)
+		end)
 	end
 
-	actionButtonSpellAlertManagerPatched = true
-
-	hooksecurefunc(ActionButtonSpellAlertManager, "ShowAlert", function(self, element)
-		if element.kind == nil then
-			return
-		end
-
-		if element.kind == Private.Enum.FrameKind.Self and not TargetedSpellsSaved.Settings.Self.GlowImportant then
-			return
-		end
-
-		if element.kind == Private.Enum.FrameKind.Party and not TargetedSpellsSaved.Settings.Party.GlowImportant then
-			return
-		end
-
-		local width, height = element:GetSize()
-		ResizeSpellActivationAlert(element, width, height, true)
+	table.insert(Private.LoginFnQueue, function()
+		MaybePatchActionButtonSpellAlertManager(
+			TargetedSpellsSaved.Settings.Self.GlowImportant or TargetedSpellsSaved.Settings.Party.GlowImportant
+		)
 	end)
-end
 
-table.insert(Private.LoginFnQueue, function()
-	MaybePatchActionButtonSpellAlertManager(
-		TargetedSpellsSaved.Settings.Self.GlowImportant or TargetedSpellsSaved.Settings.Party.GlowImportant
-	)
-end)
+	local function GetBackdropTemplate()
+		-- literally the defaults from https://warcraft.wiki.gg/wiki/BackdropTemplate
+		return {
+			bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+			edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+			tile = true,
+			tileEdge = true,
+			tileSize = 8,
+			edgeSize = 8,
+			insets = { left = 1, right = 1, top = 1, bottom = 1 },
+		}
+	end
 
-local function GetBackdropTemplate()
-	-- literally the defaults from https://warcraft.wiki.gg/wiki/BackdropTemplate
-	return {
-		bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-		tile = true,
-		tileEdge = true,
-		tileSize = 8,
-		edgeSize = 8,
-		insets = { left = 1, right = 1, top = 1, bottom = 1 },
-	}
-end
-
-function TargetedSpellsMixin:OnSettingChanged(key, value)
-	if self.kind == Private.Enum.FrameKind.Self then
-		if key == Private.Settings.Keys.Self.Width then
-			print("TargetedSpellsMixin:OnSettingChanged->SetSize()", key, value)
-			self:SetSize(value, TargetedSpellsSaved.Settings.Self.Height)
-		elseif key == Private.Settings.Keys.Self.Height then
-			print("TargetedSpellsMixin:OnSettingChanged->SetSize()", key, value)
-			self:SetSize(TargetedSpellsSaved.Settings.Self.Width, value)
-		elseif key == Private.Settings.Keys.Self.ShowDuration then
-			print("TargetedSpellsMixin:OnSettingChanged->SetShowDuration()", key, value)
-			self:SetShowDuration(value)
-		elseif key == Private.Settings.Keys.Self.FontSize then
-			print("TargetedSpellsMixin:OnSettingChanged->SetFontSize()", key, value)
-			self:SetFontSize(value)
-		elseif key == Private.Settings.Keys.Self.Opacity then
-			self:SetAlpha(value)
-		elseif key == Private.Settings.Keys.Self.ShowBorder then
-			if value then
-				self:SetBackdrop(GetBackdropTemplate())
-			else
-				self:ClearBackdrop()
+	function TargetedSpellsMixin:OnSettingChanged(key, value)
+		if self.kind == Private.Enum.FrameKind.Self then
+			if key == Private.Settings.Keys.Self.Width then
+				print("TargetedSpellsMixin:OnSettingChanged->SetSize()", key, value)
+				self:SetSize(value, TargetedSpellsSaved.Settings.Self.Height)
+			elseif key == Private.Settings.Keys.Self.Height then
+				print("TargetedSpellsMixin:OnSettingChanged->SetSize()", key, value)
+				self:SetSize(TargetedSpellsSaved.Settings.Self.Width, value)
+			elseif key == Private.Settings.Keys.Self.ShowDuration then
+				print("TargetedSpellsMixin:OnSettingChanged->SetShowDuration()", key, value)
+				self:SetShowDuration(value)
+			elseif key == Private.Settings.Keys.Self.FontSize then
+				print("TargetedSpellsMixin:OnSettingChanged->SetFontSize()", key, value)
+				self:SetFontSize(value)
+			elseif key == Private.Settings.Keys.Self.Opacity then
+				self:SetAlpha(value)
+			elseif key == Private.Settings.Keys.Self.ShowBorder then
+				if value then
+					self:SetBackdrop(GetBackdropTemplate())
+				else
+					self:ClearBackdrop()
+				end
+			elseif key == Private.Settings.Keys.Self.GlowImportant then
+				MaybePatchActionButtonSpellAlertManager(value)
 			end
-		elseif key == Private.Settings.Keys.Self.GlowImportant then
-			MaybePatchActionButtonSpellAlertManager(value)
-		end
-	else
-		if key == Private.Settings.Keys.Party.Width then
-			print("TargetedSpellsMixin:OnSettingChanged->SetSize()", key, value)
-			self:SetSize(value, TargetedSpellsSaved.Settings.Party.Height)
-		elseif key == Private.Settings.Keys.Party.Height then
-			print("TargetedSpellsMixin:OnSettingChanged->SetSize()", key, value)
-			self:SetSize(TargetedSpellsSaved.Settings.Party.Width, value)
-		elseif key == Private.Settings.Keys.Party.ShowDuration then
-			print("TargetedSpellsMixin:OnSettingChanged->SetShowDuration()", key, value)
-			self:SetShowDuration(value)
-		elseif key == Private.Settings.Keys.Party.FontSize then
-			print("TargetedSpellsMixin:OnSettingChanged->SetFontSize()", key, value)
-			self:SetFontSize(value)
-		elseif key == Private.Settings.Keys.Party.Opacity then
-			self:SetAlpha(value)
-		elseif key == Private.Settings.Keys.Party.ShowBorder then
-			if value then
-				self:SetBackdrop(GetBackdropTemplate())
-			else
-				self:ClearBackdrop()
+		else
+			if key == Private.Settings.Keys.Party.Width then
+				print("TargetedSpellsMixin:OnSettingChanged->SetSize()", key, value)
+				self:SetSize(value, TargetedSpellsSaved.Settings.Party.Height)
+			elseif key == Private.Settings.Keys.Party.Height then
+				print("TargetedSpellsMixin:OnSettingChanged->SetSize()", key, value)
+				self:SetSize(TargetedSpellsSaved.Settings.Party.Width, value)
+			elseif key == Private.Settings.Keys.Party.ShowDuration then
+				print("TargetedSpellsMixin:OnSettingChanged->SetShowDuration()", key, value)
+				self:SetShowDuration(value)
+			elseif key == Private.Settings.Keys.Party.FontSize then
+				print("TargetedSpellsMixin:OnSettingChanged->SetFontSize()", key, value)
+				self:SetFontSize(value)
+			elseif key == Private.Settings.Keys.Party.Opacity then
+				self:SetAlpha(value)
+			elseif key == Private.Settings.Keys.Party.ShowBorder then
+				if value then
+					self:SetBackdrop(GetBackdropTemplate())
+				else
+					self:ClearBackdrop()
+				end
+			elseif key == Private.Settings.Keys.Party.GlowImportant then
+				MaybePatchActionButtonSpellAlertManager(value)
 			end
-		elseif key == Private.Settings.Keys.Party.GlowImportant then
-			MaybePatchActionButtonSpellAlertManager(value)
 		end
 	end
 end
@@ -249,6 +253,7 @@ do
 	local cacheInitialized = false
 
 	function TargetedSpellsMixin:SetSpellId(spellId)
+		self.spellId = spellId
 		local texture = spellId and C_Spell.GetSpellTexture(spellId) or GetRandomIcon()
 		self.Icon:SetTexture(texture)
 
@@ -298,6 +303,10 @@ function TargetedSpellsMixin:ClearStartTime()
 	self.startTime = nil
 end
 
+function TargetedSpellsMixin:ClearSpellId()
+	self.spellId = nil
+end
+
 function TargetedSpellsMixin:Reposition(point, relativeTo, relativePoint, offsetX, offsetY)
 	self:ClearAllPoints()
 	self:SetPoint(point, relativeTo, relativePoint, offsetX, offsetY)
@@ -335,6 +344,7 @@ end
 
 function TargetedSpellsMixin:Reset()
 	self:ClearStartTime()
+	self:ClearSpellId()
 	self.Cooldown:Clear()
 	self:ClearAllPoints()
 	self:Hide()
@@ -361,6 +371,41 @@ function TargetedSpellsMixin:AttemptToPlaySound(contentType)
 			TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[contentType] and "content type doesnt apply"
 				or nil
 		)
+	end
+end
+
+do
+	local voiceId = nil
+
+	function TargetedSpellsMixin:AttemptToPlayTTS(contentType)
+		if self.kind ~= Private.Enum.FrameKind.Self then
+			return
+		end
+
+		if self.spellId == nil then
+			return
+		end
+
+		local spellName = C_Spell.GetSpellName(self.spellId)
+
+		if spellName == nil then
+			return
+		end
+
+		if voiceId == nil then
+			for _, voice in pairs(C_VoiceChat.GetTtsVoices()) do
+				if string.find(voice.name, "English") ~= nil then
+					voiceId = voice.voiceID
+					break
+				end
+			end
+		end
+
+		if voiceId == nil then
+			return
+		end
+
+		C_VoiceChat.SpeakText(voiceId, spellName, 2, C_TTSSettings.GetSpeechVolume())
 	end
 end
 

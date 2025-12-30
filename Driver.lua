@@ -441,6 +441,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			frame:SetCastTime(castTime)
 			frame:RefreshSpellCooldownInfo()
 			frame:AttemptToPlaySound(self.contentType)
+			frame:AttemptToPlayTTS(self.contentType)
 			frame:Show()
 		end
 
@@ -544,6 +545,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			frame:SetCastTime(castTime)
 			frame:RefreshSpellCooldownInfo()
 			frame:AttemptToPlaySound(self.contentType)
+			frame:AttemptToPlayTTS(self.contentType)
 			frame:Show()
 		end
 
