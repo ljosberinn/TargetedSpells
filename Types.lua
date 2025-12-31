@@ -15,6 +15,7 @@
 ---@field SortFrames fun(frames: TargetedSpellsMixin[], sortOrder: SortOrder)
 ---@field AttemptToPlaySound fun(sound: string|number, channel: SoundChannel)
 ---@field RollDice fun(): boolean
+---@field FindAppropriateTTSVoiceId fun(): number
 
 ---@class TargetedSpellsEnums
 
@@ -37,6 +38,7 @@
 ---@field GetDefaultEditModeFramePosition fun(): SelfFramePosition
 ---@field GetCustomSoundGroups fun(groupThreshold: number?):  SoundInfo
 ---@field GetCooldownViewerSounds fun(): SoundInfo
+---@field SampleTTSVoice fun(voiceId: number)
 
 ---@class SoundInfo
 ---@field soundCategoryKeyToLabel table<string, string>
@@ -75,6 +77,9 @@
 ---@field ShowBorder boolean
 ---@field GlowImportant boolean
 ---@field GlowType GlowType
+---@field Opacity number
+---@field PlayTTS boolean
+---@field TTSVoice number
 
 ---@class SavedVariablesSettingsParty
 ---@field Enabled boolean
@@ -95,6 +100,7 @@
 ---@field ShowBorder boolean
 ---@field GlowImportant boolean
 ---@field GlowType GlowType
+---@field Opacity number
 
 ---@class TargetedSpellsSelfPreviewFrame: Frame
 ---@field GetChildren fun(self: TargetedSpellsSelfPreviewFrame): TargetedSpellsMixin
@@ -133,8 +139,6 @@
 ---@field OnSettingChanged fun(self: TargetedSpellsMixin, key: string, value: number|string)
 ---@field ShouldBeShown fun(self: TargetedSpellsMixin): boolean
 ---@field Reposition fun(self: TargetedSpellsMixin, point: string, relativeTo: Frame, relativePoint: string, offsetX: number, offsetY: number)
----@field AttemptToPlaySound fun(self: TargetedSpellsMixin, contentType: ContentType)
----@field AttemptToPlayTTS fun(self: TargetedSpellsMixin, contentType: ContentType)
 ---@field SetShowDuration fun(self: TargetedSpellsMixin, showDuration: boolean)
 ---@field SetFontSize fun(self: TargetedSpellsMixin, fontSize: number)
 ---@field PostCreate fun(self: TargetedSpellsMixin, unit: string, kind: FrameKind, castingUnit: string?)
@@ -199,13 +203,12 @@
 ---@field RepositionPreviewFrames fun(self: TargetedSpellsEditModeMixin)
 ---@field SortFrames fun(self: TargetedSpellsEditModeMixin, frames: TargetedSpellsMixin[], sortOrder: SortOrder)
 ---@field buildingFrames true|nil
----@field CreateSetting fun(self: TargetedSpellsEditModeMixin, key: string): LibEditModeCheckbox | LibEditModeDropdown | LibEditModeSlider
+---@field CreateSetting fun(self: TargetedSpellsEditModeMixin, key: string, defaults: SavedVariablesSettingsParty|SavedVariablesSettingsSelf): LibEditModeCheckbox | LibEditModeDropdown | LibEditModeSlider
 ---@field AcquireFrame fun(self: TargetedSpellsEditModeMixin): TargetedSpellsMixin
 ---@field LoopFrame fun(self: TargetedSpellsEditModeMixin, frame: TargetedSpellsMixin, index: number)
 ---@field ReleaseFrame fun(self: TargetedSpellsEditModeMixin, frame: TargetedSpellsMixin)
 ---@field OnSettingsChanged fun(self: TargetedSpellsEditModeMixin, key: string, value: number|string)
 ---@field ReleaseAllFrames fun(self: TargetedSpellsEditModeMixin)
----@field CalculateCoordinate fun(self: TargetedSpellsEditModeMixin, index: number, dimension: number, gap: number, parentDimension: number, total: number, offset: number, grow: Grow): number
 
 ---@class TargetedSpellsSelfEditMode : TargetedSpellsEditModeMixin
 ---@field Init fun(self: TargetedSpellsSelfEditMode)
@@ -234,6 +237,8 @@
 ---@field SetupListenerFrame fun(self: TargetedSpellsDriver, isBoot: boolean)
 ---@field AcquireFrames fun(self: TargetedSpellsDriver, castingUnit: string): TargetedSpellsMixin
 ---@field LoadConditionsProhibitExecution fun(self: TargetedSpellsDriver, kind: FrameKind): boolean
+---@field CleanUpUnit fun(self: TargetedSpellsMixin, unit: string): boolean
+---@field MaybeApplyCombatAudioAlertOverride fun(self: TargetedSpellsMixin)
 
 ---@return function?
 local function GenerateClosureInternal(generatorArray, f, ...)
@@ -314,6 +319,11 @@ COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_INSTRUMENTS = ""
 COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_WAR2 = ""
 COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_WAR3 = ""
 
+CAA_COMBAT_AUDIO_ALERTS_LABEL = ""
+ACCESSIBILITY_AUDIO_LABEL = ""
+UNIT_NAMEPLATES_SHOW_OFFSCREEN = ""
+CAA_SAY_IF_TARGETED_LABEL = ""
+
 ---@class Plater
 ---@field db { profile: { script_data: PlaterScriptData[] } }?
 
@@ -323,3 +333,12 @@ COOLDOWN_VIEWER_SETTINGS_SOUND_ALERT_CATEGORY_WAR3 = ""
 
 ---@type Plater
 Plater = {}
+
+C_CombatAudioAlert = {
+	GetSpecSetting = function(id)
+		return 0
+	end,
+}
+
+---@type string|nil
+GAME_LOCALE = ""

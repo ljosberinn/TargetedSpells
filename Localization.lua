@@ -19,6 +19,42 @@ L.Functionality.CVarWarning = Private.IsMidnight
 		)
 	or nil
 
+L.Functionality.CAAEnabledWarning = Private.IsMidnight
+		and string.format(
+			"[%s] This addon automatically enabled %s and configured it as you've enabled Sound/TTS.\n\nYou can find the settings under %s -> %s -> left side %s > %s.\n\nAlternatively, type: /run Settings.OpenToCategory(18)",
+			addonName,
+			CAA_COMBAT_AUDIO_ALERTS_LABEL,
+			KEY_ESCAPE,
+			OPTIONS_MENU,
+			ACCESSIBILITY_LABEL,
+			ACCESSIBILITY_AUDIO_LABEL
+		)
+	or nil
+
+L.Functionality.CAADisabledWarning = Private.IsMidnight
+		and string.format(
+			"[%s] This addon automatically disabled '%s' as you're no longer using neither Sound nor TTS.",
+			addonName,
+			CAA_COMBAT_AUDIO_ALERTS_LABEL
+		)
+	or nil
+L.Functionality.CAAManuallyDisabledWarning = Private.IsMidnight
+		and string.format(
+			"[%s] You disabled %s, but this addon relies on it for its sound-related functionality. Please either turn it on again or adjust your %s - Self sound settings.",
+			addonName,
+			CAA_COMBAT_AUDIO_ALERTS_LABEL,
+			addonName
+		)
+	or nil
+L.Functionality.CAASayIfTargetedDisabledWarning = Private.IsMidnight
+		and string.format(
+			"[%s] You disabled %s, but this addon relies on it for its sound-related functionality. Please either turn it on again or adjust your %s - Self sound settings.",
+			addonName,
+			CAA_SAY_IF_TARGETED_LABEL,
+			addonName
+		)
+	or nil
+
 L.Settings.EnabledLabel = "Enabled"
 L.Settings.EnabledTooltip = nil
 L.Settings.DisabledLabel = "Disabled"
@@ -97,7 +133,14 @@ L.Settings.GlowTypeLabels = {
 }
 
 L.Settings.PlaySoundLabel = "Play Sound"
-L.Settings.PlaySoundTooltip = nil
+L.Settings.PlaySoundTooltip = "Play a sound when a spell targeting you is started. DISABLES TTS!"
+
+L.Settings.PlayTTSLabel = "Play TTS"
+L.Settings.PlayTTSTooltip =
+	"Plays the spell name using Text-To-Speech when a spell targeting you is started. DISABLES SOUND!"
+
+L.Settings.TTSVoiceLabel = "TTS Voice"
+L.Settings.TTSVoiceTooltip = "Select the voice used for Text-To-Speech."
 
 L.Settings.SoundLabel = "Sound"
 L.Settings.SoundCategoryCustom = "Custom"
@@ -117,11 +160,11 @@ L.Settings.LoadConditionSoundContentTypeLabel = "Load Condition: Sound"
 L.Settings.LoadConditionSoundContentTypeLabelAbbreviated = "Play Sound in Content"
 L.Settings.LoadConditionSoundContentTypeTooltip = not Private.IsMidnight
 		and "This setting is only configurable via Edit Mode until the Midnight Pre-Patch due to lacking the settings primitives until then."
-	or nil
+	or "Under which circumstances the above sound settings (both custom sound and TTS) should apply."
 L.Settings.LoadConditionSoundContentTypeLabels = L.Settings.LoadConditionContentTypeLabels
 
 L.Settings.ShowDurationLabel = "Show Duration"
-L.Settings.ShowDurationTooltip = nil
+L.Settings.ShowDurationTooltip = "Full seconds only, no fractions possible."
 
 L.Settings.ShowBorderLabel = "Show Border"
 L.Settings.ShowBorderTooltip = nil
@@ -158,6 +201,42 @@ if locale == "deDE" then
 				UNIT_NAMEPLATES_SHOW_OFFSCREEN,
 				addonName,
 				ACCEPT
+			)
+		or nil
+
+	L.Functionality.CAAEnabledWarning = Private.IsMidnight
+			and string.format(
+				"[%s] Dieses AddOn hat automatisch die %s Einstellungen aktiviert und konfiguriert da sie für Ton und Text-zur-Sprache benötigt werden.\n\nDu kannst sie an folgender Stelle finden: %s -> %s -> links %s > %s.\n\nAlternativ, schreibe folgendes im Chat: /run Settings.OpenToCategory(18)",
+				addonName,
+				CAA_COMBAT_AUDIO_ALERTS_LABEL,
+				KEY_ESCAPE,
+				OPTIONS_MENU,
+				ACCESSIBILITY_LABEL,
+				ACCESSIBILITY_AUDIO_LABEL
+			)
+		or nil
+
+	L.Functionality.CAADisabledWarning = Private.IsMidnight
+			and string.format(
+				"[%s] Dieses AddOn hat automstich die '%s' deaktiviert da du sowohl Ton als auch Text-zur-Sprache deaktiviert hast.",
+				addonName,
+				CAA_COMBAT_AUDIO_ALERTS_LABEL
+			)
+		or nil
+	L.Functionality.CAAManuallyDisabledWarning = Private.IsMidnight
+			and string.format(
+				"[%s] Du hast %s deaktiviert, aber dieses AddOn benötigt es für die tonbezogenen Funktionen. Bitte schalte die Einstellung wieder ein oder passe deine Toneinstellungen für %s - Self an.",
+				addonName,
+				CAA_COMBAT_AUDIO_ALERTS_LABEL,
+				addonName
+			)
+		or nil
+	L.Functionality.CAASayIfTargetedDisabledWarning = Private.IsMidnight
+			and string.format(
+				"[%s] Du hast %s deaktiviert, aber dieses AddOn benötigt es für die tonbezogenen Funktionen. Bitte schalte die Einstellung wieder ein oder passe deine Toneinstellungen für %s - Self an.",
+				addonName,
+				CAA_SAY_IF_TARGETED_LABEL,
+				addonName
 			)
 		or nil
 
@@ -234,11 +313,16 @@ if locale == "deDE" then
 	L.Settings.GlowTypeTooltip = nil
 
 	L.Settings.PlaySoundLabel = "Ton abspielen"
-	L.Settings.PlaySoundTooltip = nil
+	L.Settings.PlaySoundTooltip =
+		"Spielt den ausgewählten Ton ab wenn euch ein Zauber anvisiert. DEAKTIVIERT TEXT-ZU-SPRACHE!"
 	L.Settings.SoundTooltip = "Klicken für Vorschau und ändern. Warnung: nutzt Master Tonkanal!"
 
+	L.Settings.PlayTTSLabel = "Text-zu-Sprache abspielen"
+	L.Settings.PlayTTSTooltip =
+		"Spricht den Zaubernamen via Text-zu-Sprache wenn euch ein Zauber anvisiert. DEAKTIVIERT TONEINSTELLUNG!"
+
 	L.Settings.SoundLabel = "Ton"
-	L.Settings.SoundCategoryCustom = "Custom"
+	L.Settings.SoundCategoryCustom = "Extra"
 	L.Settings.SoundTooltip = nil
 
 	L.Settings.SoundChannelLabel = "Tonkanal"
@@ -248,11 +332,11 @@ if locale == "deDE" then
 	L.Settings.LoadConditionSoundContentTypeLabelAbbreviated = "Ton in Spielbereich abspielen"
 	L.Settings.LoadConditionSoundContentTypeTooltip = not Private.IsMidnight
 			and "Diese Einstellung ist bis zum Midnight Pre-Patch nur via Bearbeitungsmodus konfigurierbar."
-		or nil
+		or "Bestimmt in welchen Situationen die obigen Toneinstellungen genutzt werden, sowohl eigene Töne als auch Text-zu-Sprache."
 	L.Settings.LoadConditionSoundContentTypeLabels = L.Settings.LoadConditionContentTypeLabels
 
 	L.Settings.ShowDurationLabel = "Dauer anzeigen"
-	L.Settings.ShowDurationTooltip = nil
+	L.Settings.ShowDurationTooltip = "Nur ganze Zahlen, keine Sekundenbruchteile möglich."
 
 	L.Settings.ShowBorderLabel = "Rahmen"
 	L.Settings.ShowBorderTooltip = nil

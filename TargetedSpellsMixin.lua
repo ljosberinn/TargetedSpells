@@ -7,27 +7,44 @@ local LibEditMode = LibStub("LibEditMode")
 TargetedSpellsMixin = {}
 
 function TargetedSpellsMixin:OnLoad()
-	-- print("TargetedSpellsMixin:OnLoad()", self.kind, self.unit)
-
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingChanged, self)
-
-	-- initially set via SelfPreviewTemplate through Settings, but not in any other case
-	if self.kind ~= nil then
-		self:OnKindChanged(self.kind)
-	end
 
 	self.Cooldown:SetCountdownFont("GameFontHighlightHugeOutline")
 	self.Cooldown:SetMinimumCountdownDuration(0)
 end
 
 function TargetedSpellsMixin:OnKindChanged(kind)
-	if kind == Private.Enum.FrameKind.Self then
-		self:SetSize(TargetedSpellsSaved.Settings.Self.Width, TargetedSpellsSaved.Settings.Self.Height)
-		self:SetFontSize(TargetedSpellsSaved.Settings.Self.FontSize)
-	elseif kind == Private.Enum.FrameKind.Party then
-		self:SetSize(TargetedSpellsSaved.Settings.Party.Width, TargetedSpellsSaved.Settings.Party.Height)
-		self:SetFontSize(TargetedSpellsSaved.Settings.Party.FontSize)
+	local tableRef = kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
+		or TargetedSpellsSaved.Settings.Party
+
+	self:SetSize(tableRef.Width, tableRef.Height)
+	self:SetFontSize(tableRef.FontSize)
+
+	if tableRef.ShowBorder then
+		self:ApplyBorder()
+	else
+		self:ClearBorder()
 	end
+
+	self:SetShowDuration(tableRef.ShowDuration)
+	self:SetAlpha(tableRef.Opacity)
+end
+
+function TargetedSpellsMixin:ApplyBorder()
+	-- literally the defaults from https://warcraft.wiki.gg/wiki/BackdropTemplate
+	self:SetBackdrop({
+		bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+		tile = true,
+		tileEdge = true,
+		tileSize = 8,
+		edgeSize = 8,
+		insets = { left = 1, right = 1, top = 1, bottom = 1 },
+	})
+end
+
+function TargetedSpellsMixin:ClearBorder()
+	self:ClearBackdrop()
 end
 
 local PreviewIconDataProvider = nil
@@ -53,8 +70,6 @@ end
 ---@param width number
 ---@param height number
 function TargetedSpellsMixin:OnSizeChanged(width, height)
-	-- print("TargetedSpellsMixin:OnSizeChanged()", self.kind, self.unit, width, height)
-
 	local aspectRatio = width / height
 
 	local coordinates = { 0, 0, 0, 1, 1, 0, 1, 1 }
@@ -89,69 +104,44 @@ function TargetedSpellsMixin:OnSizeChanged(width, height)
 	end
 end
 
-do
-	local function GetBackdropTemplate()
-		-- literally the defaults from https://warcraft.wiki.gg/wiki/BackdropTemplate
-		return {
-			bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-			edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-			tile = true,
-			tileEdge = true,
-			tileSize = 8,
-			edgeSize = 8,
-			insets = { left = 1, right = 1, top = 1, bottom = 1 },
-		}
-	end
-
-	function TargetedSpellsMixin:OnSettingChanged(key, value)
+function TargetedSpellsMixin:OnSettingChanged(key, value)
+	if key == Private.Settings.Keys.Self.Width then
 		if self.kind == Private.Enum.FrameKind.Self then
-			if key == Private.Settings.Keys.Self.Width then
-				self:SetSize(value, TargetedSpellsSaved.Settings.Self.Height)
-			elseif key == Private.Settings.Keys.Self.Height then
-				self:SetSize(TargetedSpellsSaved.Settings.Self.Width, value)
-			elseif key == Private.Settings.Keys.Self.ShowDuration then
-				self:SetShowDuration(value)
-			elseif key == Private.Settings.Keys.Self.FontSize then
-				self:SetFontSize(value)
-			elseif key == Private.Settings.Keys.Self.Opacity then
-				self:SetAlpha(value)
-			elseif key == Private.Settings.Keys.Self.ShowBorder then
-				if value then
-					self:SetBackdrop(GetBackdropTemplate())
-				else
-					self:ClearBackdrop()
-				end
-			elseif key == Private.Settings.Keys.Self.GlowType then
-				self:HideGlow()
-
-				if TargetedSpellsSaved.Settings.Self.GlowImportant then
-					self:ShowGlow(self:IsSpellImportant(LibEditMode:IsInEditMode() and Private.Utils.RollDice()))
-				end
-			end
+			self:SetWidth(value)
+		end
+	elseif key == Private.Settings.Keys.Self.Height then
+		if self.kind == Private.Enum.FrameKind.Self then
+			self:SetHeight(value)
+		end
+	elseif key == Private.Settings.Keys.Party.Width then
+		if self.kind == Private.Enum.FrameKind.Party then
+			self:SetWidth(value)
+		end
+	elseif key == Private.Settings.Keys.Party.Height then
+		if self.kind == Private.Enum.FrameKind.Party then
+			self:SetHeight(value)
+		end
+	elseif key == Private.Settings.Keys.Self.ShowDuration or key == Private.Settings.Keys.Party.ShowDuration then
+		---@diagnostic disable-next-line: param-type-mismatch
+		self:SetShowDuration(value)
+	elseif key == Private.Settings.Keys.Self.FontSize or key == Private.Settings.Keys.Party.FontSize then
+		self:SetFontSize(value)
+	elseif key == Private.Settings.Keys.Self.Opacity or key == Private.Settings.Keys.Party.Opacity then
+		self:SetAlpha(value)
+	elseif key == Private.Settings.Keys.Self.ShowBorder or key == Private.Settings.Keys.Party.ShowBorder then
+		if value then
+			self:ApplyBorder()
 		else
-			if key == Private.Settings.Keys.Party.Width then
-				self:SetSize(value, TargetedSpellsSaved.Settings.Party.Height)
-			elseif key == Private.Settings.Keys.Party.Height then
-				self:SetSize(TargetedSpellsSaved.Settings.Party.Width, value)
-			elseif key == Private.Settings.Keys.Party.ShowDuration then
-				self:SetShowDuration(value)
-			elseif key == Private.Settings.Keys.Party.FontSize then
-				self:SetFontSize(value)
-			elseif key == Private.Settings.Keys.Party.Opacity then
-				self:SetAlpha(value)
-			elseif key == Private.Settings.Keys.Party.ShowBorder then
-				if value then
-					self:SetBackdrop(GetBackdropTemplate())
-				else
-					self:ClearBackdrop()
-				end
-			elseif key == Private.Settings.Keys.Party.GlowType then
-				self:HideGlow()
+			self:ClearBorder()
+		end
+	elseif key == Private.Settings.Keys.Self.GlowType or key == Private.Settings.Keys.Party.GlowType then
+		self:HideGlow()
 
-				if TargetedSpellsSaved.Settings.Party.GlowImportant then
-					self:ShowGlow(self:IsSpellImportant(LibEditMode:IsInEditMode() and Private.Utils.RollDice()))
-				end
-			end
+		local tableRef = self.kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
+			or TargetedSpellsSaved.Settings.Party
+
+		if tableRef.GlowImportant then
+			self:ShowGlow(self:IsSpellImportant(LibEditMode:IsInEditMode() and Private.Utils.RollDice()))
 		end
 	end
 end
@@ -364,7 +354,9 @@ function TargetedSpellsMixin:PostCreate(unit, kind, castingUnit)
 
 	if castingUnit ~= nil then
 		if Private.IsMidnight then
-			self:SetAlphaFromBoolean(UnitIsSpellTarget(castingUnit, unit))
+			-- using UnitIsSpellTarget(castingUnit, unit) works and is technically more accurate
+			-- but it omits spells that - while the enemy is targeting something - doesn't affect the target, e.g. aoe enrages or party-wide damage
+			self:SetAlphaFromBoolean(UnitIsUnit(string.format("%starget", castingUnit), unit))
 		end
 	end
 end
@@ -377,63 +369,6 @@ function TargetedSpellsMixin:Reset()
 	self:Hide()
 
 	self:HideGlow()
-end
-
-function TargetedSpellsMixin:AttemptToPlaySound(contentType)
-	if
-		self.kind == Private.Enum.FrameKind.Self
-		and TargetedSpellsSaved.Settings.Self.PlaySound
-		and TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[contentType]
-		and TargetedSpellsSaved.Settings.Self.Sound ~= nil
-	then
-		Private.Utils.AttemptToPlaySound(
-			TargetedSpellsSaved.Settings.Self.Sound,
-			TargetedSpellsSaved.Settings.Self.SoundChannel
-		)
-	else
-		print(
-			"not playing sound because:",
-			self.kind == Private.Enum.FrameKind.Self and "isnt self" or nil,
-			TargetedSpellsSaved.Settings.Self.PlaySound and "disabled" or nil,
-			TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[contentType] and "content type doesnt apply"
-				or nil
-		)
-	end
-end
-
-do
-	local voiceId = nil
-
-	function TargetedSpellsMixin:AttemptToPlayTTS(contentType)
-		if self.kind ~= Private.Enum.FrameKind.Self then
-			return
-		end
-
-		if self.spellId == nil then
-			return
-		end
-
-		local spellName = C_Spell.GetSpellName(self.spellId)
-
-		if spellName == nil then
-			return
-		end
-
-		if voiceId == nil then
-			for _, voice in pairs(C_VoiceChat.GetTtsVoices()) do
-				if string.find(voice.name, "English") ~= nil then
-					voiceId = voice.voiceID
-					break
-				end
-			end
-		end
-
-		if voiceId == nil then
-			return
-		end
-
-		C_VoiceChat.SpeakText(voiceId, spellName, 2, C_TTSSettings.GetSpeechVolume())
-	end
 end
 
 function TargetedSpellsMixin:SetShowDuration(showDuration)

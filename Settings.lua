@@ -30,6 +30,8 @@ Private.Settings.Keys = {
 		LoadConditionSoundContentType = "LOAD_CONDITION_SOUND_CONTENT_TYPE_SELF",
 		Opacity = "OPACITY_SELF",
 		ShowBorder = "BORDER_SELF",
+		PlayTTS = "PLAY_TTS_SELF",
+		TTSVoice = "TTS_VOICE_SELF",
 	},
 	Party = {
 		Enabled = "ENABLED_PARTY",
@@ -55,13 +57,55 @@ Private.Settings.Keys = {
 	},
 }
 
--- todo: streamline edit mode and general settings
 function Private.Settings.GetSettingsDisplayOrder(kind)
 	if kind == Private.Enum.FrameKind.Self then
-		return {}
+		return {
+			Private.Settings.Keys.Self.Enabled,
+			Private.Settings.Keys.Self.LoadConditionContentType,
+			Private.Settings.Keys.Self.LoadConditionRole,
+			Private.Settings.Keys.Self.Width,
+			Private.Settings.Keys.Self.Height,
+			Private.Settings.Keys.Self.Gap,
+			Private.Settings.Keys.Self.Direction,
+			Private.Settings.Keys.Self.SortOrder,
+			Private.Settings.Keys.Self.Grow,
+			Private.Settings.Keys.Self.GlowImportant,
+			Private.Settings.Keys.Self.GlowType,
+			Private.Settings.Keys.Self.PlaySound,
+			Private.Settings.Keys.Self.Sound,
+			Private.Settings.Keys.Self.SoundChannel,
+			Private.Settings.Keys.Self.PlayTTS,
+			Private.Settings.Keys.Self.TTSVoice,
+			Private.Settings.Keys.Self.LoadConditionSoundContentType,
+			Private.Settings.Keys.Self.ShowDuration,
+			Private.Settings.Keys.Self.FontSize,
+			Private.Settings.Keys.Self.ShowBorder,
+			Private.Settings.Keys.Self.Opacity,
+		}
 	end
 
-	return {}
+	return {
+		Private.Settings.Keys.Party.Enabled,
+		Private.Settings.Keys.Party.LoadConditionContentType,
+		Private.Settings.Keys.Party.LoadConditionRole,
+		Private.Settings.Keys.Party.IncludeSelfInParty,
+		Private.Settings.Keys.Party.Width,
+		Private.Settings.Keys.Party.Height,
+		Private.Settings.Keys.Party.Gap,
+		Private.Settings.Keys.Party.Direction,
+		Private.Settings.Keys.Party.SourceAnchor,
+		Private.Settings.Keys.Party.TargetAnchor,
+		Private.Settings.Keys.Party.Grow,
+		Private.Settings.Keys.Party.OffsetX,
+		Private.Settings.Keys.Party.OffsetY,
+		Private.Settings.Keys.Party.SortOrder,
+		Private.Settings.Keys.Party.GlowImportant,
+		Private.Settings.Keys.Party.GlowType,
+		Private.Settings.Keys.Party.ShowDuration,
+		Private.Settings.Keys.Party.FontSize,
+		Private.Settings.Keys.Party.ShowBorder,
+		Private.Settings.Keys.Party.Opacity,
+	}
 end
 
 function Private.Settings.GetDefaultEditModeFramePosition()
@@ -184,6 +228,8 @@ function Private.Settings.GetSelfDefaultSettings()
 		ShowBorder = false,
 		GlowImportant = true,
 		GlowType = Private.Enum.GlowType.PixelGlow,
+		PlayTTS = false,
+		TTSVoice = Private.Utils.FindAppropriateTTSVoiceId(),
 	}
 end
 
@@ -376,6 +422,29 @@ function Private.Settings.GetCustomSoundGroups(groupThreshold)
 	return soundInfo
 end
 
+function Private.Settings.SampleTTSVoice(voiceId)
+	-- iterate spellbook until we find the first spec-connected page.
+	-- play TTS for the first spell we find on that page to demo voice
+	for i = 1, C_SpellBook.GetNumSpellBookSkillLines() do
+		local skillLineInfo = C_SpellBook.GetSpellBookSkillLineInfo(i)
+
+		if skillLineInfo.specID then
+			for j = skillLineInfo.itemIndexOffset + 1, skillLineInfo.itemIndexOffset + skillLineInfo.numSpellBookItems do
+				local spellBookItemInfo = C_SpellBook.GetSpellBookItemInfo(j, Enum.SpellBookSpellBank.Player)
+				if
+					spellBookItemInfo.itemType == Enum.SpellBookItemType.Spell
+					or spellBookItemInfo.itemType == Enum.SpellBookItemType.FutureSpell
+				then
+					local name = C_Spell.GetSpellName(spellBookItemInfo.actionID)
+
+					C_VoiceChat.SpeakText(voiceId, name, 1.5, C_TTSSettings.GetSpeechVolume())
+					return
+				end
+			end
+		end
+	end
+end
+
 table.insert(Private.LoginFnQueue, function()
 	local L = Private.L
 	local settingsName = C_AddOns.GetAddOnMetadata(addonName, "Title")
@@ -402,26 +471,26 @@ table.insert(Private.LoginFnQueue, function()
 		return bit.band(mask, bit.lshift(1, value - 1)) ~= 0
 	end
 
-	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Self"))
+	---@class SettingConfig
+	---@field initializer table
+	---@field hideSteppers boolean
+	---@field IsSectionEnabled nil|fun(): boolean
 
-	do
-		local generalCategoryEnabledInitializer
+	---@param key string
+	---@param defaults SavedVariablesSettingsSelf|SavedVariablesSettingsParty
+	---@return SettingConfig
+	local function CreateSetting(key, defaults)
+		if key == Private.Settings.Keys.Self.Enabled or key == Private.Settings.Keys.Party.Enabled then
+			local tableRef = key == Private.Settings.Keys.Self.Enabled and TargetedSpellsSaved.Settings.Self
+				or TargetedSpellsSaved.Settings.Party
 
-		local function IsSectionEnabled()
-			return TargetedSpellsSaved.Settings.Self.Enabled
-		end
-
-		-- Enabled
-		do
-			local key = Private.Settings.Keys.Self.Enabled
+			local function GetValue()
+				return tableRef.Enabled
+			end
 
 			local function SetValue(value)
-				TargetedSpellsSaved.Settings.Self.Enabled = not TargetedSpellsSaved.Settings.Self.Enabled
-				Private.EventRegistry:TriggerEvent(
-					Private.Enum.Events.SETTING_CHANGED,
-					key,
-					TargetedSpellsSaved.Settings.Self.Enabled
-				)
+				tableRef.Enabled = not tableRef.Enabled
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef.Enabled)
 			end
 
 			local setting = Settings.RegisterProxySetting(
@@ -430,562 +499,31 @@ table.insert(Private.LoginFnQueue, function()
 				Settings.VarType.Boolean,
 				L.Settings.EnabledLabel,
 				Settings.Default.True,
-				IsSectionEnabled,
-				SetValue
-			)
-			generalCategoryEnabledInitializer = Settings.CreateCheckbox(category, setting, L.Settings.EnabledTooltip)
-		end
-
-		-- Load Condition: Content Type
-		if Private.IsMidnight then
-			do
-				local key = Private.Settings.Keys.Self.LoadConditionContentType
-				local defaults = Private.Settings.GetSelfDefaultSettings().LoadConditionContentType
-
-				local defaultValue = GetMask(Private.Enum.ContentType, function(id)
-					return defaults[id]
-				end)
-
-				local function GetValue()
-					return GetMask(Private.Enum.ContentType, function(id)
-						return TargetedSpellsSaved.Settings.Self.LoadConditionContentType[id]
-					end)
-				end
-
-				local function SetValue(mask)
-					local hasChanges = false
-					local anyEnabled = false
-
-					for label, id in pairs(Private.Enum.ContentType) do
-						local enabled = DecodeBitToBool(mask, id)
-
-						if enabled ~= TargetedSpellsSaved.Settings.Self.LoadConditionContentType[id] then
-							TargetedSpellsSaved.Settings.Self.LoadConditionContentType[id] = enabled
-							hasChanges = true
-						end
-
-						if enabled then
-							anyEnabled = true
-						end
-					end
-
-					if not hasChanges then
-						return
-					end
-
-					Private.EventRegistry:TriggerEvent(
-						Private.Enum.Events.SETTING_CHANGED,
-						key,
-						TargetedSpellsSaved.Settings.Self.LoadConditionContentType
-					)
-
-					if anyEnabled ~= TargetedSpellsSaved.Settings.Self.Enabled then
-						TargetedSpellsSaved.Settings.Self.Enabled = anyEnabled
-						Private.EventRegistry:TriggerEvent(
-							Private.Enum.Events.SETTING_CHANGED,
-							Private.Settings.Keys.Self.Enabled,
-							anyEnabled
-						)
-					end
-				end
-
-				local setting = Settings.RegisterProxySetting(
-					category,
-					key,
-					Settings.VarType.Number,
-					L.Settings.LoadConditionContentTypeLabel,
-					defaultValue,
-					GetValue,
-					SetValue
-				)
-
-				local function GetOptions()
-					local container = Settings.CreateControlTextContainer()
-
-					for label, id in pairs(Private.Enum.ContentType) do
-						local function IsEnabled()
-							return TargetedSpellsSaved.Settings.Self.LoadConditionContentType[id]
-						end
-
-						local function Toggle()
-							TargetedSpellsSaved.Settings.Self.LoadConditionContentType[id] =
-								not TargetedSpellsSaved.Settings.Self.LoadConditionContentType[id]
-						end
-
-						local translated = L.Settings.LoadConditionContentTypeLabels[id]
-
-						container:AddCheckbox(
-							id,
-							translated,
-							L.Settings.LoadConditionContentTypeTooltip,
-							IsEnabled,
-							Toggle
-						)
-					end
-
-					return container:GetData()
-				end
-
-				local initializer =
-					Settings.CreateDropdown(category, setting, GetOptions, L.Settings.LoadConditionContentTypeTooltip)
-				initializer.hideSteppers = true
-				initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-			end
-		else
-			local key = Private.Settings.Keys.Self.LoadConditionContentType
-
-			local function GetValue()
-				return 0
-			end
-
-			local function SetValue() end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Number,
-				L.Settings.LoadConditionContentTypeLabel,
-				0,
 				GetValue,
 				SetValue
 			)
 
-			local function GetOptions()
-				local container = Settings.CreateControlTextContainer()
+			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.EnabledTooltip)
 
-				for label, id in pairs(Private.Enum.ContentType) do
-					local translated = L.Settings.LoadConditionRoleLabels[id]
-
-					container:Add(id, translated, L.Settings.LoadConditionContentTypeTooltip)
-				end
-
-				return container:GetData()
-			end
-
-			local initializer =
-				Settings.CreateDropdown(category, setting, GetOptions, L.Settings.LoadConditionContentTypeTooltip)
-			initializer.hideSteppers = true
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, function()
-				return false
-			end)
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
 		end
 
-		-- Load Condition: Role
-		if Private.IsMidnight then
-			do
-				local key = Private.Settings.Keys.Self.LoadConditionRole
-				local defaults = Private.Settings.GetSelfDefaultSettings().LoadConditionRole
-
-				local defaultValue = GetMask(Private.Enum.Role, function(id)
-					return defaults[id]
-				end)
-
-				local function GetValue()
-					return GetMask(Private.Enum.Role, function(id)
-						return TargetedSpellsSaved.Settings.Self.LoadConditionRole[id]
-					end)
-				end
-
-				local function SetValue(mask)
-					local hasChanges = false
-					local anyEnabled = false
-
-					for label, id in pairs(Private.Enum.Role) do
-						local enabled = DecodeBitToBool(mask, id)
-
-						if enabled ~= TargetedSpellsSaved.Settings.Self.LoadConditionRole[id] then
-							TargetedSpellsSaved.Settings.Self.LoadConditionRole[id] = enabled
-							hasChanges = true
-						end
-
-						if enabled then
-							anyEnabled = true
-						end
-					end
-
-					if not hasChanges then
-						return
-					end
-
-					Private.EventRegistry:TriggerEvent(
-						Private.Enum.Events.SETTING_CHANGED,
-						key,
-						TargetedSpellsSaved.Settings.Self.LoadConditionRole
-					)
-
-					if anyEnabled ~= TargetedSpellsSaved.Settings.Self.Enabled then
-						TargetedSpellsSaved.Settings.Self.Enabled = anyEnabled
-						Private.EventRegistry:TriggerEvent(
-							Private.Enum.Events.SETTING_CHANGED,
-							Private.Settings.Keys.Self.Enabled,
-							anyEnabled
-						)
-					end
-				end
-
-				local setting = Settings.RegisterProxySetting(
-					category,
-					key,
-					Settings.VarType.Number,
-					L.Settings.LoadConditionRoleLabel,
-					defaultValue,
-					GetValue,
-					SetValue
-				)
-
-				local function GetOptions()
-					local container = Settings.CreateControlTextContainer()
-
-					for label, id in pairs(Private.Enum.Role) do
-						local translated = L.Settings.LoadConditionRoleLabels[id]
-
-						container:AddCheckbox(id, translated, L.Settings.LoadConditionRoleTooltip)
-					end
-
-					return container:GetData()
-				end
-
-				local initializer =
-					Settings.CreateDropdown(category, setting, GetOptions, L.Settings.LoadConditionRoleTooltip)
-				initializer.hideSteppers = true
-				initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-			end
-		else
-			local key = Private.Settings.Keys.Self.LoadConditionRole
-
+		if key == Private.Settings.Keys.Party.IncludeSelfInParty then
 			local function GetValue()
-				return 0
-			end
-
-			local function SetValue() end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Number,
-				L.Settings.LoadConditionRoleLabel,
-				0,
-				GetValue,
-				SetValue
-			)
-
-			local function GetOptions()
-				local container = Settings.CreateControlTextContainer()
-
-				for label, id in pairs(Private.Enum.Role) do
-					local translated = L.Settings.LoadConditionRoleLabels[id]
-
-					container:Add(id, translated, L.Settings.LoadConditionRoleTooltip)
-				end
-
-				return container:GetData()
-			end
-
-			local initializer =
-				Settings.CreateDropdown(category, setting, GetOptions, L.Settings.LoadConditionRoleTooltip)
-			initializer.hideSteppers = true
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, function()
-				return false
-			end)
-		end
-
-		-- Frame Width
-		do
-			local key = Private.Settings.Keys.Self.Width
-			local defaultValue = Private.Settings.GetSelfDefaultSettings().Width
-			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Self.Width
+				return TargetedSpellsSaved.Settings.Party.IncludeSelfInParty
 			end
 
 			local function SetValue(value)
-				if value ~= TargetedSpellsSaved.Settings.Self.Width then
-					TargetedSpellsSaved.Settings.Self.Width = value
-
-					Private.EventRegistry:TriggerEvent(
-						Private.Enum.Events.SETTING_CHANGED,
-						key,
-						TargetedSpellsSaved.Settings.Self.Width
-					)
-				end
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Number,
-				L.Settings.FrameWidthLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
-			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
-
-			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FrameWidthTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-
-		-- Frame Height
-		do
-			local key = Private.Settings.Keys.Self.Height
-			local defaultValue = Private.Settings.GetSelfDefaultSettings().Height
-			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Self.Height
-			end
-
-			local function SetValue(value)
-				if TargetedSpellsSaved.Settings.Self.Height ~= value then
-					TargetedSpellsSaved.Settings.Self.Height = value
-
-					Private.EventRegistry:TriggerEvent(
-						Private.Enum.Events.SETTING_CHANGED,
-						key,
-						TargetedSpellsSaved.Settings.Self.Height
-					)
-				end
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Number,
-				L.Settings.FrameHeightLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
-			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
-
-			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FrameHeightTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-
-		-- Font Size
-		do
-			local key = Private.Settings.Keys.Self.FontSize
-			local defaultValue = Private.Settings.GetSelfDefaultSettings().FontSize
-			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Self.FontSize
-			end
-
-			local function SetValue(value)
-				if value ~= TargetedSpellsSaved.Settings.Self.FontSize then
-					TargetedSpellsSaved.Settings.Self.FontSize = value
-
-					Private.EventRegistry:TriggerEvent(
-						Private.Enum.Events.SETTING_CHANGED,
-						key,
-						TargetedSpellsSaved.Settings.Self.FontSize
-					)
-				end
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Number,
-				L.Settings.FontSizeLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
-			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
-
-			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FontSizeTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-
-		-- Frame Gap
-		do
-			local key = Private.Settings.Keys.Self.Gap
-			local defaultValue = Private.Settings.GetSelfDefaultSettings().Gap
-			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Self.Gap
-			end
-
-			local function SetValue(value)
-				if value ~= TargetedSpellsSaved.Settings.Self.Gap then
-					TargetedSpellsSaved.Settings.Self.Gap = value
-
-					Private.EventRegistry:TriggerEvent(
-						Private.Enum.Events.SETTING_CHANGED,
-						key,
-						TargetedSpellsSaved.Settings.Self.Gap
-					)
-				end
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Number,
-				L.Settings.FrameGapLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
-			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
-
-			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FrameGapTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-
-		-- Frame Direction
-		do
-			local key = Private.Settings.Keys.Self.Direction
-			local defaultValue = Private.Settings.GetSelfDefaultSettings().Direction
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Self.Direction
-			end
-
-			local function SetValue(value)
-				TargetedSpellsSaved.Settings.Self.Direction = value
-
+				TargetedSpellsSaved.Settings.Party.IncludeSelfInParty =
+					not TargetedSpellsSaved.Settings.Party.IncludeSelfInParty
 				Private.EventRegistry:TriggerEvent(
 					Private.Enum.Events.SETTING_CHANGED,
 					key,
-					TargetedSpellsSaved.Settings.Self.Direction
-				)
-			end
-
-			local function GetOptions()
-				local container = Settings.CreateControlTextContainer()
-
-				for label, id in pairs(Private.Enum.Direction) do
-					local translated = id == Private.Enum.Direction.Horizontal and L.Settings.FrameDirectionHorizontal
-						or L.Settings.FrameDirectionVertical
-					container:Add(id, translated)
-				end
-
-				return container:GetData()
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Number,
-				L.Settings.FrameDirectionLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.FrameDirectionTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-
-		-- Frame Sort Order
-		do
-			local key = Private.Settings.Keys.Self.SortOrder
-			local defaultValue = Private.Settings.GetSelfDefaultSettings().SortOrder
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Self.SortOrder
-			end
-
-			local function SetValue(value)
-				TargetedSpellsSaved.Settings.Self.SortOrder = value
-
-				Private.EventRegistry:TriggerEvent(
-					Private.Enum.Events.SETTING_CHANGED,
-					key,
-					TargetedSpellsSaved.Settings.Self.SortOrder
-				)
-			end
-
-			local function GetOptions()
-				local container = Settings.CreateControlTextContainer()
-
-				for label, id in pairs(Private.Enum.SortOrder) do
-					local translated = id == Private.Enum.SortOrder.Ascending and L.Settings.FrameSortOrderAscending
-						or L.Settings.FrameSortOrderDescending
-					container:Add(id, translated)
-				end
-
-				return container:GetData()
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Number,
-				L.Settings.FrameSortOrderLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.FrameSortOrderTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-
-		-- Frame Grow
-		do
-			local key = Private.Settings.Keys.Self.Grow
-			local defaultValue = Private.Settings.GetSelfDefaultSettings().Grow
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Self.Grow
-			end
-
-			local function SetValue(value)
-				TargetedSpellsSaved.Settings.Self.Grow = value
-
-				Private.EventRegistry:TriggerEvent(
-					Private.Enum.Events.SETTING_CHANGED,
-					key,
-					TargetedSpellsSaved.Settings.Self.Grow
-				)
-			end
-
-			local function GetOptions()
-				local container = Settings.CreateControlTextContainer()
-
-				for label, id in pairs(Private.Enum.Grow) do
-					local translated = L.Settings.FrameGrowLabels[id]
-					container:Add(id, translated)
-				end
-
-				return container:GetData()
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Number,
-				L.Settings.FrameGrowLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.FrameGrowTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-
-		-- Glow Important
-		do
-			local key = Private.Settings.Keys.Self.GlowImportant
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Self.GlowImportant
-			end
-
-			local function SetValue(value)
-				TargetedSpellsSaved.Settings.Self.GlowImportant = not TargetedSpellsSaved.Settings.Self.GlowImportant
-				Private.EventRegistry:TriggerEvent(
-					Private.Enum.Events.SETTING_CHANGED,
-					key,
-					TargetedSpellsSaved.Settings.Self.GlowImportant
+					TargetedSpellsSaved.Settings.Party.IncludeSelfInParty
 				)
 			end
 
@@ -993,41 +531,37 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.Boolean,
-				L.Settings.GlowImportantLabel,
+				L.Settings.IncludeSelfInPartyLabel,
 				Settings.Default.True,
 				GetValue,
 				SetValue
 			)
-			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.GlowImportantTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+
+			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.IncludeSelfInPartyTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
 		end
 
-		-- Glow Type
-		do
-			local key = Private.Settings.Keys.Self.GlowType
-			local defaultValue = Private.Settings.GetSelfDefaultSettings().GlowType
-
+		if key == Private.Settings.Keys.Party.TargetAnchor then
 			local function GetValue()
-				return TargetedSpellsSaved.Settings.Self.GlowType
+				return TargetedSpellsSaved.Settings.Party.TargetAnchor
 			end
 
 			local function SetValue(value)
-				TargetedSpellsSaved.Settings.Self.GlowType = value
+				TargetedSpellsSaved.Settings.Party.TargetAnchor = value
 
-				Private.EventRegistry:TriggerEvent(
-					Private.Enum.Events.SETTING_CHANGED,
-					key,
-					TargetedSpellsSaved.Settings.Self.GlowType
-				)
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 			end
 
 			local function GetOptions()
 				local container = Settings.CreateControlTextContainer()
 
-				for label, id in pairs(Private.Enum.GlowType) do
-					local translated = L.Settings.GlowTypeLabels[id]
-
-					container:Add(id, translated)
+				for k, v in pairs(Private.Enum.Anchor) do
+					container:Add(v, k)
 				end
 
 				return container:GetData()
@@ -1036,31 +570,246 @@ table.insert(Private.LoginFnQueue, function()
 			local setting = Settings.RegisterProxySetting(
 				category,
 				key,
-				Settings.VarType.Number,
-				L.Settings.GlowTypeLabel,
-				defaultValue,
+				Settings.VarType.String,
+				L.Settings.FrameTargetAnchorLabel,
+				defaults.TargetAnchor,
 				GetValue,
 				SetValue
 			)
-			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.GlowTypeTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+			local initializer =
+				Settings.CreateDropdown(category, setting, GetOptions, L.Settings.FrameTargetAnchorTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
 		end
 
-		-- Play Sound
-		do
-			local key = Private.Settings.Keys.Self.PlaySound
-			local defaultValue = Private.Settings.GetSelfDefaultSettings().PlaySound
-
+		if key == Private.Settings.Keys.Party.SourceAnchor then
 			local function GetValue()
-				return TargetedSpellsSaved.Settings.Self.PlaySound
+				return TargetedSpellsSaved.Settings.Party.SourceAnchor
 			end
 
 			local function SetValue(value)
-				TargetedSpellsSaved.Settings.Self.PlaySound = not TargetedSpellsSaved.Settings.Self.PlaySound
+				TargetedSpellsSaved.Settings.Party.SourceAnchor = value
+
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+
+			local function GetOptions()
+				local container = Settings.CreateControlTextContainer()
+
+				for k, v in pairs(Private.Enum.Anchor) do
+					container:Add(v, k)
+				end
+
+				return container:GetData()
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.String,
+				L.Settings.FrameSourceAnchorLabel,
+				defaults.SourceAnchor,
+				GetValue,
+				SetValue
+			)
+			local initializer =
+				Settings.CreateDropdown(category, setting, GetOptions, L.Settings.FrameSourceAnchorTooltip)
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if key == Private.Settings.Keys.Party.OffsetY then
+			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Party.OffsetY
+			end
+
+			local function SetValue(value)
+				if value ~= TargetedSpellsSaved.Settings.Party.OffsetY then
+					TargetedSpellsSaved.Settings.Party.OffsetY = value
+
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				L.Settings.FrameOffsetYLabel,
+				defaults.OffsetY,
+				GetValue,
+				SetValue
+			)
+			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
+			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
+
+			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FrameOffsetYTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if key == Private.Settings.Keys.Party.OffsetX then
+			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Party.OffsetX
+			end
+
+			local function SetValue(value)
+				if value ~= TargetedSpellsSaved.Settings.Party.OffsetX then
+					TargetedSpellsSaved.Settings.Party.OffsetX = value
+
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				L.Settings.FrameOffsetXLabel,
+				defaults.OffsetX,
+				GetValue,
+				SetValue
+			)
+			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
+			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
+
+			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FrameOffsetXTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if key == Private.Settings.Keys.Self.Opacity or key == Private.Settings.Keys.Party.Opacity then
+			local tableRef = key == Private.Settings.Keys.Self.Opacity and TargetedSpellsSaved.Settings.Self
+				or TargetedSpellsSaved.Settings.Party
+			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+
+			local function GetValue()
+				return tableRef.Opacity
+			end
+
+			local function SetValue(value)
+				if value ~= tableRef.Opacity then
+					tableRef.Opacity = value
+
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				L.Settings.OpacityLabel,
+				defaults.Opacity,
+				GetValue,
+				SetValue
+			)
+			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
+			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, FormatPercentage)
+
+			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.OpacityTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if key == Private.Settings.Keys.Self.ShowBorder or key == Private.Settings.Keys.Party.ShowBorder then
+			local tableRef = key == Private.Settings.Keys.Self.ShowBorder and TargetedSpellsSaved.Settings.Self
+				or TargetedSpellsSaved.Settings.Party
+
+			local function GetValue()
+				return tableRef.ShowBorder
+			end
+
+			local function SetValue(value)
+				tableRef.ShowBorder = not tableRef.ShowBorder
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef.ShowBorder)
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Boolean,
+				L.Settings.ShowBorderLabel,
+				defaults.ShowBorder,
+				GetValue,
+				SetValue
+			)
+
+			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.ShowBorderTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if key == Private.Settings.Keys.Self.ShowDuration or key == Private.Settings.Keys.Party.ShowDuration then
+			local tableRef = key == Private.Settings.Keys.Self.ShowDuration and TargetedSpellsSaved.Settings.Self
+				or TargetedSpellsSaved.Settings.Party
+
+			local function GetValue()
+				return tableRef.ShowDuration
+			end
+
+			local function SetValue(value)
+				tableRef.ShowDuration = not tableRef.ShowDuration
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef.ShowDuration)
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Boolean,
+				L.Settings.ShowDurationLabel,
+				defaults.ShowDuration,
+				GetValue,
+				SetValue
+			)
+
+			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.ShowDurationTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if key == Private.Settings.Keys.Self.PlayTTS then
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Self.PlayTTS
+			end
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Self.PlayTTS = not TargetedSpellsSaved.Settings.Self.PlayTTS
 				Private.EventRegistry:TriggerEvent(
 					Private.Enum.Events.SETTING_CHANGED,
 					key,
-					TargetedSpellsSaved.Settings.Self.PlaySound
+					TargetedSpellsSaved.Settings.Self.PlayTTS
 				)
 			end
 
@@ -1068,142 +817,24 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.Boolean,
-				L.Settings.PlaySoundLabel,
-				defaultValue,
+				L.Settings.PlayTTSLabel,
+				defaults.PlayTTS,
 				GetValue,
 				SetValue
 			)
-			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.PlaySoundTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.PlayTTSTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
 		end
 
-		-- Sound
-		do
-			local key = Private.Settings.Keys.Self.Sound
-
-			local defaultValue = tostring(Private.Settings.GetSelfDefaultSettings().Sound)
-
-			local function GetValue()
-				return tostring(TargetedSpellsSaved.Settings.Self.Sound)
-			end
-
-			local function IsNumeric(str)
-				return tonumber(str) ~= nil
-			end
-
-			local function SetValue(value)
-				local sound = IsNumeric(value) and tonumber(value) or value
-
-				Private.Utils.AttemptToPlaySound(sound, Private.Enum.SoundChannel.Master)
-
-				if TargetedSpellsSaved.Settings.Self.Sound ~= sound then
-					TargetedSpellsSaved.Settings.Self.Sound = sound
-
-					Private.EventRegistry:TriggerEvent(
-						Private.Enum.Events.SETTING_CHANGED,
-						key,
-						TargetedSpellsSaved.Settings.Self.Sound
-					)
-				end
-			end
-
-			---@param soundCategoryKeyToText table<string, string>
-			---@param currentTable table<string, CustomSound[]> | CustomSound[]
-			---@param categoryName string?
-			local function RecursiveAddSounds(container, soundCategoryKeyToText, currentTable, categoryName)
-				for tableKey, value in pairs(currentTable) do
-					if value.soundKitID and value.text then
-						container:Add(tostring(value.soundKitID), string.format("%s - %s", categoryName, value.text))
-					elseif type(value) == "table" and soundCategoryKeyToText[tableKey] then
-						RecursiveAddSounds(container, soundCategoryKeyToText, value, soundCategoryKeyToText[tableKey])
-					end
-				end
-			end
-
-			local function AddCooldownViewerSounds(container)
-				local soundInfo = Private.Settings.GetCooldownViewerSounds()
-
-				RecursiveAddSounds(container, soundInfo.soundCategoryKeyToLabel, soundInfo.data)
-			end
-
-			local function AddCustomSounds(container)
-				local soundInfo = Private.Settings.GetCustomSoundGroups()
-
-				RecursiveAddSounds(container, soundInfo.soundCategoryKeyToLabel, soundInfo.data)
-			end
-
-			local function GetOptions()
-				local container = Settings.CreateControlTextContainer()
-
-				pcall(AddCooldownViewerSounds, container)
-				AddCustomSounds(container)
-
-				return container:GetData()
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.String,
-				L.Settings.SoundLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.SoundTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-
-		-- Sound Channel
-		do
-			local key = Private.Settings.Keys.Self.SoundChannel
-			local defaultValue = Private.Settings.GetSelfDefaultSettings().SoundChannel
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Self.SoundChannel
-			end
-
-			local function SetValue(value)
-				TargetedSpellsSaved.Settings.Self.SoundChannel = value
-
-				Private.EventRegistry:TriggerEvent(
-					Private.Enum.Events.SETTING_CHANGED,
-					key,
-					TargetedSpellsSaved.Settings.Self.SoundChannel
-				)
-			end
-
-			local function GetOptions()
-				local container = Settings.CreateControlTextContainer()
-
-				for label, value in pairs(Private.Enum.SoundChannel) do
-					local translated = L.Settings.SoundChannelLabels[value]
-					container:Add(value, translated)
-				end
-
-				return container:GetData()
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.String,
-				L.Settings.SoundChannelLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.SoundChannelTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-
-		if Private.IsMidnight then
-			do
-				local key = Private.Settings.Keys.Self.LoadConditionSoundContentType
-				local defaults = Private.Settings.GetSelfDefaultSettings().LoadConditionSoundContentType
-
+		if key == Private.Settings.Keys.Self.LoadConditionSoundContentType then
+			if Private.IsMidnight then
 				local defaultValue = GetMask(Private.Enum.ContentType, function(id)
-					return defaults[id]
+					return defaults.LoadConditionSoundContentType[id]
 				end)
 
 				local function GetValue()
@@ -1292,11 +923,13 @@ table.insert(Private.LoginFnQueue, function()
 					GetOptions,
 					L.Settings.LoadConditionSoundContentTypeTooltip
 				)
-				initializer.hideSteppers = true
-				initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+
+				return {
+					initializer = initializer,
+					hideSteppers = true,
+					IsSectionEnabled = nil,
+				}
 			end
-		else
-			local key = Private.Settings.Keys.Self.LoadConditionSoundContentType
 
 			local function GetValue()
 				return 0
@@ -1328,295 +961,573 @@ table.insert(Private.LoginFnQueue, function()
 
 			local initializer =
 				Settings.CreateDropdown(category, setting, GetOptions, L.Settings.LoadConditionSoundContentTypeTooltip)
-			initializer.hideSteppers = true
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, function()
-				return false
-			end)
+
+			return {
+				initializer = initializer,
+				hideSteppers = true,
+				IsSectionEnabled = function()
+					return false
+				end,
+			}
 		end
 
-		-- Show Duration
-		do
-			local key = Private.Settings.Keys.Self.ShowDuration
-			local defaultValue = Private.Settings.GetSelfDefaultSettings().ShowDuration
-
+		if key == Private.Settings.Keys.Self.TTSVoice then
 			local function GetValue()
-				return TargetedSpellsSaved.Settings.Self.ShowDuration
+				return TargetedSpellsSaved.Settings.Self.TTSVoice
 			end
 
 			local function SetValue(value)
-				TargetedSpellsSaved.Settings.Self.ShowDuration = not TargetedSpellsSaved.Settings.Self.ShowDuration
-				Private.EventRegistry:TriggerEvent(
-					Private.Enum.Events.SETTING_CHANGED,
-					key,
-					TargetedSpellsSaved.Settings.Self.ShowDuration
-				)
+				TargetedSpellsSaved.Settings.Self.TTSVoice = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+
+				Private.Settings.SampleTTSVoice(value)
 			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Boolean,
-				L.Settings.ShowDurationLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.ShowDurationTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-
-		-- Show Border
-		do
-			local key = Private.Settings.Keys.Self.ShowBorder
-			local defaultValue = Private.Settings.GetSelfDefaultSettings().ShowBorder
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Self.ShowBorder
-			end
-
-			local function SetValue(value)
-				TargetedSpellsSaved.Settings.Self.ShowBorder = not TargetedSpellsSaved.Settings.Self.ShowBorder
-				Private.EventRegistry:TriggerEvent(
-					Private.Enum.Events.SETTING_CHANGED,
-					key,
-					TargetedSpellsSaved.Settings.Self.ShowBorder
-				)
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Boolean,
-				L.Settings.ShowBorderLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.ShowBorderTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-
-		-- Opacity
-		do
-			local key = Private.Settings.Keys.Self.Opacity
-			local defaultValue = Private.Settings.GetSelfDefaultSettings().Opacity
-			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Self.Opacity
-			end
-
-			local function SetValue(value)
-				if value ~= TargetedSpellsSaved.Settings.Self.Opacity then
-					TargetedSpellsSaved.Settings.Self.Opacity = value
-
-					Private.EventRegistry:TriggerEvent(
-						Private.Enum.Events.SETTING_CHANGED,
-						key,
-						TargetedSpellsSaved.Settings.Self.Opacity
-					)
-				end
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Number,
-				L.Settings.OpacityLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
-			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, FormatPercentage)
-
-			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.OpacityTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-	end
-
-	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Party"))
-
-	do
-		local generalCategoryEnabledInitializer
-
-		local function IsSectionEnabled()
-			return TargetedSpellsSaved.Settings.Party.Enabled
-		end
-
-		-- Enabled
-		do
-			local key = Private.Settings.Keys.Party.Enabled
-
-			local function SetValue(value)
-				TargetedSpellsSaved.Settings.Party.Enabled = not TargetedSpellsSaved.Settings.Party.Enabled
-				Private.EventRegistry:TriggerEvent(
-					Private.Enum.Events.SETTING_CHANGED,
-					key,
-					TargetedSpellsSaved.Settings.Party.Enabled
-				)
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Boolean,
-				L.Settings.EnabledLabel,
-				Settings.Default.True,
-				IsSectionEnabled,
-				SetValue
-			)
-			generalCategoryEnabledInitializer = Settings.CreateCheckbox(category, setting, L.Settings.EnabledTooltip)
-		end
-
-		-- Load Condition: Content Type
-		if Private.IsMidnight then
-			do
-				local key = Private.Settings.Keys.Party.LoadConditionContentType
-				local defaults = Private.Settings.GetPartyDefaultSettings().LoadConditionContentType
-
-				local defaultValue = GetMask(Private.Enum.ContentType, function(id)
-					return defaults[id]
-				end)
-
-				local function GetValue()
-					return GetMask(Private.Enum.ContentType, function(id)
-						return TargetedSpellsSaved.Settings.Party.LoadConditionContentType[id]
-					end)
-				end
-
-				local function SetValue(mask)
-					local hasChanges = false
-					local anyEnabled = false
-
-					for label, id in pairs(Private.Enum.ContentType) do
-						local enabled = DecodeBitToBool(mask, id)
-
-						if enabled ~= TargetedSpellsSaved.Settings.Party.LoadConditionContentType[id] then
-							TargetedSpellsSaved.Settings.Party.LoadConditionContentType[id] = enabled
-							hasChanges = true
-						end
-
-						if enabled then
-							anyEnabled = true
-						end
-					end
-
-					if not hasChanges then
-						return
-					end
-
-					Private.EventRegistry:TriggerEvent(
-						Private.Enum.Events.SETTING_CHANGED,
-						key,
-						TargetedSpellsSaved.Settings.Party.LoadConditionContentType
-					)
-
-					if anyEnabled ~= TargetedSpellsSaved.Settings.Party.Enabled then
-						TargetedSpellsSaved.Settings.Party.Enabled = anyEnabled
-						Private.EventRegistry:TriggerEvent(
-							Private.Enum.Events.SETTING_CHANGED,
-							Private.Settings.Keys.Party.Enabled,
-							anyEnabled
-						)
-					end
-				end
-
-				local setting = Settings.RegisterProxySetting(
-					category,
-					key,
-					Settings.VarType.Number,
-					L.Settings.LoadConditionContentTypeLabel,
-					defaultValue,
-					GetValue,
-					SetValue
-				)
-
-				local function GetOptions()
-					local container = Settings.CreateControlTextContainer()
-
-					for label, id in pairs(Private.Enum.ContentType) do
-						local function IsEnabled()
-							return TargetedSpellsSaved.Settings.Self.LoadConditionContentType[id]
-						end
-
-						local function Toggle()
-							TargetedSpellsSaved.Settings.Self.LoadConditionContentType[id] =
-								not TargetedSpellsSaved.Settings.Self.LoadConditionContentType[id]
-						end
-
-						local translated = L.Settings.LoadConditionContentTypeLabels[id]
-
-						container:AddCheckbox(
-							id,
-							translated,
-							L.Settings.LoadConditionContentTypeTooltip,
-							IsEnabled,
-							Toggle
-						)
-					end
-
-					return container:GetData()
-				end
-
-				local initializer =
-					Settings.CreateDropdown(category, setting, GetOptions, L.Settings.LoadConditionContentTypeTooltip)
-				initializer.hideSteppers = true
-				initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-			end
-		else
-			local key = Private.Settings.Keys.Party.LoadConditionContentType
-
-			local function GetValue()
-				return 0
-			end
-
-			local function SetValue() end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Number,
-				L.Settings.LoadConditionContentTypeLabel,
-				0,
-				GetValue,
-				SetValue
-			)
 
 			local function GetOptions()
 				local container = Settings.CreateControlTextContainer()
 
-				for label, id in pairs(Private.Enum.Role) do
-					local translated = L.Settings.LoadConditionRoleLabels[id]
-
-					container:Add(id, translated, L.Settings.LoadConditionContentTypeTooltip)
+				for _, voice in pairs(C_VoiceChat.GetTtsVoices()) do
+					container:Add(voice.voiceID, voice.name)
 				end
 
 				return container:GetData()
 			end
 
-			local initializer =
-				Settings.CreateDropdown(category, setting, GetOptions, L.Settings.LoadConditionContentTypeTooltip)
-			initializer.hideSteppers = true
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, function()
-				return false
-			end)
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				L.Settings.TTSVoiceLabel,
+				defaults.TTSVoice or 0,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.TTSVoiceTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
 		end
 
-		-- Load Condition: Role
-		if Private.IsMidnight then
-			local key = Private.Settings.Keys.Party.LoadConditionRole
+		if key == Private.Settings.Keys.Self.SoundChannel then
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Self.SoundChannel
+			end
 
-			do
-				local defaults = Private.Settings.GetPartyDefaultSettings().LoadConditionRole
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Self.SoundChannel = value
+
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+
+			local function GetOptions()
+				local container = Settings.CreateControlTextContainer()
+
+				for label, value in pairs(Private.Enum.SoundChannel) do
+					local translated = L.Settings.SoundChannelLabels[value]
+					container:Add(value, translated)
+				end
+
+				return container:GetData()
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.String,
+				L.Settings.SoundChannelLabel,
+				defaults.SoundChannel,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.SoundChannelTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if key == Private.Settings.Keys.Self.Sound then
+			local function GetValue()
+				return tostring(TargetedSpellsSaved.Settings.Self.Sound)
+			end
+
+			local function IsNumeric(str)
+				return tonumber(str) ~= nil
+			end
+
+			local function SetValue(value)
+				local sound = IsNumeric(value) and tonumber(value) or value
+
+				Private.Utils.AttemptToPlaySound(sound, Private.Enum.SoundChannel.Master)
+
+				if TargetedSpellsSaved.Settings.Self.Sound ~= sound then
+					TargetedSpellsSaved.Settings.Self.Sound = sound
+
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, sound)
+				end
+			end
+
+			---@param soundCategoryKeyToText table<string, string>
+			---@param currentTable table<string, CustomSound[]> | CustomSound[]
+			---@param categoryName string?
+			local function RecursiveAddSounds(container, soundCategoryKeyToText, currentTable, categoryName)
+				for tableKey, value in pairs(currentTable) do
+					if value.soundKitID and value.text then
+						container:Add(tostring(value.soundKitID), string.format("%s - %s", categoryName, value.text))
+					elseif type(value) == "table" and soundCategoryKeyToText[tableKey] then
+						RecursiveAddSounds(container, soundCategoryKeyToText, value, soundCategoryKeyToText[tableKey])
+					end
+				end
+			end
+
+			local function AddCooldownViewerSounds(container)
+				local soundInfo = Private.Settings.GetCooldownViewerSounds()
+
+				RecursiveAddSounds(container, soundInfo.soundCategoryKeyToLabel, soundInfo.data)
+			end
+
+			local function AddCustomSounds(container)
+				local soundInfo = Private.Settings.GetCustomSoundGroups()
+
+				RecursiveAddSounds(container, soundInfo.soundCategoryKeyToLabel, soundInfo.data)
+			end
+
+			local function GetOptions()
+				local container = Settings.CreateControlTextContainer()
+
+				pcall(AddCooldownViewerSounds, container)
+				AddCustomSounds(container)
+
+				return container:GetData()
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.String,
+				L.Settings.SoundLabel,
+				tostring(defaults.Sound),
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.SoundTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if key == Private.Settings.Keys.Self.PlaySound then
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Self.PlaySound
+			end
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Self.PlaySound = not TargetedSpellsSaved.Settings.Self.PlaySound
+				Private.EventRegistry:TriggerEvent(
+					Private.Enum.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Self.PlaySound
+				)
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Boolean,
+				L.Settings.PlaySoundLabel,
+				defaults.PlaySound,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.PlaySoundTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if key == Private.Settings.Keys.Self.GlowType or key == Private.Settings.Keys.Party.GlowType then
+			local tableRef = key == Private.Settings.Keys.Self.GlowType and TargetedSpellsSaved.Settings.Self
+				or TargetedSpellsSaved.Settings.Party
+
+			local function GetValue()
+				return tableRef.GlowType
+			end
+
+			local function SetValue(value)
+				tableRef.GlowType = value
+
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+
+			local function GetOptions()
+				local container = Settings.CreateControlTextContainer()
+
+				for label, id in pairs(Private.Enum.GlowType) do
+					local translated = L.Settings.GlowTypeLabels[id]
+
+					container:Add(id, translated)
+				end
+
+				return container:GetData()
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				L.Settings.GlowTypeLabel,
+				defaults.GlowType,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.GlowTypeTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if key == Private.Settings.Keys.Self.GlowImportant or key == Private.Settings.Keys.Party.GlowImportant then
+			local tableRef = key == Private.Settings.Keys.Self.GlowImportant and TargetedSpellsSaved.Settings.Self
+				or TargetedSpellsSaved.Settings.Party
+
+			local function GetValue()
+				return tableRef.GlowImportant
+			end
+
+			local function SetValue(value)
+				tableRef.GlowImportant = not tableRef.GlowImportant
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef.GlowImportant)
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Boolean,
+				L.Settings.GlowImportantLabel,
+				defaults.GlowImportant,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.GlowImportantTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if key == Private.Settings.Keys.Self.Grow or key == Private.Settings.Keys.Party.Grow then
+			local tableRef = key == Private.Settings.Keys.Self.Grow and TargetedSpellsSaved.Settings.Self
+				or TargetedSpellsSaved.Settings.Party
+
+			local function GetValue()
+				return tableRef.Grow
+			end
+
+			local function SetValue(value)
+				tableRef.Grow = value
+
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+
+			local function GetOptions()
+				local container = Settings.CreateControlTextContainer()
+
+				for label, id in pairs(Private.Enum.Grow) do
+					local translated = L.Settings.FrameGrowLabels[id]
+					container:Add(id, translated)
+				end
+
+				return container:GetData()
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				L.Settings.FrameGrowLabel,
+				defaults.Grow,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.FrameGrowTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if key == Private.Settings.Keys.Self.SortOrder or key == Private.Settings.Keys.Party.SortOrder then
+			local tableRef = key == Private.Settings.Keys.Self.SortOrder and TargetedSpellsSaved.Settings.Self
+				or TargetedSpellsSaved.Settings.Party
+
+			local function GetValue()
+				return tableRef.SortOrder
+			end
+
+			local function SetValue(value)
+				tableRef.SortOrder = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+
+			local function GetOptions()
+				local container = Settings.CreateControlTextContainer()
+
+				for label, id in pairs(Private.Enum.SortOrder) do
+					local translated = id == Private.Enum.SortOrder.Ascending and L.Settings.FrameSortOrderAscending
+						or L.Settings.FrameSortOrderDescending
+					container:Add(id, translated)
+				end
+
+				return container:GetData()
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				L.Settings.FrameSortOrderLabel,
+				defaults.SortOrder,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.FrameSortOrderTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if key == Private.Settings.Keys.Self.Direction or key == Private.Settings.Keys.Party.Direction then
+			local tableRef = key == Private.Settings.Keys.Self.Direction and TargetedSpellsSaved.Settings.Self
+				or TargetedSpellsSaved.Settings.Party
+
+			local function GetValue()
+				return tableRef.Direction
+			end
+
+			local function SetValue(value)
+				tableRef.Direction = value
+
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+
+			local function GetOptions()
+				local container = Settings.CreateControlTextContainer()
+
+				for label, id in pairs(Private.Enum.Direction) do
+					local translated = id == Private.Enum.Direction.Horizontal and L.Settings.FrameDirectionHorizontal
+						or L.Settings.FrameDirectionVertical
+					container:Add(id, translated)
+				end
+
+				return container:GetData()
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				L.Settings.FrameDirectionLabel,
+				defaults.Direction,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.FrameDirectionTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if key == Private.Settings.Keys.Self.Gap or key == Private.Settings.Keys.Party.Gap then
+			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+			local tableRef = key == Private.Settings.Keys.Self.Gap and TargetedSpellsSaved.Settings.Self
+				or TargetedSpellsSaved.Settings.Party
+
+			local function GetValue()
+				return tableRef.Gap
+			end
+
+			local function SetValue(value)
+				if value ~= tableRef.Gap then
+					tableRef.Gap = value
+
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				L.Settings.FrameGapLabel,
+				defaults.Gap,
+				GetValue,
+				SetValue
+			)
+			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
+			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
+
+			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FrameGapTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if key == Private.Settings.Keys.Self.FontSize or key == Private.Settings.Keys.Party.FontSize then
+			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+			local tableRef = key == Private.Settings.Keys.Self.FontSize and TargetedSpellsSaved.Settings.Self
+				or TargetedSpellsSaved.Settings.Party
+
+			local function GetValue()
+				return tableRef.FontSize
+			end
+
+			local function SetValue(value)
+				if value ~= tableRef.FontSize then
+					tableRef.FontSize = value
+
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				L.Settings.FontSizeLabel,
+				defaults.FontSize,
+				GetValue,
+				SetValue
+			)
+			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
+			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
+
+			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FontSizeTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if key == Private.Settings.Keys.Self.Height or key == Private.Settings.Keys.Party.Height then
+			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+			local tableRef = key == Private.Settings.Keys.Self.Height and TargetedSpellsSaved.Settings.Self
+				or TargetedSpellsSaved.Settings.Party
+
+			local function GetValue()
+				return tableRef.Height
+			end
+
+			local function SetValue(value)
+				if tableRef.Height ~= value then
+					tableRef.Height = value
+
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				L.Settings.FrameHeightLabel,
+				defaults.Height,
+				GetValue,
+				SetValue
+			)
+			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
+			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
+
+			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FrameHeightTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if key == Private.Settings.Keys.Self.Width or key == Private.Settings.Keys.Party.Width then
+			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+			local tableRef = key == Private.Settings.Keys.Self.Width and TargetedSpellsSaved.Settings.Self
+				or TargetedSpellsSaved.Settings.Party
+
+			local function GetValue()
+				return tableRef.Width
+			end
+
+			local function SetValue(value)
+				if value ~= tableRef.Width then
+					tableRef.Width = value
+
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				L.Settings.FrameWidthLabel,
+				defaults.Width,
+				GetValue,
+				SetValue
+			)
+			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
+			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
+
+			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FrameWidthTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if
+			key == Private.Settings.Keys.Self.LoadConditionRole
+			or key == Private.Settings.Keys.Party.LoadConditionRole
+		then
+			if Private.IsMidnight then
+				local isSelf = key == Private.Settings.Keys.Self.LoadConditionRole
+				local kindTableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
 
 				local defaultValue = GetMask(Private.Enum.Role, function(id)
-					return defaults[id]
+					return defaults.LoadConditionRole[id]
 				end)
 
 				local function GetValue()
 					return GetMask(Private.Enum.Role, function(id)
-						return TargetedSpellsSaved.Settings.Party.LoadConditionRole[id]
+						return kindTableRef.LoadConditionRole[id]
 					end)
 				end
 
@@ -1627,8 +1538,8 @@ table.insert(Private.LoginFnQueue, function()
 					for label, id in pairs(Private.Enum.Role) do
 						local enabled = DecodeBitToBool(mask, id)
 
-						if enabled ~= TargetedSpellsSaved.Settings.Party.LoadConditionRole[id] then
-							TargetedSpellsSaved.Settings.Party.LoadConditionRole[id] = enabled
+						if enabled ~= kindTableRef.LoadConditionRole[id] then
+							kindTableRef.LoadConditionRole[id] = enabled
 							hasChanges = true
 						end
 
@@ -1644,14 +1555,14 @@ table.insert(Private.LoginFnQueue, function()
 					Private.EventRegistry:TriggerEvent(
 						Private.Enum.Events.SETTING_CHANGED,
 						key,
-						TargetedSpellsSaved.Settings.Party.LoadConditionRole
+						kindTableRef.LoadConditionRole
 					)
 
-					if anyEnabled ~= TargetedSpellsSaved.Settings.Party.Enabled then
-						TargetedSpellsSaved.Settings.Party.Enabled = anyEnabled
+					if anyEnabled ~= kindTableRef.Enabled then
+						kindTableRef.Enabled = anyEnabled
 						Private.EventRegistry:TriggerEvent(
 							Private.Enum.Events.SETTING_CHANGED,
-							Private.Settings.Keys.Party.Enabled,
+							isSelf and Private.Settings.Keys.Self.Enabled or Private.Settings.Keys.Party.Enabled,
 							anyEnabled
 						)
 					end
@@ -1681,11 +1592,13 @@ table.insert(Private.LoginFnQueue, function()
 
 				local initializer =
 					Settings.CreateDropdown(category, setting, GetOptions, L.Settings.LoadConditionRoleTooltip)
-				initializer.hideSteppers = true
-				initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+
+				return {
+					initializer = initializer,
+					hideSteppers = true,
+					IsSectionEnabled = nil,
+				}
 			end
-		else
-			local key = Private.Settings.Keys.Party.LoadConditionRole
 
 			local function GetValue()
 				return 0
@@ -1717,655 +1630,217 @@ table.insert(Private.LoginFnQueue, function()
 
 			local initializer =
 				Settings.CreateDropdown(category, setting, GetOptions, L.Settings.LoadConditionRoleTooltip)
-			initializer.hideSteppers = true
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, function()
-				return false
-			end)
+
+			return {
+				initializer = initializer,
+				hideSteppers = true,
+				IsSectionEnabled = function()
+					return false
+				end,
+			}
 		end
 
-		-- Frame Width
-		do
-			local key = Private.Settings.Keys.Party.Width
-			local defaultValue = Private.Settings.GetPartyDefaultSettings().Width
-			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+		if
+			key == Private.Settings.Keys.Self.LoadConditionContentType
+			or key == Private.Settings.Keys.Party.LoadConditionContentType
+		then
+			if Private.IsMidnight then
+				local isSelf = key == Private.Settings.Keys.Self.LoadConditionContentType
+				local kindTableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
 
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Party.Width
-			end
+				local defaultValue = GetMask(Private.Enum.ContentType, function(id)
+					return defaults.LoadConditionContentType[id]
+				end)
 
-			local function SetValue(value)
-				if value ~= TargetedSpellsSaved.Settings.Party.Width then
-					TargetedSpellsSaved.Settings.Party.Width = value
+				local function GetValue()
+					return GetMask(Private.Enum.ContentType, function(id)
+						return kindTableRef.LoadConditionContentType[id]
+					end)
+				end
+
+				local function SetValue(mask)
+					local hasChanges = false
+					local anyEnabled = false
+
+					for label, id in pairs(Private.Enum.ContentType) do
+						local enabled = DecodeBitToBool(mask, id)
+
+						if enabled ~= kindTableRef.LoadConditionContentType[id] then
+							kindTableRef.LoadConditionContentType[id] = enabled
+							hasChanges = true
+						end
+
+						if enabled then
+							anyEnabled = true
+						end
+					end
+
+					if not hasChanges then
+						return
+					end
 
 					Private.EventRegistry:TriggerEvent(
 						Private.Enum.Events.SETTING_CHANGED,
 						key,
-						TargetedSpellsSaved.Settings.Party.Width
+						kindTableRef.LoadConditionContentType
 					)
-				end
-			end
 
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Number,
-				L.Settings.FrameWidthLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
-			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
-
-			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FrameWidthTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-
-		-- Frame Height
-		do
-			local key = Private.Settings.Keys.Party.Height
-			local defaultValue = Private.Settings.GetPartyDefaultSettings().Height
-			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Party.Height
-			end
-
-			local function SetValue(value)
-				if value ~= TargetedSpellsSaved.Settings.Party.Height then
-					TargetedSpellsSaved.Settings.Party.Height = value
-
-					Private.EventRegistry:TriggerEvent(
-						Private.Enum.Events.SETTING_CHANGED,
-						key,
-						TargetedSpellsSaved.Settings.Party.Height
-					)
-				end
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Number,
-				L.Settings.FrameHeightLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
-			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
-
-			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FrameHeightTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-
-		-- Font Size
-		do
-			local key = Private.Settings.Keys.Party.FontSize
-			local defaultValue = Private.Settings.GetPartyDefaultSettings().FontSize
-			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Party.FontSize
-			end
-
-			local function SetValue(value)
-				if value ~= TargetedSpellsSaved.Settings.Party.FontSize then
-					TargetedSpellsSaved.Settings.Party.FontSize = value
-
-					Private.EventRegistry:TriggerEvent(
-						Private.Enum.Events.SETTING_CHANGED,
-						key,
-						TargetedSpellsSaved.Settings.Party.FontSize
-					)
-				end
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Number,
-				L.Settings.FontSizeLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
-			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
-
-			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FontSizeTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-
-		-- Frame Gap
-		do
-			local key = Private.Settings.Keys.Party.Gap
-			local defaultValue = Private.Settings.GetPartyDefaultSettings().Gap
-			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Party.Gap
-			end
-
-			local function SetValue(value)
-				if value ~= TargetedSpellsSaved.Settings.Party.Gap then
-					TargetedSpellsSaved.Settings.Party.Gap = value
-
-					Private.EventRegistry:TriggerEvent(
-						Private.Enum.Events.SETTING_CHANGED,
-						key,
-						TargetedSpellsSaved.Settings.Party.Gap
-					)
-				end
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Number,
-				L.Settings.FrameGapLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
-			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
-
-			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FrameGapTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-
-		-- Frame Direction
-		do
-			local key = Private.Settings.Keys.Party.Direction
-			local defaultValue = Private.Settings.GetPartyDefaultSettings().Direction
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Party.Direction
-			end
-
-			local function SetValue(value)
-				if value ~= TargetedSpellsSaved.Settings.Party.Direction then
-					TargetedSpellsSaved.Settings.Party.Direction = value
-
-					Private.EventRegistry:TriggerEvent(
-						Private.Enum.Events.SETTING_CHANGED,
-						key,
-						TargetedSpellsSaved.Settings.Party.Direction
-					)
-				end
-			end
-
-			local function GetOptions()
-				local container = Settings.CreateControlTextContainer()
-
-				for label, id in pairs(Private.Enum.Direction) do
-					local translated = id == Private.Enum.Direction.Horizontal and L.Settings.FrameDirectionHorizontal
-						or L.Settings.FrameDirectionVertical
-
-					container:Add(id, translated)
+					if anyEnabled ~= kindTableRef.Enabled then
+						kindTableRef.Enabled = anyEnabled
+						Private.EventRegistry:TriggerEvent(
+							Private.Enum.Events.SETTING_CHANGED,
+							isSelf and Private.Settings.Keys.Self.Enabled or Private.Settings.Keys.Party.Enabled,
+							anyEnabled
+						)
+					end
 				end
 
-				return container:GetData()
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Number,
-				L.Settings.FrameDirectionLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.FrameDirectionTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-
-		-- Frame OffsetX
-		do
-			local key = Private.Settings.Keys.Party.OffsetX
-			local defaultValue = Private.Settings.GetPartyDefaultSettings().OffsetX
-			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Party.OffsetX
-			end
-
-			local function SetValue(value)
-				if value ~= TargetedSpellsSaved.Settings.Party.OffsetX then
-					TargetedSpellsSaved.Settings.Party.OffsetX = value
-
-					Private.EventRegistry:TriggerEvent(
-						Private.Enum.Events.SETTING_CHANGED,
-						key,
-						TargetedSpellsSaved.Settings.Party.OffsetX
-					)
-				end
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Number,
-				L.Settings.FrameOffsetXLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
-			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
-
-			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FrameOffsetXTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-
-		-- Frame OffsetY
-		do
-			local key = Private.Settings.Keys.Party.OffsetY
-			local defaultValue = Private.Settings.GetPartyDefaultSettings().OffsetY
-			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Party.OffsetY
-			end
-
-			local function SetValue(value)
-				if value ~= TargetedSpellsSaved.Settings.Party.OffsetY then
-					TargetedSpellsSaved.Settings.Party.OffsetY = value
-
-					Private.EventRegistry:TriggerEvent(
-						Private.Enum.Events.SETTING_CHANGED,
-						key,
-						TargetedSpellsSaved.Settings.Party.OffsetY
-					)
-				end
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Number,
-				L.Settings.FrameOffsetYLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
-			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
-
-			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FrameOffsetYTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-
-		-- Frame Source Anchor
-		do
-			local key = Private.Settings.Keys.Party.SourceAnchor
-			local defaultValue = Private.Settings.GetPartyDefaultSettings().SourceAnchor
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Party.SourceAnchor
-			end
-
-			local function SetValue(value)
-				TargetedSpellsSaved.Settings.Party.SourceAnchor = value
-
-				Private.EventRegistry:TriggerEvent(
-					Private.Enum.Events.SETTING_CHANGED,
+				local setting = Settings.RegisterProxySetting(
+					category,
 					key,
-					TargetedSpellsSaved.Settings.Party.SourceAnchor
+					Settings.VarType.Number,
+					L.Settings.LoadConditionContentTypeLabel,
+					defaultValue,
+					GetValue,
+					SetValue
 				)
+
+				local function GetOptions()
+					local container = Settings.CreateControlTextContainer()
+
+					for label, id in pairs(Private.Enum.ContentType) do
+						local function IsEnabled()
+							return kindTableRef.LoadConditionContentType[id]
+						end
+
+						local function Toggle()
+							kindTableRef.LoadConditionContentType[id] = not kindTableRef.LoadConditionContentType[id]
+						end
+
+						local translated = L.Settings.LoadConditionContentTypeLabels[id]
+
+						container:AddCheckbox(
+							id,
+							translated,
+							L.Settings.LoadConditionContentTypeTooltip,
+							IsEnabled,
+							Toggle
+						)
+					end
+
+					return container:GetData()
+				end
+
+				local initializer =
+					Settings.CreateDropdown(category, setting, GetOptions, L.Settings.LoadConditionContentTypeTooltip)
+
+				return {
+					initializer = initializer,
+					hideSteppers = true,
+					IsSectionEnabled = nil,
+				}
 			end
+
+			local function GetValue()
+				return 0
+			end
+
+			local function SetValue() end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				L.Settings.LoadConditionContentTypeLabel,
+				0,
+				GetValue,
+				SetValue
+			)
 
 			local function GetOptions()
 				local container = Settings.CreateControlTextContainer()
 
-				for k, v in pairs(Private.Enum.Anchor) do
-					container:Add(v, k)
+				for label, id in pairs(Private.Enum.ContentType) do
+					local translated = L.Settings.LoadConditionRoleLabels[id]
+
+					container:Add(id, translated, L.Settings.LoadConditionContentTypeTooltip)
 				end
 
 				return container:GetData()
 			end
 
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.String,
-				L.Settings.FrameSourceAnchorLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
 			local initializer =
-				Settings.CreateDropdown(category, setting, GetOptions, L.Settings.FrameSourceAnchorTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+				Settings.CreateDropdown(category, setting, GetOptions, L.Settings.LoadConditionContentTypeTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = true,
+				IsSectionEnabled = function()
+					return false
+				end,
+			}
 		end
 
-		-- Frame Target Anchor
-		do
-			local key = Private.Settings.Keys.Party.TargetAnchor
-			local defaultValue = Private.Settings.GetPartyDefaultSettings().TargetAnchor
+		error(string.format("CreateSetting not implemented for key '%s'", key))
+	end
 
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Party.TargetAnchor
-			end
+	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Self"))
 
-			local function SetValue(value)
-				TargetedSpellsSaved.Settings.Party.TargetAnchor = value
+	do
+		local generalCategoryEnabledInitializer
 
-				Private.EventRegistry:TriggerEvent(
-					Private.Enum.Events.SETTING_CHANGED,
-					key,
-					TargetedSpellsSaved.Settings.Party.TargetAnchor
-				)
-			end
+		local function IsSectionEnabled()
+			return TargetedSpellsSaved.Settings.Self.Enabled
+		end
 
-			local function GetOptions()
-				local container = Settings.CreateControlTextContainer()
+		local settingsOrder = Private.Settings.GetSettingsDisplayOrder(Private.Enum.FrameKind.Self)
+		local defaults = Private.Settings.GetSelfDefaultSettings()
 
-				for k, v in pairs(Private.Enum.Anchor) do
-					container:Add(v, k)
+		for i, key in ipairs(settingsOrder) do
+			local config = CreateSetting(key, defaults)
+
+			if key == Private.Settings.Keys.Self.Enabled then
+				generalCategoryEnabledInitializer = config.initializer
+			else
+				if config.hideSteppers then
+					config.initializer.hideSteppers = true
 				end
 
-				return container:GetData()
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.String,
-				L.Settings.FrameTargetAnchorLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local initializer =
-				Settings.CreateDropdown(category, setting, GetOptions, L.Settings.FrameTargetAnchorTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-
-		-- Frame Grow
-		do
-			local key = Private.Settings.Keys.Party.Grow
-			local defaultValue = Private.Settings.GetPartyDefaultSettings().Grow
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Party.Grow
-			end
-
-			local function SetValue(value)
-				TargetedSpellsSaved.Settings.Party.Grow = value
-
-				Private.EventRegistry:TriggerEvent(
-					Private.Enum.Events.SETTING_CHANGED,
-					key,
-					TargetedSpellsSaved.Settings.Party.Grow
+				config.initializer:SetParentInitializer(
+					generalCategoryEnabledInitializer,
+					config.IsSectionEnabled or IsSectionEnabled
 				)
 			end
+		end
+	end
 
-			local function GetOptions()
-				local container = Settings.CreateControlTextContainer()
+	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Party"))
 
-				for label, id in pairs(Private.Enum.Grow) do
-					local translated = L.Settings.FrameGrowLabels[id]
-					container:Add(id, translated)
+	do
+		local generalCategoryEnabledInitializer
+
+		local function IsSectionEnabled()
+			return TargetedSpellsSaved.Settings.Party.Enabled
+		end
+
+		local settingsOrder = Private.Settings.GetSettingsDisplayOrder(Private.Enum.FrameKind.Party)
+		local defaults = Private.Settings.GetPartyDefaultSettings()
+
+		for i, key in ipairs(settingsOrder) do
+			local config = CreateSetting(key, defaults)
+
+			if key == Private.Settings.Keys.Party.Enabled then
+				generalCategoryEnabledInitializer = config.initializer
+			else
+				if config.hideSteppers then
+					config.initializer.hideSteppers = true
 				end
 
-				return container:GetData()
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Number,
-				L.Settings.FrameGrowLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.FrameGrowTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-
-		-- Frame Sort Order
-		do
-			local key = Private.Settings.Keys.Party.SortOrder
-			local defaultValue = Private.Settings.GetPartyDefaultSettings().SortOrder
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Party.SortOrder
-			end
-
-			local function SetValue(value)
-				TargetedSpellsSaved.Settings.Party.SortOrder = value
-
-				Private.EventRegistry:TriggerEvent(
-					Private.Enum.Events.SETTING_CHANGED,
-					key,
-					TargetedSpellsSaved.Settings.Party.SortOrder
+				config.initializer:SetParentInitializer(
+					generalCategoryEnabledInitializer,
+					config.IsSectionEnabled or IsSectionEnabled
 				)
 			end
-
-			local function GetOptions()
-				local container = Settings.CreateControlTextContainer()
-
-				for label, id in pairs(Private.Enum.SortOrder) do
-					local translated = id == Private.Enum.SortOrder.Ascending and L.Settings.FrameSortOrderAscending
-						or L.Settings.FrameSortOrderDescending
-					container:Add(id, translated)
-				end
-
-				return container:GetData()
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Number,
-				L.Settings.FrameSortOrderLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.FrameSortOrderTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-
-		-- Glow Important
-		do
-			local key = Private.Settings.Keys.Party.GlowImportant
-
-			local function SetValue(value)
-				TargetedSpellsSaved.Settings.Party.GlowImportant = not TargetedSpellsSaved.Settings.Party.GlowImportant
-				Private.EventRegistry:TriggerEvent(
-					Private.Enum.Events.SETTING_CHANGED,
-					key,
-					TargetedSpellsSaved.Settings.Party.GlowImportant
-				)
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Boolean,
-				L.Settings.GlowImportantLabel,
-				Settings.Default.True,
-				IsSectionEnabled,
-				SetValue
-			)
-			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.GlowImportantTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-
-		-- Glow Type
-		do
-			local key = Private.Settings.Keys.Party.GlowType
-			local defaultValue = Private.Settings.GetPartyDefaultSettings().GlowType
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Party.GlowType
-			end
-
-			local function SetValue(value)
-				TargetedSpellsSaved.Settings.Party.GlowType = value
-
-				Private.EventRegistry:TriggerEvent(
-					Private.Enum.Events.SETTING_CHANGED,
-					key,
-					TargetedSpellsSaved.Settings.Party.GlowType
-				)
-			end
-
-			local function GetOptions()
-				local container = Settings.CreateControlTextContainer()
-
-				for label, id in pairs(Private.Enum.GlowType) do
-					local translated = L.Settings.GlowTypeLabels[id]
-
-					container:Add(id, translated)
-				end
-
-				return container:GetData()
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Number,
-				L.Settings.GlowTypeLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.GlowTypeTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-
-		-- Include Self in Party
-		do
-			local key = Private.Settings.Keys.Party.IncludeSelfInParty
-
-			local function SetValue(value)
-				TargetedSpellsSaved.Settings.Party.IncludeSelfInParty =
-					not TargetedSpellsSaved.Settings.Party.IncludeSelfInParty
-				Private.EventRegistry:TriggerEvent(
-					Private.Enum.Events.SETTING_CHANGED,
-					key,
-					TargetedSpellsSaved.Settings.Party.IncludeSelfInParty
-				)
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Boolean,
-				L.Settings.IncludeSelfInPartyLabel,
-				Settings.Default.True,
-				IsSectionEnabled,
-				SetValue
-			)
-			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.IncludeSelfInPartyTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-
-		-- Show Duration
-		do
-			local key = Private.Settings.Keys.Party.ShowDuration
-			local defaultValue = Private.Settings.GetPartyDefaultSettings().ShowDuration
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Party.ShowDuration
-			end
-
-			local function SetValue(value)
-				TargetedSpellsSaved.Settings.Party.ShowDuration = not TargetedSpellsSaved.Settings.Party.ShowDuration
-				Private.EventRegistry:TriggerEvent(
-					Private.Enum.Events.SETTING_CHANGED,
-					key,
-					TargetedSpellsSaved.Settings.Party.ShowDuration
-				)
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Boolean,
-				L.Settings.ShowDurationLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.ShowDurationTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-
-		-- Show Border
-		do
-			local key = Private.Settings.Keys.Party.ShowBorder
-			local defaultValue = Private.Settings.GetPartyDefaultSettings().ShowBorder
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Party.ShowBorder
-			end
-
-			local function SetValue(value)
-				TargetedSpellsSaved.Settings.Party.ShowBorder = not TargetedSpellsSaved.Settings.Party.ShowBorder
-				Private.EventRegistry:TriggerEvent(
-					Private.Enum.Events.SETTING_CHANGED,
-					key,
-					TargetedSpellsSaved.Settings.Party.ShowBorder
-				)
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Boolean,
-				L.Settings.ShowBorderLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.ShowBorderTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
-		end
-
-		-- Opacity
-		do
-			local key = Private.Settings.Keys.Party.Opacity
-			local defaultValue = Private.Settings.GetPartyDefaultSettings().Opacity
-			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Party.Opacity
-			end
-
-			local function SetValue(value)
-				if value ~= TargetedSpellsSaved.Settings.Party.Opacity then
-					TargetedSpellsSaved.Settings.Party.Opacity = value
-
-					Private.EventRegistry:TriggerEvent(
-						Private.Enum.Events.SETTING_CHANGED,
-						key,
-						TargetedSpellsSaved.Settings.Party.Opacity
-					)
-				end
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Number,
-				L.Settings.OpacityLabel,
-				defaultValue,
-				GetValue,
-				SetValue
-			)
-			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
-			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, FormatPercentage)
-
-			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.OpacityTooltip)
-			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 	end
 

@@ -17,8 +17,8 @@ function TargetedSpellsDriver:Init()
 	self.framePool = CreateFramePool("Frame", UIParent, "TargetedSpellsFrameTemplate")
 	self.delay = 0.2
 	self.frames = {}
-	self.role = nil
-	self.contentType = nil
+	self.role = Private.Enum.Role.Damager
+	self.contentType = Private.Enum.ContentType.OpenWorld
 
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingsChanged, self)
 
@@ -54,9 +54,13 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 	then
 		self.frame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 		self.frame:RegisterEvent("LOADING_SCREEN_DISABLED")
+		self.frame:RegisterEvent("UPDATE_INSTANCE_INFO")
 		self.frame:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_START")
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED")
+		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTED")
+		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_FAILED_QUIET")
+		self.frame:RegisterUnitEvent("UNIT_TARGET")
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_STOP")
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_START")
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_STOP")
@@ -95,21 +99,15 @@ if Private.IsMidnight then
 			local partyMemberCount = GetNumGroupMembers()
 
 			for i = 1, partyMemberCount do
-				local token = i == partyMemberCount and "player" or "party" .. i
+				local unit = i == partyMemberCount and "player" or "party" .. i
 
-				if
-					(token == "player" and TargetedSpellsSaved.Settings.Party.IncludeSelfInParty)
-					or token ~= "player"
-				then
+				if (unit == "player" and TargetedSpellsSaved.Settings.Party.IncludeSelfInParty) or unit ~= "player" then
 					local frame = self.framePool:Acquire()
-					frame:PostCreate(token, Private.Enum.FrameKind.Party, castingUnit)
+					frame:PostCreate(unit, Private.Enum.FrameKind.Party, castingUnit)
 					table.insert(frames, frame)
-					pprint("added frame for", token)
 				end
 			end
 		end
-
-		pprint("acquired", #frames, "frames for", castingUnit)
 
 		return frames
 	end
@@ -136,24 +134,22 @@ else
 			local partyMemberCount = GetNumGroupMembers()
 
 			for i = 1, partyMemberCount do
-				local token = i == partyMemberCount and "player" or "party" .. i
+				local unit = i == partyMemberCount and "player" or "party" .. i
 
 				if
-					UnitIsUnit(string.format("%starget", castingUnit), token)
+					UnitIsUnit(string.format("%starget", castingUnit), unit)
 					and (
-						(token == "player" and TargetedSpellsSaved.Settings.Party.IncludeSelfInParty)
-						or token ~= "player"
+						(unit == "player" and TargetedSpellsSaved.Settings.Party.IncludeSelfInParty)
+						or unit ~= "player"
 					)
 				then
 					local frame = self.framePool:Acquire()
-					frame:PostCreate(token, Private.Enum.FrameKind.Party, castingUnit)
+					frame:PostCreate(unit, Private.Enum.FrameKind.Party, castingUnit)
 					table.insert(frames, frame)
-					pprint("added frame for", token)
+					pprint("added frame for", unit)
 				end
 			end
 		end
-
-		pprint("acquired", #frames, "frames for", castingUnit)
 
 		return frames
 	end
@@ -162,7 +158,7 @@ end
 -- this is where 3rd party unit frames would need addition
 ---@param unit string
 ---@return Frame?
-local function FindParentFrameForUnit(unit)
+local function FindParentFrameForPartyMember(unit)
 	if unit == "player" then
 		if not EditModeManagerFrame:UseRaidStylePartyFrames() then
 			-- non-raid style party frames don't include the player
@@ -206,11 +202,11 @@ function TargetedSpellsDriver:RepositionFrames()
 		for i, frame in pairs(frames) do
 			if frame:ShouldBeShown() then
 				if frame:GetKind() == Private.Enum.FrameKind.Self then
-					if activeFrames.player == nil then
-						activeFrames.player = {}
+					if activeFrames[Private.Enum.FrameKind.Self] == nil then
+						activeFrames[Private.Enum.FrameKind.Self] = {}
 					end
 
-					table.insert(activeFrames.player, frame)
+					table.insert(activeFrames[Private.Enum.FrameKind.Self], frame)
 				else
 					local targetUnit = frame:GetUnit()
 
@@ -227,7 +223,8 @@ function TargetedSpellsDriver:RepositionFrames()
 	end
 
 	for targetUnit, frames in pairs(activeFrames) do
-		if targetUnit == "player" then
+		-- may not use "player" here as the unit token in party for the player is identical
+		if targetUnit == Private.Enum.FrameKind.Self then
 			local width, height, gap, sortOrder, direction, grow =
 				TargetedSpellsSaved.Settings.Self.Width,
 				TargetedSpellsSaved.Settings.Self.Height,
@@ -254,9 +251,8 @@ function TargetedSpellsDriver:RepositionFrames()
 				frame:Reposition(point, self.frame, "CENTER", x, y)
 			end
 		else
-			local parentFrame = FindParentFrameForUnit(targetUnit)
+			local parentFrame = FindParentFrameForPartyMember(targetUnit)
 
-			-- no unit frame addon support at this time
 			if parentFrame ~= nil then
 				local width, height, gap, sortOrder, sourceAnchor, targetAnchor, direction, grow, offsetX, offsetY =
 					TargetedSpellsSaved.Settings.Party.Width,
@@ -293,7 +289,7 @@ function TargetedSpellsDriver:RepositionFrames()
 	end
 end
 
-function TargetedSpellsDriver:CleanUpUnit(unit, event)
+function TargetedSpellsDriver:CleanUpUnit(unit)
 	local frames = self.frames[unit]
 
 	if frames ~= nil and #frames > 0 then
@@ -327,32 +323,8 @@ function TargetedSpellsDriver:LoadConditionsProhibitExecution(kind)
 	return false
 end
 
-local function OnCVarChange(value)
-	local staticPopupDialogKey = addonName
-
-	if StaticPopupDialogs[staticPopupDialogKey] == nil then
-		StaticPopupDialogs[staticPopupDialogKey] = {
-			id = addonName,
-			button1 = ACCEPT,
-			button2 = CLOSE,
-			whileDead = true,
-			text = Private.L.Functionality.CVarWarning,
-			OnAccept = function(dialog, data)
-				C_CVar.SetCVar("nameplateShowOffscreen", 1)
-				-- Settings.OpenToCategory(Settings.NAMEPLATE_OPTIONS_CATEGORY_ID, UNIT_NAMEPLATES_SHOW_OFFSCREEN)
-			end,
-		}
-	end
-
-	if value == "1" or value == 1 then
-		StaticPopup_Hide(staticPopupDialogKey)
-	else
-		StaticPopup_Show(addonName)
-	end
-end
-
 ---@param listenerFrame Frame -- identical to self.frame
----@param event "ZONE_CHANGED_NEW_AREA" | "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" | "UNIT_SPELLCAST_SUCCEEDED" |"EDIT_MODE_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "DELAYED_UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED"
+---@param event "UNIT_SPELLCAST_INTERRUPTED" | "UNIT_SPELLCAST_FAILED_QUIET" | "ZONE_CHANGED_NEW_AREA" | "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" | "UNIT_SPELLCAST_SUCCEEDED" |"EDIT_MODE_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "DELAYED_UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED"
 function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 	if
 		event == "UNIT_SPELLCAST_START"
@@ -362,11 +334,10 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		local unit, castGuid, spellId = ...
 
 		if
-			UnitInParty(unit)
+			string.find(unit, "nameplate") == nil
+			or UnitInParty(unit)
 			or not UnitExists(unit)
-			or UnitIsUnit("player", unit)
 			or not UnitAffectingCombat(unit)
-			or string.find(unit, "nameplate") == nil
 		then
 			return
 		end
@@ -386,8 +357,48 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 				}
 			)
 		)
+	elseif event == "UNIT_TARGET" then
+		local unit = ...
+
+		if
+			string.find(unit, "nameplate") == nil
+			or UnitInParty(unit)
+			or not UnitExists(unit)
+			or not UnitAffectingCombat(unit)
+		then
+			return
+		end
+
+		local delayEvent = Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START
+		local spellId = select(9, UnitCastingInfo(unit))
+
+		if spellId == nil then
+			spellId = select(8, UnitChannelInfo(unit))
+			delayEvent = Private.Enum.Events.DELAYED_UNIT_SPELLCAST_CHANNEL_START
+		end
+
+		if spellId == nil then
+			return
+		end
+
+		self:OnFrameEvent(self.listenerFrame, delayEvent, {
+			unit = unit,
+			spellId = spellId,
+			-- best we can do. _possibly_ wrong depending on when the enemy turned
+			startTime = GetTime(),
+		})
 	elseif event == "NAME_PLATE_UNIT_ADDED" then
 		local unit = ...
+
+		if
+			string.find(unit, "nameplate") == nil
+			or UnitInParty(unit)
+			or not UnitExists(unit)
+			or not UnitAffectingCombat(unit)
+		then
+			return
+		end
+
 		local spellId = nil
 		local castTime = nil
 		local startTime = nil
@@ -431,6 +442,8 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 
 		if self.frames[unit] == nil then
 			self.frames[unit] = {}
+		else
+			self:CleanUpUnit(unit)
 		end
 
 		for _, frame in ipairs(frames) do
@@ -439,28 +452,10 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			frame:SetStartTime(startTime)
 			frame:SetCastTime(castTime)
 			frame:RefreshSpellCooldownInfo()
-			frame:AttemptToPlaySound(self.contentType)
-			frame:AttemptToPlayTTS(self.contentType)
 			frame:Show()
 		end
 
 		self:RepositionFrames()
-	elseif event == "NAME_PLATE_UNIT_REMOVED" then
-		local unit = ...
-
-		-- todo: decide whether we actually care about this
-		if
-			UnitInParty(unit)
-			or not UnitExists(unit)
-			or UnitIsUnit("player", unit)
-			or string.find(unit, "nameplate") == nil
-		then
-			return
-		end
-
-		if self:CleanUpUnit(unit, event) then
-			self:RepositionFrames()
-		end
 	elseif event == "CVAR_UPDATE" then
 		local name, value = ...
 
@@ -472,7 +467,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			local cleanedSomethingUp = false
 
 			for unit in pairs(self.frames) do
-				if self:CleanUpUnit(unit, event) then
+				if self:CleanUpUnit(unit) then
 					cleanedSomethingUp = true
 				end
 			end
@@ -481,26 +476,60 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 				self:RepositionFrames()
 			end
 		elseif name == "nameplateShowOffscreen" then
-			OnCVarChange(value)
+			if StaticPopupDialogs[addonName] == nil then
+				StaticPopupDialogs[addonName] = {
+					id = addonName,
+					button1 = ACCEPT,
+					button2 = CLOSE,
+					whileDead = true,
+					text = Private.L.Functionality.CVarWarning,
+					OnAccept = function(dialog, data)
+						C_CVar.SetCVar("nameplateShowOffscreen", 1)
+						-- Settings.OpenToCategory(Settings.NAMEPLATE_OPTIONS_CATEGORY_ID, UNIT_NAMEPLATES_SHOW_OFFSCREEN)
+					end,
+				}
+			end
+
+			if value == "1" or value == 1 then
+				StaticPopup_Hide(addonName)
+			else
+				StaticPopup_Show(addonName)
+			end
+		elseif name == "CAAEnabled" then
+			if not TargetedSpellsSaved.Settings.Self.PlayTTS and not TargetedSpellsSaved.Settings.Self.PlaySound then
+				return
+			end
+
+			if value == "0" or value == 0 then
+				print(Private.L.Functionality.CAAManuallyDisabledWarning)
+			end
+		elseif name == "CAASayIfTargeted" then
+			if not TargetedSpellsSaved.Settings.Self.PlayTTS and not TargetedSpellsSaved.Settings.Self.PlaySound then
+				return
+			end
+
+			local state = C_CombatAudioAlert.GetSpecSetting(Enum.CombatAudioAlertSpecSetting.SayIfTargeted)
+
+			if state == 0 then
+				print(Private.L.Functionality.CAASayIfTargetedDisabledWarning)
+			end
 		end
 	elseif
 		event == "UNIT_SPELLCAST_STOP"
 		or event == "UNIT_SPELLCAST_CHANNEL_STOP"
 		or event == "UNIT_SPELLCAST_SUCCEEDED"
 		or event == "UNIT_SPELLCAST_EMPOWER_STOP"
+		or event == "NAME_PLATE_UNIT_REMOVED"
+		or event == "UNIT_SPELLCAST_INTERRUPTED"
+		or event == "UNIT_SPELLCAST_FAILED_QUIET"
 	then
 		local unit = ...
 
-		if
-			UnitInParty(unit)
-			or not UnitExists(unit)
-			or UnitIsUnit("player", unit)
-			or string.find(unit, "nameplate") == nil
-		then
+		if string.find(unit, "nameplate") == nil or UnitInParty(unit) or not UnitExists(unit) then
 			return
 		end
 
-		if self:CleanUpUnit(unit, event) then
+		if self:CleanUpUnit(unit) then
 			self:RepositionFrames()
 		end
 	elseif
@@ -533,6 +562,8 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 
 		if self.frames[info.unit] == nil then
 			self.frames[info.unit] = {}
+		else
+			self:CleanUpUnit(info.unit)
 		end
 
 		local castTime = select(2, nameplate.UnitFrame.castBar:GetMinMaxValues())
@@ -543,8 +574,6 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			frame:SetStartTime(info.startTime)
 			frame:SetCastTime(castTime)
 			frame:RefreshSpellCooldownInfo()
-			frame:AttemptToPlaySound(self.contentType)
-			frame:AttemptToPlayTTS(self.contentType)
 			frame:Show()
 		end
 
@@ -553,41 +582,49 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		event == "ZONE_CHANGED_NEW_AREA"
 		or event == "LOADING_SCREEN_DISABLED"
 		or event == "PLAYER_SPECIALIZATION_CHANGED"
+		or event == "UPDATE_INSTANCE_INFO"
 	then
-		local name, instanceType, difficultyID = GetInstanceInfo()
+		local name, instanceType, difficultyId = GetInstanceInfo()
+		-- equivalent to `instanceType == "none"`
+		local nextContentType = Private.Enum.ContentType.OpenWorld
 
 		if instanceType == "raid" then
-			self.contentType = Private.Enum.ContentType.Raid
+			nextContentType = Private.Enum.ContentType.Raid
 		elseif instanceType == "party" then
 			if
-				difficultyID == DifficultyUtil.ID.DungeonNormal
-				or difficultyID == DifficultyUtil.ID.DungeonHeroic
-				or difficultyID == DifficultyUtil.ID.DungeonMythic
-				or difficultyID == DifficultyUtil.ID.DungeonChallenge
+				difficultyId == DifficultyUtil.ID.DungeonTimewalker
+				or difficultyId == DifficultyUtil.ID.DungeonNormal
+				or difficultyId == DifficultyUtil.ID.DungeonHeroic
+				or difficultyId == DifficultyUtil.ID.DungeonMythic
+				or difficultyId == DifficultyUtil.ID.DungeonChallenge
+				or difficultyId == 205 -- follower dungeons
 			then
-				self.contentType = Private.Enum.ContentType.Dungeon
+				nextContentType = Private.Enum.ContentType.Dungeon
 			end
 		elseif instanceType == "pvp" then
-			self.contentType = Private.Enum.ContentType.Battleground
+			nextContentType = Private.Enum.ContentType.Battleground
 		elseif instanceType == "arena" then
-			self.contentType = Private.Enum.ContentType.Arena
+			nextContentType = Private.Enum.ContentType.Arena
 		elseif instanceType == "scenario" then
-			if difficultyID == 208 then
-				self.contentType = Private.Enum.ContentType.Delve
+			if difficultyId == 208 then
+				nextContentType = Private.Enum.ContentType.Delve
 			end
-		else
-			-- equivalent to `instanceType == "none"`
-			self.contentType = Private.Enum.ContentType.OpenWorld
 		end
 
-		for label, id in pairs(Private.Enum.ContentType) do
-			if id == self.contentType then
-				print("detected content type", label)
-				break
+		if nextContentType ~= self.contentType then
+			self.contentType = nextContentType
+			for label, id in pairs(Private.Enum.ContentType) do
+				if id == nextContentType then
+					print("detected content type change", label)
+					break
+				end
 			end
+
+			self:MaybeApplyCombatAudioAlertOverride()
 		end
 
 		local specId = PlayerUtil.GetCurrentSpecID()
+		local nextRole = self.role
 
 		if
 			specId == 105 -- restoration druid
@@ -598,7 +635,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			or specId == 257 -- holy priest
 			or specId == 264 -- restoration shaman
 		then
-			self.role = Private.Enum.Role.Healer
+			nextRole = Private.Enum.Role.Healer
 		elseif
 			specId == 250 -- blood death knight
 			or specId == 581 -- vengeance demon hunter
@@ -607,15 +644,19 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			or specId == 66 -- protection paladin
 			or specId == 73 -- protection warrior
 		then
-			self.role = Private.Enum.Role.Tank
+			nextRole = Private.Enum.Role.Tank
 		else
-			self.role = Private.Enum.Role.Damager
+			nextRole = Private.Enum.Role.Damager
 		end
 
-		for label, id in pairs(Private.Enum.Role) do
-			if id == self.role then
-				print("detected role", label)
-				break
+		if nextRole ~= self.role then
+			self.role = nextRole
+
+			for label, id in pairs(Private.Enum.Role) do
+				if id == self.role then
+					print("detected role change", label)
+					break
+				end
 			end
 		end
 	elseif event == Private.Enum.Events.EDIT_MODE_POSITION_CHANGED then
@@ -639,6 +680,71 @@ function TargetedSpellsDriver:OnSettingsChanged(key, value)
 		else
 			self:SetupFrame(false)
 		end
+	elseif key == Private.Settings.Keys.Self.PlayTTS or key == Private.Settings.Keys.Self.PlaySound then
+		if value then
+			C_CVar.SetCVar("CAAEnabled", 1)
+			C_CVar.SetCVar("CAASayCombatStart", 0)
+			C_CVar.SetCVar("CAASayCombatEnd", 0)
+			C_CVar.SetCVar("CAAVoice", Private.Utils.FindAppropriateTTSVoiceId())
+			C_CVar.SetCVar("CAASayTargetName", 0)
+			C_CVar.SetCVar("CAATargetHealthPercent", 0)
+
+			print(Private.L.Functionality.CAAEnabledWarning)
+		else
+			C_CVar.SetCVar("CAAEnabled", 0)
+			print(Private.L.Functionality.CAADisabledWarning)
+		end
+	end
+end
+
+function TargetedSpellsDriver:MaybeApplyCombatAudioAlertOverride()
+	if not Private.IsMidnight then
+		return
+	end
+
+	if not TargetedSpellsSaved.Settings.Self.PlaySound and not TargetedSpellsSaved.Settings.Self.PlayTTS then
+		return
+	end
+
+	local function GetCurrentContentType()
+		return self.contentType
+	end
+
+	function CombatAudioAlertManager:GetUnitFormattedTargetingString(unit)
+		local spellId = select(9, UnitCastingInfo(unit))
+
+		if spellId == nil then
+			spellId = select(8, UnitChannelInfo(unit))
+		end
+
+		if spellId == nil then
+			return "" -- this is good old aggro
+		end
+
+		if TargetedSpellsSaved.Settings.Self.PlaySound then
+			if TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[GetCurrentContentType()] then
+				Private.Utils.AttemptToPlaySound(
+					TargetedSpellsSaved.Settings.Self.Sound,
+					TargetedSpellsSaved.Settings.Self.SoundChannel
+				)
+			end
+		elseif TargetedSpellsSaved.Settings.Self.PlayTTS then
+			local spellName = C_Spell.GetSpellName(spellId)
+
+			if spellName == nil then
+				return ""
+			end
+
+			-- cant return `spellName` ourselves here because its secret and further down the line, secrest aren't allowed
+			C_VoiceChat.SpeakText(
+				TargetedSpellsSaved.Settings.Self.TTSVoice,
+				spellName,
+				2,
+				C_TTSSettings.GetSpeechVolume()
+			)
+		end
+
+		return ""
 	end
 end
 

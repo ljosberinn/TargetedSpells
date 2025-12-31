@@ -26,6 +26,7 @@ EventUtil.ContinueOnAddOnLoaded(addonName, function()
 		TargetedSpellsSaved.nameplateShowOffscreenWasInitialized = true
 		C_CVar.SetCVar("nameplateShowOffscreen", 1)
 	end
+
 	---@class TargetedSpellsSettings
 	TargetedSpellsSaved.Settings = TargetedSpellsSaved.Settings or {}
 	---@class SavedVariablesSettingsSelf

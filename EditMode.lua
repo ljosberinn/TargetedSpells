@@ -76,29 +76,36 @@ function TargetedSpellsEditModeMixin:OnSettingsChanged(key, value)
 	end
 end
 
-function TargetedSpellsEditModeMixin:CreateSetting(key)
+function TargetedSpellsEditModeMixin:CreateSetting(key, defaults)
 	local L = Private.L
 
 	if key == Private.Settings.Keys.Self.Opacity or key == Private.Settings.Keys.Party.Opacity then
-		local isSelf = key == Private.Settings.Keys.Self.Opacity
-		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
+		local tableRef = key == Private.Settings.Keys.Self.Opacity and TargetedSpellsSaved.Settings.Self
+			or TargetedSpellsSaved.Settings.Party
 		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+
+		---@param layoutName string
+		local function Get(layoutName)
+			return tableRef.Opacity
+		end
+
+		---@param layoutName string
+		---@param value number
+		local function Set(layoutName, value)
+			if value ~= tableRef.Opacity then
+				tableRef.Opacity = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+		end
 
 		---@type LibEditModeSlider
 		return {
 			name = L.Settings.OpacityLabel,
 			kind = Enum.EditModeSettingDisplayType.Slider,
-			default = isSelf and Private.Settings.GetSelfDefaultSettings().Opacity
-				or Private.Settings.GetPartyDefaultSettings().Opacity,
-			get = function(layoutName)
-				return tableRef.Opacity
-			end,
-			set = function(layoutName, value)
-				if value ~= tableRef.Opacity then
-					tableRef.Opacity = value
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-				end
-			end,
+			default = defaults.Opacity,
+			desc = L.Settings.OpacityTooltip,
+			get = Get,
+			set = Set,
 			minValue = sliderSettings.min,
 			maxValue = sliderSettings.max,
 			valueStep = sliderSettings.step,
@@ -107,42 +114,69 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 	end
 
 	if key == Private.Settings.Keys.Self.GlowImportant or key == Private.Settings.Keys.Party.GlowImportant then
-		local isSelf = key == Private.Settings.Keys.Self.GlowImportant
-		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
+		local tableRef = key == Private.Settings.Keys.Self.GlowImportant and TargetedSpellsSaved.Settings.Self
+			or TargetedSpellsSaved.Settings.Party
+
+		---@param layoutName string
+		local function Get(layoutName)
+			return tableRef.GlowImportant
+		end
+
+		---@param layoutName string
+		---@param value boolean
+		local function Set(layoutName, value)
+			if value ~= tableRef.GlowImportant then
+				tableRef.GlowImportant = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+
+			if value then
+				LibEditMode:EnableFrameSetting(self.editModeFrame, L.Settings.GlowTypeLabel)
+			else
+				LibEditMode:DisableFrameSetting(self.editModeFrame, L.Settings.GlowTypeLabel)
+			end
+		end
 
 		---@type LibEditModeCheckbox
 		return {
 			name = L.Settings.GlowImportantLabel,
 			kind = Enum.EditModeSettingDisplayType.Checkbox,
 			desc = L.Settings.GlowImportantTooltip,
-			default = isSelf and Private.Settings.GetSelfDefaultSettings().GlowImportant
-				or Private.Settings.GetPartyDefaultSettings().GlowImportant,
-			get =
-				---@param layoutName string
-				function(layoutName)
-					return tableRef.GlowImportant
-				end,
-			---@param layoutName string
-			---@param value boolean
-			set = function(layoutName, value)
-				if value ~= tableRef.GlowImportant then
-					tableRef.GlowImportant = value
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-				end
-			end,
+			default = defaults.GlowImportant,
+			get = Get,
+			set = Set,
 		}
 	end
 
 	if key == Private.Settings.Keys.Self.GlowType or key == Private.Settings.Keys.Party.GlowType then
-		local isSelf = key == Private.Settings.Keys.Self.GlowType
-		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
+		local tableRef = key == Private.Settings.Keys.Self.GlowType and TargetedSpellsSaved.Settings.Self
+			or TargetedSpellsSaved.Settings.Party
 
 		---@param layoutName string
-		---@param value string
+		---@param value number
 		local function Set(layoutName, value)
 			if tableRef.GlowType ~= value then
 				tableRef.GlowType = value
 				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+		end
+
+		local function Generator(owner, rootDescription, data)
+			for label, id in pairs(Private.Enum.GlowType) do
+				local function IsEnabled()
+					return tableRef.GlowType == id
+				end
+
+				local function SetProxy()
+					Set(LibEditMode:GetActiveLayoutName(), id)
+				end
+
+				local translated = L.Settings.GlowTypeLabels[id]
+
+				rootDescription:CreateCheckbox(translated, IsEnabled, SetProxy, {
+					value = label,
+					multiple = false,
+				})
 			end
 		end
 
@@ -151,102 +185,212 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 			name = L.Settings.GlowTypeLabel,
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
 			desc = L.Settings.GlowTypeTooltip,
-			default = isSelf and Private.Settings.GetSelfDefaultSettings().GlowType
-				or Private.Settings.GetPartyDefaultSettings().GlowType,
+			default = defaults.GlowType,
 			multiple = false,
-			generator = function(owner, rootDescription, data)
-				for label, id in pairs(Private.Enum.GlowType) do
-					local function IsEnabled()
-						return tableRef.GlowType == id
-					end
-
-					local function SetProxy()
-						Set(LibEditMode:GetActiveLayoutName(), id)
-					end
-
-					local translated = L.Settings.GlowTypeLabels[id]
-
-					rootDescription:CreateCheckbox(translated, IsEnabled, SetProxy, {
-						value = label,
-						multiple = false,
-					})
-				end
-			end,
+			generator = Generator,
 			set = Set,
+			disabled = not tableRef.GlowImportant,
 		}
 	end
 
 	if key == Private.Settings.Keys.Self.ShowBorder or key == Private.Settings.Keys.Party.ShowBorder then
-		local isSelf = key == Private.Settings.Keys.Self.ShowBorder
-		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
+		local tableRef = key == Private.Settings.Keys.Self.ShowBorder and TargetedSpellsSaved.Settings.Self
+			or TargetedSpellsSaved.Settings.Party
+
+		---@param layoutName string
+		local function Get(layoutName)
+			return tableRef.ShowBorder
+		end
+
+		---@param layoutName string
+		---@param value boolean
+		local function Set(layoutName, value)
+			if value ~= tableRef.ShowBorder then
+				tableRef.ShowBorder = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+		end
 
 		---@type LibEditModeCheckbox
 		return {
 			name = L.Settings.ShowBorderLabel,
 			kind = Enum.EditModeSettingDisplayType.Checkbox,
-			default = isSelf and Private.Settings.GetSelfDefaultSettings().ShowBorder
-				or Private.Settings.GetPartyDefaultSettings().ShowBorder,
-			get =
-				---@param layoutName string
-				function(layoutName)
-					return tableRef.ShowBorder
-				end,
-			---@param layoutName string
-			---@param value boolean
-			set = function(layoutName, value)
-				if value ~= tableRef.ShowBorder then
-					tableRef.ShowBorder = value
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-				end
-			end,
+			desc = L.Settings.ShowBorderTooltip,
+			default = defaults.ShowBorder,
+			get = Get,
+			set = Set,
 		}
 	end
 
 	if key == Private.Settings.Keys.Self.ShowDuration or key == Private.Settings.Keys.Party.ShowDuration then
-		local isSelf = key == Private.Settings.Keys.Self.ShowDuration
-		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
+		local tableRef = key == Private.Settings.Keys.Self.ShowDuration and TargetedSpellsSaved.Settings.Self
+			or TargetedSpellsSaved.Settings.Party
+
+		---@param layoutName string
+		local function Get(layoutName)
+			return tableRef.ShowDuration
+		end
+
+		---@param layoutName string
+		---@param value boolean
+		local function Set(layoutName, value)
+			if value ~= tableRef.ShowDuration then
+				tableRef.ShowDuration = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+
+			if value then
+				LibEditMode:EnableFrameSetting(self.editModeFrame, L.Settings.FontSizeLabel)
+			else
+				LibEditMode:DisableFrameSetting(self.editModeFrame, L.Settings.FontSizeLabel)
+			end
+		end
 
 		---@type LibEditModeCheckbox
 		return {
 			name = L.Settings.ShowDurationLabel,
 			kind = Enum.EditModeSettingDisplayType.Checkbox,
-			default = isSelf and Private.Settings.GetSelfDefaultSettings().ShowDuration
-				or Private.Settings.GetPartyDefaultSettings().ShowDuration,
-			get =
-				---@param layoutName string
-				function(layoutName)
-					return tableRef.ShowDuration
-				end,
-			---@param layoutName string
-			---@param value boolean
-			set = function(layoutName, value)
-				if value ~= tableRef.ShowDuration then
-					tableRef.ShowDuration = value
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			desc = L.Settings.ShowDurationTooltip,
+			default = defaults.ShowDuration,
+			get = Get,
+			set = Set,
+		}
+	end
+
+	if key == Private.Settings.Keys.Self.PlayTTS then
+		---@param layoutName string
+		local function Get(layoutName)
+			return TargetedSpellsSaved.Settings.Self.PlayTTS
+		end
+
+		---@param layoutName string
+		---@param value boolean
+		local function Set(layoutName, value)
+			if value ~= TargetedSpellsSaved.Settings.Self.PlayTTS then
+				TargetedSpellsSaved.Settings.Self.PlayTTS = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+
+			if value then
+				if TargetedSpellsSaved.Settings.Self.PlaySound then
+					TargetedSpellsSaved.Settings.Self.PlaySound = false
+					Private.EventRegistry:TriggerEvent(
+						Private.Enum.Events.SETTING_CHANGED,
+						Private.Settings.Keys.Self.PlaySound,
+						false
+					)
 				end
-			end,
+
+				LibEditMode:EnableFrameSetting(self.editModeFrame, L.Settings.TTSVoiceLabel)
+				LibEditMode:DisableFrameSetting(self.editModeFrame, L.Settings.SoundLabel)
+				LibEditMode:DisableFrameSetting(self.editModeFrame, L.Settings.SoundChannelLabel)
+			else
+				if TargetedSpellsSaved.Settings.Self.PlaySound then
+					LibEditMode:EnableFrameSetting(self.editModeFrame, L.Settings.SoundLabel)
+					LibEditMode:EnableFrameSetting(self.editModeFrame, L.Settings.SoundChannelLabel)
+				end
+
+				LibEditMode:DisableFrameSetting(self.editModeFrame, L.Settings.TTSVoiceLabel)
+			end
+		end
+
+		---@type LibEditModeCheckbox
+		return {
+			name = L.Settings.PlayTTSLabel,
+			kind = Enum.EditModeSettingDisplayType.Checkbox,
+			desc = L.Settings.PlayTTSTooltip,
+			default = defaults.Enabled,
+			get = Get,
+			set = Set,
+		}
+	end
+
+	if key == Private.Settings.Keys.Self.TTSVoice then
+		---@param layoutName string
+		---@param value number
+		local function Set(layoutName, value)
+			if TargetedSpellsSaved.Settings.Self.TTSVoice ~= value then
+				TargetedSpellsSaved.Settings.Self.TTSVoice = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+
+				Private.Settings.SampleTTSVoice(value)
+			end
+		end
+
+		local function Generator(owner, rootDescription, data)
+			for _, voice in pairs(C_VoiceChat.GetTtsVoices()) do
+				local function IsEnabled()
+					return TargetedSpellsSaved.Settings.Self.TTSVoice == voice.voiceID
+				end
+
+				local function SetProxy()
+					Set(LibEditMode:GetActiveLayoutName(), voice.voiceID)
+				end
+
+				rootDescription:CreateCheckbox(voice.name, IsEnabled, SetProxy, {
+					value = voice.voiceID,
+					multiple = false,
+				})
+			end
+		end
+
+		---@type LibEditModeDropdown
+		return {
+			name = L.Settings.TTSVoiceLabel,
+			kind = Enum.EditModeSettingDisplayType.Dropdown,
+			default = defaults.TTSVoice,
+			desc = L.Settings.TTSVoiceTooltip,
+			generator = Generator,
+			set = Set,
+			disabled = TargetedSpellsSaved.Settings.Self.PlaySound or not TargetedSpellsSaved.Settings.Self.PlayTTS,
 		}
 	end
 
 	if key == Private.Settings.Keys.Self.PlaySound then
+		---@param layoutName string
+		local function Get(layoutName)
+			return TargetedSpellsSaved.Settings.Self.PlaySound
+		end
+
+		---@param layoutName string
+		---@param value boolean
+		local function Set(layoutName, value)
+			if value ~= TargetedSpellsSaved.Settings.Self.PlaySound then
+				TargetedSpellsSaved.Settings.Self.PlaySound = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+
+			if value then
+				if TargetedSpellsSaved.Settings.Self.PlayTTS then
+					TargetedSpellsSaved.Settings.Self.PlayTTS = false
+					Private.EventRegistry:TriggerEvent(
+						Private.Enum.Events.SETTING_CHANGED,
+						Private.Settings.Keys.Self.PlayTTS,
+						false
+					)
+				end
+
+				LibEditMode:DisableFrameSetting(self.editModeFrame, L.Settings.TTSVoiceLabel)
+				LibEditMode:EnableFrameSetting(self.editModeFrame, L.Settings.SoundLabel)
+				LibEditMode:EnableFrameSetting(self.editModeFrame, L.Settings.SoundChannelLabel)
+			else
+				if TargetedSpellsSaved.Settings.Self.PlayTTS then
+					LibEditMode:EnableFrameSetting(self.editModeFrame, L.Settings.TTSVoiceLabel)
+				end
+
+				LibEditMode:DisableFrameSetting(self.editModeFrame, L.Settings.SoundLabel)
+				LibEditMode:DisableFrameSetting(self.editModeFrame, L.Settings.SoundChannelLabel)
+			end
+		end
+
 		---@type LibEditModeCheckbox
 		return {
 			name = L.Settings.PlaySoundLabel,
 			kind = Enum.EditModeSettingDisplayType.Checkbox,
-			default = Private.Settings.GetSelfDefaultSettings().Enabled,
-			get =
-				---@param layoutName string
-				function(layoutName)
-					return TargetedSpellsSaved.Settings.Self.PlaySound
-				end,
-			---@param layoutName string
-			---@param value boolean
-			set = function(layoutName, value)
-				if value ~= TargetedSpellsSaved.Settings.Self.PlaySound then
-					TargetedSpellsSaved.Settings.Self.PlaySound = value
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-				end
-			end,
+			desc = L.Settings.PlaySoundTooltip,
+			default = defaults.PlaySound,
+			get = Get,
+			set = Set,
 		}
 	end
 
@@ -260,30 +404,34 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 			end
 		end
 
+		local function Generator(owner, rootDescription, data)
+			for label, enumValue in pairs(Private.Enum.SoundChannel) do
+				local function IsEnabled()
+					return TargetedSpellsSaved.Settings.Self.SoundChannel == enumValue
+				end
+
+				local function SetProxy()
+					Set(LibEditMode:GetActiveLayoutName(), enumValue)
+				end
+
+				local translated = L.Settings.SoundChannelLabels[enumValue]
+
+				rootDescription:CreateCheckbox(translated, IsEnabled, SetProxy, {
+					value = label,
+					multiple = false,
+				})
+			end
+		end
+
 		---@type LibEditModeDropdown
 		return {
 			name = L.Settings.SoundChannelLabel,
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
-			default = Private.Settings.GetSelfDefaultSettings().SoundChannel,
-			generator = function(owner, rootDescription, data)
-				for label, enumValue in pairs(Private.Enum.SoundChannel) do
-					local function IsEnabled()
-						return TargetedSpellsSaved.Settings.Self.SoundChannel == enumValue
-					end
-
-					local function SetProxy()
-						Set(LibEditMode:GetActiveLayoutName(), enumValue)
-					end
-
-					local translated = L.Settings.SoundChannelLabels[enumValue]
-
-					rootDescription:CreateCheckbox(translated, IsEnabled, SetProxy, {
-						value = label,
-						multiple = false,
-					})
-				end
-			end,
+			default = defaults.SoundChannel,
+			desc = L.Settings.SoundChannelTooltip,
+			generator = Generator,
 			set = Set,
+			disabled = TargetedSpellsSaved.Settings.Self.PlayTTS or not TargetedSpellsSaved.Settings.Self.PlaySound,
 		}
 	end
 
@@ -309,7 +457,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 							Private.EventRegistry:TriggerEvent(
 								Private.Enum.Events.SETTING_CHANGED,
 								key,
-								TargetedSpellsSaved.Settings.Self.Sound
+								value.soundKitID
 							)
 						end
 					end
@@ -362,83 +510,87 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 			RecursiveAddSounds(rootDescription, soundInfo.soundCategoryKeyToLabel, soundInfo.data, true)
 		end
 
+		local function Generator(owner, rootDescription, data)
+			-- pcall this to guard against internal changes on the cd viewer side
+			pcall(AddCooldownViewerSounds, rootDescription)
+			-- intentionally separated so if the above fails, we can always at least show Custom sounds
+			AddCustomSounds(rootDescription)
+		end
+
+		---@param layoutName string
+		---@param values table<string, boolean>
+		local function Set(layoutName, values)
+			if defaults.Sound ~= TargetedSpellsSaved.Settings.Self.Sound then
+				TargetedSpellsSaved.Settings.Self.Sound = defaults.Sound
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, defaults.Sound)
+			end
+		end
+
 		---@type LibEditModeDropdown
 		return {
 			name = L.Settings.SoundLabel,
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
 			desc = L.Settings.SoundTooltip,
-			default = Private.Settings.GetSelfDefaultSettings().Sound,
-			generator = function(owner, rootDescription, data)
-				-- pcall this to guard against internal changes on the cd viewer side
-				pcall(AddCooldownViewerSounds, rootDescription)
-				-- intentionally separated so if the above fails, we can always at least show Custom sounds
-				AddCustomSounds(rootDescription)
-			end,
+			default = defaults.Sound,
+			generator = Generator,
 			-- technically is a reset only
-			set =
-				---@param layoutName string
-				---@param values table<string, boolean>
-				function(layoutName, values)
-					local defaultSound = Private.Settings.GetSelfDefaultSettings().Sound
-
-					if defaultSound ~= TargetedSpellsSaved.Settings.Self.Sound then
-						TargetedSpellsSaved.Settings.Self.Sound = defaultSound
-						Private.EventRegistry:TriggerEvent(
-							Private.Enum.Events.SETTING_CHANGED,
-							key,
-							TargetedSpellsSaved.Settings.Self.Sound
-						)
-					end
-				end,
+			set = Set,
+			disabled = TargetedSpellsSaved.Settings.Self.PlayTTS or not TargetedSpellsSaved.Settings.Self.PlaySound,
 		}
 	end
 
 	if key == Private.Settings.Keys.Party.IncludeSelfInParty then
+		---@param layoutName string
+		local function Get(layoutName)
+			return TargetedSpellsSaved.Settings.Party.IncludeSelfInParty
+		end
+
+		---@param layoutName string
+		---@param value boolean
+		local function Set(layoutName, value)
+			if value ~= TargetedSpellsSaved.Settings.Party.IncludeSelfInParty then
+				TargetedSpellsSaved.Settings.Party.IncludeSelfInParty = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+		end
+
 		---@type LibEditModeCheckbox
 		return {
 			name = L.Settings.IncludeSelfInPartyLabel,
 			kind = Enum.EditModeSettingDisplayType.Checkbox,
 			desc = L.Settings.IncludeSelfInPartyTooltip,
-			default = Private.Settings.GetPartyDefaultSettings().IncludeSelfInParty,
-			get =
-				---@param layoutName string
-				function(layoutName)
-					return TargetedSpellsSaved.Settings.Party.IncludeSelfInParty
-				end,
-			---@param layoutName string
-			---@param value boolean
-			set = function(layoutName, value)
-				if value ~= TargetedSpellsSaved.Settings.Party.IncludeSelfInParty then
-					TargetedSpellsSaved.Settings.Party.IncludeSelfInParty = value
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-				end
-			end,
+			default = defaults.IncludeSelfInParty,
+			get = Get,
+			set = Set,
 		}
 	end
 
 	if key == Private.Settings.Keys.Self.Enabled or key == Private.Settings.Keys.Party.Enabled then
-		local isSelf = key == Private.Settings.Keys.Self.Enabled
-		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
+		local tableRef = key == Private.Settings.Keys.Self.Enabled and TargetedSpellsSaved.Settings.Self
+			or TargetedSpellsSaved.Settings.Party
+
+		---@param layoutName string
+		local function Get(layoutName)
+			return tableRef.Enabled
+		end
+
+		---@param layoutName string
+		---@param value boolean
+		local function Set(layoutName, value)
+			if value ~= tableRef.Enabled then
+				tableRef.Enabled = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+		end
 
 		---@type LibEditModeCheckbox
 		return {
 			name = L.Settings.EnabledLabel,
 			kind = Enum.EditModeSettingDisplayType.Checkbox,
-			default = isSelf and Private.Settings.GetSelfDefaultSettings().Enabled
-				or Private.Settings.GetPartyDefaultSettings().Enabled,
-			get =
-				---@param layoutName string
-				function(layoutName)
-					return tableRef.Enabled
-				end,
-			---@param layoutName string
-			---@param value boolean
-			set = function(layoutName, value)
-				if value ~= tableRef.Enabled then
-					tableRef.Enabled = value
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-				end
-			end,
+			default = defaults.Enabled,
+			desc = L.Settings.EnabledTooltip,
+			get = Get,
+			set = Set,
 		}
 	end
 
@@ -447,269 +599,292 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 		or key == Private.Settings.Keys.Party.LoadConditionContentType
 	then
 		local isSelf = key == Private.Settings.Keys.Self.LoadConditionContentType
-		local kindTableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
 		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self.LoadConditionContentType
 			or TargetedSpellsSaved.Settings.Party.LoadConditionContentType
+
+		local function Generator(owner, rootDescription, data)
+			for label, id in pairs(Private.Enum.ContentType) do
+				local function IsEnabled()
+					return tableRef[id]
+				end
+
+				local function Toggle()
+					tableRef[id] = not tableRef[id]
+
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef)
+
+					local anyEnabled = false
+					for role, loadCondition in pairs(tableRef) do
+						if loadCondition then
+							anyEnabled = true
+							break
+						end
+					end
+
+					local kindTableRef = isSelf and TargetedSpellsSaved.Settings.Self
+						or TargetedSpellsSaved.Settings.Party
+
+					if anyEnabled ~= kindTableRef.Enabled then
+						kindTableRef.Enabled = anyEnabled
+						local enabledKey = isSelf and Private.Settings.Keys.Self.Enabled
+							or Private.Settings.Keys.Party.Enabled
+						Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, enabledKey, anyEnabled)
+
+						LibEditMode:RefreshFrameSettings(self.editModeFrame)
+					end
+				end
+
+				local translated = L.Settings.LoadConditionContentTypeLabels[id]
+				rootDescription:CreateCheckbox(translated, IsEnabled, Toggle, {
+					value = label,
+					multiple = true,
+				})
+			end
+		end
+
+		---@param layoutName string
+		---@param values table<string, boolean>
+		local function Set(layoutName, values)
+			local hasChanges = false
+
+			for id, bool in pairs(values) do
+				if tableRef[id] ~= bool then
+					tableRef[id] = bool
+					hasChanges = true
+				end
+			end
+
+			if hasChanges then
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef)
+			end
+		end
 
 		---@type LibEditModeDropdown
 		return {
 			name = L.Settings.LoadConditionContentTypeLabelAbbreviated,
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
-			default = isSelf and Private.Settings.GetSelfDefaultSettings().LoadConditionContentType
-				or Private.Settings.GetPartyDefaultSettings().LoadConditionContentType,
-			generator = function(owner, rootDescription, data)
-				for label, id in pairs(Private.Enum.ContentType) do
-					local function IsEnabled()
-						return tableRef[id]
-					end
-
-					local function Toggle()
-						tableRef[id] = not tableRef[id]
-
-						Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef)
-
-						local anyEnabled = false
-						for role, loadCondition in pairs(tableRef) do
-							if loadCondition then
-								anyEnabled = true
-								break
-							end
-						end
-
-						if anyEnabled ~= kindTableRef.Enabled then
-							kindTableRef.Enabled = anyEnabled
-							local enabledKey = isSelf and Private.Settings.Keys.Self.Enabled
-								or Private.Settings.Keys.Party.Enabled
-							Private.EventRegistry:TriggerEvent(
-								Private.Enum.Events.SETTING_CHANGED,
-								enabledKey,
-								anyEnabled
-							)
-
-							LibEditMode:RefreshFrameSettings(self.editModeFrame)
-						end
-					end
-
-					local translated = L.Settings.LoadConditionContentTypeLabels[id]
-					rootDescription:CreateCheckbox(translated, IsEnabled, Toggle, {
-						value = label,
-						multiple = true,
-					})
-				end
-			end,
+			default = defaults.LoadConditionContentType,
+			desc = L.Settings.LoadConditionContentTypeTooltip,
+			generator = Generator,
 			-- technically is a reset only
-			set =
-				---@param layoutName string
-				---@param values table<string, boolean>
-				function(layoutName, values)
-					local hasChanges = false
-
-					for id, bool in pairs(values) do
-						if tableRef[id] ~= bool then
-							tableRef[id] = bool
-							hasChanges = true
-						end
-					end
-
-					if hasChanges then
-						Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef)
-					end
-				end,
+			set = Set,
 		}
 	end
 
 	if key == Private.Settings.Keys.Self.LoadConditionSoundContentType then
+		local function Generator(owner, rootDescription, data)
+			for label, id in pairs(Private.Enum.ContentType) do
+				local function IsEnabled()
+					return TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id]
+				end
+
+				local function Toggle()
+					TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id] =
+						not TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id]
+
+					Private.EventRegistry:TriggerEvent(
+						Private.Enum.Events.SETTING_CHANGED,
+						key,
+						TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType
+					)
+
+					local anyEnabled = false
+					for role, loadCondition in pairs(TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType) do
+						if loadCondition then
+							anyEnabled = true
+							break
+						end
+					end
+
+					if anyEnabled ~= TargetedSpellsSaved.Settings.Self.PlaySound then
+						TargetedSpellsSaved.Settings.Self.PlaySound = anyEnabled
+						Private.EventRegistry:TriggerEvent(
+							Private.Enum.Events.SETTING_CHANGED,
+							Private.Settings.Keys.Self.PlaySound,
+							anyEnabled
+						)
+
+						LibEditMode:RefreshFrameSettings(self.editModeFrame)
+					end
+				end
+
+				local translated = L.Settings.LoadConditionSoundContentTypeLabels[id]
+				rootDescription:CreateCheckbox(translated, IsEnabled, Toggle, {
+					value = label,
+					multiple = true,
+				})
+			end
+		end
+
+		---@param layoutName string
+		---@param values table<string, boolean>
+		local function Set(layoutName, values)
+			local hasChanges = false
+
+			for id, bool in pairs(values) do
+				if TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id] ~= bool then
+					TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id] = bool
+					hasChanges = true
+				end
+			end
+
+			if hasChanges then
+				Private.EventRegistry:TriggerEvent(
+					Private.Enum.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType
+				)
+			end
+		end
+
 		---@type LibEditModeDropdown
 		return {
 			name = L.Settings.LoadConditionSoundContentTypeLabelAbbreviated,
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
-			default = Private.Settings.GetSelfDefaultSettings().LoadConditionSoundContentType,
-			generator = function(owner, rootDescription, data)
-				for label, id in pairs(Private.Enum.ContentType) do
-					local function IsEnabled()
-						return TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id]
-					end
-
-					local function Toggle()
-						TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id] =
-							not TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id]
-
-						Private.EventRegistry:TriggerEvent(
-							Private.Enum.Events.SETTING_CHANGED,
-							key,
-							TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType
-						)
-
-						local anyEnabled = false
-						for role, loadCondition in
-							pairs(TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType)
-						do
-							if loadCondition then
-								anyEnabled = true
-								break
-							end
-						end
-
-						if anyEnabled ~= TargetedSpellsSaved.Settings.Self.PlaySound then
-							TargetedSpellsSaved.Settings.Self.PlaySound = anyEnabled
-							Private.EventRegistry:TriggerEvent(
-								Private.Enum.Events.SETTING_CHANGED,
-								Private.Settings.Keys.Self.PlaySound,
-								anyEnabled
-							)
-
-							LibEditMode:RefreshFrameSettings(self.editModeFrame)
-						end
-					end
-
-					local translated = L.Settings.LoadConditionSoundContentTypeLabels[id]
-					rootDescription:CreateCheckbox(translated, IsEnabled, Toggle, {
-						value = label,
-						multiple = true,
-					})
-				end
-			end,
+			default = defaults.LoadConditionSoundContentType,
+			desc = L.Settings.LoadConditionSoundContentTypeTooltip,
+			generator = Generator,
 			-- technically is a reset only
-			set =
-				---@param layoutName string
-				---@param values table<string, boolean>
-				function(layoutName, values)
-					local hasChanges = false
-
-					for id, bool in pairs(values) do
-						if TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id] ~= bool then
-							TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id] = bool
-							hasChanges = true
-						end
-					end
-
-					if hasChanges then
-						Private.EventRegistry:TriggerEvent(
-							Private.Enum.Events.SETTING_CHANGED,
-							key,
-							TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType
-						)
-					end
-				end,
+			set = Set,
 		}
 	end
 
 	if key == Private.Settings.Keys.Self.LoadConditionRole or key == Private.Settings.Keys.Party.LoadConditionRole then
 		local isSelf = key == Private.Settings.Keys.Self.LoadConditionRole
-		local kindTableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
 		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self.LoadConditionRole
 			or TargetedSpellsSaved.Settings.Party.LoadConditionRole
+
+		local function Generator(owner, rootDescription, data)
+			for label, id in pairs(Private.Enum.Role) do
+				local function IsEnabled()
+					return tableRef[id]
+				end
+
+				local function Toggle()
+					tableRef[id] = not tableRef[id]
+
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef)
+
+					local anyEnabled = false
+					for role, loadCondition in pairs(tableRef) do
+						if loadCondition then
+							anyEnabled = true
+							break
+						end
+					end
+
+					local kindTableRef = isSelf and TargetedSpellsSaved.Settings.Self
+						or TargetedSpellsSaved.Settings.Party
+
+					if anyEnabled ~= kindTableRef.Enabled then
+						kindTableRef.Enabled = anyEnabled
+						local enabledKey = isSelf and Private.Settings.Keys.Self.Enabled
+							or Private.Settings.Keys.Party.Enabled
+						Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, enabledKey, anyEnabled)
+
+						LibEditMode:RefreshFrameSettings(self.editModeFrame)
+					end
+				end
+
+				local translated = L.Settings.LoadConditionRoleLabels[id]
+
+				rootDescription:CreateCheckbox(translated, IsEnabled, Toggle, {
+					value = label,
+					multiple = true,
+				})
+			end
+		end
+
+		---@param layoutName string
+		---@param values table<string, boolean>
+		local function Set(layoutName, values)
+			local hasChanges = false
+
+			for id, bool in pairs(values) do
+				if tableRef[id] ~= bool then
+					tableRef[id] = bool
+					hasChanges = true
+				end
+			end
+
+			if hasChanges then
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef)
+			end
+		end
 
 		---@type LibEditModeDropdown
 		return {
 			name = L.Settings.LoadConditionRoleLabelAbbreviated,
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
-			default = Private.Settings.GetSelfDefaultSettings().LoadConditionRole,
-			generator = function(owner, rootDescription, data)
-				for label, id in pairs(Private.Enum.Role) do
-					local function IsEnabled()
-						return tableRef[id]
-					end
-
-					local function Toggle()
-						tableRef[id] = not tableRef[id]
-
-						Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef)
-
-						local anyEnabled = false
-						for role, loadCondition in pairs(tableRef) do
-							if loadCondition then
-								anyEnabled = true
-								break
-							end
-						end
-
-						if anyEnabled ~= kindTableRef.Enabled then
-							kindTableRef.Enabled = anyEnabled
-							local enabledKey = isSelf and Private.Settings.Keys.Self.Enabled
-								or Private.Settings.Keys.Party.Enabled
-							Private.EventRegistry:TriggerEvent(
-								Private.Enum.Events.SETTING_CHANGED,
-								enabledKey,
-								anyEnabled
-							)
-
-							LibEditMode:RefreshFrameSettings(self.editModeFrame)
-						end
-					end
-
-					local translated = L.Settings.LoadConditionRoleLabels[id]
-
-					rootDescription:CreateCheckbox(translated, IsEnabled, Toggle, {
-						value = label,
-						multiple = true,
-					})
-				end
-			end,
+			default = defaults.LoadConditionRole,
+			desc = L.Settings.LoadConditionRoleTooltip,
+			generator = Generator,
 			-- technically is a reset only
-			set = function(layoutName, values)
-				local hasChanges = false
-
-				for id, bool in pairs(values) do
-					if tableRef[id] ~= bool then
-						tableRef[id] = bool
-						hasChanges = true
-					end
-				end
-
-				if hasChanges then
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef)
-				end
-			end,
+			set = Set,
 		}
 	end
 
 	if key == Private.Settings.Keys.Self.FontSize or key == Private.Settings.Keys.Party.FontSize then
-		local isSelf = key == Private.Settings.Keys.Self.FontSize
-		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
+		local tableRef = key == Private.Settings.Keys.Self.FontSize and TargetedSpellsSaved.Settings.Self
+			or TargetedSpellsSaved.Settings.Party
 		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+
+		---@param layoutName string
+		local function Get(layoutName)
+			return tableRef.FontSize
+		end
+
+		---@param layoutName string
+		---@param value number
+		local function Set(layoutName, value)
+			if value ~= tableRef.FontSize then
+				tableRef.FontSize = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+		end
 
 		---@type LibEditModeSlider
 		return {
 			name = L.Settings.FontSizeLabel,
 			kind = Enum.EditModeSettingDisplayType.Slider,
-			default = isSelf and Private.Settings.GetSelfDefaultSettings().FontSize
-				or Private.Settings.GetPartyDefaultSettings().FontSize,
-			get = function(layoutName)
-				return tableRef.FontSize
-			end,
-			set = function(layoutName, value)
-				if value ~= tableRef.FontSize then
-					tableRef.FontSize = value
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-				end
-			end,
+			default = defaults.FontSize,
+			desc = L.Settings.FontSizeTooltip,
+			get = Get,
+			set = Set,
 			minValue = sliderSettings.min,
 			maxValue = sliderSettings.max,
 			valueStep = sliderSettings.step,
+			disabled = not tableRef.ShowDuration,
 		}
 	end
 
 	if key == Private.Settings.Keys.Self.Width or key == Private.Settings.Keys.Party.Width then
-		local isSelf = key == Private.Settings.Keys.Self.Width
-		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
+		local tableRef = key == Private.Settings.Keys.Self.Width and TargetedSpellsSaved.Settings.Self
+			or TargetedSpellsSaved.Settings.Party
 		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+
+		---@param layoutName string
+		local function Get(layoutName)
+			return tableRef.Width
+		end
+
+		---@param layoutName string
+		---@param value number
+		local function Set(layoutName, value)
+			if value ~= tableRef.Width then
+				tableRef.Width = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+		end
 
 		---@type LibEditModeSlider
 		return {
 			name = L.Settings.FrameWidthLabel,
 			kind = Enum.EditModeSettingDisplayType.Slider,
-			default = isSelf and Private.Settings.GetSelfDefaultSettings().Width
-				or Private.Settings.GetPartyDefaultSettings().Width,
-			get = function(layoutName)
-				return tableRef.Width
-			end,
-			set = function(layoutName, value)
-				if value ~= tableRef.Width then
-					tableRef.Width = value
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-				end
-			end,
+			default = defaults.Width,
+			desc = L.Settings.FrameWidthTooltip,
+			get = Get,
+			set = Set,
 			minValue = sliderSettings.min,
 			maxValue = sliderSettings.max,
 			valueStep = sliderSettings.step,
@@ -717,25 +892,32 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 	end
 
 	if key == Private.Settings.Keys.Self.Height or key == Private.Settings.Keys.Party.Height then
-		local isSelf = key == Private.Settings.Keys.Self.Height
-		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
+		local tableRef = key == Private.Settings.Keys.Self.Height and TargetedSpellsSaved.Settings.Self
+			or TargetedSpellsSaved.Settings.Party
 		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+
+		---@param layoutName string
+		local function Get(layoutName)
+			return tableRef.Height
+		end
+
+		---@param layoutName string
+		---@param value number
+		local function Set(layoutName, value)
+			if value ~= tableRef.Height then
+				tableRef.Height = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+		end
 
 		---@type LibEditModeSlider
 		return {
 			name = L.Settings.FrameHeightLabel,
 			kind = Enum.EditModeSettingDisplayType.Slider,
-			default = isSelf and Private.Settings.GetSelfDefaultSettings().Height
-				or Private.Settings.GetPartyDefaultSettings().Height,
-			get = function(layoutName)
-				return tableRef.Height
-			end,
-			set = function(layoutName, value)
-				if value ~= tableRef.Height then
-					tableRef.Height = value
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-				end
-			end,
+			default = defaults.Height,
+			desc = L.Settings.FrameHeightTooltip,
+			get = Get,
+			set = Set,
 			minValue = sliderSettings.min,
 			maxValue = sliderSettings.max,
 			valueStep = sliderSettings.step,
@@ -743,25 +925,32 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 	end
 
 	if key == Private.Settings.Keys.Self.Gap or key == Private.Settings.Keys.Party.Gap then
-		local isSelf = key == Private.Settings.Keys.Self.Gap
-		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
+		local tableRef = key == Private.Settings.Keys.Self.Gap and TargetedSpellsSaved.Settings.Self
+			or TargetedSpellsSaved.Settings.Party
 		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+
+		---@param layoutName string
+		local function Get(layoutName)
+			return tableRef.Gap
+		end
+
+		---@param layoutName string
+		---@param value number
+		local function Set(layoutName, value)
+			if value ~= tableRef.Gap then
+				tableRef.Gap = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+		end
 
 		---@type LibEditModeSlider
 		return {
 			name = L.Settings.FrameGapLabel,
 			kind = Enum.EditModeSettingDisplayType.Slider,
-			default = isSelf and Private.Settings.GetSelfDefaultSettings().Gap
-				or Private.Settings.GetPartyDefaultSettings().Gap,
-			get = function(layoutName)
-				return tableRef.Gap
-			end,
-			set = function(layoutName, value)
-				if value ~= tableRef.Gap then
-					tableRef.Gap = value
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-				end
-			end,
+			default = defaults.Gap,
+			desc = L.Settings.FrameGapTooltip,
+			get = Get,
+			set = Set,
 			minValue = sliderSettings.min,
 			maxValue = sliderSettings.max,
 			valueStep = sliderSettings.step,
@@ -769,8 +958,8 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 	end
 
 	if key == Private.Settings.Keys.Self.Direction or key == Private.Settings.Keys.Party.Direction then
-		local isSelf = key == Private.Settings.Keys.Self.Direction
-		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
+		local tableRef = key == Private.Settings.Keys.Self.Direction and TargetedSpellsSaved.Settings.Self
+			or TargetedSpellsSaved.Settings.Party
 
 		---@param layoutName string
 		---@param value number
@@ -781,30 +970,33 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 			end
 		end
 
+		local function Generator(owner, rootDescription, data)
+			for label, id in pairs(Private.Enum.Direction) do
+				local function IsEnabled()
+					return tableRef.Direction == id
+				end
+
+				local function SetProxy()
+					Set(LibEditMode:GetActiveLayoutName(), id)
+				end
+
+				local translated = id == Private.Enum.Direction.Horizontal and L.Settings.FrameDirectionHorizontal
+					or L.Settings.FrameDirectionVertical
+
+				rootDescription:CreateCheckbox(translated, IsEnabled, SetProxy, {
+					value = id,
+					multiple = false,
+				})
+			end
+		end
+
 		---@type LibEditModeDropdown
 		return {
 			name = L.Settings.FrameDirectionLabel,
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
-			default = Private.Settings.GetPartyDefaultSettings().Direction,
-			generator = function(owner, rootDescription, data)
-				for label, id in pairs(Private.Enum.Direction) do
-					local function IsEnabled()
-						return tableRef.Direction == id
-					end
-
-					local function SetProxy()
-						Set(LibEditMode:GetActiveLayoutName(), id)
-					end
-
-					local translated = id == Private.Enum.Direction.Horizontal and L.Settings.FrameDirectionHorizontal
-						or L.Settings.FrameDirectionVertical
-
-					rootDescription:CreateCheckbox(translated, IsEnabled, SetProxy, {
-						value = id,
-						multiple = false,
-					})
-				end
-			end,
+			default = defaults.Direction,
+			desc = L.Settings.FrameDirectionTooltip,
+			generator = Generator,
 			set = Set,
 		}
 	end
@@ -812,25 +1004,28 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 	if key == Private.Settings.Keys.Party.OffsetX then
 		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
 
+		---@param layoutName string
+		local function Get(layoutName)
+			return TargetedSpellsSaved.Settings.Party.OffsetX
+		end
+
+		---@param layoutName string
+		---@param value number
+		local function Set(layoutName, value)
+			if value ~= TargetedSpellsSaved.Settings.Party.OffsetX then
+				TargetedSpellsSaved.Settings.Party.OffsetX = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+		end
+
 		---@type LibEditModeSlider
 		return {
 			name = L.Settings.FrameOffsetXLabel,
 			kind = Enum.EditModeSettingDisplayType.Slider,
-			default = Private.Settings.GetPartyDefaultSettings().OffsetX,
-			get =
-				---@param layoutName string
-				function(layoutName)
-					return TargetedSpellsSaved.Settings.Party.OffsetX
-				end,
-			set =
-				---@param layoutName string
-				---@param value number
-				function(layoutName, value)
-					if value ~= TargetedSpellsSaved.Settings.Party.OffsetX then
-						TargetedSpellsSaved.Settings.Party.OffsetX = value
-						Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-					end
-				end,
+			default = defaults.OffsetX,
+			desc = L.Settings.FrameOffsetXTooltip,
+			get = Get,
+			set = Set,
 			minValue = sliderSettings.min,
 			maxValue = sliderSettings.max,
 			valueStep = sliderSettings.step,
@@ -840,25 +1035,28 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 	if key == Private.Settings.Keys.Party.OffsetY then
 		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
 
+		---@param layoutName string
+		local function Get(layoutName)
+			return TargetedSpellsSaved.Settings.Party.OffsetY
+		end
+
+		---@param layoutName string
+		---@param value number
+		local function Set(layoutName, value)
+			if value ~= TargetedSpellsSaved.Settings.Party.OffsetY then
+				TargetedSpellsSaved.Settings.Party.OffsetY = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+		end
+
 		---@type LibEditModeSlider
 		return {
 			name = L.Settings.FrameOffsetYLabel,
 			kind = Enum.EditModeSettingDisplayType.Slider,
-			default = Private.Settings.GetPartyDefaultSettings().OffsetY,
-			get =
-				---@param layoutName string
-				function(layoutName)
-					return TargetedSpellsSaved.Settings.Party.OffsetY
-				end,
-			set =
-				---@param layoutName string
-				---@param value number
-				function(layoutName, value)
-					if value ~= TargetedSpellsSaved.Settings.Party.OffsetY then
-						TargetedSpellsSaved.Settings.Party.OffsetY = value
-						Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-					end
-				end,
+			default = defaults.OffsetY,
+			desc = L.Settings.FrameOffsetYTooltip,
+			get = Get,
+			set = Set,
 			minValue = sliderSettings.min,
 			maxValue = sliderSettings.max,
 			valueStep = sliderSettings.step,
@@ -875,27 +1073,30 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 			end
 		end
 
+		local function Generator(owner, rootDescription, data)
+			for label, enumValue in pairs(Private.Enum.Anchor) do
+				local function IsEnabled()
+					return TargetedSpellsSaved.Settings.Party.SourceAnchor == enumValue
+				end
+
+				local function SetProxy()
+					Set(LibEditMode:GetActiveLayoutName(), enumValue)
+				end
+
+				rootDescription:CreateCheckbox(label, IsEnabled, SetProxy, {
+					value = label,
+					multiple = false,
+				})
+			end
+		end
+
 		---@type LibEditModeDropdown
 		return {
 			name = L.Settings.FrameSourceAnchorLabel,
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
-			default = Private.Settings.GetPartyDefaultSettings().SourceAnchor,
-			generator = function(owner, rootDescription, data)
-				for label, enumValue in pairs(Private.Enum.Anchor) do
-					local function IsEnabled()
-						return TargetedSpellsSaved.Settings.Party.SourceAnchor == enumValue
-					end
-
-					local function SetProxy()
-						Set(LibEditMode:GetActiveLayoutName(), enumValue)
-					end
-
-					rootDescription:CreateCheckbox(label, IsEnabled, SetProxy, {
-						value = label,
-						multiple = false,
-					})
-				end
-			end,
+			default = defaults.SourceAnchor,
+			desc = L.Settings.FrameSourceAnchorTooltip,
+			generator = Generator,
 			set = Set,
 		}
 	end
@@ -910,34 +1111,37 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 			end
 		end
 
+		local function Generator(owner, rootDescription, data)
+			for label, enumValue in pairs(Private.Enum.Anchor) do
+				local function IsEnabled()
+					return TargetedSpellsSaved.Settings.Party.TargetAnchor == enumValue
+				end
+
+				local function SetProxy()
+					Set(LibEditMode:GetActiveLayoutName(), enumValue)
+				end
+
+				rootDescription:CreateCheckbox(label, IsEnabled, SetProxy, {
+					value = label,
+					multiple = false,
+				})
+			end
+		end
+
 		---@type LibEditModeDropdown
 		return {
 			name = L.Settings.FrameTargetAnchorLabel,
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
-			default = Private.Settings.GetPartyDefaultSettings().TargetAnchor,
-			generator = function(owner, rootDescription, data)
-				for label, enumValue in pairs(Private.Enum.Anchor) do
-					local function IsEnabled()
-						return TargetedSpellsSaved.Settings.Party.TargetAnchor == enumValue
-					end
-
-					local function SetProxy()
-						Set(LibEditMode:GetActiveLayoutName(), enumValue)
-					end
-
-					rootDescription:CreateCheckbox(label, IsEnabled, SetProxy, {
-						value = label,
-						multiple = false,
-					})
-				end
-			end,
+			default = defaults.TargetAnchor,
+			desc = L.Settings.FrameTargetAnchorTooltip,
+			generator = Generator,
 			set = Set,
 		}
 	end
 
 	if key == Private.Settings.Keys.Self.SortOrder or key == Private.Settings.Keys.Party.SortOrder then
-		local isSelf = key == Private.Settings.Keys.Self.SortOrder
-		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
+		local tableRef = key == Private.Settings.Keys.Self.SortOrder and TargetedSpellsSaved.Settings.Self
+			or TargetedSpellsSaved.Settings.Party
 
 		---@param layoutName string
 		---@param value number
@@ -948,40 +1152,43 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 			end
 		end
 
+		local function Generator(owner, rootDescription, data)
+			for label, id in pairs(Private.Enum.SortOrder) do
+				local function IsEnabled()
+					return tableRef.SortOrder == id
+				end
+
+				local function SetProxy()
+					Set(LibEditMode:GetActiveLayoutName(), id)
+				end
+
+				local translated = id == Private.Enum.SortOrder.Ascending and L.Settings.FrameSortOrderAscending
+					or L.Settings.FrameSortOrderDescending
+
+				rootDescription:CreateCheckbox(translated, IsEnabled, SetProxy, {
+					value = id,
+					multiple = false,
+				})
+			end
+		end
+
 		---@type LibEditModeDropdown
 		return {
 			name = L.Settings.FrameSortOrderLabel,
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
-			default = Private.Settings.GetPartyDefaultSettings().SortOrder,
-			generator = function(owner, rootDescription, data)
-				for label, id in pairs(Private.Enum.SortOrder) do
-					local function IsEnabled()
-						return tableRef.SortOrder == id
-					end
-
-					local function SetProxy()
-						Set(LibEditMode:GetActiveLayoutName(), id)
-					end
-
-					local translated = id == Private.Enum.SortOrder.Ascending and L.Settings.FrameSortOrderAscending
-						or L.Settings.FrameSortOrderDescending
-
-					rootDescription:CreateCheckbox(translated, IsEnabled, SetProxy, {
-						value = id,
-						multiple = false,
-					})
-				end
-			end,
+			default = defaults.SortOrder,
+			desc = L.Settings.FrameSortOrderTooltip,
+			generator = Generator,
 			set = Set,
 		}
 	end
 
 	if key == Private.Settings.Keys.Self.Grow or key == Private.Settings.Keys.Party.Grow then
-		local isSelf = key == Private.Settings.Keys.Self.Grow
-		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
+		local tableRef = key == Private.Settings.Keys.Self.Grow and TargetedSpellsSaved.Settings.Self
+			or TargetedSpellsSaved.Settings.Party
 
 		---@param layoutName string
-		---@param value string
+		---@param value number
 		local function Set(layoutName, value)
 			if tableRef.Grow ~= value then
 				tableRef.Grow = value
@@ -989,29 +1196,32 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 			end
 		end
 
+		local function Generator(owner, rootDescription, data)
+			for label, id in pairs(Private.Enum.Grow) do
+				local function IsEnabled()
+					return tableRef.Grow == id
+				end
+
+				local function SetProxy()
+					Set(LibEditMode:GetActiveLayoutName(), id)
+				end
+
+				local translated = L.Settings.FrameGrowLabels[id]
+
+				rootDescription:CreateCheckbox(translated, IsEnabled, SetProxy, {
+					value = id,
+					multiple = false,
+				})
+			end
+		end
+
 		---@type LibEditModeDropdown
 		return {
 			name = L.Settings.FrameGrowLabel,
 			kind = Enum.EditModeSettingDisplayType.Dropdown,
-			default = Private.Settings.GetPartyDefaultSettings().Grow,
-			generator = function(owner, rootDescription, data)
-				for label, id in pairs(Private.Enum.Grow) do
-					local function IsEnabled()
-						return tableRef.Grow == id
-					end
-
-					local function SetProxy()
-						Set(LibEditMode:GetActiveLayoutName(), id)
-					end
-
-					local translated = L.Settings.FrameGrowLabels[id]
-
-					rootDescription:CreateCheckbox(translated, IsEnabled, SetProxy, {
-						value = id,
-						multiple = false,
-					})
-				end
-			end,
+			default = defaults.Grow,
+			desc = L.Settings.FrameGrowTooltip,
+			generator = Generator,
 			set = Set,
 		}
 	end
@@ -1159,27 +1369,15 @@ function SelfEditModeMixin:AppendSettings()
 
 	LibEditMode:RegisterCallback("layout", GenerateClosure(self.RestoreEditModePosition, self))
 
-	LibEditMode:AddFrameSettings(self.editModeFrame, {
-		self:CreateSetting(Private.Settings.Keys.Self.Enabled),
-		self:CreateSetting(Private.Settings.Keys.Self.LoadConditionContentType),
-		self:CreateSetting(Private.Settings.Keys.Self.LoadConditionRole),
-		self:CreateSetting(Private.Settings.Keys.Self.Width),
-		self:CreateSetting(Private.Settings.Keys.Self.Height),
-		self:CreateSetting(Private.Settings.Keys.Self.Gap),
-		self:CreateSetting(Private.Settings.Keys.Self.Direction),
-		self:CreateSetting(Private.Settings.Keys.Self.SortOrder),
-		self:CreateSetting(Private.Settings.Keys.Self.Grow),
-		self:CreateSetting(Private.Settings.Keys.Self.GlowImportant),
-		self:CreateSetting(Private.Settings.Keys.Self.GlowType),
-		self:CreateSetting(Private.Settings.Keys.Self.PlaySound),
-		self:CreateSetting(Private.Settings.Keys.Self.Sound),
-		self:CreateSetting(Private.Settings.Keys.Self.SoundChannel),
-		self:CreateSetting(Private.Settings.Keys.Self.LoadConditionSoundContentType),
-		self:CreateSetting(Private.Settings.Keys.Self.ShowDuration),
-		self:CreateSetting(Private.Settings.Keys.Self.FontSize),
-		self:CreateSetting(Private.Settings.Keys.Self.ShowBorder),
-		self:CreateSetting(Private.Settings.Keys.Self.Opacity),
-	})
+	local settingsOrder = Private.Settings.GetSettingsDisplayOrder(Private.Enum.FrameKind.Self)
+	local settings = {}
+	local defaults = Private.Settings.GetSelfDefaultSettings()
+
+	for i, key in ipairs(settingsOrder) do
+		table.insert(settings, self:CreateSetting(key, defaults))
+	end
+
+	LibEditMode:AddFrameSettings(self.editModeFrame, settings)
 end
 
 function SelfEditModeMixin:RestoreEditModePosition()
@@ -1383,28 +1581,15 @@ function PartyEditModeMixin:AppendSettings()
 	self.editModeFrame:SetScript("OnDragStart", nil)
 	self.editModeFrame:SetScript("OnDragStop", nil)
 
-	LibEditMode:AddFrameSettings(self.editModeFrame, {
-		self:CreateSetting(Private.Settings.Keys.Party.Enabled),
-		self:CreateSetting(Private.Settings.Keys.Party.LoadConditionContentType),
-		self:CreateSetting(Private.Settings.Keys.Party.LoadConditionRole),
-		self:CreateSetting(Private.Settings.Keys.Party.Width),
-		self:CreateSetting(Private.Settings.Keys.Party.Height),
-		self:CreateSetting(Private.Settings.Keys.Party.Gap),
-		self:CreateSetting(Private.Settings.Keys.Party.Direction),
-		self:CreateSetting(Private.Settings.Keys.Party.OffsetX),
-		self:CreateSetting(Private.Settings.Keys.Party.OffsetY),
-		self:CreateSetting(Private.Settings.Keys.Party.SourceAnchor),
-		self:CreateSetting(Private.Settings.Keys.Party.TargetAnchor),
-		self:CreateSetting(Private.Settings.Keys.Party.Grow),
-		self:CreateSetting(Private.Settings.Keys.Party.SortOrder),
-		self:CreateSetting(Private.Settings.Keys.Party.GlowImportant),
-		self:CreateSetting(Private.Settings.Keys.Party.GlowType),
-		self:CreateSetting(Private.Settings.Keys.Party.IncludeSelfInParty),
-		self:CreateSetting(Private.Settings.Keys.Party.ShowDuration),
-		self:CreateSetting(Private.Settings.Keys.Party.FontSize),
-		self:CreateSetting(Private.Settings.Keys.Party.ShowBorder),
-		self:CreateSetting(Private.Settings.Keys.Party.Opacity),
-	})
+	local settingsOrder = Private.Settings.GetSettingsDisplayOrder(Private.Enum.FrameKind.Party)
+	local settings = {}
+	local defaults = Private.Settings.GetPartyDefaultSettings()
+
+	for i, key in ipairs(settingsOrder) do
+		table.insert(settings, self:CreateSetting(key, defaults))
+	end
+
+	LibEditMode:AddFrameSettings(self.editModeFrame, settings)
 end
 
 function PartyEditModeMixin:RepositionEditModeFrame()
@@ -1561,24 +1746,27 @@ function PartyEditModeMixin:StartDemo()
 
 	for unit = 1, self.maxUnitCount do
 		if unit > 1 or TargetedSpellsSaved.Settings.Party.IncludeSelfInParty then
-			self.frames[unit] = self.frames[unit] or {}
+			if self.frames[unit] == nil then
+				self.frames[unit] = {}
+			end
 
 			if unit == self.maxUnitCount and not self.useRaidStylePartyFrames then
 				break
 			end
 
 			for index = 1, self.amountOfPreviewFramesPerUnit do
-				self.frames[unit][index] = self.frames[unit][index] or self:AcquireFrame()
+				if self.frames[unit][index] == nil then
+					self.frames[unit][index] = self:AcquireFrame()
+				end
+
 				local frame = self.frames[unit][index]
 
-				if frame then
-					table.insert(
-						self.demoTimers.tickers,
-						C_Timer.NewTicker(5 + index + unit, GenerateClosure(self.LoopFrame, self, frame, index + unit))
-					)
+				table.insert(
+					self.demoTimers.tickers,
+					C_Timer.NewTicker(5 + index + unit, GenerateClosure(self.LoopFrame, self, frame, index + unit))
+				)
 
-					self:LoopFrame(frame, index + unit)
-				end
+				self:LoopFrame(frame, index + unit)
 			end
 		end
 	end

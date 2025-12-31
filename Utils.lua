@@ -1,6 +1,7 @@
 ---@type string, TargetedSpells
 local addonName, Private = ...
 
+---@class TargetedSpellsUtils
 Private.Utils = {}
 
 function Private.Utils.CalculateCoordinate(index, dimension, gap, parentDimension, total, offset, grow)
@@ -48,4 +49,27 @@ end
 
 function Private.Utils.RollDice()
 	return math.random(1, 6) == 6
+end
+
+function Private.Utils.FindAppropriateTTSVoiceId()
+	local locale = GAME_LOCALE or GetLocale()
+
+	local ttsVoiceId = C_TTSSettings.GetVoiceOptionID(Enum.TtsVoiceType.Standard)
+	local patternToLookFor = nil
+
+	if locale == "deDE" then
+		patternToLookFor = "German"
+	elseif locale == "enUS" or locale == "enGB" then
+		patternToLookFor = "English"
+	end
+
+	if patternToLookFor then
+		for _, voice in pairs(C_VoiceChat.GetTtsVoices()) do
+			if string.find(voice.name, patternToLookFor) then
+				return voice.voiceID
+			end
+		end
+	end
+
+	return ttsVoiceId
 end
