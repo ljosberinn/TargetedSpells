@@ -14,6 +14,7 @@
 ---@field CalculateCoordinate fun(index: number, dimension: number, gap: number, parentDimension: number, total: number, offset: number, grow: Grow): number
 ---@field SortFrames fun(frames: TargetedSpellsMixin[], sortOrder: SortOrder)
 ---@field AttemptToPlaySound fun(sound: string|number, channel: SoundChannel)
+---@field RollDice fun(): boolean
 
 ---@class TargetedSpellsEnums
 
@@ -73,6 +74,7 @@
 ---@field Position SelfFramePosition
 ---@field ShowBorder boolean
 ---@field GlowImportant boolean
+---@field GlowType GlowType
 
 ---@class SavedVariablesSettingsParty
 ---@field Enabled boolean
@@ -92,6 +94,7 @@
 ---@field FontSize number
 ---@field ShowBorder boolean
 ---@field GlowImportant boolean
+---@field GlowType GlowType
 
 ---@class TargetedSpellsSelfPreviewFrame: Frame
 ---@field GetChildren fun(self: TargetedSpellsSelfPreviewFrame): TargetedSpellsMixin
@@ -104,11 +107,15 @@
 ---@field Overlay Texture
 ---@field Icon Texture
 ---@field Cooldown ExtendedCooldownTypes
----@field SpellActivationAlert ActionButtonSpellAlertTemplate? -- only present if important spells should be highlighted
 ---@field kind FrameKind?
 ---@field unit string? -- secret?
 ---@field startTime number?
 ---@field castTime number? -- secret
+---@field spellId number? -- secret
+---@field _AutoCastGlow Frame?
+---@field _ButtonGlow Frame?
+---@field _PixelGlow Frame?
+---@field _ProcGlow Frame?
 ---@field OnLoad fun(self: TargetedSpellsMixin)
 ---@field SetKind fun(self: TargetedSpellsMixin, kind: FrameKind)
 ---@field GetKind fun(self: TargetedSpellsMixin): FrameKind?
@@ -120,6 +127,7 @@
 ---@field SetStartTime fun(self: TargetedSpellsMixin, startTime: number?)
 ---@field SetCastTime fun(self: TargetedSpellsMixin, castTime: number)
 ---@field SetSpellId fun(self: TargetedSpellsMixin, spellId: number?)
+---@field IsSpellImportant fun(self: TargetedSpellsMixin, boolOverride: boolean?): boolean
 ---@field RefreshSpellCooldownInfo fun(self: TargetedSpellsMixin)
 ---@field OnSizeChanged fun(self: TargetedSpellsMixin, width: number, height: number)
 ---@field OnSettingChanged fun(self: TargetedSpellsMixin, key: string, value: number|string)
@@ -130,6 +138,8 @@
 ---@field SetShowDuration fun(self: TargetedSpellsMixin, showDuration: boolean)
 ---@field SetFontSize fun(self: TargetedSpellsMixin, fontSize: number)
 ---@field PostCreate fun(self: TargetedSpellsMixin, unit: string, kind: FrameKind, castingUnit: string?)
+---@field ShowGlow fun(self: TargetedSpellsMixin, isImportant: boolean) -- secret bool, but passed explicitly in EditMode code
+---@field HideGlow fun(self: TargetedSpellsMixin)
 
 ---@class IconDataProviderMixin
 ---@field GetRandomIcon fun(self: IconDataProviderMixin): number
@@ -176,10 +186,6 @@
 ---@class Frame
 ---@field SetAlphaFromBoolean fun(self: Frame, value: boolean)
 
----@class ActionButtonSpellAlertTemplate: Frame
----@field ProcStartFlipbook Frame
----@field ProcLoop Animation
-
 ---@class TargetedSpellsEditModeMixin : Frame
 ---@field Init fun(self: TargetedSpellsEditModeMixin, displayName: string, frameKind: FrameKind)
 ---@field editModeFrame Frame
@@ -203,6 +209,7 @@
 
 ---@class TargetedSpellsSelfEditMode : TargetedSpellsEditModeMixin
 ---@field Init fun(self: TargetedSpellsSelfEditMode)
+---@field maxFrames number
 ---@field frames TargetedSpellsMixin[]
 ---@field ResizeEditModeFrame fun(self: TargetedSpellsSelfEditMode)
 ---@field StartDemo fun(self: TargetedSpellsSelfEditMode)

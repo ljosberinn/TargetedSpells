@@ -86,6 +86,16 @@ L.Settings.FrameGrowLabels = {
 L.Settings.GlowImportantLabel = "Glow Important Spells"
 L.Settings.GlowImportantTooltip = "What's important and what isn't is declared by the game."
 
+L.Settings.GlowTypeLabel = "Glow Type"
+L.Settings.GlowTypeTooltip = nil
+L.Settings.GlowTypeLabels = {
+	[Private.Enum.GlowType.PixelGlow] = "Pixel Glow",
+	[Private.Enum.GlowType.AutoCastGlow] = "Auto Cast Glow",
+	[Private.Enum.GlowType.ButtonGlow] = "Button Glow",
+	[Private.Enum.GlowType.ProcGlow] = "Proc Glow",
+	[Private.Enum.GlowType.Star4] = "Star 4",
+}
+
 L.Settings.PlaySoundLabel = "Play Sound"
 L.Settings.PlaySoundTooltip = nil
 
@@ -95,6 +105,13 @@ L.Settings.SoundTooltip = "Click to change, but also click to preview sound. War
 
 L.Settings.SoundChannelLabel = "Sound Channel"
 L.Settings.SoundChannelTooltip = nil
+L.Settings.SoundChannelLabels = {
+	[Private.Enum.SoundChannel.Master] = MASTER_VOLUME,
+	[Private.Enum.SoundChannel.Music] = MUSIC_VOLUME,
+	[Private.Enum.SoundChannel.SFX] = FX_VOLUME,
+	[Private.Enum.SoundChannel.Ambience] = AMBIENCE_VOLUME,
+	[Private.Enum.SoundChannel.Dialog] = DIALOG_VOLUME,
+}
 
 L.Settings.LoadConditionSoundContentTypeLabel = "Load Condition: Sound"
 L.Settings.LoadConditionSoundContentTypeLabelAbbreviated = "Play Sound in Content"
@@ -212,6 +229,9 @@ if locale == "deDE" then
 	L.Settings.GlowImportantLabel = "Wichtige Zauber hervorheben"
 	L.Settings.GlowImportantTooltip =
 		"Was wichtig und was nicht wichtig ist wird ausschließlich vom Spiel selbst kommuniziert."
+
+	L.Settings.GlowTypeLabel = "Hervorhebungsanimation"
+	L.Settings.GlowTypeTooltip = nil
 
 	L.Settings.PlaySoundLabel = "Ton abspielen"
 	L.Settings.PlaySoundTooltip = nil
@@ -337,6 +357,9 @@ elseif locale == "frFR" then
 
 	L.Settings.GlowImportantLabel = "Faire briller les sorts important"
 	L.Settings.GlowImportantTooltip = "Ce qui est important ou non est déclaré par le jeu."
+
+	L.Settings.GlowTypeLabel = "Glow Type"
+	L.Settings.GlowTypeTooltip = nil
 
 	L.Settings.PlaySoundLabel = "Jouer le son"
 	L.Settings.SoundCategoryCustom = "Custom"

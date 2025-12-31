@@ -1,10 +1,6 @@
 ---@type string, TargetedSpells
 local addonName, Private = ...
-local LEM = LibStub("LibEditMode")
-
-local function FlipCoin()
-	return math.random(1, 10) >= 5
-end
+local LibEditMode = LibStub("LibEditMode")
 
 ---@class TargetedSpellsEditModeMixin
 local TargetedSpellsEditModeMixin = {}
@@ -23,8 +19,8 @@ function TargetedSpellsEditModeMixin:Init(displayName, frameKind)
 
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingsChanged, self)
 
-	LEM:RegisterCallback("enter", GenerateClosure(self.StartDemo, self))
-	LEM:RegisterCallback("exit", GenerateClosure(self.EndDemo, self))
+	LibEditMode:RegisterCallback("enter", GenerateClosure(self.StartDemo, self))
+	LibEditMode:RegisterCallback("exit", GenerateClosure(self.EndDemo, self))
 
 	self:AppendSettings()
 end
@@ -38,8 +34,8 @@ function TargetedSpellsEditModeMixin:OnSettingsChanged(key, value)
 		or key == Private.Settings.Keys.Self.Height
 		or key == Private.Settings.Keys.Self.SortOrder
 		or key == Private.Settings.Keys.Self.Grow
-		or key == Private.Settings.Keys.Self.MaxFrames
 		or key == Private.Settings.Keys.Self.GlowImportant
+		or key == Private.Settings.Keys.Self.GlowType
 		-- party
 		or key == Private.Settings.Keys.Party.Gap
 		or key == Private.Settings.Keys.Party.Direction
@@ -52,19 +48,11 @@ function TargetedSpellsEditModeMixin:OnSettingsChanged(key, value)
 		or key == Private.Settings.Keys.Party.SortOrder
 		or key == Private.Settings.Keys.Party.Grow
 		or key == Private.Settings.Keys.Party.GlowImportant
+		or key == Private.Settings.Keys.Party.GlowType
 	then
 		self:OnLayoutSettingChanged(key, value)
-
-		if key == Private.Settings.Keys.Self.MaxFrames then
-			if not LEM:IsInEditMode() then
-				return
-			end
-
-			self:EndDemo()
-			self:StartDemo()
-		end
 	elseif key == Private.Settings.Keys.Self.Enabled or key == Private.Settings.Keys.Party.Enabled then
-		if not LEM:IsInEditMode() then
+		if not LibEditMode:IsInEditMode() then
 			return
 		end
 
@@ -79,7 +67,7 @@ function TargetedSpellsEditModeMixin:OnSettingsChanged(key, value)
 			end
 		end
 	elseif key == Private.Settings.Keys.Party.IncludeSelfInParty and self.frameKind == Private.Enum.FrameKind.Party then
-		if not LEM:IsInEditMode() then
+		if not LibEditMode:IsInEditMode() then
 			return
 		end
 
@@ -142,6 +130,49 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 				end
 			end,
+		}
+	end
+
+	if key == Private.Settings.Keys.Self.GlowType or key == Private.Settings.Keys.Party.GlowType then
+		local isSelf = key == Private.Settings.Keys.Self.GlowType
+		local tableRef = isSelf and TargetedSpellsSaved.Settings.Self or TargetedSpellsSaved.Settings.Party
+
+		---@param layoutName string
+		---@param value string
+		local function Set(layoutName, value)
+			if tableRef.GlowType ~= value then
+				tableRef.GlowType = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+		end
+
+		---@type LibEditModeDropdown
+		return {
+			name = L.Settings.GlowTypeLabel,
+			kind = Enum.EditModeSettingDisplayType.Dropdown,
+			desc = L.Settings.GlowTypeTooltip,
+			default = isSelf and Private.Settings.GetSelfDefaultSettings().GlowType
+				or Private.Settings.GetPartyDefaultSettings().GlowType,
+			multiple = false,
+			generator = function(owner, rootDescription, data)
+				for label, id in pairs(Private.Enum.GlowType) do
+					local function IsEnabled()
+						return tableRef.GlowType == id
+					end
+
+					local function SetProxy()
+						Set(LibEditMode:GetActiveLayoutName(), id)
+					end
+
+					local translated = L.Settings.GlowTypeLabels[id]
+
+					rootDescription:CreateCheckbox(translated, IsEnabled, SetProxy, {
+						value = label,
+						multiple = false,
+					})
+				end
+			end,
+			set = Set,
 		}
 	end
 
@@ -241,10 +272,12 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 					end
 
 					local function SetProxy()
-						Set(LEM:GetActiveLayoutName(), enumValue)
+						Set(LibEditMode:GetActiveLayoutName(), enumValue)
 					end
 
-					rootDescription:CreateCheckbox(label, IsEnabled, SetProxy, {
+					local translated = L.Settings.SoundChannelLabels[enumValue]
+
+					rootDescription:CreateCheckbox(translated, IsEnabled, SetProxy, {
 						value = label,
 						multiple = false,
 					})
@@ -453,7 +486,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 								anyEnabled
 							)
 
-							LEM:RefreshFrameSettings(self.editModeFrame)
+							LibEditMode:RefreshFrameSettings(self.editModeFrame)
 						end
 					end
 
@@ -525,7 +558,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 								anyEnabled
 							)
 
-							LEM:RefreshFrameSettings(self.editModeFrame)
+							LibEditMode:RefreshFrameSettings(self.editModeFrame)
 						end
 					end
 
@@ -601,7 +634,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 								anyEnabled
 							)
 
-							LEM:RefreshFrameSettings(self.editModeFrame)
+							LibEditMode:RefreshFrameSettings(self.editModeFrame)
 						end
 					end
 
@@ -760,7 +793,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 					end
 
 					local function SetProxy()
-						Set(LEM:GetActiveLayoutName(), id)
+						Set(LibEditMode:GetActiveLayoutName(), id)
 					end
 
 					local translated = id == Private.Enum.Direction.Horizontal and L.Settings.FrameDirectionHorizontal
@@ -854,7 +887,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 					end
 
 					local function SetProxy()
-						Set(LEM:GetActiveLayoutName(), enumValue)
+						Set(LibEditMode:GetActiveLayoutName(), enumValue)
 					end
 
 					rootDescription:CreateCheckbox(label, IsEnabled, SetProxy, {
@@ -889,7 +922,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 					end
 
 					local function SetProxy()
-						Set(LEM:GetActiveLayoutName(), enumValue)
+						Set(LibEditMode:GetActiveLayoutName(), enumValue)
 					end
 
 					rootDescription:CreateCheckbox(label, IsEnabled, SetProxy, {
@@ -927,7 +960,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 					end
 
 					local function SetProxy()
-						Set(LEM:GetActiveLayoutName(), id)
+						Set(LibEditMode:GetActiveLayoutName(), id)
 					end
 
 					local translated = id == Private.Enum.SortOrder.Ascending and L.Settings.FrameSortOrderAscending
@@ -968,7 +1001,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key)
 					end
 
 					local function SetProxy()
-						Set(LEM:GetActiveLayoutName(), id)
+						Set(LibEditMode:GetActiveLayoutName(), id)
 					end
 
 					local translated = L.Settings.FrameGrowLabels[id]
@@ -1034,9 +1067,11 @@ function TargetedSpellsEditModeMixin:LoopFrame(frame, index)
 		(
 			(self.frameKind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self.GlowImportant)
 			or (self.frameKind == Private.Enum.FrameKind.Party and TargetedSpellsSaved.Settings.Party.GlowImportant)
-		) and FlipCoin()
+		) and Private.Utils.RollDice()
 	then
-		frame:ShowGlow()
+		frame:ShowGlow(true)
+	else
+		frame:HideGlow()
 	end
 
 	table.insert(
@@ -1083,24 +1118,24 @@ local SelfEditModeMixin = CreateFromMixins(TargetedSpellsEditModeMixin)
 
 function SelfEditModeMixin:Init()
 	TargetedSpellsEditModeMixin.Init(self, Private.L.EditMode.TargetedSpellsSelfLabel, Private.Enum.FrameKind.Self)
+	self.maxFrames = 5
 
 	self.editModeFrame:SetPoint("CENTER", UIParent)
 	self:ResizeEditModeFrame()
 end
 
 function SelfEditModeMixin:ResizeEditModeFrame()
-	local width, gap, height, direction, maxFrames =
+	local width, gap, height, direction =
 		TargetedSpellsSaved.Settings.Self.Width,
 		TargetedSpellsSaved.Settings.Self.Gap,
 		TargetedSpellsSaved.Settings.Self.Height,
-		TargetedSpellsSaved.Settings.Self.Direction,
-		TargetedSpellsSaved.Settings.Self.MaxFrames
+		TargetedSpellsSaved.Settings.Self.Direction
 
 	if direction == Private.Enum.Direction.Horizontal then
-		local totalWidth = (maxFrames * width) + (maxFrames - 1) * gap
+		local totalWidth = (self.maxFrames * width) + (self.maxFrames - 1) * gap
 		self.editModeFrame:SetSize(totalWidth, height)
 	else
-		local totalHeight = (maxFrames * height) + (maxFrames - 1) * gap
+		local totalHeight = (self.maxFrames * height) + (self.maxFrames - 1) * gap
 		self.editModeFrame:SetSize(width, totalHeight)
 	end
 end
@@ -1115,16 +1150,16 @@ function SelfEditModeMixin:ReleaseAllFrames()
 end
 
 function SelfEditModeMixin:AppendSettings()
-	LEM:AddFrame(
+	LibEditMode:AddFrame(
 		self.editModeFrame,
 		GenerateClosure(self.OnEditModePositionChanged, self),
 		Private.Settings.GetDefaultEditModeFramePosition(),
 		Private.L.EditMode.TargetedSpellsSelfLabel
 	)
 
-	LEM:RegisterCallback("layout", GenerateClosure(self.RestoreEditModePosition, self))
+	LibEditMode:RegisterCallback("layout", GenerateClosure(self.RestoreEditModePosition, self))
 
-	LEM:AddFrameSettings(self.editModeFrame, {
+	LibEditMode:AddFrameSettings(self.editModeFrame, {
 		self:CreateSetting(Private.Settings.Keys.Self.Enabled),
 		self:CreateSetting(Private.Settings.Keys.Self.LoadConditionContentType),
 		self:CreateSetting(Private.Settings.Keys.Self.LoadConditionRole),
@@ -1135,6 +1170,7 @@ function SelfEditModeMixin:AppendSettings()
 		self:CreateSetting(Private.Settings.Keys.Self.SortOrder),
 		self:CreateSetting(Private.Settings.Keys.Self.Grow),
 		self:CreateSetting(Private.Settings.Keys.Self.GlowImportant),
+		self:CreateSetting(Private.Settings.Keys.Self.GlowType),
 		self:CreateSetting(Private.Settings.Keys.Self.PlaySound),
 		self:CreateSetting(Private.Settings.Keys.Self.Sound),
 		self:CreateSetting(Private.Settings.Keys.Self.SoundChannel),
@@ -1227,7 +1263,7 @@ function SelfEditModeMixin:StartDemo()
 	self.demoPlaying = true
 	self.buildingFrames = true
 
-	for index = 1, TargetedSpellsSaved.Settings.Self.MaxFrames do
+	for index = 1, self.maxFrames do
 		self.frames[index] = self.frames[index] or self:AcquireFrame()
 		local frame = self.frames[index]
 
@@ -1254,14 +1290,12 @@ function SelfEditModeMixin:OnLayoutSettingChanged(key, value)
 		or key == Private.Settings.Keys.Self.Height
 		or key == Private.Settings.Keys.Self.SortOrder
 		or key == Private.Settings.Keys.Self.Grow
-		or key == Private.Settings.Keys.Self.MaxFrames
 	then
 		if
 			key == Private.Settings.Keys.Self.Width
 			or key == Private.Settings.Keys.Self.Height
 			or key == Private.Settings.Keys.Self.Gap
 			or key == Private.Settings.Keys.Self.Direction
-			or key == Private.Settings.Keys.Self.MaxFrames
 		then
 			self:ResizeEditModeFrame()
 		end
@@ -1271,14 +1305,22 @@ function SelfEditModeMixin:OnLayoutSettingChanged(key, value)
 		local glowEnabled = value
 
 		for _, frame in pairs(self.frames) do
-			if frame then
-				if glowEnabled then
-					if FlipCoin() then
-						frame:ShowGlow()
-					end
-				else
-					frame:HideGlow()
-				end
+			if glowEnabled and frame:IsVisible() and Private.Utils.RollDice() then
+				frame:ShowGlow(true)
+			else
+				frame:HideGlow()
+			end
+		end
+	elseif key == Private.Settings.Keys.Self.GlowType then
+		if not TargetedSpellsSaved.Settings.Self.GlowImportant then
+			return
+		end
+
+		for _, frame in pairs(self.frames) do
+			if frame:IsVisible() and Private.Utils.RollDice() then
+				frame:ShowGlow(true)
+			else
+				frame:HideGlow()
 			end
 		end
 	end
@@ -1331,7 +1373,7 @@ function PartyEditModeMixin:Init()
 end
 
 function PartyEditModeMixin:AppendSettings()
-	LEM:AddFrame(
+	LibEditMode:AddFrame(
 		self.editModeFrame,
 		GenerateClosure(self.OnEditModePositionChanged, self),
 		Private.Settings.GetDefaultEditModeFramePosition(),
@@ -1341,7 +1383,7 @@ function PartyEditModeMixin:AppendSettings()
 	self.editModeFrame:SetScript("OnDragStart", nil)
 	self.editModeFrame:SetScript("OnDragStop", nil)
 
-	LEM:AddFrameSettings(self.editModeFrame, {
+	LibEditMode:AddFrameSettings(self.editModeFrame, {
 		self:CreateSetting(Private.Settings.Keys.Party.Enabled),
 		self:CreateSetting(Private.Settings.Keys.Party.LoadConditionContentType),
 		self:CreateSetting(Private.Settings.Keys.Party.LoadConditionRole),
@@ -1356,6 +1398,7 @@ function PartyEditModeMixin:AppendSettings()
 		self:CreateSetting(Private.Settings.Keys.Party.Grow),
 		self:CreateSetting(Private.Settings.Keys.Party.SortOrder),
 		self:CreateSetting(Private.Settings.Keys.Party.GlowImportant),
+		self:CreateSetting(Private.Settings.Keys.Party.GlowType),
 		self:CreateSetting(Private.Settings.Keys.Party.IncludeSelfInParty),
 		self:CreateSetting(Private.Settings.Keys.Party.ShowDuration),
 		self:CreateSetting(Private.Settings.Keys.Party.FontSize),
@@ -1402,14 +1445,24 @@ function PartyEditModeMixin:OnLayoutSettingChanged(key, value)
 
 		for _, frames in pairs(self.frames) do
 			for _, frame in pairs(frames) do
-				if frame then
-					if glowEnabled then
-						if FlipCoin() then
-							frame:ShowGlow()
-						end
-					else
-						frame:HideGlow()
-					end
+				if frame:IsVisible() and glowEnabled and Private.Utils.RollDice() then
+					frame:ShowGlow(true)
+				else
+					frame:HideGlow()
+				end
+			end
+		end
+	elseif key == Private.Settings.Keys.Party.GlowType then
+		if not Private.Settings.Keys.Party.GlowImportant then
+			return
+		end
+
+		for _, frames in pairs(self.frames) do
+			for _, frame in pairs(frames) do
+				if frame:IsVisible() and Private.Utils.RollDice() then
+					frame:ShowGlow(true)
+				else
+					frame:HideGlow()
 				end
 			end
 		end

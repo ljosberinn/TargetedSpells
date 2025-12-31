@@ -1,5 +1,7 @@
 ---@type string, TargetedSpells
 local addonName, Private = ...
+local LibCustomGlow = LibStub("LibCustomGlow-1.0")
+local LibEditMode = LibStub("LibEditMode")
 
 ---@class TargetedSpellsMixin
 TargetedSpellsMixin = {}
@@ -19,8 +21,6 @@ function TargetedSpellsMixin:OnLoad()
 end
 
 function TargetedSpellsMixin:OnKindChanged(kind)
-	-- print("TargetedSpellsMixin:OnKindChanged()", kind)
-
 	if kind == Private.Enum.FrameKind.Self then
 		self:SetSize(TargetedSpellsSaved.Settings.Self.Width, TargetedSpellsSaved.Settings.Self.Height)
 		self:SetFontSize(TargetedSpellsSaved.Settings.Self.FontSize)
@@ -47,31 +47,6 @@ local function GetRandomIcon()
 	local numIcons = PreviewIconDataProvider:GetNumIcons()
 	local avoidQuestionMarkIndex = 2
 	return PreviewIconDataProvider:GetIconByIndex(math.random(avoidQuestionMarkIndex, numIcons))
-end
-
----@param element TargetedSpellsMixin
----@param width number
----@param height number
-local function ResizeSpellActivationAlert(element, width, height, startPlay)
-	local alertFrame = element.SpellActivationAlert
-
-	if alertFrame == nil then
-		return
-	end
-
-	-- default scaling as per `ActionButtonSpellAlerts` > `GetAlertFrame`
-	alertFrame:SetSize(width * 1.4, height * 1.4)
-
-	-- this may need adjusting further down the line
-	local factor = 1
-
-	alertFrame.ProcStartFlipbook:ClearAllPoints()
-	alertFrame.ProcStartFlipbook:SetPoint("TOPLEFT", element, -width * factor, height * factor)
-	alertFrame.ProcStartFlipbook:SetPoint("BOTTOMRIGHT", element, height * factor, -width * factor)
-
-	if startPlay then
-		alertFrame.ProcLoop:Play()
-	end
 end
 
 --- shamelessly ~~stolen~~ repurposed from WeakAuras2
@@ -112,47 +87,9 @@ function TargetedSpellsMixin:OnSizeChanged(width, height)
 		local fifteenPercent = 0.15 * height
 		self.Overlay:SetPoint("BOTTOMRIGHT", bottomrightRelativePoint, "BOTTOMRIGHT", fifteenPercent, -fifteenPercent)
 	end
-
-	ResizeSpellActivationAlert(self, width, height, false)
 end
 
 do
-	local actionButtonSpellAlertManagerPatched = false
-
-	---@param bool boolean
-	local function MaybePatchActionButtonSpellAlertManager(bool)
-		if actionButtonSpellAlertManagerPatched or bool == false then
-			return
-		end
-
-		actionButtonSpellAlertManagerPatched = true
-
-		hooksecurefunc(ActionButtonSpellAlertManager, "ShowAlert", function(self, element)
-			if element.kind == nil then
-				return
-			end
-
-			if element.kind == Private.Enum.FrameKind.Self and not TargetedSpellsSaved.Settings.Self.GlowImportant then
-				return
-			end
-
-			if
-				element.kind == Private.Enum.FrameKind.Party and not TargetedSpellsSaved.Settings.Party.GlowImportant
-			then
-				return
-			end
-
-			local width, height = element:GetSize()
-			ResizeSpellActivationAlert(element, width, height, true)
-		end)
-	end
-
-	table.insert(Private.LoginFnQueue, function()
-		MaybePatchActionButtonSpellAlertManager(
-			TargetedSpellsSaved.Settings.Self.GlowImportant or TargetedSpellsSaved.Settings.Party.GlowImportant
-		)
-	end)
-
 	local function GetBackdropTemplate()
 		-- literally the defaults from https://warcraft.wiki.gg/wiki/BackdropTemplate
 		return {
@@ -169,16 +106,12 @@ do
 	function TargetedSpellsMixin:OnSettingChanged(key, value)
 		if self.kind == Private.Enum.FrameKind.Self then
 			if key == Private.Settings.Keys.Self.Width then
-				print("TargetedSpellsMixin:OnSettingChanged->SetSize()", key, value)
 				self:SetSize(value, TargetedSpellsSaved.Settings.Self.Height)
 			elseif key == Private.Settings.Keys.Self.Height then
-				print("TargetedSpellsMixin:OnSettingChanged->SetSize()", key, value)
 				self:SetSize(TargetedSpellsSaved.Settings.Self.Width, value)
 			elseif key == Private.Settings.Keys.Self.ShowDuration then
-				print("TargetedSpellsMixin:OnSettingChanged->SetShowDuration()", key, value)
 				self:SetShowDuration(value)
 			elseif key == Private.Settings.Keys.Self.FontSize then
-				print("TargetedSpellsMixin:OnSettingChanged->SetFontSize()", key, value)
 				self:SetFontSize(value)
 			elseif key == Private.Settings.Keys.Self.Opacity then
 				self:SetAlpha(value)
@@ -188,21 +121,21 @@ do
 				else
 					self:ClearBackdrop()
 				end
-			elseif key == Private.Settings.Keys.Self.GlowImportant then
-				MaybePatchActionButtonSpellAlertManager(value)
+			elseif key == Private.Settings.Keys.Self.GlowType then
+				self:HideGlow()
+
+				if TargetedSpellsSaved.Settings.Self.GlowImportant then
+					self:ShowGlow(self:IsSpellImportant(LibEditMode:IsInEditMode() and Private.Utils.RollDice()))
+				end
 			end
 		else
 			if key == Private.Settings.Keys.Party.Width then
-				print("TargetedSpellsMixin:OnSettingChanged->SetSize()", key, value)
 				self:SetSize(value, TargetedSpellsSaved.Settings.Party.Height)
 			elseif key == Private.Settings.Keys.Party.Height then
-				print("TargetedSpellsMixin:OnSettingChanged->SetSize()", key, value)
 				self:SetSize(TargetedSpellsSaved.Settings.Party.Width, value)
 			elseif key == Private.Settings.Keys.Party.ShowDuration then
-				print("TargetedSpellsMixin:OnSettingChanged->SetShowDuration()", key, value)
 				self:SetShowDuration(value)
 			elseif key == Private.Settings.Keys.Party.FontSize then
-				print("TargetedSpellsMixin:OnSettingChanged->SetFontSize()", key, value)
 				self:SetFontSize(value)
 			elseif key == Private.Settings.Keys.Party.Opacity then
 				self:SetAlpha(value)
@@ -212,20 +145,22 @@ do
 				else
 					self:ClearBackdrop()
 				end
-			elseif key == Private.Settings.Keys.Party.GlowImportant then
-				MaybePatchActionButtonSpellAlertManager(value)
+			elseif key == Private.Settings.Keys.Party.GlowType then
+				self:HideGlow()
+
+				if TargetedSpellsSaved.Settings.Party.GlowImportant then
+					self:ShowGlow(self:IsSpellImportant(LibEditMode:IsInEditMode() and Private.Utils.RollDice()))
+				end
 			end
 		end
 	end
 end
 
 function TargetedSpellsMixin:RefreshSpellCooldownInfo()
-	-- print("TargetedSpellsMixin:RefreshSpellCooldownInfo()", self.unit, self.kind)
 	self.Cooldown:SetCooldown(self.startTime, self.castTime)
 end
 
 function TargetedSpellsMixin:SetStartTime(startTime)
-	-- print("TargetedSpellsMixin:SetStartTime()", self.unit, self.kind)
 	self.startTime = startTime or GetTime()
 end
 
@@ -234,17 +169,97 @@ function TargetedSpellsMixin:GetStartTime()
 end
 
 function TargetedSpellsMixin:SetCastTime(castTime)
-	-- print("TargetedSpellsMixin:SetCastTime()", self.unit, self.kind, castTime)
 	self.castTime = castTime
 end
 
-function TargetedSpellsMixin:ShowGlow()
-	ActionButtonSpellAlertManager:ShowAlert(self)
+function TargetedSpellsMixin:ShowGlow(isImportant)
+	local glowType = self.kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self.GlowType
+		or TargetedSpellsSaved.Settings.Party.GlowType
+
+	if glowType == Private.Enum.GlowType.Star4 then
+		if self.Star4 == nil then
+			local width, height = self:GetSize()
+			local innerFactor = 1.9
+			local outerFactor = 2.2
+
+			self.Star4 = CreateFrame("Frame", nil, self)
+			self.Star4:SetPoint("CENTER")
+			self.Star4:SetFrameStrata(self:GetFrameStrata())
+			self.Star4:SetFrameLevel(self:GetFrameLevel() + 1)
+			self.Star4:SetSize(width * innerFactor, height * innerFactor)
+
+			self.Star4Inner = self.Star4:CreateTexture(nil, "OVERLAY")
+			self.Star4Inner:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
+			self.Star4Inner:SetBlendMode("ADD")
+			self.Star4Inner:SetAlpha(0.9)
+			self.Star4Inner:SetVertexColor(1, 0.85, 0.25)
+			self.Star4Inner:SetPoint("CENTER")
+			self.Star4Inner:SetSize(width * innerFactor, height * innerFactor)
+
+			self.Star4Outer = self.Star4:CreateTexture(nil, "OVERLAY")
+			self.Star4Outer:SetTexture("Interface\\Cooldown\\star4")
+			self.Star4Outer:SetBlendMode("ADD")
+			self.Star4Outer:SetAlpha(0.6)
+			self.Star4Outer:SetVertexColor(1, 0.75, 0.2)
+			self.Star4Outer:SetPoint("CENTER")
+			self.Star4Outer:SetSize(width * outerFactor, height * outerFactor)
+
+			self.Star4AnimationGroup = self.Star4:CreateAnimationGroup()
+			self.Star4Pulse = self.Star4AnimationGroup:CreateAnimation("Alpha")
+			self.Star4Pulse:SetFromAlpha(0.35)
+			self.Star4Pulse:SetToAlpha(0.75)
+			self.Star4Pulse:SetDuration(0.75)
+			self.Star4Pulse:SetSmoothing("IN_OUT")
+			self.Star4AnimationGroup:SetLooping("BOUNCE")
+		end
+
+		self.Star4:Show()
+		self.Star4Inner:Show()
+		self.Star4Outer:Show()
+		self.Star4AnimationGroup:Play()
+
+		if Private.IsMidnight then
+			self.Star4:SetAlphaFromBoolean(isImportant)
+		end
+	elseif glowType == Private.Enum.GlowType.PixelGlow then
+		LibCustomGlow.PixelGlow_Start(self)
+
+		if Private.IsMidnight then
+			self._PixelGlow:SetAlphaFromBoolean(isImportant)
+		end
+	elseif glowType == Private.Enum.GlowType.AutoCastGlow then
+		LibCustomGlow.AutoCastGlow_Start(self)
+
+		if Private.IsMidnight then
+			self._AutoCastGlow:SetAlphaFromBoolean(isImportant)
+		end
+	elseif glowType == Private.Enum.GlowType.ButtonGlow then
+		LibCustomGlow.ButtonGlow_Start(self)
+
+		if Private.IsMidnight then
+			self._ButtonGlow:SetAlphaFromBoolean(isImportant)
+		end
+	elseif glowType == Private.Enum.GlowType.ProcGlow then
+		LibCustomGlow.ProcGlow_Start(self)
+
+		if Private.IsMidnight then
+			self._ProcGlow:SetAlphaFromBoolean(isImportant)
+		end
+	end
 end
 
 function TargetedSpellsMixin:HideGlow()
-	-- internally nilchecks so safe to call unconditionally
-	ActionButtonSpellAlertManager:HideAlert(self)
+	if self.Star4 ~= nil then
+		self.Star4:Hide()
+		self.Star4Inner:Hide()
+		self.Star4Outer:Hide()
+		self.Star4AnimationGroup:Stop()
+	end
+
+	LibCustomGlow.PixelGlow_Stop(self)
+	LibCustomGlow.AutoCastGlow_Stop(self)
+	LibCustomGlow.ButtonGlow_Stop(self)
+	LibCustomGlow.ProcGlow_Stop(self)
 end
 
 do
@@ -252,29 +267,21 @@ do
 	local platerProfileImportantCastsCache = Private.IsMidnight and nil or {}
 	local cacheInitialized = false
 
-	function TargetedSpellsMixin:SetSpellId(spellId)
-		self.spellId = spellId
-		local texture = spellId and C_Spell.GetSpellTexture(spellId) or GetRandomIcon()
-		self.Icon:SetTexture(texture)
+	function TargetedSpellsMixin:IsSpellImportant(boolOverride)
+		if boolOverride ~= nil then
+			return boolOverride
+		end
 
-		if
-			-- todo: verify this is fine with secret values
-			spellId == nil
-			or (self.kind == Private.Enum.FrameKind.Self and not TargetedSpellsSaved.Settings.Self.GlowImportant)
-			or (self.kind == Private.Enum.FrameKind.Party and not TargetedSpellsSaved.Settings.Party.GlowImportant)
-		then
-			return
+		if self.spellId == nil then
+			return false
 		end
 
 		if Private.IsMidnight then
-			self:ShowGlow()
-			self.SpellActivationAlert:SetAlphaFromBoolean(C_Spell.IsSpellImportant(spellId))
-		elseif Plater and Plater.db and Plater.db.profile and Plater.db.profile.script_data then
-			if cacheInitialized then
-				if platerProfileImportantCastsCache[spellId] == true then
-					self:ShowGlow()
-				end
-			else
+			return C_Spell.IsSpellImportant(self.spellId)
+		end
+
+		if Plater and Plater.db and Plater.db.profile and Plater.db.profile.script_data then
+			if not cacheInitialized then
 				cacheInitialized = true
 
 				local importantCastsScripts = {
@@ -291,7 +298,27 @@ do
 					end
 				end
 			end
+
+			return platerProfileImportantCastsCache[self.spellId] == true
 		end
+
+		return false
+	end
+end
+
+function TargetedSpellsMixin:SetSpellId(spellId)
+	self.spellId = spellId
+	local texture = spellId and C_Spell.GetSpellTexture(spellId) or GetRandomIcon()
+	self.Icon:SetTexture(texture)
+
+	if
+		spellId ~= nil
+		and (
+			(self.kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self.GlowImportant)
+			or (self.kind == Private.Enum.FrameKind.Party and TargetedSpellsSaved.Settings.Party.GlowImportant)
+		)
+	then
+		self:ShowGlow(self:IsSpellImportant())
 	end
 end
 

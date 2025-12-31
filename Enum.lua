@@ -75,3 +75,12 @@ Private.Enum.SoundChannel = {
 	Ambience = AMBIENCE_VOLUME,
 	Dialog = DIALOG_VOLUME,
 }
+
+---@enum GlowType
+Private.Enum.GlowType = {
+	PixelGlow = 1,
+	AutoCastGlow = 2,
+	ButtonGlow = 3,
+	ProcGlow = 4,
+	Star4 = 5,
+}

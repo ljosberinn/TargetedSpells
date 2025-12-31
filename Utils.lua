@@ -45,3 +45,7 @@ do
 		end
 	end
 end
+
+function Private.Utils.RollDice()
+	return math.random(1, 6) == 6
+end

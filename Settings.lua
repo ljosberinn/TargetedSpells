@@ -21,6 +21,7 @@ Private.Settings.Keys = {
 		Direction = "GROW_DIRECTION_SELF",
 		SortOrder = "FRAME_SORT_ORDER_SELF",
 		GlowImportant = "GLOW_IMPORTANT_SELF",
+		GlowType = "GLOW_TYPE_SELF",
 		Grow = "FRAME_GROW_SELF",
 		PlaySound = "PLAY_SOUND_SELF",
 		Sound = "SOUND_SELF",
@@ -46,6 +47,7 @@ Private.Settings.Keys = {
 		SortOrder = "FRAME_SORT_ORDER_PARTY",
 		Grow = "FRAME_GROW_PARTY",
 		GlowImportant = "GLOW_IMPORTANT_PARTY",
+		GlowType = "GLOW_TYPE_PARTY",
 		IncludeSelfInParty = "INCLUDE_SELF_IN_PARTY_PARTY",
 		ShowDuration = "SHOW_DURATION_PARTY",
 		Opacity = "OPACITY_PARTY",
@@ -181,6 +183,7 @@ function Private.Settings.GetSelfDefaultSettings()
 		Opacity = 1,
 		ShowBorder = false,
 		GlowImportant = true,
+		GlowType = Private.Enum.GlowType.PixelGlow,
 	}
 end
 
@@ -217,6 +220,7 @@ function Private.Settings.GetPartyDefaultSettings()
 		Opacity = 1,
 		ShowBorder = false,
 		GlowImportant = true,
+		GlowType = Private.Enum.GlowType.PixelGlow,
 	}
 end
 
@@ -998,6 +1002,50 @@ table.insert(Private.LoginFnQueue, function()
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 
+		-- Glow Type
+		do
+			local key = Private.Settings.Keys.Self.GlowType
+			local defaultValue = Private.Settings.GetSelfDefaultSettings().GlowType
+
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Self.GlowType
+			end
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Self.GlowType = value
+
+				Private.EventRegistry:TriggerEvent(
+					Private.Enum.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Self.GlowType
+				)
+			end
+
+			local function GetOptions()
+				local container = Settings.CreateControlTextContainer()
+
+				for label, id in pairs(Private.Enum.GlowType) do
+					local translated = L.Settings.GlowTypeLabels[id]
+
+					container:Add(id, translated)
+				end
+
+				return container:GetData()
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				L.Settings.GlowTypeLabel,
+				defaultValue,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.GlowTypeTooltip)
+			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+		end
+
 		-- Play Sound
 		do
 			local key = Private.Settings.Keys.Self.PlaySound
@@ -1128,8 +1176,9 @@ table.insert(Private.LoginFnQueue, function()
 			local function GetOptions()
 				local container = Settings.CreateControlTextContainer()
 
-				for k, v in pairs(Private.Enum.SoundChannel) do
-					container:Add(v, k)
+				for label, value in pairs(Private.Enum.SoundChannel) do
+					local translated = L.Settings.SoundChannelLabels[value]
+					container:Add(value, translated)
 				end
 
 				return container:GetData()
@@ -1487,9 +1536,24 @@ table.insert(Private.LoginFnQueue, function()
 					local container = Settings.CreateControlTextContainer()
 
 					for label, id in pairs(Private.Enum.ContentType) do
+						local function IsEnabled()
+							return TargetedSpellsSaved.Settings.Self.LoadConditionContentType[id]
+						end
+
+						local function Toggle()
+							TargetedSpellsSaved.Settings.Self.LoadConditionContentType[id] =
+								not TargetedSpellsSaved.Settings.Self.LoadConditionContentType[id]
+						end
+
 						local translated = L.Settings.LoadConditionContentTypeLabels[id]
 
-						container:Add(id, translated, L.Settings.LoadConditionContentTypeTooltip)
+						container:AddCheckbox(
+							id,
+							translated,
+							L.Settings.LoadConditionContentTypeTooltip,
+							IsEnabled,
+							Toggle
+						)
 					end
 
 					return container:GetData()
@@ -2130,6 +2194,50 @@ table.insert(Private.LoginFnQueue, function()
 				SetValue
 			)
 			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.GlowImportantTooltip)
+			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
+		end
+
+		-- Glow Type
+		do
+			local key = Private.Settings.Keys.Party.GlowType
+			local defaultValue = Private.Settings.GetPartyDefaultSettings().GlowType
+
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Party.GlowType
+			end
+
+			local function SetValue(value)
+				TargetedSpellsSaved.Settings.Party.GlowType = value
+
+				Private.EventRegistry:TriggerEvent(
+					Private.Enum.Events.SETTING_CHANGED,
+					key,
+					TargetedSpellsSaved.Settings.Party.GlowType
+				)
+			end
+
+			local function GetOptions()
+				local container = Settings.CreateControlTextContainer()
+
+				for label, id in pairs(Private.Enum.GlowType) do
+					local translated = L.Settings.GlowTypeLabels[id]
+
+					container:Add(id, translated)
+				end
+
+				return container:GetData()
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				L.Settings.GlowTypeLabel,
+				defaultValue,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.GlowTypeTooltip)
 			initializer:SetParentInitializer(generalCategoryEnabledInitializer, IsSectionEnabled)
 		end
 

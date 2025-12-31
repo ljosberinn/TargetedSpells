@@ -3,9 +3,10 @@
 ## DefaultState: Enabled
 ## SavedVariables: TargetedSpellsSaved
 ## IconTexture: Interface\Icons\Ability_hunter_snipershot
-## OptionalDeps: !!AddonLocale
+## OptionalDeps: !!AddonLocale, Masque, LibCustomGlow-1.0
 
 Libs\LibStub\LibStub.lua
+Libs\LibCustomGlow-1.0\LibCustomGlow-1.0.lua
 Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
 Libs\LibEditMode\embed.xml
 Libs\LibSharedMedia-3.0\LibSharedMedia-3.0.lua
