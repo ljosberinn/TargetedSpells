@@ -30,6 +30,7 @@ end
 
 do
 	local handle = nil
+	local channels = tInvert(Private.Enum.SoundChannel)
 
 	function Private.Utils.AttemptToPlaySound(sound, channel)
 		if handle ~= nil then
@@ -37,12 +38,13 @@ do
 			handle = nil
 		end
 
+		local channelToUse = channels[channel]
 		local isFile = Private.Settings.SoundIsFile(sound)
 
 		if not isFile and type(sound) == "number" then
-			handle = select(3, pcall(PlaySound, sound, channel, false))
+			handle = select(3, pcall(PlaySound, sound, channelToUse, false))
 		else
-			handle = select(3, pcall(PlaySoundFile, sound, channel))
+			handle = select(3, pcall(PlaySoundFile, sound, channelToUse))
 		end
 	end
 end
@@ -63,9 +65,9 @@ function Private.Utils.FindAppropriateTTSVoiceId()
 		patternToLookFor = "English"
 	end
 
-	if patternToLookFor then
+	if patternToLookFor ~= nil then
 		for _, voice in pairs(C_VoiceChat.GetTtsVoices()) do
-			if string.find(voice.name, patternToLookFor) then
+			if string.find(voice.name, patternToLookFor) ~= nil then
 				return voice.voiceID
 			end
 		end
