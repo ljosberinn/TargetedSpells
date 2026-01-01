@@ -308,7 +308,11 @@ function TargetedSpellsMixin:SetSpellId(spellId)
 			or (self.kind == Private.Enum.FrameKind.Party and TargetedSpellsSaved.Settings.Party.GlowImportant)
 		)
 	then
-		self:ShowGlow(self:IsSpellImportant())
+		if Private.IsMidnight or self:IsSpellImportant() then
+			self:ShowGlow(self:IsSpellImportant())
+		else
+			self:HideGlow()
+		end
 	end
 end
 
@@ -352,12 +356,10 @@ function TargetedSpellsMixin:PostCreate(unit, kind, castingUnit)
 	self:SetUnit(unit)
 	self:SetKind(kind)
 
-	if castingUnit ~= nil then
-		if Private.IsMidnight then
-			-- using UnitIsSpellTarget(castingUnit, unit) works and is technically more accurate
-			-- but it omits spells that - while the enemy is targeting something - doesn't affect the target, e.g. aoe enrages or party-wide damage
-			self:SetAlphaFromBoolean(UnitIsUnit(string.format("%starget", castingUnit), unit))
-		end
+	if castingUnit ~= nil and Private.IsMidnight then
+		-- using UnitIsSpellTarget(castingUnit, unit) works and is technically more accurate
+		-- but it omits spells that - while the enemy is targeting something - doesn't affect the target, e.g. aoe enrages or party-wide damage
+		self:SetAlphaFromBoolean(UnitIsUnit(string.format("%starget", castingUnit), unit))
 	end
 end
 
@@ -367,7 +369,6 @@ function TargetedSpellsMixin:Reset()
 	self.Cooldown:Clear()
 	self:ClearAllPoints()
 	self:Hide()
-
 	self:HideGlow()
 end
 
@@ -384,4 +385,40 @@ function TargetedSpellsMixin:SetFontSize(fontSize)
 	end
 
 	fontString:SetFont(font, fontSize, flags)
+end
+
+function TargetedSpellsMixin:AttemptToPlaySound(contentType, unit)
+	if
+		not Private.IsMidnight
+		and self.kind == Private.Enum.FrameKind.Self
+		and TargetedSpellsSaved.Settings.Self.PlaySound
+		and TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[contentType]
+		and UnitIsUnit(string.format("%starget", unit), "player")
+	then
+		Private.Utils.AttemptToPlaySound(
+			TargetedSpellsSaved.Settings.Self.Sound,
+			TargetedSpellsSaved.Settings.Self.SoundChannel
+		)
+	end
+end
+
+function TargetedSpellsMixin:AttemptToPlayTTS(contentType, unit)
+	if
+		Private.IsMidnight
+		or self.kind ~= Private.Enum.FrameKind.Self
+		or self.spellId == nil
+		or not TargetedSpellsSaved.Settings.Self.PlayTTS
+		or not TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[contentType]
+		or not UnitIsUnit(string.format("%starget", unit), "player")
+	then
+		return
+	end
+
+	local spellName = C_Spell.GetSpellName(self.spellId)
+
+	if spellName == nil then
+		return
+	end
+
+	Private.Utils.PlayTTS(spellName)
 end

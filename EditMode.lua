@@ -687,25 +687,6 @@ function TargetedSpellsEditModeMixin:CreateSetting(key, defaults)
 						key,
 						TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType
 					)
-
-					local anyEnabled = false
-					for role, loadCondition in pairs(TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType) do
-						if loadCondition then
-							anyEnabled = true
-							break
-						end
-					end
-
-					if anyEnabled ~= TargetedSpellsSaved.Settings.Self.PlaySound then
-						TargetedSpellsSaved.Settings.Self.PlaySound = anyEnabled
-						Private.EventRegistry:TriggerEvent(
-							Private.Enum.Events.SETTING_CHANGED,
-							Private.Settings.Keys.Self.PlaySound,
-							anyEnabled
-						)
-
-						LibEditMode:RefreshFrameSettings(self.editModeFrame)
-					end
 				end
 
 				local translated = L.Settings.LoadConditionSoundContentTypeLabels[id]

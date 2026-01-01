@@ -60,7 +60,6 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED")
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTED")
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_FAILED_QUIET")
-		self.frame:RegisterUnitEvent("UNIT_TARGET")
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_STOP")
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_START")
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_STOP")
@@ -70,6 +69,7 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 		self.frame:RegisterUnitEvent("NAME_PLATE_UNIT_ADDED")
 		if Private.IsMidnight then
 			self.frame:RegisterUnitEvent("CVAR_UPDATE")
+			self.frame:RegisterUnitEvent("UNIT_TARGET")
 		end
 		self.frame:SetScript("OnEvent", GenerateClosure(self.OnFrameEvent, self))
 
@@ -452,6 +452,8 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			frame:SetStartTime(startTime)
 			frame:SetCastTime(castTime)
 			frame:RefreshSpellCooldownInfo()
+			frame:AttemptToPlaySound(self.contentType, unit)
+			frame:AttemptToPlayTTS(self.contentType, unit)
 			frame:Show()
 		end
 
@@ -574,6 +576,8 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			frame:SetStartTime(info.startTime)
 			frame:SetCastTime(castTime)
 			frame:RefreshSpellCooldownInfo()
+			frame:AttemptToPlaySound(self.contentType, info.unit)
+			frame:AttemptToPlayTTS(self.contentType, info.unit)
 			frame:Show()
 		end
 
@@ -681,6 +685,10 @@ function TargetedSpellsDriver:OnSettingsChanged(key, value)
 			self:SetupFrame(false)
 		end
 	elseif key == Private.Settings.Keys.Self.PlayTTS or key == Private.Settings.Keys.Self.PlaySound then
+		if not Private.IsMidnight then
+			return
+		end
+
 		if value then
 			C_CVar.SetCVar("CAAEnabled", 1)
 			C_CVar.SetCVar("CAASayCombatStart", 0)
@@ -731,17 +739,9 @@ function TargetedSpellsDriver:MaybeApplyCombatAudioAlertOverride()
 		elseif TargetedSpellsSaved.Settings.Self.PlayTTS then
 			local spellName = C_Spell.GetSpellName(spellId)
 
-			if spellName == nil then
-				return ""
+			if spellName ~= nil then
+				Private.Utils.PlayTTS(spellName)
 			end
-
-			-- cant return `spellName` ourselves here because its secret and further down the line, secrest aren't allowed
-			C_VoiceChat.SpeakText(
-				TargetedSpellsSaved.Settings.Self.TTSVoice,
-				spellName,
-				2,
-				C_TTSSettings.GetSpeechVolume()
-			)
 		end
 
 		return ""

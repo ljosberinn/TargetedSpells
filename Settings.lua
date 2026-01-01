@@ -437,8 +437,11 @@ function Private.Settings.SampleTTSVoice(voiceId)
 				then
 					local name = C_Spell.GetSpellName(spellBookItemInfo.actionID)
 
-					C_VoiceChat.SpeakText(voiceId, name, 1.5, C_TTSSettings.GetSpeechVolume())
-					return
+					if name then
+						Private.Utils.PlayTTS(name, voiceId, 1.5)
+
+						return
+					end
 				end
 			end
 		end
