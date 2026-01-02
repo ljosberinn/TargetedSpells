@@ -1,3 +1,7 @@
+## Version 1.0.0-alpha3
+
+- more Retail compatibility
+
 ## Version 1.0.0-alpha2
 
 - fixed a bug where spells wouldn't be shown if the player wasn't in combat with the casting enemy
