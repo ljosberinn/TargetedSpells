@@ -110,7 +110,7 @@
 ---@field SetMinimumCountdownDuration fun(self: ExtendedCooldownTypes, minimumDuration: number)
 ---@field GetCountdownFontString fun(self: ExtendedCooldownTypes): FontString
 
----@class TargetedSpellsMixin : Frame, BackdropTemplate
+---@class TargetedSpellsMixin : Frame
 ---@field Overlay Texture
 ---@field Icon Texture
 ---@field Cooldown ExtendedCooldownTypes
@@ -123,6 +123,8 @@
 ---@field _ButtonGlow Frame?
 ---@field _PixelGlow Frame?
 ---@field _ProcGlow Frame?
+---@field Star4 Frame?
+---@field Border Frame | BackdropTemplate
 ---@field OnLoad fun(self: TargetedSpellsMixin)
 ---@field SetKind fun(self: TargetedSpellsMixin, kind: FrameKind)
 ---@field GetKind fun(self: TargetedSpellsMixin): FrameKind?

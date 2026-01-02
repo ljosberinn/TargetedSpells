@@ -2,8 +2,20 @@
 ## Title: Targeted Spells
 ## DefaultState: Enabled
 ## SavedVariables: TargetedSpellsSaved
-## IconTexture: Interface\Icons\Ability_hunter_snipershot
+## IconTexture: Interface\Icons\ability_hunter_snipershot
 ## OptionalDeps: !!AddonLocale, Masque, LibCustomGlow-1.0
+## Category: Combat
+## Category-deDE: Kampf
+## Category-esES: Combate
+## Category-esMX: Combate
+## Category-frFR: Combat
+## Category-itIT: Combattimento
+## Category-koKR: 전투
+## Category-ptBR: Combate
+## Category-ruRU: Бой
+## Category-zhCN: 战斗
+## Category-zhTW: 戰鬥
+## Notes: Highlights spells targeting the player and/or the party
 
 Libs\LibStub\LibStub.lua
 Libs\LibCustomGlow-1.0\LibCustomGlow-1.0.lua
@@ -16,7 +28,10 @@ Templates\TargetedSpellsFrameTemplate.xml
 Enum.lua
 Init.lua
 Utils.lua
-Localization.lua
+
+Localization\enUS.lua
+Localization\[TextLocale].lua [AllowLoadTextLocale deDE, frFR]
+
 Settings.lua
 TargetedSpellsMixin.lua
 EditMode.lua

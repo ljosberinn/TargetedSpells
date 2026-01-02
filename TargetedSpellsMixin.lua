@@ -3,49 +3,15 @@ local addonName, Private = ...
 local LibCustomGlow = LibStub("LibCustomGlow-1.0")
 local LibEditMode = LibStub("LibEditMode")
 
----@class TargetedSpellsMixin
-TargetedSpellsMixin = {}
-
-function TargetedSpellsMixin:OnLoad()
-	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingChanged, self)
-
-	self.Cooldown:SetCountdownFont("GameFontHighlightHugeOutline")
-	self.Cooldown:SetMinimumCountdownDuration(0)
-end
-
-function TargetedSpellsMixin:OnKindChanged(kind)
-	local tableRef = kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
-		or TargetedSpellsSaved.Settings.Party
-
-	self:SetSize(tableRef.Width, tableRef.Height)
-	self:SetFontSize(tableRef.FontSize)
-
-	if tableRef.ShowBorder then
-		self:ApplyBorder()
-	else
-		self:ClearBorder()
-	end
-
-	self:SetShowDuration(tableRef.ShowDuration)
-	self:SetAlpha(tableRef.Opacity)
-end
-
-function TargetedSpellsMixin:ApplyBorder()
-	-- literally the defaults from https://warcraft.wiki.gg/wiki/BackdropTemplate
-	self:SetBackdrop({
-		bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-		tile = true,
-		tileEdge = true,
-		tileSize = 8,
-		edgeSize = 8,
-		insets = { left = 1, right = 1, top = 1, bottom = 1 },
-	})
-end
-
-function TargetedSpellsMixin:ClearBorder()
-	self:ClearBackdrop()
-end
+TARGETED_SPELLS_BACKDROP = {
+	bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+	edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+	tile = true,
+	tileEdge = true,
+	tileSize = 8,
+	edgeSize = 8,
+	insets = { left = 1, right = 1, top = 1, bottom = 1 },
+}
 
 local PreviewIconDataProvider = nil
 
@@ -64,6 +30,42 @@ local function GetRandomIcon()
 	local numIcons = PreviewIconDataProvider:GetNumIcons()
 	local avoidQuestionMarkIndex = 2
 	return PreviewIconDataProvider:GetIconByIndex(math.random(avoidQuestionMarkIndex, numIcons))
+end
+
+---@class TargetedSpellsMixin
+TargetedSpellsMixin = {}
+
+function TargetedSpellsMixin:OnLoad()
+	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingChanged, self)
+
+	self.Cooldown:SetCountdownFont("GameFontHighlightHugeOutline")
+	self.Cooldown:SetMinimumCountdownDuration(0)
+end
+
+function TargetedSpellsMixin:OnKindChanged(kind)
+	local tableRef = kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
+		or TargetedSpellsSaved.Settings.Party
+
+	self:SetSize(tableRef.Width, tableRef.Height)
+	self:SetFontSize(tableRef.FontSize)
+	self:HideGlow()
+
+	if tableRef.ShowBorder then
+		self:ShowBorder()
+	else
+		self:HideBorder()
+	end
+
+	self:SetShowDuration(tableRef.ShowDuration)
+	self:SetAlpha(tableRef.Opacity)
+end
+
+function TargetedSpellsMixin:ShowBorder()
+	self.Border:Show()
+end
+
+function TargetedSpellsMixin:HideBorder()
+	self.Border:Hide()
 end
 
 --- shamelessly ~~stolen~~ repurposed from WeakAuras2
@@ -130,9 +132,9 @@ function TargetedSpellsMixin:OnSettingChanged(key, value)
 		self:SetAlpha(value)
 	elseif key == Private.Settings.Keys.Self.ShowBorder or key == Private.Settings.Keys.Party.ShowBorder then
 		if value then
-			self:ApplyBorder()
+			self:ShowBorder()
 		else
-			self:ClearBorder()
+			self:HideBorder()
 		end
 	elseif key == Private.Settings.Keys.Self.GlowType or key == Private.Settings.Keys.Party.GlowType then
 		self:HideGlow()
@@ -257,9 +259,9 @@ do
 	local platerProfileImportantCastsCache = Private.IsMidnight and nil or {}
 	local cacheInitialized = false
 
-	function TargetedSpellsMixin:IsSpellImportant(boolOverride)
-		if boolOverride ~= nil then
-			return boolOverride
+	function TargetedSpellsMixin:IsSpellImportant(override)
+		if override ~= nil then
+			return override
 		end
 
 		if self.spellId == nil then

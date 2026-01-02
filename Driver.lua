@@ -54,6 +54,7 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 	then
 		self.frame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 		self.frame:RegisterEvent("LOADING_SCREEN_DISABLED")
+		self.frame:RegisterEvent("PLAYER_LOGIN")
 		self.frame:RegisterEvent("UPDATE_INSTANCE_INFO")
 		self.frame:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_START")
@@ -69,7 +70,7 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 		self.frame:RegisterUnitEvent("NAME_PLATE_UNIT_ADDED")
 		if Private.IsMidnight then
 			self.frame:RegisterUnitEvent("CVAR_UPDATE")
-			self.frame:RegisterUnitEvent("UNIT_TARGET")
+			-- self.frame:RegisterUnitEvent("UNIT_TARGET")
 		end
 		self.frame:SetScript("OnEvent", GenerateClosure(self.OnFrameEvent, self))
 
@@ -77,83 +78,86 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 	end
 end
 
-if Private.IsMidnight then
-	function TargetedSpellsDriver:AcquireFrames(castingUnit)
-		local frames = {}
+function TargetedSpellsDriver:AcquireFrames(castingUnit)
+	local frames = {}
 
-		if
-			TargetedSpellsSaved.Settings.Self.Enabled
-			and not self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Self)
-		then
-			local selfTargetingFrame = self.framePool:Acquire()
-			selfTargetingFrame:SetParent(self.frame)
-			selfTargetingFrame:PostCreate("player", Private.Enum.FrameKind.Self, castingUnit)
-			table.insert(frames, selfTargetingFrame)
-		end
+	if
+		TargetedSpellsSaved.Settings.Self.Enabled
+		and not self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Self)
+		and (Private.IsMidnight and true or UnitIsUnit(string.format("%starget", castingUnit), "player"))
+	then
+		local selfTargetingFrame = self.framePool:Acquire()
+		selfTargetingFrame:SetParent(self.frame)
+		selfTargetingFrame:PostCreate("player", Private.Enum.FrameKind.Self, castingUnit)
+		table.insert(frames, selfTargetingFrame)
+	end
 
-		if
-			TargetedSpellsSaved.Settings.Party.Enabled
-			and IsInGroup()
-			and not self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Party)
-		then
-			local partyMemberCount = GetNumGroupMembers()
+	if
+		TargetedSpellsSaved.Settings.Party.Enabled
+		and IsInGroup()
+		and not self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Party)
+	then
+		local partyMemberCount = GetNumGroupMembers()
 
-			for i = 1, partyMemberCount do
-				local unit = i == partyMemberCount and "player" or "party" .. i
+		for i = 1, partyMemberCount do
+			local unit = i == partyMemberCount and "player" or "party" .. i
 
-				if (unit == "player" and TargetedSpellsSaved.Settings.Party.IncludeSelfInParty) or unit ~= "player" then
-					local frame = self.framePool:Acquire()
-					frame:PostCreate(unit, Private.Enum.FrameKind.Party, castingUnit)
-					table.insert(frames, frame)
-				end
+			if
+				(
+					(Private.IsMidnight and true or UnitIsUnit(string.format("%starget", castingUnit), unit))
+					and unit == "player"
+					and TargetedSpellsSaved.Settings.Party.IncludeSelfInParty
+				) or unit ~= "player"
+			then
+				local frame = self.framePool:Acquire()
+				frame:PostCreate(unit, Private.Enum.FrameKind.Party, castingUnit)
+				table.insert(frames, frame)
 			end
 		end
-
-		return frames
 	end
-else
-	function TargetedSpellsDriver:AcquireFrames(castingUnit)
-		local frames = {}
 
-		if
-			TargetedSpellsSaved.Settings.Self.Enabled
-			and not self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Self)
-			and UnitIsUnit(string.format("%starget", castingUnit), "player")
-		then
-			local selfTargetingFrame = self.framePool:Acquire()
-			selfTargetingFrame:SetParent(self.frame)
-			selfTargetingFrame:PostCreate("player", Private.Enum.FrameKind.Self, castingUnit)
-			table.insert(frames, selfTargetingFrame)
-		end
-
-		if
-			TargetedSpellsSaved.Settings.Party.Enabled
-			and IsInGroup()
-			and not self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Party)
-		then
-			local partyMemberCount = GetNumGroupMembers()
-
-			for i = 1, partyMemberCount do
-				local unit = i == partyMemberCount and "player" or "party" .. i
-
-				if
-					UnitIsUnit(string.format("%starget", castingUnit), unit)
-					and (
-						(unit == "player" and TargetedSpellsSaved.Settings.Party.IncludeSelfInParty)
-						or unit ~= "player"
-					)
-				then
-					local frame = self.framePool:Acquire()
-					frame:PostCreate(unit, Private.Enum.FrameKind.Party, castingUnit)
-					table.insert(frames, frame)
-					pprint("added frame for", unit)
-				end
-			end
-		end
-
-		return frames
-	end
+	return frames
 end
+-- function TargetedSpellsDriver:AcquireFrames(castingUnit)
+-- 	local frames = {}
+
+-- 	if
+-- 		TargetedSpellsSaved.Settings.Self.Enabled
+-- 		and not self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Self)
+-- 		and UnitIsUnit(string.format("%starget", castingUnit), "player")
+-- 	then
+-- 		local selfTargetingFrame = self.framePool:Acquire()
+-- 		selfTargetingFrame:SetParent(self.frame)
+-- 		selfTargetingFrame:PostCreate("player", Private.Enum.FrameKind.Self, castingUnit)
+-- 		table.insert(frames, selfTargetingFrame)
+-- 	end
+
+-- 	if
+-- 		TargetedSpellsSaved.Settings.Party.Enabled
+-- 		and IsInGroup()
+-- 		and not self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Party)
+-- 	then
+-- 		local partyMemberCount = GetNumGroupMembers()
+
+-- 		for i = 1, partyMemberCount do
+-- 			local unit = i == partyMemberCount and "player" or "party" .. i
+
+-- 			if
+-- 				UnitIsUnit(string.format("%starget", castingUnit), unit)
+-- 				and (
+-- 					(unit == "player" and TargetedSpellsSaved.Settings.Party.IncludeSelfInParty)
+-- 					or unit ~= "player"
+-- 				)
+-- 			then
+-- 				local frame = self.framePool:Acquire()
+-- 				frame:PostCreate(unit, Private.Enum.FrameKind.Party, castingUnit)
+-- 				table.insert(frames, frame)
+-- 			end
+-- 		end
+-- 	end
+
+-- 	return frames
+-- end
 
 -- this is where 3rd party unit frames would need addition
 ---@param unit string
@@ -311,20 +315,73 @@ function TargetedSpellsDriver:LoadConditionsProhibitExecution(kind)
 		or TargetedSpellsSaved.Settings.Party
 
 	if not tableRef.LoadConditionRole[self.role] then
-		print("role not allowed", kind, self.role)
 		return true
 	end
 
 	if not tableRef.LoadConditionContentType[self.contentType] then
-		print("content type not allowed", kind, self.contentType)
 		return true
 	end
 
 	return false
 end
 
+---@enum StaticPopupKind
+local StaticPopupKind = {
+	NamePlateShowOffScreen = 1,
+	CAAEnabled = 2,
+	CAASayIfTargeted = 3,
+}
+
+---@param kind StaticPopupKind
+local function SetupStaticPopup(kind)
+	local text, OnAccept = nil, nil
+
+	if kind == StaticPopupKind.NamePlateShowOffScreen then
+		text = Private.L.Functionality.CVarWarning
+		OnAccept = function(dialog, data)
+			C_CVar.SetCVar("nameplateShowOffscreen", 1)
+			-- Settings.OpenToCategory(Settings.NAMEPLATE_OPTIONS_CATEGORY_ID, UNIT_NAMEPLATES_SHOW_OFFSCREEN)
+		end
+	elseif kind == StaticPopupKind.CAAEnabled then
+		text = Private.L.Functionality.CAAManuallyDisabledWarning
+		OnAccept = function(dialog, data)
+			C_CVar.SetCVar("CAAEnabled", 1)
+		end
+	elseif kind == StaticPopupKind.CAASayIfTargeted then
+		text = Private.L.Functionality.CAASayIfTargetedDisabledWarning
+		OnAccept = function(dialog, data)
+			C_CombatAudioAlert.SetSpecSetting(Enum.CombatAudioAlertSpecSetting.SayIfTargeted, 1)
+		end
+	end
+
+	if StaticPopupDialogs[addonName] == nil then
+		StaticPopupDialogs[addonName] = {
+			id = addonName,
+			button1 = ENABLE,
+			button2 = CLOSE,
+			whileDead = true,
+		}
+	end
+
+	StaticPopupDialogs[addonName].text = text
+	StaticPopupDialogs[addonName].OnAccept = OnAccept
+
+	local function Show()
+		StaticPopup_Hide(addonName)
+		StaticPopup_Show(addonName)
+	end
+
+	local function Hide()
+		StaticPopup_Hide(addonName)
+	end
+
+	return Show, Hide
+end
+
+local sawPlayerLogin = false
+
 ---@param listenerFrame Frame -- identical to self.frame
----@param event "UNIT_SPELLCAST_INTERRUPTED" | "UNIT_SPELLCAST_FAILED_QUIET" | "ZONE_CHANGED_NEW_AREA" | "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" | "UNIT_SPELLCAST_SUCCEEDED" |"EDIT_MODE_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "DELAYED_UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED"
+---@param event "PLAYER_LOGIN" | "UNIT_SPELLCAST_INTERRUPTED" | "UNIT_SPELLCAST_FAILED_QUIET" | "ZONE_CHANGED_NEW_AREA" | "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" | "UNIT_SPELLCAST_SUCCEEDED" |"EDIT_MODE_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "DELAYED_UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED"
 function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 	if
 		event == "UNIT_SPELLCAST_START"
@@ -478,42 +535,41 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 				self:RepositionFrames()
 			end
 		elseif name == "nameplateShowOffscreen" then
-			if StaticPopupDialogs[addonName] == nil then
-				StaticPopupDialogs[addonName] = {
-					id = addonName,
-					button1 = ACCEPT,
-					button2 = CLOSE,
-					whileDead = true,
-					text = Private.L.Functionality.CVarWarning,
-					OnAccept = function(dialog, data)
-						C_CVar.SetCVar("nameplateShowOffscreen", 1)
-						-- Settings.OpenToCategory(Settings.NAMEPLATE_OPTIONS_CATEGORY_ID, UNIT_NAMEPLATES_SHOW_OFFSCREEN)
-					end,
-				}
-			end
+			local Show, Hide = SetupStaticPopup(StaticPopupKind.NamePlateShowOffScreen)
 
 			if value == "1" or value == 1 then
-				StaticPopup_Hide(addonName)
+				Hide()
 			else
-				StaticPopup_Show(addonName)
+				Show()
 			end
 		elseif name == "CAAEnabled" then
 			if not TargetedSpellsSaved.Settings.Self.PlayTTS and not TargetedSpellsSaved.Settings.Self.PlaySound then
 				return
 			end
 
-			if value == "0" or value == 0 then
-				print(Private.L.Functionality.CAAManuallyDisabledWarning)
+			local Show, Hide = SetupStaticPopup(StaticPopupKind.CAAEnabled)
+
+			if value == "1" or value == 1 then
+				Hide()
+			else
+				Show()
 			end
 		elseif name == "CAASayIfTargeted" then
-			if not TargetedSpellsSaved.Settings.Self.PlayTTS and not TargetedSpellsSaved.Settings.Self.PlaySound then
+			if
+				not sawPlayerLogin
+				and not TargetedSpellsSaved.Settings.Self.PlayTTS
+				and not TargetedSpellsSaved.Settings.Self.PlaySound
+			then
 				return
 			end
 
+			local Show, Hide = SetupStaticPopup(StaticPopupKind.CAASayIfTargeted)
 			local state = C_CombatAudioAlert.GetSpecSetting(Enum.CombatAudioAlertSpecSetting.SayIfTargeted)
 
 			if state == 0 then
-				print(Private.L.Functionality.CAASayIfTargetedDisabledWarning)
+				Show()
+			else
+				Hide()
 			end
 		end
 	elseif
@@ -669,6 +725,18 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		self.frame:ClearAllPoints()
 		self.frame:SetPoint(point, x, y)
 		self.frame:Show()
+	elseif event == "PLAYER_LOGIN" then
+		sawPlayerLogin = true
+
+		if not TargetedSpellsSaved.Settings.Self.PlayTTS and not TargetedSpellsSaved.Settings.Self.PlaySound then
+			return
+		end
+
+		local state = C_CombatAudioAlert.GetSpecSetting(Enum.CombatAudioAlertSpecSetting.SayIfTargeted)
+
+		if state == 0 then
+			print(Private.L.Functionality.CAASayIfTargetedDisabledWarning)
+		end
 	end
 end
 
@@ -696,11 +764,12 @@ function TargetedSpellsDriver:OnSettingsChanged(key, value)
 			C_CVar.SetCVar("CAAVoice", Private.Utils.FindAppropriateTTSVoiceId())
 			C_CVar.SetCVar("CAASayTargetName", 0)
 			C_CVar.SetCVar("CAATargetHealthPercent", 0)
+			C_CombatAudioAlert.SetSpecSetting(Enum.CombatAudioAlertSpecSetting.SayIfTargeted, 1)
 
 			print(Private.L.Functionality.CAAEnabledWarning)
 		else
-			C_CVar.SetCVar("CAAEnabled", 0)
-			print(Private.L.Functionality.CAADisabledWarning)
+			-- C_CVar.SetCVar("CAAEnabled", 0)
+			-- print(Private.L.Functionality.CAADisabledWarning)
 		end
 	end
 end
