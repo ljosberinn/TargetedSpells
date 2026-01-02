@@ -47,6 +47,7 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 		self.frame:RegisterEvent("LOADING_SCREEN_DISABLED")
 		self.frame:RegisterEvent("PLAYER_LOGIN")
 		self.frame:RegisterEvent("UPDATE_INSTANCE_INFO")
+		self.frame:RegisterUnitEvent("UNIT_TARGET")
 		self.frame:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_START")
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED")
@@ -59,10 +60,11 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_STOP")
 		self.frame:RegisterUnitEvent("NAME_PLATE_UNIT_REMOVED")
 		self.frame:RegisterUnitEvent("NAME_PLATE_UNIT_ADDED")
+
 		if Private.IsMidnight then
 			self.frame:RegisterUnitEvent("CVAR_UPDATE")
-			-- self.frame:RegisterUnitEvent("UNIT_TARGET")
 		end
+
 		self.frame:SetScript("OnEvent", GenerateClosure(self.OnFrameEvent, self))
 	end
 end
@@ -107,46 +109,6 @@ function TargetedSpellsDriver:AcquireFrames(castingUnit)
 
 	return frames
 end
--- function TargetedSpellsDriver:AcquireFrames(castingUnit)
--- 	local frames = {}
-
--- 	if
--- 		TargetedSpellsSaved.Settings.Self.Enabled
--- 		and not self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Self)
--- 		and UnitIsUnit(string.format("%starget", castingUnit), "player")
--- 	then
--- 		local selfTargetingFrame = self.framePool:Acquire()
--- 		selfTargetingFrame:SetParent(self.frame)
--- 		selfTargetingFrame:PostCreate("player", Private.Enum.FrameKind.Self, castingUnit)
--- 		table.insert(frames, selfTargetingFrame)
--- 	end
-
--- 	if
--- 		TargetedSpellsSaved.Settings.Party.Enabled
--- 		and IsInGroup()
--- 		and not self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Party)
--- 	then
--- 		local partyMemberCount = GetNumGroupMembers()
-
--- 		for i = 1, partyMemberCount do
--- 			local unit = i == partyMemberCount and "player" or "party" .. i
-
--- 			if
--- 				UnitIsUnit(string.format("%starget", castingUnit), unit)
--- 				and (
--- 					(unit == "player" and TargetedSpellsSaved.Settings.Party.IncludeSelfInParty)
--- 					or unit ~= "player"
--- 				)
--- 			then
--- 				local frame = self.framePool:Acquire()
--- 				frame:PostCreate(unit, Private.Enum.FrameKind.Party, castingUnit)
--- 				table.insert(frames, frame)
--- 			end
--- 		end
--- 	end
-
--- 	return frames
--- end
 
 -- this is where 3rd party unit frames would need addition
 ---@param unit string
@@ -367,16 +329,6 @@ local function SetupStaticPopup(kind)
 	return Show, Hide
 end
 
-local function GetCastTime(unit)
-	local duration = UnitCastingDuration(unit) or UnitChannelDuration(unit)
-
-	if duration == nil then
-		return nil
-	end
-
-	return duration:GetTotalDuration()
-end
-
 local sawPlayerLogin = false
 
 ---@param listenerFrame Frame -- identical to self.frame
@@ -426,11 +378,26 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		end
 
 		local delayEvent = Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START
-		local spellId = select(9, UnitCastingInfo(unit))
+		local spellId = nil
+		-- best we can do. _possibly_ wrong depending on when the enemy turned
+		local startTime = GetTime()
 
-		if spellId == nil then
-			spellId = select(8, UnitChannelInfo(unit))
-			delayEvent = Private.Enum.Events.DELAYED_UNIT_SPELLCAST_CHANNEL_START
+		if Private.IsMidnight then
+			spellId = select(9, UnitCastingInfo(unit))
+
+			if spellId == nil then
+				spellId = select(8, UnitChannelInfo(unit))
+				delayEvent = Private.Enum.Events.DELAYED_UNIT_SPELLCAST_CHANNEL_START
+			end
+		else
+			local _, _, _, startTimeMs, _, _, _, _, castingSpellId = UnitCastingInfo(unit)
+
+			if castingSpellId == nil then
+				_, _, _, startTimeMs, _, _, _, castingSpellId = UnitChannelInfo(unit)
+			end
+
+			spellId = castingSpellId
+			startTime = startTimeMs / 1000
 		end
 
 		if spellId == nil then
@@ -440,8 +407,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		self:OnFrameEvent(self.listenerFrame, delayEvent, {
 			unit = unit,
 			spellId = spellId,
-			-- best we can do. _possibly_ wrong depending on when the enemy turned
-			startTime = GetTime(),
+			startTime = startTime,
 		})
 	elseif event == "NAME_PLATE_UNIT_ADDED" then
 		local unit = ...
@@ -466,7 +432,13 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 				return
 			end
 
-			castTime = GetCastTime(unit)
+			local duration = UnitCastingDuration(unit) or UnitChannelDuration(unit)
+
+			if duration == nil then
+				return
+			end
+
+			castTime = duration:GetTotalDuration()
 
 			if castTime == nil then
 				return
@@ -553,6 +525,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 				Show()
 			end
 		elseif name == "CAASayIfTargeted" then
+			-- before PLAYER_LOGIN, the API below will return 0
 			if
 				not sawPlayerLogin
 				or (not TargetedSpellsSaved.Settings.Self.PlayTTS and not TargetedSpellsSaved.Settings.Self.PlaySound)
@@ -605,6 +578,10 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		local frames = self:AcquireFrames(info.unit)
 
 		if #frames == 0 then
+			if self:CleanUpUnit(info.unit) then
+				self:RepositionFrames()
+			end
+
 			return
 		end
 
@@ -614,7 +591,26 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			self:CleanUpUnit(info.unit)
 		end
 
-		local castTime = GetCastTime(info.unit)
+		local castTime = nil
+
+		if Private.IsMidnight then
+			local duration = UnitCastingDuration(info.unit) or UnitChannelDuration(info.unit)
+
+			-- without `nameplateShowOffscreen` active, castTime may stay nil
+			if duration == nil then
+				return
+			end
+
+			castTime = duration:GetTotalDuration()
+		else
+			local _, _, _, startTimeMs, endTimeMs = UnitCastingInfo(info.unit)
+
+			if startTimeMs == nil then
+				_, _, _, startTimeMs, endTimeMs = UnitChannelInfo(info.unit)
+			end
+
+			castTime = (endTimeMs - startTimeMs) / 1000
+		end
 
 		for _, frame in ipairs(frames) do
 			table.insert(self.frames[info.unit], frame)

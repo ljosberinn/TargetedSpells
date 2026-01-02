@@ -1519,6 +1519,17 @@ function PartyEditModeMixin:Init()
 
 	-- when this executes, layouts aren't loaded yet
 	hooksecurefunc(EditModeManagerFrame, "UpdateLayoutInfo", function(editModeManagerSelf)
+		if Private.IsMidnight and TargetedSpellsSaved.Settings.Party.Enabled then
+			local accountSettings = C_EditMode.GetAccountSettings()
+
+			for i, setting in pairs(accountSettings) do
+				if setting.setting == Enum.EditModeAccountSetting.ShowPartyFrames and setting.value == 0 then
+					C_EditMode.SetAccountSetting(Enum.EditModeAccountSetting.ShowPartyFrames, 1)
+					break
+				end
+			end
+		end
+
 		local useRaidStylePartyFrames = EditModeManagerFrame:UseRaidStylePartyFrames()
 
 		if useRaidStylePartyFrames == self.useRaidStylePartyFrames then
@@ -1529,9 +1540,31 @@ function PartyEditModeMixin:Init()
 		self:RepositionEditModeFrame()
 	end)
 
-	-- dirtying settings while edit mode is opened doesn't fire any events
+	-- dirtying checkboxes while edit mode is opened doesn't fire any events
+	hooksecurefunc(EditModeManagerFrame, "OnAccountSettingChanged", function(editModeManagerSelf, accountSetting, value)
+		if
+			not TargetedSpellsSaved.Settings.Party.Enabled
+			or accountSetting ~= Enum.EditModeAccountSetting.ShowPartyFrames
+		then
+			return
+		end
+
+		if value then
+			self:StartDemo()
+			self:RepositionEditModeFrame()
+			self.editModeFrame:Show()
+		else
+			self:EndDemo()
+			self.editModeFrame:Hide()
+		end
+	end)
+
+	-- dirtying settings while edit mode is opened doesn't fire any events eitehr
 	hooksecurefunc(EditModeSystemSettingsDialog, "OnSettingValueChanged", function(settingsSelf, setting, checked)
-		if setting ~= Enum.EditModeUnitFrameSetting.UseRaidStylePartyFrames then
+		if
+			not TargetedSpellsSaved.Settings.Party.Enabled
+			or setting ~= Enum.EditModeUnitFrameSetting.UseRaidStylePartyFrames
+		then
 			return
 		end
 

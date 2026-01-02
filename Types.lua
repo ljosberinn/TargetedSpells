@@ -397,3 +397,18 @@ end
 UnitChannelDuration = function(unit)
 	return {}
 end
+
+---@class UnitFrameButton : Button
+---@field castBar StatusBar
+
+---@class Nameplate
+---@field UnitFrame UnitFrameButton
+
+---@class CombatAudioAlertManager : Frame
+---@field GetUnitFormattedTargetingString fun(self: CombatAudioAlertManager, unit: string): string
+
+CombatAudioAlertManager = {
+	GetUnitFormattedTargetingString = function(unit)
+		return ""
+	end,
+}

@@ -109,6 +109,8 @@ It's no longer possible to determine when a cast started unless you observed it 
 
 - [Targeted Spells by Buds](https://wago.io/TargetedSpells)
 - [Targeted by Damage Spells by Causese](https://wago.io/TsFNFG1H7)
+- [Wago.tools](https://wago.tools/db2)
+- all public repositories mirroring Blizzard Interface Code
 
 ## Legal
 
