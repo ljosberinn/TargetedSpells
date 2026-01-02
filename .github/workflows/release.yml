@@ -22,9 +22,3 @@ jobs:
 
       - name: Package and release
         uses: BigWigsMods/packager@v2
-        ignore:
-          - Types.lua
-          - .vscode
-        manual-changelog:
-          filename: CHANGELOG.md
-          markuptype: markdown
