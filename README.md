@@ -1,5 +1,8 @@
 # Targeted Spells
 
+- [Curseforge](https://www.curseforge.com/wow/addons/targetedspells)
+- [Wago](https://addons.wago.io/addons/targeted-spells)
+
 ## Features
 
 - compatible with both The War Within and Midnight
