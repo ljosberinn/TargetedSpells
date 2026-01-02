@@ -75,7 +75,7 @@ There's also a non-zero chance that Blizzard will simply **prevent** overriding 
 
 ### Layouting
 
-**Possibly fixable, have to investigate still.**
+**Currently not fixable due to API restrictions.**
 
 The elephant in the room. Since it's no longer possible to filter which player is being targeted by which enemy, the way the addon works is as follows:
 
@@ -102,8 +102,8 @@ It's no longer possible to determine when a cast started unless you observed it 
 
 ## Sounds
 
-[WaterDrop - Attribution 3.0 - Mike Koenig](https://soundbible.com/1126-Water-Drop.html)
-[BananaPeelSlip - Sampling Plus 1.0 Generic - Mike Koenig](https://soundbible.com/1438-Banana-Peel-Slip.html)
+- [WaterDrop - Attribution 3.0 - Mike Koenig](https://soundbible.com/1126-Water-Drop.html)
+- [BananaPeelSlip - Sampling Plus 1.0 Generic - Mike Koenig](https://soundbible.com/1438-Banana-Peel-Slip.html)
 
 ## Honorary Mentions
 
