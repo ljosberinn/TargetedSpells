@@ -347,3 +347,53 @@ C_CombatAudioAlert = {
 
 ---@type string|nil
 GAME_LOCALE = ""
+
+---@class CurveObjectBaseDummy
+---@field GetType fun(self: CurveObjectBaseDummy): CurveType
+---@field HasSecretValues fun(self: CurveObjectBaseDummy): boolean
+---@field SetType fun(self: CurveObjectBaseDummy, type: CurveType)
+
+---@class CurveObjectDummy: CurveObjectBaseDummy
+---@field AddPoint fun(self: CurveObjectDummy, pointX: number, pointY: number)
+---@field ClearPoints fun(self: CurveObjectDummy)
+---@field Copy fun(self: CurveObjectDummy): CurveObjectDummy
+---@field Evaluate fun(self: CurveObjectDummy, x: number): number
+---@field GetPoint fun(self: CurveObjectDummy, index: number): number
+---@field GetPointCount fun(self: CurveObjectDummy): number
+---@field GetPointCount fun(self: CurveObjectDummy): number
+---@field RemovePoint fun(self: CurveObjectDummy, index: number)
+---@field SetPoints fun(self: CurveObjectDummy, point: nil)
+---@field SetToDefaults fun(self: CurveObjectDummy)
+
+---@class DurationObjectDummy
+---@field Assign fun(self: DurationObjectDummy, other: DurationObjectDummy)
+---@field copy fun(self: DurationObjectDummy): DurationObjectDummy
+---@field EvaluateElapsedPercent fun(self: DurationObjectDummy, curve: Curve, modifier: number?): number
+---@field EvaluateRemainingPercent fun(self: DurationObjectDummy, curve: Curve, modifier: number?): number
+---@field GetElapsedDuration fun(self: DurationObjectDummy, modifier: number?): number
+---@field GetElapsedPercent fun(self: DurationObjectDummy, modifier: number?): number
+---@field GetEndTime fun(self: DurationObjectDummy, modifier: number?): number
+---@field GetModRate fun(self: DurationObjectDummy): number
+---@field GetRemainingDuration fun(self: DurationObjectDummy, modifier: number?): number
+---@field GetRemainingPercent fun(self: DurationObjectDummy, modifier: number?): number
+---@field GetStartTime fun(self: DurationObjectDummy, modifier: number?): number
+---@field GetTotalDuration fun(self: DurationObjectDummy, modifier: number?): number
+---@field HasSecretValues fun(self: DurationObjectDummy): boolean
+---@field IsZero fun(self: DurationObjectDummy): boolean
+---@field Reset fun(self: DurationObjectDummy)
+---@field SetTimeFromEnd fun(self: DurationObjectDummy, endTime: number, duration: number, modRate: number?)
+---@field SetTimeFromStart fun(self: DurationObjectDummy, startTime: number, duration: number, modRate: number?)
+---@field SetTimeSpan fun(self: DurationObjectDummy, startTime: number, endTime: number)
+---@field SetToDefaults fun(self: DurationObjectDummy)
+
+---@param unit string
+---@return DurationObjectDummy
+UnitCastingDuration = function(unit)
+	return {}
+end
+
+---@param unit string
+---@return DurationObjectDummy
+UnitChannelDuration = function(unit)
+	return {}
+end

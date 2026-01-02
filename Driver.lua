@@ -1,15 +1,6 @@
 ---@type string, TargetedSpells
 local addonName, Private = ...
 
-local last = GetTime()
-
-local function pprint(...)
-	local now = GetTime()
-	local diff = now - last
-	last = now
-	print(diff, ...)
-end
-
 ---@class TargetedSpellsDriver
 local TargetedSpellsDriver = {}
 
@@ -73,8 +64,6 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 			-- self.frame:RegisterUnitEvent("UNIT_TARGET")
 		end
 		self.frame:SetScript("OnEvent", GenerateClosure(self.OnFrameEvent, self))
-
-		print(format("TargetedSpellsDriver:OnSettingsChanged: %sattached listeners", isBoot and "" or "re"))
 	end
 end
 
@@ -378,6 +367,16 @@ local function SetupStaticPopup(kind)
 	return Show, Hide
 end
 
+local function GetCastTime(unit)
+	local duration = UnitCastingDuration(unit) or UnitChannelDuration(unit)
+
+	if duration == nil then
+		return nil
+	end
+
+	return duration:GetTotalDuration()
+end
+
 local sawPlayerLogin = false
 
 ---@param listenerFrame Frame -- identical to self.frame
@@ -394,7 +393,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			string.find(unit, "nameplate") == nil
 			or UnitInParty(unit)
 			or not UnitExists(unit)
-			or not UnitAffectingCombat(unit)
+			or not UnitCanAttack("player", unit)
 		then
 			return
 		end
@@ -421,7 +420,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			string.find(unit, "nameplate") == nil
 			or UnitInParty(unit)
 			or not UnitExists(unit)
-			or not UnitAffectingCombat(unit)
+			or not UnitCanAttack("player", unit)
 		then
 			return
 		end
@@ -451,7 +450,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			string.find(unit, "nameplate") == nil
 			or UnitInParty(unit)
 			or not UnitExists(unit)
-			or not UnitAffectingCombat(unit)
+			or not UnitCanAttack("player", unit)
 		then
 			return
 		end
@@ -467,14 +466,13 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 				return
 			end
 
-			local nameplate = C_NamePlate.GetNamePlateForUnit(unit, issecure())
+			castTime = GetCastTime(unit)
 
-			if nameplate == nil then
+			if castTime == nil then
 				return
 			end
 
-			castTime = select(2, nameplate.UnitFrame.castBar:GetMinMaxValues())
-			startTime = GetTime() -- todo: this is wrong
+			startTime = GetTime() -- todo: this is wrong, but we can't do better yet
 		else
 			local _, _, _, startTimeMs, endTimeMs, _, _, _, castingSpellId = UnitCastingInfo(unit)
 
@@ -557,8 +555,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		elseif name == "CAASayIfTargeted" then
 			if
 				not sawPlayerLogin
-				and not TargetedSpellsSaved.Settings.Self.PlayTTS
-				and not TargetedSpellsSaved.Settings.Self.PlaySound
+				or (not TargetedSpellsSaved.Settings.Self.PlayTTS and not TargetedSpellsSaved.Settings.Self.PlaySound)
 			then
 				return
 			end
@@ -605,13 +602,6 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			return
 		end
 
-		local nameplate = C_NamePlate.GetNamePlateForUnit(info.unit, issecure())
-
-		-- without `nameplateShowOffscreen` active, it may be offscreen
-		if nameplate == nil then
-			return
-		end
-
 		local frames = self:AcquireFrames(info.unit)
 
 		if #frames == 0 then
@@ -624,7 +614,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			self:CleanUpUnit(info.unit)
 		end
 
-		local castTime = select(2, nameplate.UnitFrame.castBar:GetMinMaxValues())
+		local castTime = GetCastTime(info.unit)
 
 		for _, frame in ipairs(frames) do
 			table.insert(self.frames[info.unit], frame)
@@ -673,18 +663,11 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 
 		if nextContentType ~= self.contentType then
 			self.contentType = nextContentType
-			for label, id in pairs(Private.Enum.ContentType) do
-				if id == nextContentType then
-					print("detected content type change", label)
-					break
-				end
-			end
 
 			self:MaybeApplyCombatAudioAlertOverride()
 		end
 
 		local specId = PlayerUtil.GetCurrentSpecID()
-		local nextRole = self.role
 
 		if
 			specId == 105 -- restoration druid
@@ -695,7 +678,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			or specId == 257 -- holy priest
 			or specId == 264 -- restoration shaman
 		then
-			nextRole = Private.Enum.Role.Healer
+			self.role = Private.Enum.Role.Healer
 		elseif
 			specId == 250 -- blood death knight
 			or specId == 581 -- vengeance demon hunter
@@ -704,20 +687,9 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			or specId == 66 -- protection paladin
 			or specId == 73 -- protection warrior
 		then
-			nextRole = Private.Enum.Role.Tank
+			self.role = Private.Enum.Role.Tank
 		else
-			nextRole = Private.Enum.Role.Damager
-		end
-
-		if nextRole ~= self.role then
-			self.role = nextRole
-
-			for label, id in pairs(Private.Enum.Role) do
-				if id == self.role then
-					print("detected role change", label)
-					break
-				end
-			end
+			self.role = Private.Enum.Role.Damager
 		end
 	elseif event == Private.Enum.Events.EDIT_MODE_POSITION_CHANGED then
 		local point, x, y = ...
@@ -748,7 +720,6 @@ function TargetedSpellsDriver:OnSettingsChanged(key, value)
 		if allDisabled then
 			self.frame:UnregisterAllEvents()
 			self.frame:SetScript("OnEvent", nil)
-			print("TargetedSpellsDriver:OnSettingsChanged: removed listeners")
 		else
 			self:SetupFrame(false)
 		end

@@ -120,24 +120,6 @@ function Private.Settings.GetSettingsDisplayOrder(kind)
 end
 
 function Private.Settings.GetDefaultEditModeFramePosition()
-	-- if possible, position below Encounter Warnings - Minor
-	local encounterEventsEditModeSystemId = Enum.EditModeSystem.EncounterEvents
-	local encounterEventsSystemMapEntry = encounterEventsEditModeSystemId
-		and EDIT_MODE_MODERN_SYSTEM_MAP[encounterEventsEditModeSystemId]
-	local normalWarningsIndex = Enum.EditModeEncounterEventsSystemIndices
-		and Enum.EditModeEncounterEventsSystemIndices.NormalWarnings
-	local normalWarningsInfo = encounterEventsSystemMapEntry
-		and normalWarningsIndex
-		and encounterEventsSystemMapEntry[normalWarningsIndex]
-
-	if normalWarningsInfo and normalWarningsInfo.anchorInfo then
-		return {
-			point = normalWarningsInfo.anchorInfo.point,
-			x = normalWarningsInfo.anchorInfo.offsetX,
-			y = normalWarningsInfo.anchorInfo.offsetY - 48,
-		}
-	end
-
 	return { point = "CENTER", x = 0, y = 100 }
 end
 

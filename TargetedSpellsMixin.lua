@@ -107,43 +107,55 @@ function TargetedSpellsMixin:OnSizeChanged(width, height)
 end
 
 function TargetedSpellsMixin:OnSettingChanged(key, value)
-	if key == Private.Settings.Keys.Self.Width then
-		if self.kind == Private.Enum.FrameKind.Self then
+	if self.kind == Private.Enum.FrameKind.Self then
+		if key == Private.Settings.Keys.Self.Width then
 			self:SetWidth(value)
-		end
-	elseif key == Private.Settings.Keys.Self.Height then
-		if self.kind == Private.Enum.FrameKind.Self then
+		elseif key == Private.Settings.Keys.Self.Height then
 			self:SetHeight(value)
+		elseif key == Private.Settings.Keys.Self.ShowDuration then
+			---@diagnostic disable-next-line: param-type-mismatch
+			self:SetShowDuration(value)
+		elseif key == Private.Settings.Keys.Self.FontSize then
+			self:SetFontSize(value)
+		elseif key == Private.Settings.Keys.Self.Opacity then
+			self:SetAlpha(value)
+		elseif key == Private.Settings.Keys.Self.ShowBorder then
+			if value then
+				self:ShowBorder()
+			else
+				self:HideBorder()
+			end
+		elseif key == Private.Settings.Keys.Self.GlowType then
+			self:HideGlow()
+
+			if TargetedSpellsSaved.Settings.Self.GlowImportant then
+				self:ShowGlow(self:IsSpellImportant(LibEditMode:IsInEditMode() and Private.Utils.RollDice()))
+			end
 		end
-	elseif key == Private.Settings.Keys.Party.Width then
-		if self.kind == Private.Enum.FrameKind.Party then
+	else
+		if key == Private.Settings.Keys.Party.Width then
 			self:SetWidth(value)
-		end
-	elseif key == Private.Settings.Keys.Party.Height then
-		if self.kind == Private.Enum.FrameKind.Party then
+		elseif key == Private.Settings.Keys.Party.Height then
 			self:SetHeight(value)
-		end
-	elseif key == Private.Settings.Keys.Self.ShowDuration or key == Private.Settings.Keys.Party.ShowDuration then
-		---@diagnostic disable-next-line: param-type-mismatch
-		self:SetShowDuration(value)
-	elseif key == Private.Settings.Keys.Self.FontSize or key == Private.Settings.Keys.Party.FontSize then
-		self:SetFontSize(value)
-	elseif key == Private.Settings.Keys.Self.Opacity or key == Private.Settings.Keys.Party.Opacity then
-		self:SetAlpha(value)
-	elseif key == Private.Settings.Keys.Self.ShowBorder or key == Private.Settings.Keys.Party.ShowBorder then
-		if value then
-			self:ShowBorder()
-		else
-			self:HideBorder()
-		end
-	elseif key == Private.Settings.Keys.Self.GlowType or key == Private.Settings.Keys.Party.GlowType then
-		self:HideGlow()
+		elseif key == Private.Settings.Keys.Party.ShowDuration then
+			---@diagnostic disable-next-line: param-type-mismatch
+			self:SetShowDuration(value)
+		elseif key == Private.Settings.Keys.Party.FontSize then
+			self:SetFontSize(value)
+		elseif key == Private.Settings.Keys.Party.Opacity then
+			self:SetAlpha(value)
+		elseif key == Private.Settings.Keys.Party.ShowBorder then
+			if value then
+				self:ShowBorder()
+			else
+				self:HideBorder()
+			end
+		elseif key == Private.Settings.Keys.Party.GlowType then
+			self:HideGlow()
 
-		local tableRef = self.kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
-			or TargetedSpellsSaved.Settings.Party
-
-		if tableRef.GlowImportant then
-			self:ShowGlow(self:IsSpellImportant(LibEditMode:IsInEditMode() and Private.Utils.RollDice()))
+			if TargetedSpellsSaved.Settings.Party.GlowImportant then
+				self:ShowGlow(self:IsSpellImportant(LibEditMode:IsInEditMode() and Private.Utils.RollDice()))
+			end
 		end
 	end
 end
