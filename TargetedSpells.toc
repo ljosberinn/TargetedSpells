@@ -16,7 +16,11 @@
 ## Category-zhCN: 战斗
 ## Category-zhTW: 戰鬥
 ## Notes: Highlights spells targeting the player and/or the party
-## Version: Version 1.0.0-alpha2
+## Version: @project-version@
+## Author: Xephyris-Blackrock-EU
+
+## X-Curse-Project-ID: 1418323
+## X-Wago-ID: vNAe38No
 
 Libs\LibStub\LibStub.lua
 Libs\LibCustomGlow-1.0\LibCustomGlow-1.0.lua
