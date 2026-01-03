@@ -1,3 +1,7 @@
+## Version 1.0.0-alpha4
+
+- more retail compatibility
+
 ## Version 1.0.0-alpha3
 
 - fixed a bug where the default state of TTS was incorrectly being set to `true`

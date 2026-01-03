@@ -136,6 +136,7 @@
 ---@field SetStartTime fun(self: TargetedSpellsMixin, startTime: number?)
 ---@field SetCastTime fun(self: TargetedSpellsMixin, castTime: number)
 ---@field SetSpellId fun(self: TargetedSpellsMixin, spellId: number?)
+---@field IsSpellId fun(self: TargetedSpellsMixin, spellId: number): boolean
 ---@field IsSpellImportant fun(self: TargetedSpellsMixin, boolOverride: boolean?): boolean
 ---@field RefreshSpellCooldownInfo fun(self: TargetedSpellsMixin)
 ---@field OnSizeChanged fun(self: TargetedSpellsMixin, width: number, height: number)
@@ -243,7 +244,7 @@
 ---@field SetupListenerFrame fun(self: TargetedSpellsDriver, isBoot: boolean)
 ---@field AcquireFrames fun(self: TargetedSpellsDriver, castingUnit: string): TargetedSpellsMixin
 ---@field LoadConditionsProhibitExecution fun(self: TargetedSpellsDriver, kind: FrameKind): boolean
----@field CleanUpUnit fun(self: TargetedSpellsMixin, unit: string): boolean
+---@field CleanUpUnit fun(self: TargetedSpellsMixin, unit: string, exceptSpellId?: number): boolean
 ---@field MaybeApplyCombatAudioAlertOverride fun(self: TargetedSpellsMixin)
 
 ---@return function?

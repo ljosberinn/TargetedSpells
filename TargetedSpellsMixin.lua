@@ -330,6 +330,14 @@ function TargetedSpellsMixin:SetSpellId(spellId)
 	end
 end
 
+function TargetedSpellsMixin:IsSpellId(spellId)
+	if Private.IsMidnight then
+		return false
+	end
+
+	return self.spellId == spellId
+end
+
 function TargetedSpellsMixin:ShouldBeShown()
 	return self.startTime ~= nil
 end

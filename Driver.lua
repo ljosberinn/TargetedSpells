@@ -95,11 +95,8 @@ function TargetedSpellsDriver:AcquireFrames(castingUnit)
 			local unit = i == partyMemberCount and "player" or "party" .. i
 
 			if
-				(
-					(Private.IsMidnight and true or UnitIsUnit(string.format("%starget", castingUnit), unit))
-					and unit == "player"
-					and TargetedSpellsSaved.Settings.Party.IncludeSelfInParty
-				) or unit ~= "player"
+				(Private.IsMidnight and true or UnitIsUnit(string.format("%starget", castingUnit), unit))
+				and ((unit == "player" and TargetedSpellsSaved.Settings.Party.IncludeSelfInParty) or unit ~= "player")
 			then
 				local frame = self.framePool:Acquire()
 				frame:PostCreate(unit, Private.Enum.FrameKind.Party, castingUnit)
@@ -152,7 +149,6 @@ end
 function TargetedSpellsDriver:RepositionFrames()
 	---@type table<string, TargetedSpellsMixin[]>
 	local activeFrames = {}
-	local activeFrameCount = 0
 
 	for sourceUnit, frames in pairs(self.frames) do
 		for i, frame in pairs(frames) do
@@ -172,8 +168,6 @@ function TargetedSpellsDriver:RepositionFrames()
 
 					table.insert(activeFrames[targetUnit], frame)
 				end
-
-				activeFrameCount = activeFrameCount + 1
 			end
 		end
 	end
@@ -245,18 +239,25 @@ function TargetedSpellsDriver:RepositionFrames()
 	end
 end
 
-function TargetedSpellsDriver:CleanUpUnit(unit)
+function TargetedSpellsDriver:CleanUpUnit(unit, exceptSpellId)
 	local frames = self.frames[unit]
 
 	if frames ~= nil and #frames > 0 then
+		local cleanedSomethingUp = false
+
 		for _, frame in pairs(frames) do
-			frame:Reset()
-			self.framePool:Release(frame)
+			if exceptSpellId == nil or not frame:IsSpellId(exceptSpellId) then
+				frame:Reset()
+				self.framePool:Release(frame)
+				cleanedSomethingUp = true
+			end
 		end
 
-		table.wipe(self.frames[unit])
+		if cleanedSomethingUp then
+			table.wipe(self.frames[unit])
+		end
 
-		return true
+		return cleanedSomethingUp
 	end
 
 	return false
@@ -395,6 +396,10 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 				_, _, _, startTimeMs, _, _, _, castingSpellId = UnitChannelInfo(unit)
 			end
 
+			if castingSpellId == nil then
+				return
+			end
+
 			spellId = castingSpellId
 			startTime = startTimeMs / 1000
 		end
@@ -464,7 +469,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		if self.frames[unit] == nil then
 			self.frames[unit] = {}
 		else
-			self:CleanUpUnit(unit)
+			self:CleanUpUnit(unit, spellId)
 		end
 
 		for _, frame in ipairs(frames) do
@@ -572,7 +577,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		local frames = self:AcquireFrames(info.unit)
 
 		if #frames == 0 then
-			if self:CleanUpUnit(info.unit) then
+			if self:CleanUpUnit(info.unit, info.spellId) then
 				self:RepositionFrames()
 			end
 
@@ -582,7 +587,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		if self.frames[info.unit] == nil then
 			self.frames[info.unit] = {}
 		else
-			self:CleanUpUnit(info.unit)
+			self:CleanUpUnit(info.unit, info.spellId)
 		end
 
 		local castTime = nil
