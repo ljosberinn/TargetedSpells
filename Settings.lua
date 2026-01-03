@@ -1052,6 +1052,7 @@ table.insert(Private.LoginFnQueue, function()
 				GetValue,
 				SetValue
 			)
+
 			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.SoundChannelTooltip)
 
 			return {
@@ -1125,6 +1126,40 @@ table.insert(Private.LoginFnQueue, function()
 				GetValue,
 				SetValue
 			)
+
+			-- a bit icky but there's no native way of making the dropdown scrollable without introducing a template and this is easier
+			-- ty to .numy
+			hooksecurefunc(
+				Settings,
+				"InitDropdown",
+				function(dropdown, settingBeingCreated, elementInserter, initTooltip)
+					if setting ~= settingBeingCreated then
+						return
+					end
+
+					dropdown:SetupMenu(function(_dropdown, rootDescription)
+						local extent = 20
+						local maxCharacters = 20
+						local maxScrollExtent = extent * maxCharacters
+						rootDescription:SetScrollMode(maxScrollExtent)
+
+						if Private.IsMidnight then
+							elementInserter(settingBeingCreated, rootDescription)
+						else
+							local function IsSelected(optionData)
+								return settingBeingCreated:GetValue() == optionData.value
+							end
+
+							local function OnSelect(optionData)
+								return settingBeingCreated:SetValue(optionData.value)
+							end
+
+							elementInserter(rootDescription, IsSelected, OnSelect)
+						end
+					end)
+				end
+			)
+
 			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.SoundTooltip)
 
 			return {

@@ -1,6 +1,7 @@
 ## Version 1.0.0-alpha5
 
 - raid content type is now only disabled for Party frames
+- the sound selection under Settings is now scrollable, containing 20 items before having to scroll
 
 ## Version 1.0.0-alpha4
 
