@@ -40,6 +40,7 @@
 ---@field GetCustomSoundGroups fun(groupThreshold: number?):  SoundInfo
 ---@field GetCooldownViewerSounds fun(): SoundInfo
 ---@field SampleTTSVoice fun(voiceId: number)
+---@field IsContentTypeAvailableForKind fun(kind: FrameKind, contentTypeId: ContentType): boolean
 
 ---@class SoundInfo
 ---@field soundCategoryKeyToLabel table<string, string>

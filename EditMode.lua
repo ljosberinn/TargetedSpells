@@ -604,7 +604,12 @@ function TargetedSpellsEditModeMixin:CreateSetting(key, defaults)
 
 		local function Generator(owner, rootDescription, data)
 			for label, id in pairs(Private.Enum.ContentType) do
-				if id ~= Private.Enum.ContentType.Raid then
+				if
+					Private.Settings.IsContentTypeAvailableForKind(
+						isSelf and Private.Enum.FrameKind.Self or Private.Enum.FrameKind.Party,
+						id
+					)
+				then
 					local function IsEnabled()
 						return tableRef[id]
 					end

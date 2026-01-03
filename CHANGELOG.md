@@ -1,3 +1,7 @@
+## Version 1.0.0-alpha5
+
+- raid content type is now only disabled for Party frames
+
 ## Version 1.0.0-alpha4
 
 - more retail compatibility

@@ -441,6 +441,18 @@ function Private.Settings.SampleTTSVoice(voiceId)
 	end
 end
 
+function Private.Settings.IsContentTypeAvailableForKind(kind, contentTypeId)
+	if kind == Private.Enum.FrameKind.Self then
+		return true
+	end
+
+	if kind == Private.Enum.FrameKind.Party then
+		return contentTypeId ~= Private.Enum.ContentType.Raid
+	end
+
+	return true
+end
+
 table.insert(Private.LoginFnQueue, function()
 	local L = Private.L
 	local settingsName = C_AddOns.GetAddOnMetadata(addonName, "Title")
@@ -890,7 +902,7 @@ table.insert(Private.LoginFnQueue, function()
 					local container = Settings.CreateControlTextContainer()
 
 					for label, id in pairs(Private.Enum.ContentType) do
-						if id ~= Private.Enum.ContentType.Raid then
+						if Private.Settings.IsContentTypeAvailableForKind(Private.Enum.FrameKind.Self, id) then
 							local function IsEnabled()
 								return TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id]
 							end
@@ -1095,7 +1107,7 @@ table.insert(Private.LoginFnQueue, function()
 				RecursiveAddSounds(container, soundInfo.soundCategoryKeyToLabel, soundInfo.data)
 			end
 
-			local function GetOptions()
+			local function GetOptions(owner, rootDescription)
 				local container = Settings.CreateControlTextContainer()
 
 				pcall(AddCooldownViewerSounds, container)
