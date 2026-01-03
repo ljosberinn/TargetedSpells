@@ -156,10 +156,18 @@ function Private.Settings.GetSliderSettingsForOption(key)
 		}
 	end
 
-	if key == Private.Settings.Keys.Self.Gap or key == Private.Settings.Keys.Party.Gap then
+	if key == Private.Settings.Keys.Self.Gap then
 		return {
-			min = -10,
-			max = 40,
+			min = -100,
+			max = 100,
+			step = 1,
+		}
+	end
+
+	if key == Private.Settings.Keys.Party.Gap then
+		return {
+			min = -60,
+			max = 60,
 			step = 1,
 		}
 	end

@@ -2,6 +2,7 @@
 
 - raid content type is now only disabled for Party frames
 - the sound selection under Settings is now scrollable, containing 20 items before having to scroll
+- synchronize min gap with max frame dimensions
 
 ## Version 1.0.0-alpha4
 
