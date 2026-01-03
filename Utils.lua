@@ -80,15 +80,5 @@ function Private.Utils.PlayTTS(text, voiceId, rate)
 	rate = rate or 2
 	voiceId = voiceId or TargetedSpellsSaved.Settings.Self.TTSVoice
 
-	if Private.IsMidnight then
-		C_VoiceChat.SpeakText(voiceId, text, rate, C_TTSSettings.GetSpeechVolume())
-	else
-		C_VoiceChat.SpeakText(
-			voiceId,
-			text,
-			Enum.VoiceTtsDestination.QueuedLocalPlayback,
-			rate,
-			C_TTSSettings.GetSpeechVolume()
-		)
-	end
+	C_VoiceChat.SpeakText(voiceId, text, rate, C_TTSSettings.GetSpeechVolume())
 end

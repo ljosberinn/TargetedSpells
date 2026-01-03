@@ -1,0 +1,3 @@
+- since the Settings are global, and EditMode is layout bound, what happens to layout-specific settings?
+- implement Raid for Party?
+  - or omit entirely

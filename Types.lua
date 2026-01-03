@@ -1,7 +1,6 @@
 ---@meta
 
 ---@class TargetedSpells
----@field IsMidnight boolean
 ---@field EventRegistry CallbackRegistryMixin
 ---@field Events table<string, string>
 ---@field Enum TargetedSpellsEnums
@@ -148,8 +147,6 @@
 ---@field PostCreate fun(self: TargetedSpellsMixin, unit: string, kind: FrameKind, castingUnit: string?)
 ---@field ShowGlow fun(self: TargetedSpellsMixin, isImportant: boolean) -- secret bool, but passed explicitly in EditMode code
 ---@field HideGlow fun(self: TargetedSpellsMixin)
----@field AttemptToPlaySound fun(self: TargetedSpellsMixin, contentType: ContentType, unit: string)
----@field AttemptToPlayTTS fun(self: TargetedSpellsMixin, contentType: ContentType, unit: string)
 
 ---@class IconDataProviderMixin
 ---@field GetRandomIcon fun(self: IconDataProviderMixin): number
