@@ -22,14 +22,7 @@ local function GetRandomIcon()
 			CreateAndInitFromMixin(IconDataProviderMixin, IconDataProviderExtraType.Spellbook, true)
 	end
 
-	if Private.IsMidnight then
-		return PreviewIconDataProvider:GetRandomIcon()
-	end
-
-	-- backport of GetRandomIcon() from 12.0
-	local numIcons = PreviewIconDataProvider:GetNumIcons()
-	local avoidQuestionMarkIndex = 2
-	return PreviewIconDataProvider:GetIconByIndex(math.random(avoidQuestionMarkIndex, numIcons))
+	return PreviewIconDataProvider:GetRandomIcon()
 end
 
 ---@class TargetedSpellsMixin
@@ -221,34 +214,19 @@ function TargetedSpellsMixin:ShowGlow(isImportant)
 		self.Star4Inner:Show()
 		self.Star4Outer:Show()
 		self.Star4AnimationGroup:Play()
-
-		if Private.IsMidnight then
-			self.Star4:SetAlphaFromBoolean(isImportant)
-		end
+		self.Star4:SetAlphaFromBoolean(isImportant)
 	elseif glowType == Private.Enum.GlowType.PixelGlow then
 		LibCustomGlow.PixelGlow_Start(self)
-
-		if Private.IsMidnight then
-			self._PixelGlow:SetAlphaFromBoolean(isImportant)
-		end
+		self._PixelGlow:SetAlphaFromBoolean(isImportant)
 	elseif glowType == Private.Enum.GlowType.AutoCastGlow then
 		LibCustomGlow.AutoCastGlow_Start(self)
-
-		if Private.IsMidnight then
-			self._AutoCastGlow:SetAlphaFromBoolean(isImportant)
-		end
+		self._AutoCastGlow:SetAlphaFromBoolean(isImportant)
 	elseif glowType == Private.Enum.GlowType.ButtonGlow then
 		LibCustomGlow.ButtonGlow_Start(self)
-
-		if Private.IsMidnight then
-			self._ButtonGlow:SetAlphaFromBoolean(isImportant)
-		end
+		self._ButtonGlow:SetAlphaFromBoolean(isImportant)
 	elseif glowType == Private.Enum.GlowType.ProcGlow then
 		LibCustomGlow.ProcGlow_Start(self)
-
-		if Private.IsMidnight then
-			self._ProcGlow:SetAlphaFromBoolean(isImportant)
-		end
+		self._ProcGlow:SetAlphaFromBoolean(isImportant)
 	end
 end
 
@@ -266,48 +244,16 @@ function TargetedSpellsMixin:HideGlow()
 	LibCustomGlow.ProcGlow_Stop(self)
 end
 
-do
-	---@type table<number, boolean>
-	local platerProfileImportantCastsCache = Private.IsMidnight and nil or {}
-	local cacheInitialized = false
+function TargetedSpellsMixin:IsSpellImportant(override)
+	if override ~= nil then
+		return override
+	end
 
-	function TargetedSpellsMixin:IsSpellImportant(override)
-		if override ~= nil then
-			return override
-		end
-
-		if self.spellId == nil then
-			return false
-		end
-
-		if Private.IsMidnight then
-			return C_Spell.IsSpellImportant(self.spellId)
-		end
-
-		if Plater and Plater.db and Plater.db.profile and Plater.db.profile.script_data then
-			if not cacheInitialized then
-				cacheInitialized = true
-
-				local importantCastsScripts = {
-					["Cast - Very Important [Plater]"] = true,
-					["Important Casts - Jundies"] = true,
-					["Quazii MUST INTERRUPT"] = true,
-				}
-
-				for _, script in pairs(Plater.db.profile.script_data) do
-					if script and importantCastsScripts[script.Name] == true then
-						for _, id in pairs(script.SpellIds) do
-							platerProfileImportantCastsCache[id] = true
-						end
-					end
-				end
-			end
-
-			return platerProfileImportantCastsCache[self.spellId] == true
-		end
-
+	if self.spellId == nil then
 		return false
 	end
+
+	return C_Spell.IsSpellImportant(self.spellId)
 end
 
 function TargetedSpellsMixin:SetSpellId(spellId)
@@ -322,20 +268,12 @@ function TargetedSpellsMixin:SetSpellId(spellId)
 			or (self.kind == Private.Enum.FrameKind.Party and TargetedSpellsSaved.Settings.Party.GlowImportant)
 		)
 	then
-		if Private.IsMidnight or self:IsSpellImportant() then
-			self:ShowGlow(self:IsSpellImportant())
-		else
-			self:HideGlow()
-		end
+		self:ShowGlow(self:IsSpellImportant())
 	end
 end
 
 function TargetedSpellsMixin:IsSpellId(spellId)
-	if Private.IsMidnight then
-		return false
-	end
-
-	return self.spellId == spellId
+	return false
 end
 
 function TargetedSpellsMixin:ShouldBeShown()
@@ -378,7 +316,7 @@ function TargetedSpellsMixin:PostCreate(unit, kind, castingUnit)
 	self:SetUnit(unit)
 	self:SetKind(kind)
 
-	if castingUnit ~= nil and Private.IsMidnight then
+	if castingUnit ~= nil then
 		-- using UnitIsSpellTarget(castingUnit, unit) works and is technically more accurate
 		-- but it omits spells that - while the enemy is targeting something - doesn't affect the target, e.g. aoe enrages or party-wide damage
 		self:SetAlphaFromBoolean(UnitIsUnit(string.format("%starget", castingUnit), unit))
@@ -399,7 +337,7 @@ function TargetedSpellsMixin:SetShowDuration(showDuration)
 end
 
 function TargetedSpellsMixin:SetFontSize(fontSize)
-	local fontString = Private.IsMidnight and self.Cooldown:GetCountdownFontString() or self.Cooldown:GetRegions()
+	local fontString = self.Cooldown:GetCountdownFontString()
 	local font, size, flags = fontString:GetFont()
 
 	if size == fontSize then
@@ -407,40 +345,4 @@ function TargetedSpellsMixin:SetFontSize(fontSize)
 	end
 
 	fontString:SetFont(font, fontSize, flags)
-end
-
-function TargetedSpellsMixin:AttemptToPlaySound(contentType, unit)
-	if
-		not Private.IsMidnight
-		and self.kind == Private.Enum.FrameKind.Self
-		and TargetedSpellsSaved.Settings.Self.PlaySound
-		and TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[contentType]
-		and UnitIsUnit(string.format("%starget", unit), "player")
-	then
-		Private.Utils.AttemptToPlaySound(
-			TargetedSpellsSaved.Settings.Self.Sound,
-			TargetedSpellsSaved.Settings.Self.SoundChannel
-		)
-	end
-end
-
-function TargetedSpellsMixin:AttemptToPlayTTS(contentType, unit)
-	if
-		Private.IsMidnight
-		or self.kind ~= Private.Enum.FrameKind.Self
-		or self.spellId == nil
-		or not TargetedSpellsSaved.Settings.Self.PlayTTS
-		or not TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[contentType]
-		or not UnitIsUnit(string.format("%starget", unit), "player")
-	then
-		return
-	end
-
-	local spellName = C_Spell.GetSpellName(self.spellId)
-
-	if spellName == nil then
-		return
-	end
-
-	Private.Utils.PlayTTS(spellName)
 end
