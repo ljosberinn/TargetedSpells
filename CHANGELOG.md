@@ -1,3 +1,10 @@
+## Version 1.0.0-alpha3
+
+- fixed a bug where the default state of TTS was incorrectly being set to `true`
+- the Raid load condition has been disabled until there's demand
+- updated the Party default positioning to be more obvious for first time users
+- more retail compatibility
+
 ## Version 1.0.0-alpha2
 
 - fixed a bug where spells wouldn't be shown if the player wasn't in combat with the casting enemy

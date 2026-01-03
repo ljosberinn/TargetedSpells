@@ -218,7 +218,7 @@ function Private.Settings.GetSelfDefaultSettings()
 		FontSize = 20,
 		Position = Private.Settings.GetDefaultEditModeFramePosition(),
 		Opacity = 1,
-		ShowBorder = false,
+		ShowBorder = true,
 		GlowImportant = true,
 		GlowType = Private.Enum.GlowType.PixelGlow,
 		PlayTTS = false,
@@ -230,8 +230,8 @@ end
 function Private.Settings.GetPartyDefaultSettings()
 	return {
 		Enabled = true,
-		Width = 24,
-		Height = 24,
+		Width = 36,
+		Height = 36,
 		FontSize = 14,
 		Gap = 2,
 		Direction = Private.Enum.Direction.Horizontal,
@@ -239,7 +239,7 @@ function Private.Settings.GetPartyDefaultSettings()
 			[Private.Enum.ContentType.OpenWorld] = false,
 			[Private.Enum.ContentType.Delve] = true,
 			[Private.Enum.ContentType.Dungeon] = true,
-			[Private.Enum.ContentType.Raid] = true,
+			[Private.Enum.ContentType.Raid] = false,
 			[Private.Enum.ContentType.Arena] = true,
 			[Private.Enum.ContentType.Battleground] = false,
 		},
@@ -248,16 +248,16 @@ function Private.Settings.GetPartyDefaultSettings()
 			[Private.Enum.Role.Tank] = true,
 			[Private.Enum.Role.Damager] = true,
 		},
-		OffsetX = 0,
-		OffsetY = 0,
+		OffsetX = 74,
+		OffsetY = 10,
 		SourceAnchor = Private.Enum.Anchor.Left,
-		TargetAnchor = Private.Enum.Anchor.Center,
+		TargetAnchor = Private.Enum.Anchor.Right,
 		SortOrder = Private.Enum.SortOrder.Ascending,
-		Grow = Private.Enum.Grow.Center,
+		Grow = Private.Enum.Grow.Start,
 		IncludeSelfInParty = true,
 		ShowDuration = true,
 		Opacity = 1,
-		ShowBorder = false,
+		ShowBorder = true,
 		GlowImportant = true,
 		GlowType = Private.Enum.GlowType.PixelGlow,
 	}
@@ -890,24 +890,26 @@ table.insert(Private.LoginFnQueue, function()
 					local container = Settings.CreateControlTextContainer()
 
 					for label, id in pairs(Private.Enum.ContentType) do
-						local function IsEnabled()
-							return TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id]
+						if id ~= Private.Enum.ContentType.Raid then
+							local function IsEnabled()
+								return TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id]
+							end
+
+							local function Toggle()
+								TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id] =
+									not TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id]
+							end
+
+							local translated = L.Settings.LoadConditionSoundContentTypeLabels[id]
+
+							container:AddCheckbox(
+								id,
+								translated,
+								L.Settings.LoadConditionSoundContentTypeTooltip,
+								IsEnabled,
+								Toggle
+							)
 						end
-
-						local function Toggle()
-							TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id] =
-								not TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[id]
-						end
-
-						local translated = L.Settings.LoadConditionSoundContentTypeLabels[id]
-
-						container:AddCheckbox(
-							id,
-							translated,
-							L.Settings.LoadConditionSoundContentTypeTooltip,
-							IsEnabled,
-							Toggle
-						)
 					end
 
 					return container:GetData()

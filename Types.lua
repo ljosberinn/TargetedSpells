@@ -234,8 +234,9 @@
 ---@class TargetedSpellsDriver
 ---@field framePool FramePool
 ---@field listenerFrame Frame
----@field role Role?
----@field contentType ContentType?
+---@field role Role
+---@field contentType ContentType
+---@field sawPlayerLogin boolean
 ---@field frames table<string, TargetedSpellsMixin[]>
 ---@field OnSettingsChanged fun(self: TargetedSpellsDriver, key: string, value: number|string|table)
 ---@field OnFrameEvent fun(self: TargetedSpellsDriver, listenerFrame: Frame, event: WowEvent, ...)

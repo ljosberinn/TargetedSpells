@@ -299,7 +299,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key, defaults)
 			name = L.Settings.PlayTTSLabel,
 			kind = Enum.EditModeSettingDisplayType.Checkbox,
 			desc = L.Settings.PlayTTSTooltip,
-			default = defaults.Enabled,
+			default = defaults.PlayTTS,
 			get = Get,
 			set = Set,
 		}
@@ -604,41 +604,47 @@ function TargetedSpellsEditModeMixin:CreateSetting(key, defaults)
 
 		local function Generator(owner, rootDescription, data)
 			for label, id in pairs(Private.Enum.ContentType) do
-				local function IsEnabled()
-					return tableRef[id]
-				end
+				if id ~= Private.Enum.ContentType.Raid then
+					local function IsEnabled()
+						return tableRef[id]
+					end
 
-				local function Toggle()
-					tableRef[id] = not tableRef[id]
+					local function Toggle()
+						tableRef[id] = not tableRef[id]
 
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef)
+						Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef)
 
-					local anyEnabled = false
-					for role, loadCondition in pairs(tableRef) do
-						if loadCondition then
-							anyEnabled = true
-							break
+						local anyEnabled = false
+						for role, loadCondition in pairs(tableRef) do
+							if loadCondition then
+								anyEnabled = true
+								break
+							end
+						end
+
+						local kindTableRef = isSelf and TargetedSpellsSaved.Settings.Self
+							or TargetedSpellsSaved.Settings.Party
+
+						if anyEnabled ~= kindTableRef.Enabled then
+							kindTableRef.Enabled = anyEnabled
+							local enabledKey = isSelf and Private.Settings.Keys.Self.Enabled
+								or Private.Settings.Keys.Party.Enabled
+							Private.EventRegistry:TriggerEvent(
+								Private.Enum.Events.SETTING_CHANGED,
+								enabledKey,
+								anyEnabled
+							)
+
+							LibEditMode:RefreshFrameSettings(self.editModeFrame)
 						end
 					end
 
-					local kindTableRef = isSelf and TargetedSpellsSaved.Settings.Self
-						or TargetedSpellsSaved.Settings.Party
-
-					if anyEnabled ~= kindTableRef.Enabled then
-						kindTableRef.Enabled = anyEnabled
-						local enabledKey = isSelf and Private.Settings.Keys.Self.Enabled
-							or Private.Settings.Keys.Party.Enabled
-						Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, enabledKey, anyEnabled)
-
-						LibEditMode:RefreshFrameSettings(self.editModeFrame)
-					end
+					local translated = L.Settings.LoadConditionContentTypeLabels[id]
+					rootDescription:CreateCheckbox(translated, IsEnabled, Toggle, {
+						value = label,
+						multiple = true,
+					})
 				end
-
-				local translated = L.Settings.LoadConditionContentTypeLabels[id]
-				rootDescription:CreateCheckbox(translated, IsEnabled, Toggle, {
-					value = label,
-					multiple = true,
-				})
 			end
 		end
 
@@ -1591,7 +1597,6 @@ function PartyEditModeMixin:AppendSettings()
 		Private.Settings.GetDefaultEditModeFramePosition(),
 		"Targeted Spells - Party"
 	)
-
 	self.editModeFrame:SetScript("OnDragStart", nil)
 	self.editModeFrame:SetScript("OnDragStop", nil)
 
@@ -1604,6 +1609,7 @@ function PartyEditModeMixin:AppendSettings()
 	end
 
 	LibEditMode:AddFrameSettings(self.editModeFrame, settings)
+	self:RepositionEditModeFrame()
 end
 
 function PartyEditModeMixin:RepositionEditModeFrame()

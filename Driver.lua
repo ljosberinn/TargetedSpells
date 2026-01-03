@@ -10,6 +10,7 @@ function TargetedSpellsDriver:Init()
 	self.frames = {}
 	self.role = Private.Enum.Role.Damager
 	self.contentType = Private.Enum.ContentType.OpenWorld
+	self.sawPlayerLogin = false
 
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingsChanged, self)
 
@@ -45,7 +46,6 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 	then
 		self.frame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 		self.frame:RegisterEvent("LOADING_SCREEN_DISABLED")
-		self.frame:RegisterEvent("PLAYER_LOGIN")
 		self.frame:RegisterEvent("UPDATE_INSTANCE_INFO")
 		self.frame:RegisterUnitEvent("UNIT_TARGET")
 		self.frame:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
@@ -63,6 +63,7 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 
 		if Private.IsMidnight then
 			self.frame:RegisterUnitEvent("CVAR_UPDATE")
+			self.frame:RegisterEvent("PLAYER_LOGIN")
 		end
 
 		self.frame:SetScript("OnEvent", GenerateClosure(self.OnFrameEvent, self))
@@ -329,8 +330,6 @@ local function SetupStaticPopup(kind)
 	return Show, Hide
 end
 
-local sawPlayerLogin = false
-
 ---@param listenerFrame Frame -- identical to self.frame
 ---@param event "PLAYER_LOGIN" | "UNIT_SPELLCAST_INTERRUPTED" | "UNIT_SPELLCAST_FAILED_QUIET" | "ZONE_CHANGED_NEW_AREA" | "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" | "UNIT_SPELLCAST_SUCCEEDED" |"EDIT_MODE_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "DELAYED_UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED"
 function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
@@ -439,11 +438,6 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			end
 
 			castTime = duration:GetTotalDuration()
-
-			if castTime == nil then
-				return
-			end
-
 			startTime = GetTime() -- todo: this is wrong, but we can't do better yet
 		else
 			local _, _, _, startTimeMs, endTimeMs, _, _, _, castingSpellId = UnitCastingInfo(unit)
@@ -527,7 +521,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		elseif name == "CAASayIfTargeted" then
 			-- before PLAYER_LOGIN, the API below will return 0
 			if
-				not sawPlayerLogin
+				not self.sawPlayerLogin
 				or (not TargetedSpellsSaved.Settings.Self.PlayTTS and not TargetedSpellsSaved.Settings.Self.PlaySound)
 			then
 				return
@@ -694,7 +688,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		self.frame:SetPoint(point, x, y)
 		self.frame:Show()
 	elseif event == "PLAYER_LOGIN" then
-		sawPlayerLogin = true
+		self.sawPlayerLogin = true
 
 		if not TargetedSpellsSaved.Settings.Self.PlayTTS and not TargetedSpellsSaved.Settings.Self.PlaySound then
 			return
