@@ -64,6 +64,8 @@
 
 ## Known Issues / Limitations
 
+**All of these below apply to 12.0 / Midnight onwards only.**
+
 ### Sound / TTS
 
 Built on top of Blizzards recently added Combat Audio Alerts (and thus requiring that to be enabled), it's unfortunately unreliable. You can test this with `TargetedSpells` disabled relatively easily in Follower Dungeons.
@@ -87,6 +89,12 @@ Goes hand in hand with the above. The Blizzard function is intended to only fire
 - an enemy spamcasts spells, first on another player (targeting them), then on you
 - someone else had aggro firs, then you and instantly started casting
 
+### Sorting
+
+**Currently not fixable as the cast time of a spell is secret.**
+
+It's not possible to sort spells targeting a player in order of cast end, making it imposible to easily surface which spell hits first.
+
 ### Layouting
 
 **Currently not fixable due to API restrictions.**
@@ -101,6 +109,13 @@ The elephant in the room. Since it's no longer possible to filter which player i
 A frame with 0% alpha however still takes up space, leading to gaps: all spells currently being cast on the whole party are always _present_, but not _visible_.
 
 You can query the current alpha (which will be 0), but as a result of `SetAlphaFromBoolean` it's also secret so you can't perform logic on it and show/hide the frame because of that.
+
+_However_, you can work around this with the `Gap` settings:
+
+- you can completely overlap frames by using the same gap value as the frames dimensions
+  - this naturally has the downside of not being able to see casts beyond the first on the target because the first one is layering on top, but they'll all be in the same spot
+- you can alternatively use a negative gap larger than the frame dimensions, resulting in an overlapping fan-like effect
+  - it'll still move around, it'll still obscure _some_ info but it's better than nothing
 
 ### Toggling Nameplates Mid Combat & Cast
 

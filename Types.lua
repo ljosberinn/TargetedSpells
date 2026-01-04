@@ -110,6 +110,7 @@
 ---@class ExtendedCooldownTypes : Cooldown
 ---@field SetMinimumCountdownDuration fun(self: ExtendedCooldownTypes, minimumDuration: number)
 ---@field GetCountdownFontString fun(self: ExtendedCooldownTypes): FontString
+---@field SetCooldownFromDurationObject fun(self: ExtendedCooldownTypes, durationObject: DurationObjectDummy, clearIfZero?: boolean)
 
 ---@class TargetedSpellsMixin : Frame
 ---@field Overlay Texture
@@ -243,10 +244,11 @@
 ---@field OnSettingsChanged fun(self: TargetedSpellsDriver, key: string, value: number|string|table)
 ---@field OnFrameEvent fun(self: TargetedSpellsDriver, listenerFrame: Frame, event: WowEvent, ...)
 ---@field SetupListenerFrame fun(self: TargetedSpellsDriver, isBoot: boolean)
----@field AcquireFrames fun(self: TargetedSpellsDriver, castingUnit: string): TargetedSpellsMixin
+---@field AcquireFrames fun(self: TargetedSpellsDriver, castingUnit: string): TargetedSpellsMixin[]
 ---@field LoadConditionsProhibitExecution fun(self: TargetedSpellsDriver, kind: FrameKind): boolean
 ---@field CleanUpUnit fun(self: TargetedSpellsMixin, unit: string, exceptSpellId?: number): boolean
 ---@field MaybeApplyCombatAudioAlertOverride fun(self: TargetedSpellsMixin)
+---@field UnitIsIrrelevant fun(self: TargetedSpellsDriver, unit: string): boolean
 
 ---@return function?
 local function GenerateClosureInternal(generatorArray, f, ...)

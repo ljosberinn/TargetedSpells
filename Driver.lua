@@ -58,11 +58,11 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_STOP")
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_START")
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_STOP")
-		self.frame:RegisterUnitEvent("NAME_PLATE_UNIT_REMOVED")
-		self.frame:RegisterUnitEvent("NAME_PLATE_UNIT_ADDED")
+		self.frame:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
+		self.frame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
 
 		if Private.IsMidnight then
-			self.frame:RegisterUnitEvent("CVAR_UPDATE")
+			self.frame:RegisterEvent("CVAR_UPDATE")
 			self.frame:RegisterEvent("PLAYER_LOGIN")
 		end
 
@@ -151,23 +151,23 @@ function TargetedSpellsDriver:RepositionFrames()
 	local activeFrames = {}
 
 	for sourceUnit, frames in pairs(self.frames) do
-		for i, frame in pairs(frames) do
-			if frame:ShouldBeShown() then
-				if frame:GetKind() == Private.Enum.FrameKind.Self then
-					if activeFrames[Private.Enum.FrameKind.Self] == nil then
-						activeFrames[Private.Enum.FrameKind.Self] = {}
-					end
+		for i, frame in ipairs(frames) do
+			local kind = frame:GetKind()
 
-					table.insert(activeFrames[Private.Enum.FrameKind.Self], frame)
-				else
-					local targetUnit = frame:GetUnit()
-
-					if activeFrames[targetUnit] == nil then
-						activeFrames[targetUnit] = {}
-					end
-
-					table.insert(activeFrames[targetUnit], frame)
+			if frame:GetKind() == Private.Enum.FrameKind.Self then
+				if activeFrames[Private.Enum.FrameKind.Self] == nil then
+					activeFrames[Private.Enum.FrameKind.Self] = {}
 				end
+
+				table.insert(activeFrames[kind], frame)
+			elseif kind == Private.Enum.FrameKind.Party then
+				local targetUnit = frame:GetUnit()
+
+				if activeFrames[targetUnit] == nil then
+					activeFrames[targetUnit] = {}
+				end
+
+				table.insert(activeFrames[targetUnit], frame)
 			end
 		end
 	end
@@ -242,25 +242,30 @@ end
 function TargetedSpellsDriver:CleanUpUnit(unit, exceptSpellId)
 	local frames = self.frames[unit]
 
-	if frames ~= nil and #frames > 0 then
-		local cleanedSomethingUp = false
-
-		for _, frame in pairs(frames) do
-			if exceptSpellId == nil or not frame:IsSpellId(exceptSpellId) then
-				frame:Reset()
-				self.framePool:Release(frame)
-				cleanedSomethingUp = true
-			end
-		end
-
-		if cleanedSomethingUp then
-			table.wipe(self.frames[unit])
-		end
-
-		return cleanedSomethingUp
+	if frames == nil then
+		return false
 	end
 
-	return false
+	local cleanedSomethingUp = false
+	local cleanedEverythingUp = true
+
+	for i, frame in ipairs(frames) do
+		if exceptSpellId == nil or not frame:IsSpellId(exceptSpellId) then
+			frame:Reset()
+			self.framePool:Release(frame)
+			cleanedSomethingUp = true
+		else
+			cleanedEverythingUp = false
+		end
+	end
+
+	if cleanedEverythingUp then
+		table.wipe(frames)
+
+		return true
+	end
+
+	return cleanedSomethingUp
 end
 
 function TargetedSpellsDriver:LoadConditionsProhibitExecution(kind)
@@ -331,6 +336,14 @@ local function SetupStaticPopup(kind)
 	return Show, Hide
 end
 
+function TargetedSpellsDriver:UnitIsIrrelevant(unit)
+	return string.find(unit, "nameplate") == nil
+		or UnitInParty(unit)
+		or not UnitExists(unit)
+		or not UnitCanAttack("player", unit)
+		or (IsInGroup() and not UnitInParty(string.format("%starget", unit)) or false)
+end
+
 ---@param listenerFrame Frame -- identical to self.frame
 ---@param event "PLAYER_LOGIN" | "UNIT_SPELLCAST_INTERRUPTED" | "UNIT_SPELLCAST_FAILED_QUIET" | "ZONE_CHANGED_NEW_AREA" | "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" | "UNIT_SPELLCAST_SUCCEEDED" |"EDIT_MODE_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "DELAYED_UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED"
 function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
@@ -341,12 +354,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 	then
 		local unit, castGuid, spellId = ...
 
-		if
-			string.find(unit, "nameplate") == nil
-			or UnitInParty(unit)
-			or not UnitExists(unit)
-			or not UnitCanAttack("player", unit)
-		then
+		if self:UnitIsIrrelevant(unit) then
 			return
 		end
 
@@ -368,12 +376,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 	elseif event == "UNIT_TARGET" then
 		local unit = ...
 
-		if
-			string.find(unit, "nameplate") == nil
-			or UnitInParty(unit)
-			or not UnitExists(unit)
-			or not UnitCanAttack("player", unit)
-		then
+		if self:UnitIsIrrelevant(unit) then
 			return
 		end
 
@@ -414,14 +417,10 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			startTime = startTime,
 		})
 	elseif event == "NAME_PLATE_UNIT_ADDED" then
+		---@type string
 		local unit = ...
 
-		if
-			string.find(unit, "nameplate") == nil
-			or UnitInParty(unit)
-			or not UnitExists(unit)
-			or not UnitCanAttack("player", unit)
-		then
+		if self:UnitIsIrrelevant(unit) then
 			return
 		end
 
@@ -749,23 +748,10 @@ function TargetedSpellsDriver:MaybeApplyCombatAudioAlertOverride()
 		return
 	end
 
-	local function GetCurrentContentType()
-		return self.contentType
-	end
-
-	function CombatAudioAlertManager:GetUnitFormattedTargetingString(unit)
-		local spellId = select(9, UnitCastingInfo(unit))
-
-		if spellId == nil then
-			spellId = select(8, UnitChannelInfo(unit))
-		end
-
-		if spellId == nil then
-			return "" -- this is good old aggro
-		end
-
+	---@param spellId number
+	local function MaybePlaySoundOrTTS(spellId)
 		if TargetedSpellsSaved.Settings.Self.PlaySound then
-			if TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[GetCurrentContentType()] then
+			if TargetedSpellsSaved.Settings.Self.LoadConditionSoundContentType[self.contentType] then
 				Private.Utils.AttemptToPlaySound(
 					TargetedSpellsSaved.Settings.Self.Sound,
 					TargetedSpellsSaved.Settings.Self.SoundChannel
@@ -778,6 +764,16 @@ function TargetedSpellsDriver:MaybeApplyCombatAudioAlertOverride()
 				Private.Utils.PlayTTS(spellName)
 			end
 		end
+	end
+
+	function CombatAudioAlertManager:GetUnitFormattedTargetingString(unit)
+		local spellId = select(9, UnitCastingInfo(unit)) or select(8, UnitChannelInfo(unit))
+
+		if spellId == nil then
+			return "" -- this is good old aggro
+		end
+
+		MaybePlaySoundOrTTS(spellId)
 
 		return ""
 	end
