@@ -178,6 +178,10 @@ L.Settings.ShowDurationTooltip = nil
 L.Settings.ShowDurationFractionsLabel = "Sekundenbruchteile anzeigen"
 L.Settings.ShowDurationFractionsTooltip = nil
 
+L.Settings.IndicateInterruptsLabel = "Unterbrechungen anzeigen"
+L.Settings.IndicateInterruptsTooltip =
+	"Desaturiert das Icon, zeigt einen Indikator an und verzögert das Ausblenden des Icons um eine Sekunde. Funktioniert nicht bei kanalisierten Zaubern."
+
 L.Settings.ShowBorderLabel = "Rahmen"
 L.Settings.ShowBorderTooltip = nil
 

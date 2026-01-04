@@ -114,6 +114,38 @@ function TargetedSpellsEditModeMixin:CreateSetting(key, defaults)
 	end
 
 	if
+		key == Private.Settings.Keys.Self.IndicateInterrupts
+		or key == Private.Settings.Keys.Party.IndicateInterrupts
+	then
+		local tableRef = key == Private.Settings.Keys.Self.IndicateInterrupts and TargetedSpellsSaved.Settings.Self
+			or TargetedSpellsSaved.Settings.Party
+
+		---@param layoutName string
+		local function Get(layoutName)
+			return tableRef.IndicateInterrupts
+		end
+
+		---@param layoutName string
+		---@param value boolean
+		local function Set(layoutName, value)
+			if value ~= tableRef.IndicateInterrupts then
+				tableRef.IndicateInterrupts = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+		end
+
+		---@type LibEditModeCheckbox
+		return {
+			name = L.Settings.IndicateInterruptsLabel,
+			kind = Enum.EditModeSettingDisplayType.Checkbox,
+			desc = L.Settings.IndicateInterruptsTooltip,
+			default = defaults.IndicateInterrupts,
+			get = Get,
+			set = Set,
+		}
+	end
+
+	if
 		key == Private.Settings.Keys.Self.ShowDurationFractions
 		or key == Private.Settings.Keys.Party.ShowDurationFractions
 	then

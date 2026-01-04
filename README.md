@@ -42,6 +42,7 @@
   - show border
   - opacity
   - option to selectively toggle this feature based on player role or content type
+  - option to briefly highlight interrupted spells - only works for non-channels
 
 ### Party
 
@@ -63,6 +64,7 @@
   - show border
   - opacity
   - option to selectively toggle this feature based on player role or content type
+  - option to briefly highlight interrupted spells - only works for non-channels
 
 ## Known Issues / Limitations
 
@@ -118,18 +120,6 @@ _However_, you can work around this with the `Gap` settings:
   - this naturally has the downside of not being able to see casts beyond the first on the target because the first one is layering on top, but they'll all be in the same spot
 - you can alternatively use a negative gap larger than the frame dimensions, resulting in an overlapping fan-like effect
   - it'll still move around, it'll still obscure _some_ info but it's better than nothing
-
-### Toggling Nameplates Mid Combat & Cast
-
-**Currently not fixable. Blizzard communicated wanting to introduce spell identifiers, so this may become fixable.**
-
-It's no longer possible to determine when a cast started unless you observed it starting. This only really applies to edge cases but the shown info will be incorrect in this case:
-
-- enemy starts casting something with a cast time of 5 seconds (for the sake of the argument)
-- you accidentally toggle off nameplates at 1s
-- you then toggle nameplates on at 1.3s
-- we lost all info about when the cast started, so for all the addon is concerned, it started just now and it'll show a remaining time of 5 seconds
-- 3.7s later, the cast finishes - the addon will correctly hide the icon(s) now
 
 ### Glowing Affected Players Frame
 

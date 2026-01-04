@@ -180,6 +180,10 @@ L.Settings.ShowDurationTooltip = nil
 L.Settings.ShowDurationFractionsLabel = "Show Fractions"
 L.Settings.ShowDurationFractionsTooltip = nil
 
+L.Settings.IndicateInterruptsLabel = "Indicate Interrupts"
+L.Settings.IndicateInterruptsTooltip =
+	"Desaturates the icon, shows an indicator on top of the icon and delays hiding the icon by 1 second. Does not work with channeled spells."
+
 L.Settings.ShowBorderLabel = "Montrer les contours"
 L.Settings.ShowBorderTooltip = nil
 

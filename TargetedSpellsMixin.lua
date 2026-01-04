@@ -39,6 +39,25 @@ function TargetedSpellsMixin:OnLoad()
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingChanged, self)
 
 	self.Cooldown:SetCountdownFont("GameFontHighlightHugeOutline")
+	self.wasInterrupted = false
+	self.doNotHideBefore = nil
+end
+
+function TargetedSpellsMixin:SetInterrupted()
+	self.wasInterrupted = true
+	self.doNotHideBefore = GetTime() + 0.95
+	self.InterruptIcon:Show()
+	self.Icon:SetDesaturated(true)
+	self.Cooldown:SetDrawSwipe(false)
+	self:SetShowDuration(false, false)
+end
+
+function TargetedSpellsMixin:CanBeHidden()
+	if self.wasInterrupted then
+		return GetTime() >= self.doNotHideBefore
+	end
+
+	return true
 end
 
 ---@param self TargetedSpellsMixin
@@ -129,6 +148,7 @@ function TargetedSpellsMixin:OnSettingChanged(key, value)
 		elseif key == Private.Settings.Keys.Self.Height then
 			self:SetHeight(value)
 		elseif key == Private.Settings.Keys.Self.ShowDuration then
+			---@diagnostic disable-next-line: param-type-mismatch
 			self:SetShowDuration(value, TargetedSpellsSaved.Settings.Self.ShowDurationFractions)
 		elseif key == Private.Settings.Keys.Self.FontSize then
 			self:SetFontSize(value)
@@ -156,6 +176,7 @@ function TargetedSpellsMixin:OnSettingChanged(key, value)
 		elseif key == Private.Settings.Keys.Party.Height then
 			self:SetHeight(value)
 		elseif key == Private.Settings.Keys.Party.ShowDuration then
+			---@diagnostic disable-next-line: param-type-mismatch
 			self:SetShowDuration(value, TargetedSpellsSaved.Settings.Party.ShowDurationFractions)
 		elseif key == Private.Settings.Keys.Party.FontSize then
 			self:SetFontSize(value)
@@ -426,6 +447,16 @@ function TargetedSpellsMixin:Reset()
 	self:ClearAllPoints()
 	self:Hide()
 	self:HideGlow()
+	self.wasInterrupted = false
+	self.doNotHideBefore = nil
+	self.InterruptIcon:Hide()
+	self.Icon:SetDesaturated(false)
+	self.Cooldown:SetDrawSwipe(true)
+
+	local tableRef = self.kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
+		or TargetedSpellsSaved.Settings.Party
+
+	self:SetShowDuration(tableRef.ShowDuration, tableRef.ShowDurationFractions)
 end
 
 function TargetedSpellsMixin:SetFontSize(fontSize)

@@ -256,7 +256,7 @@ function TargetedSpellsDriver:CleanUpUnit(unit, exceptSpellId)
 	local cleanedEverythingUp = true
 
 	for i, frame in ipairs(frames) do
-		if exceptSpellId == nil or not frame:IsSpellId(exceptSpellId) then
+		if frame:CanBeHidden() and (exceptSpellId == nil or not frame:IsSpellId(exceptSpellId)) then
 			frame:Reset()
 			self.framePool:Release(frame)
 			cleanedSomethingUp = true
@@ -351,7 +351,7 @@ function TargetedSpellsDriver:UnitIsIrrelevant(unit, skipTargetCheck)
 end
 
 ---@param listenerFrame Frame -- identical to self.frame
----@param event "PLAYER_LOGIN" | "UNIT_SPELLCAST_INTERRUPTED" | "UNIT_SPELLCAST_FAILED_QUIET" | "ZONE_CHANGED_NEW_AREA" | "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" | "UNIT_SPELLCAST_SUCCEEDED" |"EDIT_MODE_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "DELAYED_UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED"
+---@param event "DELAYED_FRAME_CLEANUP" | "PLAYER_LOGIN" | "UNIT_SPELLCAST_INTERRUPTED" | "UNIT_SPELLCAST_FAILED_QUIET" | "ZONE_CHANGED_NEW_AREA" | "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" | "UNIT_SPELLCAST_SUCCEEDED" |"EDIT_MODE_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "DELAYED_UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED"
 function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 	if
 		event == "UNIT_SPELLCAST_START"
@@ -561,6 +561,46 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			return
 		end
 
+		if
+			event == "UNIT_SPELLCAST_INTERRUPTED"
+			and (
+				TargetedSpellsSaved.Settings.Self.IndicateInterrupts
+				or TargetedSpellsSaved.Settings.Party.IndicateInterrupts
+			)
+		then
+			local frames = self.frames[unit]
+
+			if frames == nil then
+				return
+			end
+
+			local unitsToDelay = {}
+
+			for i, frame in ipairs(frames) do
+				local tableRef = frame:GetKind() == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
+					or TargetedSpellsSaved.Settings.Party
+
+				if tableRef.IndicateInterrupts then
+					frame:SetInterrupted()
+					table.insert(unitsToDelay, unit)
+				end
+			end
+
+			if #unitsToDelay > 0 then
+				C_Timer.After(
+					1,
+					GenerateClosure(
+						self.OnFrameEvent,
+						self,
+						self.listenerFrame,
+						Private.Enum.Events.DELAYED_FRAME_CLEANUP,
+						unitsToDelay
+					)
+				)
+				return
+			end
+		end
+
 		if self:CleanUpUnit(unit) then
 			self:RepositionFrames()
 		end
@@ -625,6 +665,20 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		end
 
 		self:RepositionFrames()
+	elseif event == Private.Enum.Events.DELAYED_FRAME_CLEANUP then
+		local unitsToDelay = ...
+
+		local cleanedSomethingUp = false
+
+		for i, unit in ipairs(unitsToDelay) do
+			if self:CleanUpUnit(unit) then
+				cleanedSomethingUp = true
+			end
+		end
+
+		if cleanedSomethingUp then
+			self:RepositionFrames()
+		end
 	elseif
 		event == "ZONE_CHANGED_NEW_AREA"
 		or event == "LOADING_SCREEN_DISABLED"

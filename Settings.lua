@@ -44,6 +44,7 @@ Private.Settings.Keys = {
 		ShowBorder = "BORDER_SELF",
 		PlayTTS = "PLAY_TTS_SELF",
 		TTSVoice = "TTS_VOICE_SELF",
+		IndicateInterrupts = "INDICATE_INTERRUPTS_SELF",
 	},
 	Party = {
 		Enabled = "ENABLED_PARTY",
@@ -67,6 +68,7 @@ Private.Settings.Keys = {
 		ShowDurationFractions = "SHOW_DURATION_FRACTIONS_PARTY",
 		Opacity = "OPACITY_PARTY",
 		ShowBorder = "BORDER_PARTY",
+		IndicateInterrupts = "INDICATE_INTERRUPTS_PARTY",
 	},
 }
 
@@ -94,6 +96,7 @@ function Private.Settings.GetSettingsDisplayOrder(kind)
 			Private.Settings.Keys.Self.ShowDurationFractions,
 			Private.Settings.Keys.Self.FontSize,
 			Private.Settings.Keys.Self.ShowBorder,
+			Private.Settings.Keys.Self.IndicateInterrupts,
 			Private.Settings.Keys.Self.Opacity,
 		}
 	end
@@ -119,6 +122,7 @@ function Private.Settings.GetSettingsDisplayOrder(kind)
 		Private.Settings.Keys.Party.ShowDurationFractions,
 		Private.Settings.Keys.Party.FontSize,
 		Private.Settings.Keys.Party.ShowBorder,
+		Private.Settings.Keys.Party.IndicateInterrupts,
 		Private.Settings.Keys.Party.Opacity,
 	}
 end
@@ -236,6 +240,7 @@ function Private.Settings.GetSelfDefaultSettings()
 		GlowType = Private.Enum.GlowType.PixelGlow,
 		PlayTTS = false,
 		TTSVoice = Private.Utils.FindAppropriateTTSVoiceId(),
+		IndicateInterrupts = false,
 	}
 end
 
@@ -274,6 +279,7 @@ function Private.Settings.GetPartyDefaultSettings()
 		ShowBorder = true,
 		GlowImportant = true,
 		GlowType = Private.Enum.GlowType.PixelGlow,
+		IndicateInterrupts = false,
 	}
 end
 
@@ -502,6 +508,41 @@ table.insert(Private.LoginFnQueue, function()
 	---@param defaults SavedVariablesSettingsSelf|SavedVariablesSettingsParty
 	---@return SettingConfig
 	local function CreateSetting(key, defaults)
+		if
+			key == Private.Settings.Keys.Self.IndicateInterrupts
+			or key == Private.Settings.Keys.Party.IndicateInterrupts
+		then
+			local tableRef = key == Private.Settings.Keys.Self.IndicateInterrupts and TargetedSpellsSaved.Settings.Self
+				or TargetedSpellsSaved.Settings.Party
+
+			local function GetValue()
+				return tableRef.IndicateInterrupts
+			end
+
+			local function SetValue(value)
+				tableRef.IndicateInterrupts = not tableRef.IndicateInterrupts
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef.Enabled)
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Boolean,
+				L.Settings.IndicateInterruptsLabel,
+				defaults.IndicateInterrupts,
+				GetValue,
+				SetValue
+			)
+
+			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.IndicateInterruptsTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
 		if
 			key == Private.Settings.Keys.Self.ShowDurationFractions
 			or key == Private.Settings.Keys.Party.ShowDurationFractions

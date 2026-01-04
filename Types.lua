@@ -84,6 +84,7 @@
 ---@field Opacity number
 ---@field PlayTTS boolean
 ---@field TTSVoice number
+---@field IndicateInterrupts boolean
 
 ---@class SavedVariablesSettingsParty
 ---@field Enabled boolean
@@ -106,6 +107,7 @@
 ---@field GlowImportant boolean
 ---@field GlowType GlowType
 ---@field Opacity number
+---@field IndicateInterrupts boolean
 
 ---@class TargetedSpellsSelfPreviewFrame: Frame
 ---@field GetChildren fun(self: TargetedSpellsSelfPreviewFrame): TargetedSpellsMixin
@@ -136,6 +138,7 @@
 ---@field _Star4 Star4Glow?
 ---@field DurationText FontString
 ---@field Border Frame | BackdropTemplate
+---@field InterruptIcon Texture
 ---@field OnLoad fun(self: TargetedSpellsMixin)
 ---@field OnUpdate fun(self: TargetedSpellsMixin, elapsed: number)|nil
 ---@field SetKind fun(self: TargetedSpellsMixin, kind: FrameKind)
@@ -162,6 +165,10 @@
 ---@field SetDuration fun(self: TargetedSpellsMixin, duration: DurationObjectDummy|number)
 ---@field SetShowBorder fun(self: TargetedSpellsMixin, bool: boolean)
 ---@field SetShowDuration fun(self: TargetedSpellsMixin, showDuration: boolean, showFractions: boolean)
+---@field wasInterrupted boolean
+---@field doNotHideBefore number?
+---@field CanBeHidden fun(self: TargetedSpellsMixin): boolean
+---@field SetInterrupted fun(self: TargetedSpellsMixin)
 
 ---@class IconDataProviderMixin
 ---@field GetRandomIcon fun(self: IconDataProviderMixin): number

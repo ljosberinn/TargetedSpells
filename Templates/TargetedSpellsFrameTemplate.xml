@@ -19,6 +19,12 @@
                 </Texture>
                 <FontString hidden="true" parentKey="DurationText" font="GameFontHighlightHugeOutline" justifyH="CENTER" setAllPoints="true">
                 </FontString>
+                <Texture parentKey="InterruptIcon" hidden="true" setAllPoints="true" file="Interface\TARGETINGFRAME\UI-RaidTargetingIcon_7.blp">
+                    <Anchors>
+                        <Anchor point="TOPLEFT" x="4" y="-4" />
+                        <Anchor point="BOTTOMRIGHT" x="-4" y="4" />
+                    </Anchors>
+                </Texture>
             </Layer>
         </Layers>
         <Frames>
