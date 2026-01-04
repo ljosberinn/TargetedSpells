@@ -1920,7 +1920,9 @@ table.insert(Private.LoginFnQueue, function()
 		error(string.format("CreateSetting not implemented for key '%s'", key))
 	end
 
-	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Self"))
+	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L.Settings.EditModeReminder))
+
+	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L.EditMode.TargetedSpellsSelfLabel))
 
 	do
 		local generalCategoryEnabledInitializer
@@ -1950,7 +1952,7 @@ table.insert(Private.LoginFnQueue, function()
 		end
 	end
 
-	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Party"))
+	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L.EditMode.TargetedSpellsPartyLabel))
 
 	do
 		local generalCategoryEnabledInitializer

@@ -11,6 +11,8 @@ end
 
 local L = Private.L
 
+L.Settings.EditModeReminder =
+	"Der Bearbeitungsmodus beinhaltet Echtzeitvorschau aller Einstellungen.\nDiese Einstellungen sind nur hier damit man auch im Kampf bearbeiten kann."
 L.EditMode.TargetedSpellsSelfLabel = "Targeted Spells - Spieler"
 L.EditMode.TargetedSpellsPartyLabel = "Targeted Spells - Gruppe"
 

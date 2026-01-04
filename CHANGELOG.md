@@ -6,6 +6,7 @@
 - added a new setting to show fractions of cast durations
 - added support to use DandersFrames if present
 - added a new setting that briefly highlights interrupted spells - only works for non-channels
+- added a disclaimer to the settings that the edit mode should be the primary way to change options
 
 ## Version 1.0.0-alpha4
 

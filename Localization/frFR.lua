@@ -15,6 +15,8 @@ L.EditMode = {}
 L.Functionality = {}
 L.Settings = {}
 
+L.Settings.EditModeReminder =
+	"Consider using the Edit Mode instead, it includes live preview of all settings.\nThese here are only present to allow editing in combat."
 L.EditMode.TargetedSpellsSelfLabel = "Targeted Spells - Self"
 L.EditMode.TargetedSpellsPartyLabel = "Targeted Spells - Party"
 
