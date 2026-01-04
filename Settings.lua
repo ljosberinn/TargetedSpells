@@ -38,6 +38,7 @@ Private.Settings.Keys = {
 		Sound = "SOUND_SELF",
 		SoundChannel = "SOUND_CHANNEL_SELF",
 		ShowDuration = "SHOW_DURATION_SELF",
+		ShowDurationFractions = "SHOW_DURATION_FRACTIONS_SELF",
 		LoadConditionSoundContentType = "LOAD_CONDITION_SOUND_CONTENT_TYPE_SELF",
 		Opacity = "OPACITY_SELF",
 		ShowBorder = "BORDER_SELF",
@@ -63,6 +64,7 @@ Private.Settings.Keys = {
 		GlowType = "GLOW_TYPE_PARTY",
 		IncludeSelfInParty = "INCLUDE_SELF_IN_PARTY_PARTY",
 		ShowDuration = "SHOW_DURATION_PARTY",
+		ShowDurationFractions = "SHOW_DURATION_FRACTIONS_PARTY",
 		Opacity = "OPACITY_PARTY",
 		ShowBorder = "BORDER_PARTY",
 	},
@@ -89,6 +91,7 @@ function Private.Settings.GetSettingsDisplayOrder(kind)
 			Private.Settings.Keys.Self.TTSVoice,
 			Private.Settings.Keys.Self.LoadConditionSoundContentType,
 			Private.Settings.Keys.Self.ShowDuration,
+			Private.Settings.Keys.Self.ShowDurationFractions,
 			Private.Settings.Keys.Self.FontSize,
 			Private.Settings.Keys.Self.ShowBorder,
 			Private.Settings.Keys.Self.Opacity,
@@ -113,6 +116,7 @@ function Private.Settings.GetSettingsDisplayOrder(kind)
 		Private.Settings.Keys.Party.GlowImportant,
 		Private.Settings.Keys.Party.GlowType,
 		Private.Settings.Keys.Party.ShowDuration,
+		Private.Settings.Keys.Party.ShowDurationFractions,
 		Private.Settings.Keys.Party.FontSize,
 		Private.Settings.Keys.Party.ShowBorder,
 		Private.Settings.Keys.Party.Opacity,
@@ -223,6 +227,7 @@ function Private.Settings.GetSelfDefaultSettings()
 		SortOrder = Private.Enum.SortOrder.Ascending,
 		Grow = Private.Enum.Grow.Center,
 		ShowDuration = true,
+		ShowDurationFractions = true,
 		FontSize = 20,
 		Position = Private.Settings.GetDefaultEditModeFramePosition(),
 		Opacity = 1,
@@ -264,6 +269,7 @@ function Private.Settings.GetPartyDefaultSettings()
 		Grow = Private.Enum.Grow.Start,
 		IncludeSelfInParty = true,
 		ShowDuration = true,
+		ShowDurationFractions = true,
 		Opacity = 1,
 		ShowBorder = true,
 		GlowImportant = true,
@@ -496,6 +502,42 @@ table.insert(Private.LoginFnQueue, function()
 	---@param defaults SavedVariablesSettingsSelf|SavedVariablesSettingsParty
 	---@return SettingConfig
 	local function CreateSetting(key, defaults)
+		if
+			key == Private.Settings.Keys.Self.ShowDurationFractions
+			or key == Private.Settings.Keys.Party.ShowDurationFractions
+		then
+			local tableRef = key == Private.Settings.Keys.Self.ShowDurationFractions
+					and TargetedSpellsSaved.Settings.Self
+				or TargetedSpellsSaved.Settings.Party
+
+			local function GetValue()
+				return tableRef.ShowDurationFractions
+			end
+
+			local function SetValue(value)
+				tableRef.ShowDurationFractions = not tableRef.ShowDurationFractions
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, tableRef.Enabled)
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Boolean,
+				L.Settings.ShowDurationFractionsLabel,
+				defaults.ShowDurationFractions,
+				GetValue,
+				SetValue
+			)
+
+			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.ShowDurationFractionsTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
 		if key == Private.Settings.Keys.Self.Enabled or key == Private.Settings.Keys.Party.Enabled then
 			local tableRef = key == Private.Settings.Keys.Self.Enabled and TargetedSpellsSaved.Settings.Self
 				or TargetedSpellsSaved.Settings.Party

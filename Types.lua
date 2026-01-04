@@ -17,6 +17,7 @@
 ---@field RollDice fun(): boolean
 ---@field FindAppropriateTTSVoiceId fun(): number
 ---@field PlayTTS fun(text: string, voiceId: number?, rate: number?)
+---@field FindThirdPartyGroupFrameForUnit fun(unit: string, kind: FrameKind): Frame?
 
 ---@class TargetedSpellsEnums
 
@@ -74,6 +75,7 @@
 ---@field SortOrder SortOrder
 ---@field Grow Grow
 ---@field ShowDuration boolean
+---@field ShowDurationFractions boolean
 ---@field FontSize number
 ---@field Position SelfFramePosition
 ---@field ShowBorder boolean
@@ -98,6 +100,7 @@
 ---@field SortOrder SortOrder
 ---@field Grow Grow
 ---@field ShowDuration boolean
+---@field ShowDurationFractions boolean
 ---@field FontSize number
 ---@field ShowBorder boolean
 ---@field GlowImportant boolean
@@ -112,6 +115,11 @@
 ---@field GetCountdownFontString fun(self: ExtendedCooldownTypes): FontString
 ---@field SetCooldownFromDurationObject fun(self: ExtendedCooldownTypes, durationObject: DurationObjectDummy, clearIfZero?: boolean)
 
+---@class Star4Glow : Frame
+---@field Inner Texture
+---@field Outer Texture
+---@field Animation AnimationGroup
+
 ---@class TargetedSpellsMixin : Frame
 ---@field Overlay Texture
 ---@field Icon Texture
@@ -125,9 +133,11 @@
 ---@field _ButtonGlow Frame?
 ---@field _PixelGlow Frame?
 ---@field _ProcGlow Frame?
----@field Star4 Frame?
+---@field _Star4 Star4Glow?
+---@field DurationText FontString
 ---@field Border Frame | BackdropTemplate
 ---@field OnLoad fun(self: TargetedSpellsMixin)
+---@field OnUpdate fun(self: TargetedSpellsMixin, elapsed: number)|nil
 ---@field SetKind fun(self: TargetedSpellsMixin, kind: FrameKind)
 ---@field GetKind fun(self: TargetedSpellsMixin): FrameKind?
 ---@field OnKindChanged fun(self: TargetedSpellsMixin, kind: FrameKind)
@@ -136,22 +146,22 @@
 ---@field ClearStartTime fun(self: TargetedSpellsMixin)
 ---@field GetStartTime fun(self: TargetedSpellsMixin): number
 ---@field SetStartTime fun(self: TargetedSpellsMixin, startTime: number?)
----@field SetCastTime fun(self: TargetedSpellsMixin, castTime: number)
 ---@field SetSpellId fun(self: TargetedSpellsMixin, spellId: number?)
 ---@field IsSpellId fun(self: TargetedSpellsMixin, spellId: number): boolean
 ---@field IsSpellImportant fun(self: TargetedSpellsMixin, boolOverride: boolean?): boolean
----@field RefreshSpellCooldownInfo fun(self: TargetedSpellsMixin)
 ---@field OnSizeChanged fun(self: TargetedSpellsMixin, width: number, height: number)
 ---@field OnSettingChanged fun(self: TargetedSpellsMixin, key: string, value: number|string)
 ---@field ShouldBeShown fun(self: TargetedSpellsMixin): boolean
 ---@field Reposition fun(self: TargetedSpellsMixin, point: string, relativeTo: Frame, relativePoint: string, offsetX: number, offsetY: number)
----@field SetShowDuration fun(self: TargetedSpellsMixin, showDuration: boolean)
 ---@field SetFontSize fun(self: TargetedSpellsMixin, fontSize: number)
 ---@field PostCreate fun(self: TargetedSpellsMixin, unit: string, kind: FrameKind, castingUnit: string?)
 ---@field ShowGlow fun(self: TargetedSpellsMixin, isImportant: boolean) -- secret bool, but passed explicitly in EditMode code
 ---@field HideGlow fun(self: TargetedSpellsMixin)
 ---@field AttemptToPlaySound fun(self: TargetedSpellsMixin, contentType: ContentType, unit: string)
 ---@field AttemptToPlayTTS fun(self: TargetedSpellsMixin, contentType: ContentType, unit: string)
+---@field SetDuration fun(self: TargetedSpellsMixin, duration: DurationObjectDummy|number)
+---@field SetShowBorder fun(self: TargetedSpellsMixin, bool: boolean)
+---@field SetShowDuration fun(self: TargetedSpellsMixin, showDuration: boolean, showFractions: boolean)
 
 ---@class IconDataProviderMixin
 ---@field GetRandomIcon fun(self: IconDataProviderMixin): number
@@ -248,7 +258,7 @@
 ---@field LoadConditionsProhibitExecution fun(self: TargetedSpellsDriver, kind: FrameKind): boolean
 ---@field CleanUpUnit fun(self: TargetedSpellsMixin, unit: string, exceptSpellId?: number): boolean
 ---@field MaybeApplyCombatAudioAlertOverride fun(self: TargetedSpellsMixin)
----@field UnitIsIrrelevant fun(self: TargetedSpellsDriver, unit: string): boolean
+---@field UnitIsIrrelevant fun(self: TargetedSpellsDriver, unit: string, skipTargetCheck?: boolean): boolean
 
 ---@return function?
 local function GenerateClosureInternal(generatorArray, f, ...)
@@ -417,3 +427,13 @@ CombatAudioAlertManager = {
 		return ""
 	end,
 }
+
+-- third party unit frame addons
+---@class DandersFrames
+---@field Api { GetFrameForUnit: fun(unit: string, kind: FrameKind): Frame? }
+
+---@type DandersFrames?
+DandersFrames = nil
+
+---@type Frame?
+DandersPartyGroupContainer = nil

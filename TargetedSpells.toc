@@ -3,7 +3,7 @@
 ## DefaultState: Enabled
 ## SavedVariables: TargetedSpellsSaved
 ## IconTexture: Interface\Icons\ability_hunter_snipershot
-## OptionalDeps: !!AddonLocale, Masque, LibCustomGlow-1.0
+## OptionalDeps: !!AddonLocale, Masque
 ## Category: Combat
 ## Category-deDE: Kampf
 ## Category-esES: Combate

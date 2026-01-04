@@ -113,6 +113,39 @@ function TargetedSpellsEditModeMixin:CreateSetting(key, defaults)
 		}
 	end
 
+	if
+		key == Private.Settings.Keys.Self.ShowDurationFractions
+		or key == Private.Settings.Keys.Party.ShowDurationFractions
+	then
+		local tableRef = key == Private.Settings.Keys.Self.ShowDurationFractions and TargetedSpellsSaved.Settings.Self
+			or TargetedSpellsSaved.Settings.Party
+
+		---@param layoutName string
+		local function Get(layoutName)
+			return tableRef.ShowDurationFractions
+		end
+
+		---@param layoutName string
+		---@param value boolean
+		local function Set(layoutName, value)
+			if value ~= tableRef.ShowDurationFractions then
+				tableRef.ShowDurationFractions = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+		end
+
+		---@type LibEditModeCheckbox
+		return {
+			name = L.Settings.ShowDurationFractionsLabel,
+			kind = Enum.EditModeSettingDisplayType.Checkbox,
+			desc = L.Settings.ShowDurationFractionsTooltip,
+			default = defaults.ShowDurationFractions,
+			get = Get,
+			set = Set,
+			disabled = not TargetedSpellsSaved.Settings.Self.ShowDuration,
+		}
+	end
+
 	if key == Private.Settings.Keys.Self.GlowImportant or key == Private.Settings.Keys.Party.GlowImportant then
 		local tableRef = key == Private.Settings.Keys.Self.GlowImportant and TargetedSpellsSaved.Settings.Self
 			or TargetedSpellsSaved.Settings.Party
@@ -241,8 +274,10 @@ function TargetedSpellsEditModeMixin:CreateSetting(key, defaults)
 
 			if value then
 				LibEditMode:EnableFrameSetting(self.editModeFrame, L.Settings.FontSizeLabel)
+				LibEditMode:EnableFrameSetting(self.editModeFrame, L.Settings.ShowDurationFractionsLabel)
 			else
 				LibEditMode:DisableFrameSetting(self.editModeFrame, L.Settings.FontSizeLabel)
+				LibEditMode:DisableFrameSetting(self.editModeFrame, L.Settings.ShowDurationFractionsLabel)
 			end
 		end
 
@@ -1260,8 +1295,7 @@ function TargetedSpellsEditModeMixin:LoopFrame(frame, index)
 	frame:SetSpellId()
 	frame:SetStartTime()
 	local castTime = 4 + index / 2
-	frame:SetCastTime(castTime)
-	frame:RefreshSpellCooldownInfo()
+	frame:SetDuration(castTime)
 	frame:Show()
 	self:RepositionPreviewFrames()
 
@@ -1343,11 +1377,9 @@ function SelfEditModeMixin:ResizeEditModeFrame()
 end
 
 function SelfEditModeMixin:ReleaseAllFrames()
-	for index, frame in pairs(self.frames) do
-		if frame then
-			self:ReleaseFrame(frame)
-			self.frames[index] = nil
-		end
+	for index, frame in ipairs(self.frames) do
+		self:ReleaseFrame(frame)
+		self.frames[index] = nil
 	end
 end
 
@@ -1403,8 +1435,8 @@ function SelfEditModeMixin:RepositionPreviewFrames()
 	---@type TargetedSpellsMixin[]
 	local activeFrames = {}
 
-	for index, frame in pairs(self.frames) do
-		if frame and frame:ShouldBeShown() then
+	for i, frame in ipairs(self.frames) do
+		if frame:ShouldBeShown() then
 			table.insert(activeFrames, frame)
 		end
 	end
@@ -1604,6 +1636,8 @@ function PartyEditModeMixin:AppendSettings()
 	)
 	self.editModeFrame:SetScript("OnDragStart", nil)
 	self.editModeFrame:SetScript("OnDragStop", nil)
+	-- e.g. DandersPartyGroupContainer is created lazily but we want to anchor to it
+	LibEditMode:RegisterCallback("enter", GenerateClosure(self.RepositionEditModeFrame, self))
 
 	local settingsOrder = Private.Settings.GetSettingsDisplayOrder(Private.Enum.FrameKind.Party)
 	local settings = {}
@@ -1614,18 +1648,21 @@ function PartyEditModeMixin:AppendSettings()
 	end
 
 	LibEditMode:AddFrameSettings(self.editModeFrame, settings)
-	self:RepositionEditModeFrame()
 end
 
 function PartyEditModeMixin:RepositionEditModeFrame()
 	local parent = PartyFrame
 	local width = 125
-	local height = 16
 
-	if self.useRaidStylePartyFrames then
+	if DandersFrames and DandersPartyGroupContainer then
+		parent = DandersPartyGroupContainer
+		width = DandersPartyGroupContainer:GetWidth()
+	elseif self.useRaidStylePartyFrames then
 		parent = CompactPartyFrame
 		width = CompactPartyFrame.memberUnitFrames[1]:GetWidth()
 	end
+
+	local height = 16
 
 	self.editModeFrame:SetSize(width, height)
 	self.editModeFrame:ClearAllPoints()
@@ -1653,8 +1690,8 @@ function PartyEditModeMixin:OnLayoutSettingChanged(key, value)
 	elseif key == Private.Settings.Keys.Party.GlowImportant then
 		local glowEnabled = value
 
-		for _, frames in pairs(self.frames) do
-			for _, frame in pairs(frames) do
+		for i, frames in pairs(self.frames) do
+			for j, frame in ipairs(frames) do
 				if frame:IsVisible() and glowEnabled and Private.Utils.RollDice() then
 					frame:ShowGlow(true)
 				else
@@ -1667,8 +1704,8 @@ function PartyEditModeMixin:OnLayoutSettingChanged(key, value)
 			return
 		end
 
-		for _, frames in pairs(self.frames) do
-			for _, frame in pairs(frames) do
+		for i, frames in pairs(self.frames) do
+			for j, frame in ipairs(frames) do
 				if frame:IsVisible() and Private.Utils.RollDice() then
 					frame:ShowGlow(true)
 				else
@@ -1724,38 +1761,40 @@ function PartyEditModeMixin:RepositionPreviewFrames()
 		if activeFrameCount > 0 then
 			Private.Utils.SortFrames(activeFrames, sortOrder)
 
-			local parentFrame = nil
+			local parentFrame = Private.Utils.FindThirdPartyGroupFrameForUnit(
+				i == 5 and "player" or string.format("party%d", i),
+				Private.Enum.FrameKind.Party
+			)
 
-			if self.useRaidStylePartyFrames then
-				parentFrame = CompactPartyFrame.memberUnitFrames[i]
-			else
-				for memberFrame in PartyFrame.PartyMemberFramePool:EnumerateActive() do
-					if memberFrame.layoutIndex == i then
-						parentFrame = memberFrame
-						break
+			if parentFrame == nil then
+				if self.useRaidStylePartyFrames then
+					parentFrame = CompactPartyFrame.memberUnitFrames[i]
+				else
+					for memberFrame in PartyFrame.PartyMemberFramePool:EnumerateActive() do
+						if memberFrame.layoutIndex == i then
+							parentFrame = memberFrame
+							break
+						end
 					end
 				end
 			end
 
-			-- cannot happen
-			if parentFrame == nil then
-				error("couldn't establish a parent frame")
-			end
+			if parentFrame ~= nil then
+				local total = (activeFrameCount * (isHorizontal and width or height)) + (activeFrameCount - 1) * gap
+				local parentDimension = isHorizontal and parentFrame:GetWidth() or parentFrame:GetHeight()
 
-			local total = (activeFrameCount * (isHorizontal and width or height)) + (activeFrameCount - 1) * gap
-			local parentDimension = isHorizontal and parentFrame:GetWidth() or parentFrame:GetHeight()
+				for j, frame in ipairs(activeFrames) do
+					local x = offsetX
+					local y = offsetY
 
-			for j, frame in ipairs(activeFrames) do
-				local x = offsetX
-				local y = offsetY
+					if isHorizontal then
+						x = Private.Utils.CalculateCoordinate(j, width, gap, parentDimension, total, offsetX, grow)
+					else
+						y = Private.Utils.CalculateCoordinate(j, width, gap, parentDimension, total, offsetY, grow)
+					end
 
-				if isHorizontal then
-					x = Private.Utils.CalculateCoordinate(j, width, gap, parentDimension, total, offsetX, grow)
-				else
-					y = Private.Utils.CalculateCoordinate(j, width, gap, parentDimension, total, offsetY, grow)
+					frame:Reposition(sourceAnchor, parentFrame, targetAnchor, x, y)
 				end
-
-				frame:Reposition(sourceAnchor, parentFrame, targetAnchor, x, y)
 			end
 		end
 	end

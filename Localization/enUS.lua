@@ -175,7 +175,10 @@ L.Settings.LoadConditionSoundContentTypeTooltip = not Private.IsMidnight
 L.Settings.LoadConditionSoundContentTypeLabels = L.Settings.LoadConditionContentTypeLabels
 
 L.Settings.ShowDurationLabel = "Show Duration"
-L.Settings.ShowDurationTooltip = "Full seconds only, no fractions possible."
+L.Settings.ShowDurationTooltip = nil
+
+L.Settings.ShowDurationFractionsLabel = "Show Fractions"
+L.Settings.ShowDurationFractionsTooltip = nil
 
 L.Settings.ShowBorderLabel = "Show Border"
 L.Settings.ShowBorderTooltip = nil

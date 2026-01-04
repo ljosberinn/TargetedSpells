@@ -92,3 +92,15 @@ function Private.Utils.PlayTTS(text, voiceId, rate)
 		)
 	end
 end
+
+function Private.Utils.FindThirdPartyGroupFrameForUnit(unit, kind)
+	if DandersFrames and DandersFrames.Api and DandersFrames.Api.GetFrameForUnit then
+		local frame = DandersFrames.Api.GetFrameForUnit(unit, kind)
+
+		if frame then
+			return frame
+		end
+	end
+
+	return nil
+end

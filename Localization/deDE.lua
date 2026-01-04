@@ -173,7 +173,10 @@ L.Settings.LoadConditionSoundContentTypeTooltip = not Private.IsMidnight
 L.Settings.LoadConditionSoundContentTypeLabels = L.Settings.LoadConditionContentTypeLabels
 
 L.Settings.ShowDurationLabel = "Dauer anzeigen"
-L.Settings.ShowDurationTooltip = "Nur ganze Zahlen, keine Sekundenbruchteile möglich."
+L.Settings.ShowDurationTooltip = nil
+
+L.Settings.ShowDurationFractionsLabel = "Sekundenbruchteile anzeigen"
+L.Settings.ShowDurationFractionsTooltip = nil
 
 L.Settings.ShowBorderLabel = "Rahmen"
 L.Settings.ShowBorderTooltip = nil

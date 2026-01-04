@@ -17,10 +17,12 @@
                         <Anchor point="BOTTOMRIGHT" x="15" y="-15" />
                     </Anchors>
                 </Texture>
+                <FontString hidden="true" parentKey="DurationText" font="GameFontHighlightHugeOutline" justifyH="CENTER" setAllPoints="true">
+                </FontString>
             </Layer>
         </Layers>
         <Frames>
-            <Cooldown parentKey="Cooldown" setAllPoints="true">
+            <Cooldown parentKey="Cooldown" setAllPoints="true" minimumCountdownDuration="0">
                 <SwipeTexture file="Interface\HUD\UI-HUD-CoolDownManager-Icon-Swipe">
                     <Color r="0" g="0" b="0" a="0.7" />
                 </SwipeTexture>
@@ -34,6 +36,7 @@
         <Scripts>
             <OnLoad method="OnLoad" />
             <OnSizeChanged method="OnSizeChanged" />
+            <OnUpdate method="OnUpdate" />
         </Scripts>
     </Frame>
 </Ui>

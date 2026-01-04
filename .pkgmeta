@@ -3,6 +3,7 @@ ignore:
   - .vscode
   - README.md
   - CHANGELOG.md
+  - Profiling.lua
 manual-changelog:
   filename: CHANGELOG.md
   markuptype: markdown

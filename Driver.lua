@@ -112,6 +112,12 @@ end
 ---@param unit string
 ---@return Frame?
 local function FindParentFrameForPartyMember(unit)
+	local thirdPartyFrame = Private.Utils.FindThirdPartyGroupFrameForUnit(unit, Private.Enum.FrameKind.Party)
+
+	if thirdPartyFrame then
+		return thirdPartyFrame
+	end
+
 	if unit == "player" then
 		if not EditModeManagerFrame:UseRaidStylePartyFrames() then
 			-- non-raid style party frames don't include the player
@@ -154,9 +160,9 @@ function TargetedSpellsDriver:RepositionFrames()
 		for i, frame in ipairs(frames) do
 			local kind = frame:GetKind()
 
-			if frame:GetKind() == Private.Enum.FrameKind.Self then
-				if activeFrames[Private.Enum.FrameKind.Self] == nil then
-					activeFrames[Private.Enum.FrameKind.Self] = {}
+			if kind == Private.Enum.FrameKind.Self then
+				if activeFrames[kind] == nil then
+					activeFrames[kind] = {}
 				end
 
 				table.insert(activeFrames[kind], frame)
@@ -336,12 +342,12 @@ local function SetupStaticPopup(kind)
 	return Show, Hide
 end
 
-function TargetedSpellsDriver:UnitIsIrrelevant(unit)
+function TargetedSpellsDriver:UnitIsIrrelevant(unit, skipTargetCheck)
 	return string.find(unit, "nameplate") == nil
 		or UnitInParty(unit)
 		or not UnitExists(unit)
 		or not UnitCanAttack("player", unit)
-		or (IsInGroup() and not UnitInParty(string.format("%starget", unit)) or false)
+		or (not skipTargetCheck and IsInGroup() and not UnitInParty(string.format("%starget", unit)) or false)
 end
 
 ---@param listenerFrame Frame -- identical to self.frame
@@ -374,6 +380,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			)
 		)
 	elseif event == "UNIT_TARGET" then
+		---@type string
 		local unit = ...
 
 		if self:UnitIsIrrelevant(unit) then
@@ -425,8 +432,9 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		end
 
 		local spellId = nil
-		local castTime = nil
 		local startTime = nil
+		---@type DurationObjectDummy|number|nil
+		local durationOrCastTime = nil
 
 		if Private.IsMidnight then
 			spellId = select(9, UnitCastingInfo(unit)) or select(8, UnitChannelInfo(unit))
@@ -435,13 +443,12 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 				return
 			end
 
-			local duration = UnitCastingDuration(unit) or UnitChannelDuration(unit)
+			durationOrCastTime = UnitCastingDuration(unit) or UnitChannelDuration(unit)
 
-			if duration == nil then
+			if durationOrCastTime == nil then
 				return
 			end
 
-			castTime = duration:GetTotalDuration()
 			startTime = GetTime() -- todo: this is wrong, but we can't do better yet
 		else
 			local _, _, _, startTimeMs, endTimeMs, _, _, _, castingSpellId = UnitCastingInfo(unit)
@@ -456,7 +463,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 
 			spellId = castingSpellId
 			startTime = startTimeMs / 1000
-			castTime = (endTimeMs - startTimeMs) / 1000
+			durationOrCastTime = (endTimeMs - startTimeMs) / 1000
 		end
 
 		local frames = self:AcquireFrames(unit)
@@ -471,15 +478,13 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			self:CleanUpUnit(unit, spellId)
 		end
 
-		for _, frame in ipairs(frames) do
+		for i, frame in ipairs(frames) do
 			table.insert(self.frames[unit], frame)
 			frame:SetSpellId(spellId)
 			frame:SetStartTime(startTime)
-			frame:SetCastTime(castTime)
-			frame:RefreshSpellCooldownInfo()
+			frame:SetDuration(durationOrCastTime)
 			frame:AttemptToPlaySound(self.contentType, unit)
 			frame:AttemptToPlayTTS(self.contentType, unit)
-			frame:Show()
 		end
 
 		self:RepositionFrames()
@@ -549,9 +554,10 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		or event == "UNIT_SPELLCAST_INTERRUPTED"
 		or event == "UNIT_SPELLCAST_FAILED_QUIET"
 	then
+		---@type string
 		local unit = ...
 
-		if string.find(unit, "nameplate") == nil or UnitInParty(unit) or not UnitExists(unit) then
+		if self:UnitIsIrrelevant(unit, true) then
 			return
 		end
 
@@ -589,17 +595,16 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			self:CleanUpUnit(info.unit, info.spellId)
 		end
 
-		local castTime = nil
+		---@type DurationObjectDummy|number|nil
+		local durationOrCastTime = nil
 
 		if Private.IsMidnight then
-			local duration = UnitCastingDuration(info.unit) or UnitChannelDuration(info.unit)
+			durationOrCastTime = UnitCastingDuration(info.unit) or UnitChannelDuration(info.unit)
 
 			-- without `nameplateShowOffscreen` active, castTime may stay nil
-			if duration == nil then
+			if durationOrCastTime == nil then
 				return
 			end
-
-			castTime = duration:GetTotalDuration()
 		else
 			local _, _, _, startTimeMs, endTimeMs = UnitCastingInfo(info.unit)
 
@@ -607,18 +612,16 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 				_, _, _, startTimeMs, endTimeMs = UnitChannelInfo(info.unit)
 			end
 
-			castTime = (endTimeMs - startTimeMs) / 1000
+			durationOrCastTime = (endTimeMs - startTimeMs) / 1000
 		end
 
-		for _, frame in ipairs(frames) do
+		for i, frame in ipairs(frames) do
 			table.insert(self.frames[info.unit], frame)
 			frame:SetSpellId(info.spellId)
 			frame:SetStartTime(info.startTime)
-			frame:SetCastTime(castTime)
-			frame:RefreshSpellCooldownInfo()
+			frame:SetDuration(durationOrCastTime)
 			frame:AttemptToPlaySound(self.contentType, info.unit)
 			frame:AttemptToPlayTTS(self.contentType, info.unit)
-			frame:Show()
 		end
 
 		self:RepositionFrames()

@@ -39,7 +39,23 @@ function TargetedSpellsMixin:OnLoad()
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingChanged, self)
 
 	self.Cooldown:SetCountdownFont("GameFontHighlightHugeOutline")
-	self.Cooldown:SetMinimumCountdownDuration(0)
+end
+
+---@param self TargetedSpellsMixin
+---@param elapsed number
+local function OnUpdate(self, elapsed)
+	if self.duration == nil then
+		return
+	end
+
+	local remainingDuration = type(self.duration) == "number" and self.startTime + self.duration - GetTime()
+		or self.duration:GetRemainingDuration()
+
+	self.DurationText:SetFormattedText("%.1f", remainingDuration)
+end
+
+function TargetedSpellsMixin:OnUpdate(elapsed)
+	-- noop until it gets overridden by the above
 end
 
 function TargetedSpellsMixin:OnKindChanged(kind)
@@ -49,23 +65,23 @@ function TargetedSpellsMixin:OnKindChanged(kind)
 	self:SetSize(tableRef.Width, tableRef.Height)
 	self:SetFontSize(tableRef.FontSize)
 	self:HideGlow()
-
-	if tableRef.ShowBorder then
-		self:ShowBorder()
-	else
-		self:HideBorder()
-	end
-
-	self:SetShowDuration(tableRef.ShowDuration)
+	self:SetShowBorder(tableRef.ShowBorder)
 	self:SetAlpha(tableRef.Opacity)
+	self:SetShowDuration(tableRef.ShowDuration, tableRef.ShowDurationFractions)
 end
 
-function TargetedSpellsMixin:ShowBorder()
-	self.Border:Show()
+function TargetedSpellsMixin:SetShowDuration(showDuration, showFractions)
+	self.Cooldown:SetHideCountdownNumbers(not showDuration or showFractions)
+	self.DurationText:SetShown(showDuration and showFractions)
+	self:SetScript("OnUpdate", showDuration and showFractions and OnUpdate or nil)
 end
 
-function TargetedSpellsMixin:HideBorder()
-	self.Border:Hide()
+function TargetedSpellsMixin:SetShowBorder(bool)
+	if bool then
+		self.Border:Show()
+	else
+		self.Border:Hide()
+	end
 end
 
 --- shamelessly ~~stolen~~ repurposed from WeakAuras2
@@ -113,24 +129,26 @@ function TargetedSpellsMixin:OnSettingChanged(key, value)
 		elseif key == Private.Settings.Keys.Self.Height then
 			self:SetHeight(value)
 		elseif key == Private.Settings.Keys.Self.ShowDuration then
-			---@diagnostic disable-next-line: param-type-mismatch
-			self:SetShowDuration(value)
+			self:SetShowDuration(value, TargetedSpellsSaved.Settings.Self.ShowDurationFractions)
 		elseif key == Private.Settings.Keys.Self.FontSize then
 			self:SetFontSize(value)
 		elseif key == Private.Settings.Keys.Self.Opacity then
 			self:SetAlpha(value)
 		elseif key == Private.Settings.Keys.Self.ShowBorder then
-			if value then
-				self:ShowBorder()
-			else
-				self:HideBorder()
-			end
+			---@diagnostic disable-next-line: param-type-mismatch
+			self:SetShowBorder(value)
 		elseif key == Private.Settings.Keys.Self.GlowType then
 			self:HideGlow()
 
 			if TargetedSpellsSaved.Settings.Self.GlowImportant then
 				self:ShowGlow(self:IsSpellImportant(LibEditMode:IsInEditMode() and Private.Utils.RollDice()))
 			end
+		elseif key == Private.Settings.Keys.Self.ShowDurationFractions then
+			self:SetScript("OnUpdate", value and OnUpdate or nil)
+			---@diagnostic disable-next-line: param-type-mismatch
+			self.Cooldown:SetHideCountdownNumbers(value)
+			---@diagnostic disable-next-line: param-type-mismatch
+			self.DurationText:SetShown(value)
 		end
 	else
 		if key == Private.Settings.Keys.Party.Width then
@@ -138,30 +156,38 @@ function TargetedSpellsMixin:OnSettingChanged(key, value)
 		elseif key == Private.Settings.Keys.Party.Height then
 			self:SetHeight(value)
 		elseif key == Private.Settings.Keys.Party.ShowDuration then
-			---@diagnostic disable-next-line: param-type-mismatch
-			self:SetShowDuration(value)
+			self:SetShowDuration(value, TargetedSpellsSaved.Settings.Party.ShowDurationFractions)
 		elseif key == Private.Settings.Keys.Party.FontSize then
 			self:SetFontSize(value)
 		elseif key == Private.Settings.Keys.Party.Opacity then
 			self:SetAlpha(value)
 		elseif key == Private.Settings.Keys.Party.ShowBorder then
-			if value then
-				self:ShowBorder()
-			else
-				self:HideBorder()
-			end
+			---@diagnostic disable-next-line: param-type-mismatch
+			self:SetShowBorder(value)
 		elseif key == Private.Settings.Keys.Party.GlowType then
 			self:HideGlow()
 
 			if TargetedSpellsSaved.Settings.Party.GlowImportant then
 				self:ShowGlow(self:IsSpellImportant(LibEditMode:IsInEditMode() and Private.Utils.RollDice()))
 			end
+		elseif key == Private.Settings.Keys.Party.ShowDurationFractions then
+			self:SetScript("OnUpdate", value and OnUpdate or nil)
+			---@diagnostic disable-next-line: param-type-mismatch
+			self.Cooldown:SetHideCountdownNumbers(value)
+			---@diagnostic disable-next-line: param-type-mismatch
+			self.DurationText:SetShown(value)
 		end
 	end
 end
 
-function TargetedSpellsMixin:RefreshSpellCooldownInfo()
-	self.Cooldown:SetCooldown(self.startTime, self.castTime)
+function TargetedSpellsMixin:SetDuration(duration)
+	self.duration = duration
+
+	if type(duration) == "number" then
+		self.Cooldown:SetCooldown(self.startTime, duration)
+	else
+		self.Cooldown:SetCooldownFromDurationObject(duration)
+	end
 end
 
 function TargetedSpellsMixin:SetStartTime(startTime)
@@ -172,8 +198,46 @@ function TargetedSpellsMixin:GetStartTime()
 	return self.startTime
 end
 
-function TargetedSpellsMixin:SetCastTime(castTime)
-	self.castTime = castTime
+---@param parent Frame
+local function CreateStar4Glow(parent)
+	local width, height = parent:GetSize()
+	local innerFactor = 1.9
+	local outerFactor = 2.2
+
+	local Star4 = CreateFrame("Frame", nil, parent)
+	Star4:SetPoint("CENTER")
+	Star4:SetFrameStrata(parent:GetFrameStrata())
+	Star4:SetFrameLevel(parent:GetFrameLevel() + 1)
+	Star4:SetSize(width * innerFactor, height * innerFactor)
+
+	local Inner = Star4:CreateTexture(nil, "OVERLAY")
+	Inner:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
+	Inner:SetBlendMode("ADD")
+	Inner:SetAlpha(0.9)
+	Inner:SetVertexColor(1, 0.85, 0.25)
+	Inner:SetPoint("CENTER")
+	Inner:SetSize(width * innerFactor, height * innerFactor)
+	Star4.Inner = Inner
+
+	local Outer = Star4:CreateTexture(nil, "OVERLAY")
+	Outer:SetTexture("Interface\\Cooldown\\star4")
+	Outer:SetBlendMode("ADD")
+	Outer:SetAlpha(0.6)
+	Outer:SetVertexColor(1, 0.75, 0.2)
+	Outer:SetPoint("CENTER")
+	Outer:SetSize(width * outerFactor, height * outerFactor)
+	Star4.Outer = Outer
+
+	local Animation = Star4:CreateAnimationGroup()
+	local Pulse = Animation:CreateAnimation("Alpha")
+	Pulse:SetFromAlpha(0.35)
+	Pulse:SetToAlpha(0.75)
+	Pulse:SetDuration(0.75)
+	Pulse:SetSmoothing("IN_OUT")
+	Animation:SetLooping("BOUNCE")
+	Star4.Animation = Animation
+
+	return Star4
 end
 
 function TargetedSpellsMixin:ShowGlow(isImportant)
@@ -181,49 +245,17 @@ function TargetedSpellsMixin:ShowGlow(isImportant)
 		or TargetedSpellsSaved.Settings.Party.GlowType
 
 	if glowType == Private.Enum.GlowType.Star4 then
-		if self.Star4 == nil then
-			local width, height = self:GetSize()
-			local innerFactor = 1.9
-			local outerFactor = 2.2
-
-			self.Star4 = CreateFrame("Frame", nil, self)
-			self.Star4:SetPoint("CENTER")
-			self.Star4:SetFrameStrata(self:GetFrameStrata())
-			self.Star4:SetFrameLevel(self:GetFrameLevel() + 1)
-			self.Star4:SetSize(width * innerFactor, height * innerFactor)
-
-			self.Star4Inner = self.Star4:CreateTexture(nil, "OVERLAY")
-			self.Star4Inner:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
-			self.Star4Inner:SetBlendMode("ADD")
-			self.Star4Inner:SetAlpha(0.9)
-			self.Star4Inner:SetVertexColor(1, 0.85, 0.25)
-			self.Star4Inner:SetPoint("CENTER")
-			self.Star4Inner:SetSize(width * innerFactor, height * innerFactor)
-
-			self.Star4Outer = self.Star4:CreateTexture(nil, "OVERLAY")
-			self.Star4Outer:SetTexture("Interface\\Cooldown\\star4")
-			self.Star4Outer:SetBlendMode("ADD")
-			self.Star4Outer:SetAlpha(0.6)
-			self.Star4Outer:SetVertexColor(1, 0.75, 0.2)
-			self.Star4Outer:SetPoint("CENTER")
-			self.Star4Outer:SetSize(width * outerFactor, height * outerFactor)
-
-			self.Star4AnimationGroup = self.Star4:CreateAnimationGroup()
-			self.Star4Pulse = self.Star4AnimationGroup:CreateAnimation("Alpha")
-			self.Star4Pulse:SetFromAlpha(0.35)
-			self.Star4Pulse:SetToAlpha(0.75)
-			self.Star4Pulse:SetDuration(0.75)
-			self.Star4Pulse:SetSmoothing("IN_OUT")
-			self.Star4AnimationGroup:SetLooping("BOUNCE")
+		if self._Star4 == nil then
+			self._Star4 = CreateStar4Glow(self)
 		end
 
-		self.Star4:Show()
-		self.Star4Inner:Show()
-		self.Star4Outer:Show()
-		self.Star4AnimationGroup:Play()
+		self._Star4:Show()
+		self._Star4.Inner:Show()
+		self._Star4.Outer:Show()
+		self._Star4.Animation:Play()
 
 		if Private.IsMidnight then
-			self.Star4:SetAlphaFromBoolean(isImportant)
+			self._Star4:SetAlphaFromBoolean(isImportant)
 		end
 	elseif glowType == Private.Enum.GlowType.PixelGlow then
 		LibCustomGlow.PixelGlow_Start(self)
@@ -253,11 +285,11 @@ function TargetedSpellsMixin:ShowGlow(isImportant)
 end
 
 function TargetedSpellsMixin:HideGlow()
-	if self.Star4 ~= nil then
-		self.Star4:Hide()
-		self.Star4Inner:Hide()
-		self.Star4Outer:Hide()
-		self.Star4AnimationGroup:Stop()
+	if self._Star4 ~= nil then
+		self._Star4:Hide()
+		self._Star4.Inner:Hide()
+		self._Star4.Outer:Hide()
+		self._Star4.Animation:Stop()
 	end
 
 	LibCustomGlow.PixelGlow_Stop(self)
@@ -294,7 +326,7 @@ do
 					["Quazii MUST INTERRUPT"] = true,
 				}
 
-				for _, script in pairs(Plater.db.profile.script_data) do
+				for i, script in ipairs(Plater.db.profile.script_data) do
 					if script and importantCastsScripts[script.Name] == true then
 						for _, id in pairs(script.SpellIds) do
 							platerProfileImportantCastsCache[id] = true
@@ -353,6 +385,7 @@ end
 function TargetedSpellsMixin:Reposition(point, relativeTo, relativePoint, offsetX, offsetY)
 	self:ClearAllPoints()
 	self:SetPoint(point, relativeTo, relativePoint, offsetX, offsetY)
+	self:Show()
 end
 
 function TargetedSpellsMixin:SetUnit(unit)
@@ -389,17 +422,24 @@ function TargetedSpellsMixin:Reset()
 	self:ClearStartTime()
 	self:ClearSpellId()
 	self.Cooldown:Clear()
+	self.duration = nil
 	self:ClearAllPoints()
 	self:Hide()
 	self:HideGlow()
 end
 
-function TargetedSpellsMixin:SetShowDuration(showDuration)
-	self.Cooldown:SetHideCountdownNumbers(not showDuration)
-end
-
 function TargetedSpellsMixin:SetFontSize(fontSize)
-	local fontString = Private.IsMidnight and self.Cooldown:GetCountdownFontString() or self.Cooldown:GetRegions()
+	local tableRef = self.kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
+		or TargetedSpellsSaved.Settings.Party
+
+	local fontString = nil
+
+	if tableRef.ShowDurationFractions then
+		fontString = self.DurationText
+	else
+		fontString = Private.IsMidnight and self.Cooldown:GetCountdownFontString() or self.Cooldown:GetRegions()
+	end
+
 	local font, size, flags = fontString:GetFont()
 
 	if size == fontSize then

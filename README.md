@@ -10,7 +10,9 @@
 - deep Edit Mode integration thanks to [LibEditMode](https://github.com/p3lim-wow/LibEditMode/wiki/LibEditMode)
   - additional exhaustive Settings menu integration
 - support for both raid-style and classic party frames
-  - no third-party party-frame addons support at this time until the dust settles
+- supported third-party unit frame addons:
+  - [Danders Frames](https://www.curseforge.com/wow/addons/danders-frames)
+  - more coming when the dust settles
 - while it lasts: integration for Plater scripts indicating important spells (**becomes obsolete with Midnight Pre-Patch**)
 - blizzlike look - built on top of the Cooldown Manager design
 - customization options are heavily inspired by what's available in WeakAuras - that's where the aura lived before, so resurrecting most of that functionality only makes sense
@@ -35,7 +37,7 @@
     - as well as all available third party sounds through `LibSharedMedia`
   - sound channel selection
   - option to selectively play sound based on content type you're in
-  - show duration
+  - show duration & fraction of seconds
   - font size
   - show border
   - opacity
@@ -56,7 +58,7 @@
   - glowing important spells
   - 5 glow types
   - include self additionally in party (when using Raid-Style Party Frames)
-  - show duration
+  - show duration & fraction of seconds
   - font size
   - show border
   - opacity
@@ -128,6 +130,12 @@ It's no longer possible to determine when a cast started unless you observed it 
 - you then toggle nameplates on at 1.3s
 - we lost all info about when the cast started, so for all the addon is concerned, it started just now and it'll show a remaining time of 5 seconds
 - 3.7s later, the cast finishes - the addon will correctly hide the icon(s) now
+
+### Glowing Affected Players Frame
+
+**Currently not possible due to API restrictions.**
+
+While it's possible to apply a glow to the affected player frame, the underlying data for it is secret, so the next cast that happens to target the same player **while the first is still pending** is forced to remove the glow.
 
 ## Sounds
 
