@@ -77,18 +77,6 @@ function TargetedSpellsMixin:OnUpdate(elapsed)
 	-- noop until it gets overridden by the above
 end
 
-function TargetedSpellsMixin:OnKindChanged(kind)
-	local tableRef = kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
-		or TargetedSpellsSaved.Settings.Party
-
-	self:SetSize(tableRef.Width, tableRef.Height)
-	self:SetFontSize(tableRef.FontSize)
-	self:HideGlow()
-	self:SetShowBorder(tableRef.ShowBorder)
-	self:SetAlpha(tableRef.Opacity)
-	self:SetShowDuration(tableRef.ShowDuration, tableRef.ShowDurationFractions)
-end
-
 function TargetedSpellsMixin:SetShowDuration(showDuration, showFractions)
 	self.Cooldown:SetHideCountdownNumbers(not showDuration or showFractions)
 	self.DurationText:SetShown(showDuration and showFractions)
@@ -324,9 +312,9 @@ do
 	local platerProfileImportantCastsCache = Private.IsMidnight and nil or {}
 	local cacheInitialized = false
 
-	function TargetedSpellsMixin:IsSpellImportant(override)
-		if override ~= nil then
-			return override
+	function TargetedSpellsMixin:IsSpellImportant(boolOverride)
+		if boolOverride ~= nil then
+			return boolOverride
 		end
 
 		if self.spellId == nil then
@@ -399,10 +387,6 @@ function TargetedSpellsMixin:ClearStartTime()
 	self.startTime = nil
 end
 
-function TargetedSpellsMixin:ClearSpellId()
-	self.spellId = nil
-end
-
 function TargetedSpellsMixin:Reposition(point, relativeTo, relativePoint, offsetX, offsetY)
 	self:ClearAllPoints()
 	self:SetPoint(point, relativeTo, relativePoint, offsetX, offsetY)
@@ -414,10 +398,21 @@ function TargetedSpellsMixin:SetUnit(unit)
 end
 
 function TargetedSpellsMixin:SetKind(kind)
-	if self.kind ~= kind then
-		self.kind = kind
-		self:OnKindChanged(kind)
+	if self.kind == kind then
+		return
 	end
+
+	self.kind = kind
+
+	local tableRef = kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
+		or TargetedSpellsSaved.Settings.Party
+
+	self:SetSize(tableRef.Width, tableRef.Height)
+	self:SetFontSize(tableRef.FontSize)
+	self:HideGlow()
+	self:SetShowBorder(tableRef.ShowBorder)
+	self:SetAlpha(tableRef.Opacity)
+	self:SetShowDuration(tableRef.ShowDuration, tableRef.ShowDurationFractions)
 end
 
 function TargetedSpellsMixin:GetKind()
@@ -448,7 +443,7 @@ end
 
 function TargetedSpellsMixin:Reset()
 	self:ClearStartTime()
-	self:ClearSpellId()
+	self.spellId = nil
 	self.Cooldown:Clear()
 	self.duration = nil
 	self:ClearAllPoints()

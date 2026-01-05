@@ -76,59 +76,71 @@ Private.Settings.Keys = {
 
 function Private.Settings.GetSettingsDisplayOrder(kind)
 	if kind == Private.Enum.FrameKind.Self then
-		return {
+		local settings = {
 			Private.Settings.Keys.Self.Enabled,
 			Private.Settings.Keys.Self.LoadConditionContentType,
 			Private.Settings.Keys.Self.LoadConditionRole,
-			Private.Settings.Keys.Self.TargetingFilterApi,
-			Private.Settings.Keys.Self.Width,
-			Private.Settings.Keys.Self.Height,
-			Private.Settings.Keys.Self.Gap,
-			Private.Settings.Keys.Self.Direction,
-			Private.Settings.Keys.Self.SortOrder,
-			Private.Settings.Keys.Self.Grow,
-			Private.Settings.Keys.Self.GlowImportant,
-			Private.Settings.Keys.Self.GlowType,
-			Private.Settings.Keys.Self.PlaySound,
-			Private.Settings.Keys.Self.Sound,
-			Private.Settings.Keys.Self.SoundChannel,
-			Private.Settings.Keys.Self.PlayTTS,
-			Private.Settings.Keys.Self.TTSVoice,
-			Private.Settings.Keys.Self.LoadConditionSoundContentType,
-			Private.Settings.Keys.Self.ShowDuration,
-			Private.Settings.Keys.Self.ShowDurationFractions,
-			Private.Settings.Keys.Self.FontSize,
-			Private.Settings.Keys.Self.ShowBorder,
-			Private.Settings.Keys.Self.IndicateInterrupts,
-			Private.Settings.Keys.Self.Opacity,
 		}
+
+		if Private.IsMidnight then
+			table.insert(settings, Private.Settings.Keys.Self.TargetingFilterApi)
+		end
+
+		table.insert(settings, Private.Settings.Keys.Self.Width)
+		table.insert(settings, Private.Settings.Keys.Self.Height)
+		table.insert(settings, Private.Settings.Keys.Self.Gap)
+		table.insert(settings, Private.Settings.Keys.Self.Direction)
+		table.insert(settings, Private.Settings.Keys.Self.SortOrder)
+		table.insert(settings, Private.Settings.Keys.Self.Grow)
+		table.insert(settings, Private.Settings.Keys.Self.GlowImportant)
+		table.insert(settings, Private.Settings.Keys.Self.GlowType)
+		table.insert(settings, Private.Settings.Keys.Self.PlaySound)
+		table.insert(settings, Private.Settings.Keys.Self.Sound)
+		table.insert(settings, Private.Settings.Keys.Self.SoundChannel)
+		table.insert(settings, Private.Settings.Keys.Self.PlayTTS)
+		table.insert(settings, Private.Settings.Keys.Self.TTSVoice)
+		table.insert(settings, Private.Settings.Keys.Self.LoadConditionSoundContentType)
+		table.insert(settings, Private.Settings.Keys.Self.ShowDuration)
+		table.insert(settings, Private.Settings.Keys.Self.ShowDurationFractions)
+		table.insert(settings, Private.Settings.Keys.Self.FontSize)
+		table.insert(settings, Private.Settings.Keys.Self.ShowBorder)
+		table.insert(settings, Private.Settings.Keys.Self.IndicateInterrupts)
+		table.insert(settings, Private.Settings.Keys.Self.Opacity)
+
+		return settings
 	end
 
-	return {
+	local settings = {
 		Private.Settings.Keys.Party.Enabled,
 		Private.Settings.Keys.Party.LoadConditionContentType,
 		Private.Settings.Keys.Party.LoadConditionRole,
-		Private.Settings.Keys.Party.TargetingFilterApi,
-		Private.Settings.Keys.Party.IncludeSelfInParty,
-		Private.Settings.Keys.Party.Width,
-		Private.Settings.Keys.Party.Height,
-		Private.Settings.Keys.Party.Gap,
-		Private.Settings.Keys.Party.Direction,
-		Private.Settings.Keys.Party.SourceAnchor,
-		Private.Settings.Keys.Party.TargetAnchor,
-		Private.Settings.Keys.Party.Grow,
-		Private.Settings.Keys.Party.OffsetX,
-		Private.Settings.Keys.Party.OffsetY,
-		Private.Settings.Keys.Party.SortOrder,
-		Private.Settings.Keys.Party.GlowImportant,
-		Private.Settings.Keys.Party.GlowType,
-		Private.Settings.Keys.Party.ShowDuration,
-		Private.Settings.Keys.Party.ShowDurationFractions,
-		Private.Settings.Keys.Party.FontSize,
-		Private.Settings.Keys.Party.ShowBorder,
-		Private.Settings.Keys.Party.IndicateInterrupts,
-		Private.Settings.Keys.Party.Opacity,
 	}
+
+	if Private.IsMidnight then
+		table.insert(settings, Private.Settings.Keys.Party.TargetingFilterApi)
+	end
+
+	table.insert(settings, Private.Settings.Keys.Party.IncludeSelfInParty)
+	table.insert(settings, Private.Settings.Keys.Party.Width)
+	table.insert(settings, Private.Settings.Keys.Party.Height)
+	table.insert(settings, Private.Settings.Keys.Party.Gap)
+	table.insert(settings, Private.Settings.Keys.Party.Direction)
+	table.insert(settings, Private.Settings.Keys.Party.SourceAnchor)
+	table.insert(settings, Private.Settings.Keys.Party.TargetAnchor)
+	table.insert(settings, Private.Settings.Keys.Party.Grow)
+	table.insert(settings, Private.Settings.Keys.Party.OffsetX)
+	table.insert(settings, Private.Settings.Keys.Party.OffsetY)
+	table.insert(settings, Private.Settings.Keys.Party.SortOrder)
+	table.insert(settings, Private.Settings.Keys.Party.GlowImportant)
+	table.insert(settings, Private.Settings.Keys.Party.GlowType)
+	table.insert(settings, Private.Settings.Keys.Party.ShowDuration)
+	table.insert(settings, Private.Settings.Keys.Party.ShowDurationFractions)
+	table.insert(settings, Private.Settings.Keys.Party.FontSize)
+	table.insert(settings, Private.Settings.Keys.Party.ShowBorder)
+	table.insert(settings, Private.Settings.Keys.Party.IndicateInterrupts)
+	table.insert(settings, Private.Settings.Keys.Party.Opacity)
+
+	return settings
 end
 
 function Private.Settings.GetDefaultEditModeFramePosition()
@@ -341,7 +353,7 @@ do
 end
 
 -- this follows the structure of `CooldownViewerSoundData` in `Blizzard_CooldownViewer/CooldownViewerSoundAlertData.lua` for ease of function reuse
-function Private.Settings.GetCustomSoundGroups(groupThreshold)
+function Private.Settings.GetCustomSoundGroups(groupSizeThreshold)
 	---@type SoundInfo
 	local soundInfo = {
 		data = {},
@@ -394,7 +406,7 @@ function Private.Settings.GetCustomSoundGroups(groupThreshold)
 	end
 
 	for groupName, sounds in pairs(groupedSounds) do
-		local needsSplitting = groupThreshold ~= nil and #sounds > groupThreshold or false
+		local needsSplitting = groupSizeThreshold ~= nil and #sounds > groupSizeThreshold or false
 		local groupCount = 0
 		local isCustomGroup = groupName == Private.L.Settings.SoundCategoryCustom
 		local tableKey = groupName
@@ -414,8 +426,8 @@ function Private.Settings.GetCustomSoundGroups(groupThreshold)
 		local targetTable = soundInfo.data[tableKey]
 
 		for _, sound in pairs(sounds) do
-			if groupThreshold ~= nil then
-				if #targetTable >= groupThreshold then
+			if groupSizeThreshold ~= nil then
+				if #targetTable >= groupSizeThreshold then
 					groupCount = groupCount + 1
 
 					tableKey = isCustomGroup
@@ -514,54 +526,51 @@ table.insert(Private.LoginFnQueue, function()
 	---@param defaults SavedVariablesSettingsSelf|SavedVariablesSettingsParty
 	---@return SettingConfig
 	local function CreateSetting(key, defaults)
-		if Private.IsMidnight then
-			if
-				key == Private.Settings.Keys.Self.TargetingFilterApi
-				or key == Private.Settings.Keys.Party.TargetingFilterApi
-			then
-				local tableRef = key == Private.Settings.Keys.Self.TargetingFilterApi
-						and TargetedSpellsSaved.Settings.Self
-					or TargetedSpellsSaved.Settings.Party
+		if
+			key == Private.Settings.Keys.Self.TargetingFilterApi
+			or key == Private.Settings.Keys.Party.TargetingFilterApi
+		then
+			local tableRef = key == Private.Settings.Keys.Self.TargetingFilterApi and TargetedSpellsSaved.Settings.Self
+				or TargetedSpellsSaved.Settings.Party
 
-				local function GetValue()
-					return tableRef.TargetingFilterApi
-				end
-
-				local function SetValue(value)
-					tableRef.TargetingFilterApi = value
-
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-				end
-
-				local function GetOptions()
-					local container = Settings.CreateControlTextContainer()
-
-					for label, id in pairs(Private.Enum.TargetingFilterApi) do
-						local translated = L.Settings.TargetingFilterApiLabels[id]
-						container:Add(id, translated)
-					end
-
-					return container:GetData()
-				end
-
-				local setting = Settings.RegisterProxySetting(
-					category,
-					key,
-					Settings.VarType.Number,
-					L.Settings.TargetingFilterApiLabel,
-					defaults.TargetingFilterApi,
-					GetValue,
-					SetValue
-				)
-				local initializer =
-					Settings.CreateDropdown(category, setting, GetOptions, L.Settings.TargetingFilterApiTooltip)
-
-				return {
-					initializer = initializer,
-					hideSteppers = false,
-					IsSectionEnabled = nil,
-				}
+			local function GetValue()
+				return tableRef.TargetingFilterApi
 			end
+
+			local function SetValue(value)
+				tableRef.TargetingFilterApi = value
+
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+
+			local function GetOptions()
+				local container = Settings.CreateControlTextContainer()
+
+				for label, id in pairs(Private.Enum.TargetingFilterApi) do
+					local translated = L.Settings.TargetingFilterApiLabels[id]
+					container:Add(id, translated)
+				end
+
+				return container:GetData()
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				L.Settings.TargetingFilterApiLabel,
+				defaults.TargetingFilterApi,
+				GetValue,
+				SetValue
+			)
+			local initializer =
+				Settings.CreateDropdown(category, setting, GetOptions, L.Settings.TargetingFilterApiTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
 		end
 
 		if

@@ -32,16 +32,17 @@
 ---@field step number
 
 ---@class TargetedSpellsSettings
----@field CreateSettings fun()
 ---@field Keys table<'Self' | 'Party', table<string, string>>
+---@field GetSettingsDisplayOrder fun(kind: FrameKind): string[]
+---@field GetDefaultEditModeFramePosition fun(): FramePosition
+---@field GetSliderSettingsForOption fun(key: string): SliderSettings
 ---@field GetSelfDefaultSettings fun(): SavedVariablesSettingsSelf
 ---@field GetPartyDefaultSettings fun(): SavedVariablesSettingsParty
----@field GetSliderSettingsForOption fun(key: string): SliderSettings
----@field GetDefaultEditModeFramePosition fun(): SelfFramePosition
----@field GetCustomSoundGroups fun(groupThreshold: number?):  SoundInfo
 ---@field GetCooldownViewerSounds fun(): SoundInfo
+---@field GetCustomSoundGroups fun(groupSizeThreshold: number?):  SoundInfo
 ---@field SampleTTSVoice fun(voiceId: number)
 ---@field IsContentTypeAvailableForKind fun(kind: FrameKind, contentTypeId: ContentType): boolean
+---@field SoundIsFile fun(sound: string|number): boolean
 
 ---@class SoundInfo
 ---@field soundCategoryKeyToLabel table<string, string>
@@ -55,7 +56,7 @@
 ---@field Self SavedVariablesSettingsSelf
 ---@field Party SavedVariablesSettingsParty
 
----@class SelfFramePosition
+---@class FramePosition
 ---@field point Anchor
 ---@field x number
 ---@field y number
@@ -77,7 +78,7 @@
 ---@field ShowDuration boolean
 ---@field ShowDurationFractions boolean
 ---@field FontSize number
----@field Position SelfFramePosition
+---@field Position FramePosition
 ---@field ShowBorder boolean
 ---@field GlowImportant boolean
 ---@field GlowType GlowType
@@ -114,11 +115,6 @@
 ---@class TargetedSpellsSelfPreviewFrame: Frame
 ---@field GetChildren fun(self: TargetedSpellsSelfPreviewFrame): TargetedSpellsMixin
 
----@class ExtendedCooldownTypes : Cooldown
----@field SetMinimumCountdownDuration fun(self: ExtendedCooldownTypes, minimumDuration: number)
----@field GetCountdownFontString fun(self: ExtendedCooldownTypes): FontString
----@field SetCooldownFromDurationObject fun(self: ExtendedCooldownTypes, durationObject: DurationObjectDummy, clearIfZero?: boolean)
-
 ---@class Star4Glow : Frame
 ---@field Inner Texture
 ---@field Outer Texture
@@ -142,35 +138,105 @@
 ---@field Border Frame | BackdropTemplate
 ---@field InterruptIcon Texture
 ---@field OnLoad fun(self: TargetedSpellsMixin)
----@field OnUpdate fun(self: TargetedSpellsMixin, elapsed: number)|nil
----@field SetKind fun(self: TargetedSpellsMixin, kind: FrameKind)
----@field GetKind fun(self: TargetedSpellsMixin): FrameKind?
----@field OnKindChanged fun(self: TargetedSpellsMixin, kind: FrameKind)
----@field SetUnit fun(self: TargetedSpellsMixin, unit: string)
----@field GetUnit fun(self: TargetedSpellsMixin): string
----@field ClearStartTime fun(self: TargetedSpellsMixin)
----@field GetStartTime fun(self: TargetedSpellsMixin): number
----@field SetStartTime fun(self: TargetedSpellsMixin, startTime: number?)
----@field SetSpellId fun(self: TargetedSpellsMixin, spellId: number?)
----@field IsSpellId fun(self: TargetedSpellsMixin, spellId: number): boolean
----@field IsSpellImportant fun(self: TargetedSpellsMixin, boolOverride: boolean?): boolean
+---@field SetInterrupted fun(self: TargetedSpellsMixin)
+---@field CanBeHidden fun(self: TargetedSpellsMixin): boolean
+---@field OnUpdate fun(self: TargetedSpellsMixin, elapsed: number)
+---@field SetShowDuration fun(self: TargetedSpellsMixin, showDuration: boolean, showFractions: boolean)
+---@field SetShowBorder fun(self: TargetedSpellsMixin, bool: boolean)
 ---@field OnSizeChanged fun(self: TargetedSpellsMixin, width: number, height: number)
 ---@field OnSettingChanged fun(self: TargetedSpellsMixin, key: string, value: number|string)
----@field ShouldBeShown fun(self: TargetedSpellsMixin): boolean
----@field Reposition fun(self: TargetedSpellsMixin, point: string, relativeTo: Frame, relativePoint: string, offsetX: number, offsetY: number)
----@field SetFontSize fun(self: TargetedSpellsMixin, fontSize: number)
----@field PostCreate fun(self: TargetedSpellsMixin, unit: string, kind: FrameKind, castingUnit: string?)
+---@field SetDuration fun(self: TargetedSpellsMixin, duration: DurationObjectDummy|number)
+---@field SetStartTime fun(self: TargetedSpellsMixin, startTime: number?)
+---@field GetStartTime fun(self: TargetedSpellsMixin): number?
 ---@field ShowGlow fun(self: TargetedSpellsMixin, isImportant: boolean) -- secret bool, but passed explicitly in EditMode code
 ---@field HideGlow fun(self: TargetedSpellsMixin)
+---@field IsSpellImportant fun(self: TargetedSpellsMixin, boolOverride: boolean?): boolean
+---@field SetSpellId fun(self: TargetedSpellsMixin, spellId: number?)
+---@field IsSpellId fun(self: TargetedSpellsMixin, spellId: number): boolean
+---@field ShouldBeShown fun(self: TargetedSpellsMixin): boolean
+---@field ClearStartTime fun(self: TargetedSpellsMixin)
+---@field Reposition fun(self: TargetedSpellsMixin, point: string, relativeTo: Frame, relativePoint: string, offsetX: number, offsetY: number)
+---@field SetUnit fun(self: TargetedSpellsMixin, unit: string)
+---@field SetKind fun(self: TargetedSpellsMixin, kind: FrameKind)
+---@field GetKind fun(self: TargetedSpellsMixin): FrameKind?
+---@field GetUnit fun(self: TargetedSpellsMixin): string
+---@field PostCreate fun(self: TargetedSpellsMixin, unit: string, kind: FrameKind, castingUnit: string?)
+---@field Reset fun(self: TargetedSpellsMixin)
+---@field SetFontSize fun(self: TargetedSpellsMixin, fontSize: number)
 ---@field AttemptToPlaySound fun(self: TargetedSpellsMixin, contentType: ContentType, unit: string)
 ---@field AttemptToPlayTTS fun(self: TargetedSpellsMixin, contentType: ContentType, unit: string)
----@field SetDuration fun(self: TargetedSpellsMixin, duration: DurationObjectDummy|number)
----@field SetShowBorder fun(self: TargetedSpellsMixin, bool: boolean)
----@field SetShowDuration fun(self: TargetedSpellsMixin, showDuration: boolean, showFractions: boolean)
----@field wasInterrupted boolean
----@field doNotHideBefore number?
----@field CanBeHidden fun(self: TargetedSpellsMixin): boolean
----@field SetInterrupted fun(self: TargetedSpellsMixin)
+
+---@class TargetedSpellsEditModeMixin : Frame
+---@field editModeFrame Frame
+---@field demoPlaying boolean
+---@field framePool FramePool
+---@field frames table<number, TargetedSpellsMixin[]> | TargetedSpellsMixin[]
+---@field demoTimers { tickers: table<number, FunctionContainer>, timers: table<number, FunctionContainer> }
+---@field buildingFrames true|nil
+---@field Init fun(self: TargetedSpellsEditModeMixin, displayName: string, frameKind: FrameKind)
+---@field OnSettingsChanged fun(self: TargetedSpellsEditModeMixin, key: string, value: number|string)
+---@field CreateSetting fun(self: TargetedSpellsEditModeMixin, key: string, defaults: SavedVariablesSettingsParty|SavedVariablesSettingsSelf): LibEditModeCheckbox | LibEditModeDropdown | LibEditModeSlider
+---@field OnLayoutSettingChanged fun(self: TargetedSpellsEditModeMixin, key: string, value: number|string)
+---@field AppendSettings fun(self: TargetedSpellsEditModeMixin)
+---@field AcquireFrame fun(self: TargetedSpellsEditModeMixin): TargetedSpellsMixin
+---@field ReleaseFrame fun(self: TargetedSpellsEditModeMixin, frame: TargetedSpellsMixin)
+---@field OnEditModePositionChanged fun(self: TargetedSpellsEditModeMixin, frame: Frame, layoutName: string, point: string, x: number, y: number)
+---@field RepositionPreviewFrames fun(self: TargetedSpellsEditModeMixin)
+---@field LoopFrame fun(self: TargetedSpellsEditModeMixin, frame: TargetedSpellsMixin, index: number)
+---@field StartDemo fun(self: TargetedSpellsEditModeMixin)
+---@field ReleaseAllFrames fun(self: TargetedSpellsEditModeMixin)
+---@field EndDemo fun(self: TargetedSpellsEditModeMixin)
+
+---@class TargetedSpellsSelfEditMode : TargetedSpellsEditModeMixin
+---@field maxFrames number
+---@field frames TargetedSpellsMixin[]
+---@field Init fun(self: TargetedSpellsSelfEditMode)
+---@field ResizeEditModeFrame fun(self: TargetedSpellsSelfEditMode)
+---@field ReleaseAllFrames fun(self: TargetedSpellsEditModeMixin)
+---@field AppendSettings fun(self: TargetedSpellsEditModeMixin)
+---@field RestoreEditModePosition fun(self: TargetedSpellsSelfEditMode)
+---@field OnEditModePositionChanged fun(self: TargetedSpellsEditModeMixin, frame: Frame, layoutName: string, point: string, x: number, y: number)
+---@field RepositionPreviewFrames fun(self: TargetedSpellsEditModeMixin)
+---@field StartDemo fun(self: TargetedSpellsSelfEditMode)
+---@field OnLayoutSettingChanged fun(self: TargetedSpellsEditModeMixin, key: string, value: number|string)
+
+---@class TargetedSpellsPartyEditMode : TargetedSpellsEditModeMixin
+---@field maxUnitCount number
+---@field useRaidStylePartyFrames boolean
+---@field amountOfPreviewFramesPerUnit number
+---@field frames table<number, TargetedSpellsMixin[]>
+---@field Init fun(self: TargetedSpellsPartyEditMode)
+---@field AppendSettings fun(self: TargetedSpellsEditModeMixin)
+---@field RepositionPreviewFrames fun(self: TargetedSpellsEditModeMixin)
+---@field OnEditModePositionChanged fun(self: TargetedSpellsEditModeMixin, frame: Frame, layoutName: string, point: string, x: number, y: number)
+---@field OnLayoutSettingChanged fun(self: TargetedSpellsEditModeMixin, key: string, value: number|string)
+---@field RepositionPreviewFrames fun(self: TargetedSpellsEditModeMixin)
+---@field StartDemo fun(self: TargetedSpellsEditModeMixin)
+---@field ReleaseAllFrames fun(self: TargetedSpellsEditModeMixin)
+
+---@class TargetedSpellsDriver
+---@field framePool FramePool
+---@field listenerFrame Frame
+---@field role Role
+---@field contentType ContentType
+---@field sawPlayerLogin boolean
+---@field frames table<string, TargetedSpellsMixin[]>
+---@field SetupFrame fun(self: TargetedSpellsDriver, isBoot: boolean)
+---@field AcquireFrames fun(self: TargetedSpellsDriver, castingUnit: string): TargetedSpellsMixin[]
+---@field RepositionFrames fun(self: TargetedSpellsDriver)
+---@field CleanUpUnit fun(self: TargetedSpellsMixin, unit: string, exceptSpellId?: number): boolean
+---@field LoadConditionsProhibitExecution fun(self: TargetedSpellsDriver, kind: FrameKind): boolean
+---@field UnitIsIrrelevant fun(self: TargetedSpellsDriver, unit: string, skipTargetCheck?: boolean): boolean
+---@field OnFrameEvent fun(self: TargetedSpellsDriver, listenerFrame: Frame, event: WowEvent, ...)
+---@field OnSettingsChanged fun(self: TargetedSpellsDriver, key: string, value: number|string|table)
+---@field MaybeApplyCombatAudioAlertOverride fun(self: TargetedSpellsMixin)
+
+----- type patching / completion
+
+---@class ExtendedCooldownTypes : Cooldown
+---@field SetMinimumCountdownDuration fun(self: ExtendedCooldownTypes, minimumDuration: number)
+---@field GetCountdownFontString fun(self: ExtendedCooldownTypes): FontString
+---@field SetCooldownFromDurationObject fun(self: ExtendedCooldownTypes, durationObject: DurationObjectDummy, clearIfZero?: boolean)
 
 ---@class IconDataProviderMixin
 ---@field GetRandomIcon fun(self: IconDataProviderMixin): number
@@ -216,58 +282,6 @@
 
 ---@class Frame
 ---@field SetAlphaFromBoolean fun(self: Frame, value: boolean)
-
----@class TargetedSpellsEditModeMixin : Frame
----@field Init fun(self: TargetedSpellsEditModeMixin, displayName: string, frameKind: FrameKind)
----@field editModeFrame Frame
----@field demoPlaying boolean
----@field framePool FramePool
----@field frames table<number, TargetedSpellsMixin[]> | TargetedSpellsMixin[]
----@field demoTimers { tickers: table<number, FunctionContainer>, timers: table<number, FunctionContainer> }
----@field StartDemo fun(self: TargetedSpellsEditModeMixin)
----@field EndDemo fun(self: TargetedSpellsEditModeMixin, forceDisable: boolean?)
----@field OnEditModePositionChanged fun(self: TargetedSpellsEditModeMixin, frame: Frame, layoutName: string, point: string, x: number, y: number)
----@field RepositionPreviewFrames fun(self: TargetedSpellsEditModeMixin)
----@field SortFrames fun(self: TargetedSpellsEditModeMixin, frames: TargetedSpellsMixin[], sortOrder: SortOrder)
----@field buildingFrames true|nil
----@field CreateSetting fun(self: TargetedSpellsEditModeMixin, key: string, defaults: SavedVariablesSettingsParty|SavedVariablesSettingsSelf): LibEditModeCheckbox | LibEditModeDropdown | LibEditModeSlider
----@field AcquireFrame fun(self: TargetedSpellsEditModeMixin): TargetedSpellsMixin
----@field LoopFrame fun(self: TargetedSpellsEditModeMixin, frame: TargetedSpellsMixin, index: number)
----@field ReleaseFrame fun(self: TargetedSpellsEditModeMixin, frame: TargetedSpellsMixin)
----@field OnSettingsChanged fun(self: TargetedSpellsEditModeMixin, key: string, value: number|string)
----@field ReleaseAllFrames fun(self: TargetedSpellsEditModeMixin)
-
----@class TargetedSpellsSelfEditMode : TargetedSpellsEditModeMixin
----@field Init fun(self: TargetedSpellsSelfEditMode)
----@field maxFrames number
----@field frames TargetedSpellsMixin[]
----@field ResizeEditModeFrame fun(self: TargetedSpellsSelfEditMode)
----@field StartDemo fun(self: TargetedSpellsSelfEditMode)
-
----@class TargetedSpellsPartyEditMode : TargetedSpellsEditModeMixin
----@field Init fun(self: TargetedSpellsPartyEditMode)
----@field maxUnitCount number
----@field useRaidStylePartyFrames boolean
----@field amountOfPreviewFramesPerUnit number
----@field frames table<number, TargetedSpellsMixin[]>
----@field RepositionEditModeFrame fun(self: TargetedSpellsPartyEditMode)
----@field StartDemo fun(self: TargetedSpellsPartyEditMode)
-
----@class TargetedSpellsDriver
----@field framePool FramePool
----@field listenerFrame Frame
----@field role Role
----@field contentType ContentType
----@field sawPlayerLogin boolean
----@field frames table<string, TargetedSpellsMixin[]>
----@field OnSettingsChanged fun(self: TargetedSpellsDriver, key: string, value: number|string|table)
----@field OnFrameEvent fun(self: TargetedSpellsDriver, listenerFrame: Frame, event: WowEvent, ...)
----@field SetupListenerFrame fun(self: TargetedSpellsDriver, isBoot: boolean)
----@field AcquireFrames fun(self: TargetedSpellsDriver, castingUnit: string): TargetedSpellsMixin[]
----@field LoadConditionsProhibitExecution fun(self: TargetedSpellsDriver, kind: FrameKind): boolean
----@field CleanUpUnit fun(self: TargetedSpellsMixin, unit: string, exceptSpellId?: number): boolean
----@field MaybeApplyCombatAudioAlertOverride fun(self: TargetedSpellsMixin)
----@field UnitIsIrrelevant fun(self: TargetedSpellsDriver, unit: string, skipTargetCheck?: boolean): boolean
 
 ---@return function?
 local function GenerateClosureInternal(generatorArray, f, ...)
@@ -392,8 +406,8 @@ GAME_LOCALE = ""
 ---@class DurationObjectDummy
 ---@field Assign fun(self: DurationObjectDummy, other: DurationObjectDummy)
 ---@field copy fun(self: DurationObjectDummy): DurationObjectDummy
----@field EvaluateElapsedPercent fun(self: DurationObjectDummy, curve: Curve, modifier: number?): number
----@field EvaluateRemainingPercent fun(self: DurationObjectDummy, curve: Curve, modifier: number?): number
+---@field EvaluateElapsedPercent fun(self: DurationObjectDummy, curve: CurveObjectDummy, modifier: number?): number
+---@field EvaluateRemainingPercent fun(self: DurationObjectDummy, curve: CurveObjectDummy, modifier: number?): number
 ---@field GetElapsedDuration fun(self: DurationObjectDummy, modifier: number?): number
 ---@field GetElapsedPercent fun(self: DurationObjectDummy, modifier: number?): number
 ---@field GetEndTime fun(self: DurationObjectDummy, modifier: number?): number
@@ -446,3 +460,6 @@ DandersFrames = nil
 
 ---@type Frame?
 DandersPartyGroupContainer = nil
+
+---@type table<string, CustomSound[]>
+CooldownViewerSoundData = {}
