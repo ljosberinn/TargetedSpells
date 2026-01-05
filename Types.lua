@@ -85,6 +85,7 @@
 ---@field PlayTTS boolean
 ---@field TTSVoice number
 ---@field IndicateInterrupts boolean
+---@field TargetingFilterApi TargetingFilterApi
 
 ---@class SavedVariablesSettingsParty
 ---@field Enabled boolean
@@ -108,6 +109,7 @@
 ---@field GlowType GlowType
 ---@field Opacity number
 ---@field IndicateInterrupts boolean
+---@field TargetingFilterApi TargetingFilterApi
 
 ---@class TargetedSpellsSelfPreviewFrame: Frame
 ---@field GetChildren fun(self: TargetedSpellsSelfPreviewFrame): TargetedSpellsMixin

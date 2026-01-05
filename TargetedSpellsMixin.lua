@@ -433,9 +433,16 @@ function TargetedSpellsMixin:PostCreate(unit, kind, castingUnit)
 	self:SetKind(kind)
 
 	if castingUnit ~= nil and Private.IsMidnight then
-		-- using UnitIsSpellTarget(castingUnit, unit) works and is technically more accurate
-		-- but it omits spells that - while the enemy is targeting something - doesn't affect the target, e.g. aoe enrages or party-wide damage
-		self:SetAlphaFromBoolean(UnitIsUnit(string.format("%starget", castingUnit), unit))
+		local tableRef = kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
+			or TargetedSpellsSaved.Settings.Party
+
+		if tableRef.TargetingFilterApi == Private.Enum.TargetingFilterApi.UnitIsSpellTarget then
+			self:SetAlphaFromBoolean(UnitIsSpellTarget(castingUnit, unit))
+		else
+			-- using UnitIsSpellTarget(castingUnit, unit) works and is technically more accurate
+			-- but it omits spells that - while the enemy is targeting something - doesn't affect the target, e.g. aoe enrages or party-wide damage
+			self:SetAlphaFromBoolean(UnitIsUnit(string.format("%starget", castingUnit), unit))
+		end
 	end
 end
 

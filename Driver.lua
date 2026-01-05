@@ -255,11 +255,12 @@ function TargetedSpellsDriver:CleanUpUnit(unit, exceptSpellId)
 	local cleanedSomethingUp = false
 	local cleanedEverythingUp = true
 
-	for i, frame in ipairs(frames) do
+	for i, frame in pairs(frames) do
 		if frame:CanBeHidden() and (exceptSpellId == nil or not frame:IsSpellId(exceptSpellId)) then
 			frame:Reset()
 			self.framePool:Release(frame)
 			cleanedSomethingUp = true
+			frames[i] = nil
 		else
 			cleanedEverythingUp = false
 		end
@@ -780,15 +781,20 @@ function TargetedSpellsDriver:OnSettingsChanged(key, value)
 		end
 
 		if value then
-			C_CVar.SetCVar("CAAEnabled", 1)
-			C_CVar.SetCVar("CAASayCombatStart", 0)
-			C_CVar.SetCVar("CAASayCombatEnd", 0)
-			C_CVar.SetCVar("CAAVoice", Private.Utils.FindAppropriateTTSVoiceId())
-			C_CVar.SetCVar("CAASayTargetName", 0)
-			C_CVar.SetCVar("CAATargetHealthPercent", 0)
-			C_CombatAudioAlert.SetSpecSetting(Enum.CombatAudioAlertSpecSetting.SayIfTargeted, 1)
+			local state = C_CombatAudioAlert.GetSpecSetting(Enum.CombatAudioAlertSpecSetting.SayIfTargeted)
 
-			print(Private.L.Functionality.CAAEnabledWarning)
+			if state == 0 then
+				C_CVar.SetCVar("CAAEnabled", 1)
+				C_CVar.SetCVar("CAASayCombatStart", 0)
+				C_CVar.SetCVar("CAASayCombatEnd", 0)
+				C_CVar.SetCVar("CAAVoice", Private.Utils.FindAppropriateTTSVoiceId())
+				C_CVar.SetCVar("CAASayTargetName", 0)
+				C_CVar.SetCVar("CAATargetHealthPercent", 0)
+
+				C_CombatAudioAlert.SetSpecSetting(Enum.CombatAudioAlertSpecSetting.SayIfTargeted, 1)
+
+				print(Private.L.Functionality.CAAEnabledWarning)
+			end
 		else
 			-- C_CVar.SetCVar("CAAEnabled", 0)
 			-- print(Private.L.Functionality.CAADisabledWarning)
@@ -798,10 +804,6 @@ end
 
 function TargetedSpellsDriver:MaybeApplyCombatAudioAlertOverride()
 	if not Private.IsMidnight then
-		return
-	end
-
-	if not TargetedSpellsSaved.Settings.Self.PlaySound and not TargetedSpellsSaved.Settings.Self.PlayTTS then
 		return
 	end
 
@@ -824,6 +826,14 @@ function TargetedSpellsDriver:MaybeApplyCombatAudioAlertOverride()
 	end
 
 	function CombatAudioAlertManager:GetUnitFormattedTargetingString(unit)
+		if not TargetedSpellsSaved.Settings.Self.Enabled then
+			return ""
+		end
+
+		if not TargetedSpellsSaved.Settings.Self.PlaySound and not TargetedSpellsSaved.Settings.Self.PlayTTS then
+			return ""
+		end
+
 		local spellId = select(9, UnitCastingInfo(unit)) or select(8, UnitChannelInfo(unit))
 
 		if spellId == nil then

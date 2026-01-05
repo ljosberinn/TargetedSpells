@@ -7,6 +7,11 @@
 - added support to use DandersFrames if present
 - added a new setting that briefly highlights interrupted spells - only works for non-channels
 - added a disclaimer to the settings that the edit mode should be the primary way to change options
+- no longer prints in chat about CAA when resetting the Self settings to default
+- the addon will now continue to mute the CAA - Say If Targeted setting while it is active if the Sound settings for Self (or the entire module) are disabled
+  - this is not optimal, still figuring out how to deal with these circumstances
+- changed underlying API of target indication to `UnitIsSpellTarget`
+- added a new setting to swap between the two APIs
 
 ## Version 1.0.0-alpha4
 

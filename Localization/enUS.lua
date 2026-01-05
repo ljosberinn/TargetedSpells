@@ -208,3 +208,11 @@ L.Settings.IncludeSelfInPartyLabel = "Include Self In Party"
 L.Settings.IncludeSelfInPartyTooltip = "Only works when using Raid-Style Party Frames."
 
 L.Settings.ClickToOpenSettingsLabel = "Click to open settings"
+
+L.Settings.TargetingFilterApiLabel = "Targeting API"
+L.Settings.TargetingFilterApiTooltip =
+	"Subtle differences between the APIs.\n\nSpell Target: shows the unit that'll get hit by the spell regardless of the target. In some cases, does not show anything. Needs testing!\n\nUnit Target: shows the unit currently targeted by the cast source. Can also show spells that don't exclusively hit the target, such as party-wide AoE."
+L.Settings.TargetingFilterApiLabels = {
+	[Private.Enum.TargetingFilterApi.UnitIsSpellTarget] = "Spell Target",
+	[Private.Enum.TargetingFilterApi.UnitIsUnit] = "Unit Target",
+}

@@ -85,3 +85,9 @@ Private.Enum.GlowType = {
 	ProcGlow = 4,
 	Star4 = 5,
 }
+
+---@enum TargetingFilterApi
+Private.Enum.TargetingFilterApi = {
+	UnitIsSpellTarget = 1,
+	UnitIsUnit = 2,
+}
