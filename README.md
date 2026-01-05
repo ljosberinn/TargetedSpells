@@ -24,47 +24,50 @@
 
 - customization options for:
   - enabled state
-  - frame dimensions
-  - gap between frames
-  - direction
-  - sort order
-  - grow
-  - glowing important spells
-  - 5 glow types
-  - play sound if targeted
-  - exhaustive sound options
-    - using all available sounds of Blizzards Cooldown Manager
-    - as well as all available third party sounds through `LibSharedMedia`
-  - sound channel selection
-  - option to selectively play sound based on content type you're in
-  - show duration & fraction of seconds
+  - load conditions, supporting dungeons, delves, arena, battlegrounds and raids
+  - role-based load conditions: tank, healer, dps (unsurprisingly)
+  - targeting API (12.0+ only)
+  - layouting options
+    - width, height, gap, direction, sort order, grow
+  - glow important spells
+    - 5 kinds of glows
+  - play sound
+    - consumes all cooldown manager sounds (12.0+ only)
+    - `LibSharedMedia` integration
+    - ships two sounds
+    - sound channel selection
+  - play tts
+    - voice selection, automatically picking the most likely based on your game locale
+  - option to selectively play sound/tts based on content type you're in
+  - show duration
+    - option for fraction of seconds
   - font size
   - show border
   - opacity
   - option to selectively toggle this feature based on player role or content type
   - option to briefly highlight interrupted spells - only works for non-channels
+    - this desaturates the frame, puts the cross raid marker on top of it and delays hiding by one second
 
 ### Party
 
 - customization options for:
   - enabled state
-  - frame dimensions
-  - gap between frames
-  - direction
-  - sort order
-  - manual x/y offsets
-  - source & target anchors
-  - grow
-  - sort order
-  - glowing important spells
-  - 5 glow types
-  - include self additionally in party (when using Raid-Style Party Frames)
-  - show duration & fraction of seconds
+  - load conditions, supporting dungeons, delves, arena, battlegrounds and raids
+  - role-based load conditions: tank, healer, dps (unsurprisingly)
+  - targeting API (12.0+ only)
+  - option to include self in party
+  - layouting options
+    - width, height, gap, direction, sort order, grow, source & target anchoring, manual x/y offsets
+  - glow important spells
+    - 5 kinds of glows
+  - show duration
+    - option for fraction of seconds
   - font size
   - show border
   - opacity
   - option to selectively toggle this feature based on player role or content type
   - option to briefly highlight interrupted spells - only works for non-channels
+    - this desaturates the frame, puts the cross raid marker on top of it and delays hiding by one second
 
 ## Known Issues / Limitations
 
