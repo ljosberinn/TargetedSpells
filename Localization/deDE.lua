@@ -16,53 +16,44 @@ L.Settings.EditModeReminder =
 L.EditMode.TargetedSpellsSelfLabel = "Targeted Spells - Spieler"
 L.EditMode.TargetedSpellsPartyLabel = "Targeted Spells - Gruppe"
 
-L.Functionality.CVarWarning = Private.IsMidnight
-		and string.format(
-			"%s\n\nDie Namensplaketteneinstellung '%s' wurde deaktiviert.\n\nOhne funktioniert %s nicht bei Gegnern die außerhalb des Bildschirms anfangen zu wirken.\n\nKlicke '%s' um die Einstellung wieder zu aktivieren.",
-			addonNameWithIcon,
-			UNIT_NAMEPLATES_SHOW_OFFSCREEN,
-			addonName,
-			ENABLE
-		)
-	or nil
+L.Functionality.CVarWarning = string.format(
+	"%s\n\nDie Namensplaketteneinstellung '%s' wurde deaktiviert.\n\nOhne funktioniert %s nicht bei Gegnern die außerhalb des Bildschirms anfangen zu wirken.\n\nKlicke '%s' um die Einstellung wieder zu aktivieren.",
+	addonNameWithIcon,
+	UNIT_NAMEPLATES_SHOW_OFFSCREEN,
+	addonName,
+	ENABLE
+)
 
-L.Functionality.CAAEnabledWarning = Private.IsMidnight
-		and string.format(
-			"%s\n\nDieses AddOn hat automatisch die Einstellungen für '%s' aktiviert und konfiguriert da sie für Ton und Text-zur-Sprache benötigt werden.\n\nDu kannst sie an folgender Stelle finden: %s -> %s -> links %s > %s.\n\nAlternativ, gib folgendes in den Chat ein: /run Settings.OpenToCategory(18)",
-			addonNameWithIcon,
-			CAA_COMBAT_AUDIO_ALERTS_LABEL,
-			KEY_ESCAPE,
-			OPTIONS_MENU,
-			ACCESSIBILITY_LABEL,
-			ACCESSIBILITY_AUDIO_LABEL
-		)
-	or nil
+L.Functionality.CAAEnabledWarning = string.format(
+	"%s\n\nDieses AddOn hat automatisch die Einstellungen für '%s' aktiviert und konfiguriert da sie für Ton und Text-zur-Sprache benötigt werden.\n\nDu kannst sie an folgender Stelle finden: %s -> %s -> links %s > %s.\n\nAlternativ, gib folgendes in den Chat ein: /run Settings.OpenToCategory(18)",
+	addonNameWithIcon,
+	CAA_COMBAT_AUDIO_ALERTS_LABEL,
+	KEY_ESCAPE,
+	OPTIONS_MENU,
+	ACCESSIBILITY_LABEL,
+	ACCESSIBILITY_AUDIO_LABEL
+)
 
--- L.Functionality.CAADisabledWarning = Private.IsMidnight
--- 		and string.format(
--- 			"%s This addon automatically disabled '%s' as you're no longer using neither Sound nor TTS.",
--- 			addonNameWithIcon,
--- 			CAA_COMBAT_AUDIO_ALERTS_LABEL
--- 		)
--- 	or nil
-L.Functionality.CAAManuallyDisabledWarning = Private.IsMidnight
-		and string.format(
-			"%s\n\nDu hast '%s' deaktiviert, aber dieses AddOn benötigt es für die tonbezogenen Funktionen.\n\nBitte schalte die Einstellung durch einen Klick auf %s wieder ein oder passe deine Toneinstellungen für %s an.",
-			addonNameWithIcon,
-			CAA_COMBAT_AUDIO_ALERTS_LABEL,
-			ENABLE,
-			L.EditMode.TargetedSpellsSelfLabel
-		)
-	or nil
-L.Functionality.CAASayIfTargetedDisabledWarning = Private.IsMidnight
-		and string.format(
-			"%s\nDu hast '%s' deaktiviert, aber dieses AddOn benötigt es für die tonbezogenen Funktionen.\n\nBitte schalte die Einstellung durch einen Klick auf %s wieder ein oder passe deine Toneinstellungen für %s an.",
-			addonNameWithIcon,
-			CAA_SAY_IF_TARGETED_LABEL,
-			ENABLE,
-			L.EditMode.TargetedSpellsSelfLabel
-		)
-	or nil
+-- L.Functionality.CAADisabledWarning = string.format(
+-- 	"%s This addon automatically disabled '%s' as you're no longer using neither Sound nor TTS.",
+-- 	addonNameWithIcon,
+-- 	CAA_COMBAT_AUDIO_ALERTS_LABEL
+-- )
+
+L.Functionality.CAAManuallyDisabledWarning = string.format(
+	"%s\n\nDu hast '%s' deaktiviert, aber dieses AddOn benötigt es für die tonbezogenen Funktionen.\n\nBitte schalte die Einstellung durch einen Klick auf %s wieder ein oder passe deine Toneinstellungen für %s an.",
+	addonNameWithIcon,
+	CAA_COMBAT_AUDIO_ALERTS_LABEL,
+	ENABLE,
+	L.EditMode.TargetedSpellsSelfLabel
+)
+L.Functionality.CAASayIfTargetedDisabledWarning = string.format(
+	"%s\nDu hast '%s' deaktiviert, aber dieses AddOn benötigt es für die tonbezogenen Funktionen.\n\nBitte schalte die Einstellung durch einen Klick auf %s wieder ein oder passe deine Toneinstellungen für %s an.",
+	addonNameWithIcon,
+	CAA_SAY_IF_TARGETED_LABEL,
+	ENABLE,
+	L.EditMode.TargetedSpellsSelfLabel
+)
 
 L.Settings.EnabledLabel = "Aktiviert"
 L.Settings.EnabledTooltip = nil
@@ -75,9 +66,7 @@ L.Settings.AddonCompartmentTooltipLine2 =
 
 L.Settings.LoadConditionContentTypeLabel = "Ladebedingung: Spielbereich"
 L.Settings.LoadConditionContentTypeLabelAbbreviated = "In Spielbereich laden"
-L.Settings.LoadConditionContentTypeTooltip = not Private.IsMidnight
-		and "Diese Einstellung ist bis zum Midnight Pre-Patch nur via Bearbeitungsmodus konfigurierbar."
-	or nil
+L.Settings.LoadConditionContentTypeTooltip = nil
 L.Settings.LoadConditionContentTypeLabels = {
 	[Private.Enum.ContentType.OpenWorld] = "Offene Welt",
 	[Private.Enum.ContentType.Delve] = "Tiefen",
@@ -89,9 +78,7 @@ L.Settings.LoadConditionContentTypeLabels = {
 
 L.Settings.LoadConditionRoleLabel = "Ladebedingung: Rolle"
 L.Settings.LoadConditionRoleLabelAbbreviated = "In Rolle laden"
-L.Settings.LoadConditionRoleTooltip = not Private.IsMidnight
-		and "Diese Einstellung ist bis zum Midnight Pre-Patch nur via Bearbeitungsmodus konfigurierbar."
-	or nil
+L.Settings.LoadConditionRoleTooltip = nil
 
 L.Settings.LoadConditionRoleLabels = {
 	[Private.Enum.Role.Healer] = "Heiler",
@@ -169,9 +156,8 @@ L.Settings.SoundChannelLabels = {
 
 L.Settings.LoadConditionSoundContentTypeLabel = "Ladebedinging: Ton"
 L.Settings.LoadConditionSoundContentTypeLabelAbbreviated = "Ton in Spielbereich abspielen"
-L.Settings.LoadConditionSoundContentTypeTooltip = not Private.IsMidnight
-		and "Diese Einstellung ist bis zum Midnight Pre-Patch nur via Bearbeitungsmodus konfigurierbar."
-	or "Bestimmt in welchen Situationen die obigen Toneinstellungen genutzt werden, sowohl eigene Töne als auch Text-zu-Sprache."
+L.Settings.LoadConditionSoundContentTypeTooltip =
+	"Bestimmt in welchen Situationen die obigen Toneinstellungen genutzt werden, sowohl eigene Töne als auch Text-zu-Sprache."
 L.Settings.LoadConditionSoundContentTypeLabels = L.Settings.LoadConditionContentTypeLabels
 
 L.Settings.ShowDurationLabel = "Dauer anzeigen"

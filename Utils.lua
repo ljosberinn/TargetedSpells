@@ -20,19 +20,11 @@ function Private.Utils.SortFrames(frames, sortOrder)
 	local isAscending = sortOrder == Private.Enum.SortOrder.Ascending
 
 	table.sort(frames, function(a, b)
-		if Private.IsMidnight then
-			if isAscending then
-				return a:GetStartTime() < b:GetStartTime()
-			end
-
-			return a:GetStartTime() > b:GetStartTime()
-		end
-
 		if isAscending then
-			return a:GetStartTime() + a:GetDuration() < b:GetStartTime() + b:GetDuration()
+			return a:GetStartTime() < b:GetStartTime()
 		end
 
-		return a:GetStartTime() + a:GetDuration() > b:GetStartTime() + b:GetDuration()
+		return a:GetStartTime() > b:GetStartTime()
 	end)
 end
 
@@ -88,17 +80,7 @@ function Private.Utils.PlayTTS(text, voiceId, rate)
 	rate = rate or 2
 	voiceId = voiceId or TargetedSpellsSaved.Settings.Self.TTSVoice
 
-	if Private.IsMidnight then
-		C_VoiceChat.SpeakText(voiceId, text, rate, C_TTSSettings.GetSpeechVolume())
-	else
-		C_VoiceChat.SpeakText(
-			voiceId,
-			text,
-			Enum.VoiceTtsDestination.QueuedLocalPlayback,
-			rate,
-			C_TTSSettings.GetSpeechVolume()
-		)
-	end
+	C_VoiceChat.SpeakText(voiceId, text, rate, C_TTSSettings.GetSpeechVolume())
 end
 
 function Private.Utils.FindThirdPartyGroupFrameForUnit(unit, kind)

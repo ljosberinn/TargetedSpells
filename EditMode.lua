@@ -581,30 +581,24 @@ function TargetedSpellsEditModeMixin:CreateSetting(key, defaults)
 						multiple = false,
 					})
 
-					if Private.IsMidnight then
-						selectPayloadCheckbox:AddInitializer(function(button, description, menu)
-							local playSampleButton = MenuTemplates.AttachUtilityButton(button)
-							playSampleButton.Texture:Hide()
-							playSampleButton:SetNormalTexture("common-icon-sound")
-							playSampleButton:SetPushedTexture("common-icon-sound-pressed")
-							playSampleButton:SetDisabledTexture("common-icon-sound-disabled")
-							playSampleButton:SetHighlightTexture("common-icon-sound", "ADD")
-							playSampleButton:GetHighlightTexture():SetAlpha(0.4)
+					selectPayloadCheckbox:AddInitializer(function(button, description, menu)
+						local playSampleButton = MenuTemplates.AttachUtilityButton(button)
+						playSampleButton.Texture:Hide()
+						playSampleButton:SetNormalTexture("common-icon-sound")
+						playSampleButton:SetPushedTexture("common-icon-sound-pressed")
+						playSampleButton:SetDisabledTexture("common-icon-sound-disabled")
+						playSampleButton:SetHighlightTexture("common-icon-sound", "ADD")
+						playSampleButton:GetHighlightTexture():SetAlpha(0.4)
 
-							MenuTemplates.SetUtilityButtonTooltipText(
-								playSampleButton,
-								COOLDOWN_VIEWER_SETTINGS_ALERT_MENU_PLAY_SAMPLE
-							)
-							MenuTemplates.SetUtilityButtonAnchor(
-								playSampleButton,
-								MenuVariants.GearButtonAnchor,
-								button
-							) -- gear means throw on the right
-							MenuTemplates.SetUtilityButtonClickHandler(playSampleButton, function()
-								Private.Utils.AttemptToPlaySound(value.soundKitID, Private.Enum.SoundChannel.Master)
-							end)
+						MenuTemplates.SetUtilityButtonTooltipText(
+							playSampleButton,
+							COOLDOWN_VIEWER_SETTINGS_ALERT_MENU_PLAY_SAMPLE
+						)
+						MenuTemplates.SetUtilityButtonAnchor(playSampleButton, MenuVariants.GearButtonAnchor, button) -- gear means throw on the right
+						MenuTemplates.SetUtilityButtonClickHandler(playSampleButton, function()
+							Private.Utils.AttemptToPlaySound(value.soundKitID, Private.Enum.SoundChannel.Master)
 						end)
-					end
+					end)
 				elseif type(value) == "table" and soundCategoryKeyToText[tableKey] then
 					local nestedDescription = description:CreateButton(soundCategoryKeyToText[tableKey], nop, -1)
 					RecursiveAddSounds(nestedDescription, soundCategoryKeyToText, value, forcePlayOnSelection)
@@ -1640,7 +1634,7 @@ function PartyEditModeMixin:Init()
 
 	-- when this executes, layouts aren't loaded yet
 	hooksecurefunc(EditModeManagerFrame, "UpdateLayoutInfo", function(editModeManagerSelf)
-		if Private.IsMidnight and TargetedSpellsSaved.Settings.Party.Enabled then
+		if TargetedSpellsSaved.Settings.Party.Enabled then
 			local accountSettings = C_EditMode.GetAccountSettings()
 
 			for i, setting in pairs(accountSettings) do
