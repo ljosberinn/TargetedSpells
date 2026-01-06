@@ -1,3 +1,12 @@
+## Version 1.0.1
+
+- fixed a bug for Retail for when `UNIT_TARGET` occurs before spell cast events leading to double triggers
+- removed the need for delay when using the `Spell Target` API
+
+## Version 1.0.0
+
+- re-release of alpha5
+
 ## Version 1.0.0-alpha5
 
 - raid content type is now only disabled for Party frames

@@ -11,6 +11,7 @@ function TargetedSpellsDriver:Init()
 	self.role = Private.Enum.Role.Damager
 	self.contentType = Private.Enum.ContentType.OpenWorld
 	self.sawPlayerLogin = false
+	self.requiresDelay = self:DetermineSpellDelayRequirement()
 
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingsChanged, self)
 
@@ -106,6 +107,11 @@ function TargetedSpellsDriver:AcquireFrames(castingUnit)
 	end
 
 	return frames
+end
+
+function TargetedSpellsDriver:ReleaseFrame(frame)
+	frame:Reset()
+	self.framePool:Release(frame)
 end
 
 -- this is where 3rd party unit frames would need addition
@@ -257,10 +263,9 @@ function TargetedSpellsDriver:CleanUpUnit(unit, exceptSpellId)
 
 	for i, frame in pairs(frames) do
 		if frame:CanBeHidden() and (exceptSpellId == nil or not frame:IsSpellId(exceptSpellId)) then
-			frame:Reset()
-			self.framePool:Release(frame)
-			cleanedSomethingUp = true
+			self:ReleaseFrame(frame)
 			frames[i] = nil
+			cleanedSomethingUp = true
 		else
 			cleanedEverythingUp = false
 		end
@@ -365,21 +370,19 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			return
 		end
 
-		C_Timer.After(
-			self.delay,
-			GenerateClosure(
-				self.OnFrameEvent,
-				self,
-				self.listenerFrame,
-				event == "UNIT_SPELLCAST_START" and Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START
-					or Private.Enum.Events.DELAYED_UNIT_SPELLCAST_CHANNEL_START,
-				{
-					unit = unit,
-					spellId = spellId,
-					startTime = GetTime(),
-				}
-			)
-		)
+		local delayEvent = event == "UNIT_SPELLCAST_START" and Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START
+			or Private.Enum.Events.DELAYED_UNIT_SPELLCAST_CHANNEL_START
+		local info = {
+			unit = unit,
+			spellId = spellId,
+			startTime = GetTime(),
+		}
+
+		if self.requiresDelay then
+			C_Timer.After(self.delay, GenerateClosure(self.OnFrameEvent, self, self.listenerFrame, delayEvent, info))
+		else
+			self:OnFrameEvent(self.listenerFrame, delayEvent, info)
+		end
 	elseif event == "UNIT_TARGET" then
 		---@type string
 		local unit = ...
@@ -411,8 +414,14 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 				return
 			end
 
-			spellId = castingSpellId
 			startTime = startTimeMs / 1000
+
+			-- UNIT_TARGET fires before spell cast (channel) start, so its safe to ignore this
+			if (GetTime() - startTime) < self.delay then
+				return
+			end
+
+			spellId = castingSpellId
 		end
 
 		if spellId == nil then
@@ -575,19 +584,29 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 				return
 			end
 
-			local unitsToDelay = {}
+			local kindsToDelay = {
+				[Private.Enum.FrameKind.Self] = false,
+				[Private.Enum.FrameKind.Party] = false,
+			}
 
-			for i, frame in ipairs(frames) do
+			for i, frame in pairs(frames) do
 				local tableRef = frame:GetKind() == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
 					or TargetedSpellsSaved.Settings.Party
 
 				if tableRef.IndicateInterrupts then
 					frame:SetInterrupted()
-					table.insert(unitsToDelay, unit)
+
+					kindsToDelay[frame:GetKind()] = true
 				end
 			end
 
-			if #unitsToDelay > 0 then
+			if kindsToDelay[Private.Enum.FrameKind.Self] or kindsToDelay[Private.Enum.FrameKind.Party] then
+				---@type DelayInfo
+				local delayInfo = {
+					unit = unit,
+					kinds = kindsToDelay,
+				}
+
 				C_Timer.After(
 					1,
 					GenerateClosure(
@@ -595,7 +614,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 						self,
 						self.listenerFrame,
 						Private.Enum.Events.DELAYED_FRAME_CLEANUP,
-						unitsToDelay
+						delayInfo
 					)
 				)
 				return
@@ -667,12 +686,21 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 
 		self:RepositionFrames()
 	elseif event == Private.Enum.Events.DELAYED_FRAME_CLEANUP then
-		local unitsToDelay = ...
+		---@type DelayInfo
+		local delayInfo = ...
+
+		local frames = self.frames[delayInfo.unit]
+
+		if frames == nil then
+			return
+		end
 
 		local cleanedSomethingUp = false
 
-		for i, unit in ipairs(unitsToDelay) do
-			if self:CleanUpUnit(unit) then
+		for i, frame in pairs(frames) do
+			if delayInfo.kinds[frame:GetKind()] then
+				self:ReleaseFrame(frame)
+				frames[i] = nil
 				cleanedSomethingUp = true
 			end
 		end
@@ -764,6 +792,28 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 	end
 end
 
+function TargetedSpellsDriver:DetermineSpellDelayRequirement()
+	if Private.IsMidnight then
+		if
+			TargetedSpellsSaved.Settings.Self.Enabled
+			and TargetedSpellsSaved.Settings.Self.TargetingFilterApi == Private.Enum.TargetingFilterApi.UnitIsUnit
+		then
+			return true
+		end
+
+		if
+			TargetedSpellsSaved.Settings.Party.Enabled
+			and TargetedSpellsSaved.Settings.Party.TargetingFilterApi == Private.Enum.TargetingFilterApi.UnitIsUnit
+		then
+			return true
+		end
+
+		return false
+	end
+
+	return true
+end
+
 function TargetedSpellsDriver:OnSettingsChanged(key, value)
 	if key == Private.Settings.Keys.Self.Enabled or key == Private.Settings.Keys.Party.Enabled then
 		local allDisabled = TargetedSpellsSaved.Settings.Self.Enabled == false
@@ -775,6 +825,8 @@ function TargetedSpellsDriver:OnSettingsChanged(key, value)
 		else
 			self:SetupFrame(false)
 		end
+
+		self.requiresDelay = self:DetermineSpellDelayRequirement()
 	elseif key == Private.Settings.Keys.Self.PlayTTS or key == Private.Settings.Keys.Self.PlaySound then
 		if not Private.IsMidnight then
 			return
@@ -799,6 +851,11 @@ function TargetedSpellsDriver:OnSettingsChanged(key, value)
 			-- C_CVar.SetCVar("CAAEnabled", 0)
 			-- print(Private.L.Functionality.CAADisabledWarning)
 		end
+	elseif
+		key == Private.Settings.Keys.Self.TargetingFilterApi
+		or key == Private.Settings.Keys.Party.TargetingFilterApi
+	then
+		self.requiresDelay = self:DetermineSpellDelayRequirement()
 	end
 end
 

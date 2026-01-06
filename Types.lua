@@ -31,6 +31,10 @@
 ---@field max number
 ---@field step number
 
+---@class DelayInfo
+---@field unit string
+---@field kinds table<FrameKind, boolean>
+
 ---@class TargetedSpellsSettings
 ---@field Keys table<'Self' | 'Party', table<string, string>>
 ---@field GetSettingsDisplayOrder fun(kind: FrameKind): string[]
@@ -230,6 +234,8 @@
 ---@field OnFrameEvent fun(self: TargetedSpellsDriver, listenerFrame: Frame, event: WowEvent, ...)
 ---@field OnSettingsChanged fun(self: TargetedSpellsDriver, key: string, value: number|string|table)
 ---@field MaybeApplyCombatAudioAlertOverride fun(self: TargetedSpellsMixin)
+---@field ReleaseFrame fun(self: TargetedSpellsDriver, frame: TargetedSpellsMixin)
+---@field DetermineSpellDelayRequirement fun(self: TargetedSpellsDriver): boolean
 
 ----- type patching / completion
 
