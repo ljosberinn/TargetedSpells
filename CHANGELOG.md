@@ -1,3 +1,11 @@
+## Version 1.0.2
+
+- reintroduce unconditional delay of 200ms for each cast again as it breaks channels with windup casts
+- add support for cast ids to more accurately keep track of casts
+- omit enemy casts targeting other enemies entirely
+- omit enemy casts targeting a unit the player cannot attack (e.g. Forgeweaver Araz casting Invoke Collector on Arcane Collectors)
+- on Retail, sort order now sorts by end time of casts instead of start time
+
 ## Version 1.0.1
 
 - fixed a bug for Retail for when `UNIT_TARGET` occurs before spell cast events leading to double triggers

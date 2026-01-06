@@ -20,11 +20,19 @@ function Private.Utils.SortFrames(frames, sortOrder)
 	local isAscending = sortOrder == Private.Enum.SortOrder.Ascending
 
 	table.sort(frames, function(a, b)
-		if isAscending then
-			return a:GetStartTime() < b:GetStartTime()
+		if Private.IsMidnight then
+			if isAscending then
+				return a:GetStartTime() < b:GetStartTime()
+			end
+
+			return a:GetStartTime() > b:GetStartTime()
 		end
 
-		return a:GetStartTime() > b:GetStartTime()
+		if isAscending then
+			return a:GetStartTime() + a:GetDuration() < b:GetStartTime() + b:GetDuration()
+		end
+
+		return a:GetStartTime() + a:GetDuration() > b:GetStartTime() + b:GetDuration()
 	end)
 end
 

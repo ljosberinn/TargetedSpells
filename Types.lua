@@ -34,6 +34,7 @@
 ---@class DelayInfo
 ---@field unit string
 ---@field kinds table<FrameKind, boolean>
+---@field id number|string|nil
 
 ---@class TargetedSpellsSettings
 ---@field Keys table<'Self' | 'Party', table<string, string>>
@@ -131,8 +132,9 @@
 ---@field kind FrameKind?
 ---@field unit string? -- secret?
 ---@field startTime number?
----@field castTime number? -- secret
+---@field duration DurationObjectDummy|number|nil -- secret
 ---@field spellId number? -- secret
+---@field id number? -- secret
 ---@field _AutoCastGlow Frame?
 ---@field _ButtonGlow Frame?
 ---@field _PixelGlow Frame?
@@ -142,21 +144,23 @@
 ---@field Border Frame | BackdropTemplate
 ---@field InterruptIcon Texture
 ---@field OnLoad fun(self: TargetedSpellsMixin)
+---@field SetId fun(self: TargetedSpellsMixin, id: number?)
+---@field GetId fun(self: TargetedSpellsMixin): number?
 ---@field SetInterrupted fun(self: TargetedSpellsMixin)
----@field CanBeHidden fun(self: TargetedSpellsMixin): boolean
+---@field CanBeHidden fun(self: TargetedSpellsMixin, exceptSpellId:number?, id: number|string|nil): boolean
 ---@field OnUpdate fun(self: TargetedSpellsMixin, elapsed: number)
 ---@field SetShowDuration fun(self: TargetedSpellsMixin, showDuration: boolean, showFractions: boolean)
 ---@field SetShowBorder fun(self: TargetedSpellsMixin, bool: boolean)
 ---@field OnSizeChanged fun(self: TargetedSpellsMixin, width: number, height: number)
 ---@field OnSettingChanged fun(self: TargetedSpellsMixin, key: string, value: number|string)
 ---@field SetDuration fun(self: TargetedSpellsMixin, duration: DurationObjectDummy|number)
+---@field GetDuration fun(self: TargetedSpellsMixin): DurationObjectDummy|number)?
 ---@field SetStartTime fun(self: TargetedSpellsMixin, startTime: number?)
 ---@field GetStartTime fun(self: TargetedSpellsMixin): number?
 ---@field ShowGlow fun(self: TargetedSpellsMixin, isImportant: boolean) -- secret bool, but passed explicitly in EditMode code
 ---@field HideGlow fun(self: TargetedSpellsMixin)
 ---@field IsSpellImportant fun(self: TargetedSpellsMixin, boolOverride: boolean?): boolean
 ---@field SetSpellId fun(self: TargetedSpellsMixin, spellId: number?)
----@field IsSpellId fun(self: TargetedSpellsMixin, spellId: number): boolean
 ---@field ShouldBeShown fun(self: TargetedSpellsMixin): boolean
 ---@field ClearStartTime fun(self: TargetedSpellsMixin)
 ---@field Reposition fun(self: TargetedSpellsMixin, point: string, relativeTo: Frame, relativePoint: string, offsetX: number, offsetY: number)
@@ -228,7 +232,7 @@
 ---@field SetupFrame fun(self: TargetedSpellsDriver, isBoot: boolean)
 ---@field AcquireFrames fun(self: TargetedSpellsDriver, castingUnit: string): TargetedSpellsMixin[]
 ---@field RepositionFrames fun(self: TargetedSpellsDriver)
----@field CleanUpUnit fun(self: TargetedSpellsMixin, unit: string, exceptSpellId?: number): boolean
+---@field CleanUpUnit fun(self: TargetedSpellsMixin, unit: string, exceptSpellId?: number, id?: number): boolean
 ---@field LoadConditionsProhibitExecution fun(self: TargetedSpellsDriver, kind: FrameKind): boolean
 ---@field UnitIsIrrelevant fun(self: TargetedSpellsDriver, unit: string, skipTargetCheck?: boolean): boolean
 ---@field OnFrameEvent fun(self: TargetedSpellsDriver, listenerFrame: Frame, event: WowEvent, ...)

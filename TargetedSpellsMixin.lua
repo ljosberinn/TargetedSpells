@@ -43,6 +43,14 @@ function TargetedSpellsMixin:OnLoad()
 	self.doNotHideBefore = nil
 end
 
+function TargetedSpellsMixin:SetId(id)
+	self.id = id
+end
+
+function TargetedSpellsMixin:GetId()
+	return self.id
+end
+
 function TargetedSpellsMixin:SetInterrupted()
 	self.wasInterrupted = true
 	self.doNotHideBefore = GetTime() + 0.95
@@ -52,12 +60,24 @@ function TargetedSpellsMixin:SetInterrupted()
 	self:SetShowDuration(false, false)
 end
 
-function TargetedSpellsMixin:CanBeHidden()
+function TargetedSpellsMixin:CanBeHidden(exceptSpellId, id)
 	if self.wasInterrupted then
 		return GetTime() >= self.doNotHideBefore
 	end
 
-	return true
+	if id == nil then
+		if exceptSpellId == nil then
+			return true
+		end
+
+		if Private.IsMidnight then
+			return false
+		end
+
+		return self.spellId ~= exceptSpellId
+	end
+
+	return id == self:GetId()
 end
 
 ---@param self TargetedSpellsMixin
@@ -197,6 +217,10 @@ function TargetedSpellsMixin:SetDuration(duration)
 	else
 		self.Cooldown:SetCooldownFromDurationObject(duration)
 	end
+end
+
+function TargetedSpellsMixin:GetDuration()
+	return self.duration
 end
 
 function TargetedSpellsMixin:SetStartTime(startTime)
@@ -371,14 +395,6 @@ function TargetedSpellsMixin:SetSpellId(spellId)
 	end
 end
 
-function TargetedSpellsMixin:IsSpellId(spellId)
-	if Private.IsMidnight then
-		return false
-	end
-
-	return self.spellId == spellId
-end
-
 function TargetedSpellsMixin:ShouldBeShown()
 	return self.startTime ~= nil
 end
@@ -454,6 +470,7 @@ function TargetedSpellsMixin:Reset()
 	self.InterruptIcon:Hide()
 	self.Icon:SetDesaturated(false)
 	self.Cooldown:SetDrawSwipe(true)
+	self:SetId()
 
 	local tableRef = self.kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
 		or TargetedSpellsSaved.Settings.Party
