@@ -1,7 +1,6 @@
 ---@type string, TargetedSpells
 local addonName, Private = ...
 
-Private.IsMidnight = select(4, GetBuildInfo()) >= 120000
 Private.L = {}
 
 Private.EventRegistry = CreateFromMixins(CallbackRegistryMixin)
@@ -22,7 +21,7 @@ Private.LoginFnQueue = {}
 EventUtil.ContinueOnAddOnLoaded(addonName, function()
 	---@class SavedVariables
 	TargetedSpellsSaved = TargetedSpellsSaved or {}
-	if TargetedSpellsSaved.nameplateShowOffscreenWasInitialized == nil and Private.IsMidnight then
+	if TargetedSpellsSaved.nameplateShowOffscreenWasInitialized == nil then
 		TargetedSpellsSaved.nameplateShowOffscreenWasInitialized = true
 		C_CVar.SetCVar("nameplateShowOffscreen", 1)
 	end

@@ -20,53 +20,43 @@ L.Settings.EditModeReminder =
 L.EditMode.TargetedSpellsSelfLabel = "Targeted Spells - Self"
 L.EditMode.TargetedSpellsPartyLabel = "Targeted Spells - Party"
 
-L.Functionality.CVarWarning = Private.IsMidnight
-		and string.format(
-			"%s\n\nThe Nameplate Setting '%s' was disabled.\n\nWithout it, %s will not work on off-screen enemies.\n\nClick '%s' to enable it again.",
-			addonNameWithIcon,
-			UNIT_NAMEPLATES_SHOW_OFFSCREEN,
-			addonName,
-			ENABLE
-		)
-	or nil
+L.Functionality.CVarWarning = string.format(
+	"%s\n\nThe Nameplate Setting '%s' was disabled.\n\nWithout it, %s will not work on off-screen enemies.\n\nClick '%s' to enable it again.",
+	addonNameWithIcon,
+	UNIT_NAMEPLATES_SHOW_OFFSCREEN,
+	addonName,
+	ENABLE
+)
 
-L.Functionality.CAAEnabledWarning = Private.IsMidnight
-		and string.format(
-			"%s\n\nThis addon automatically enabled '%s' and configured it as you've enabled Sound/TTS.\n\nYou can find the settings under %s -> %s -> left side %s > %s.\n\nAlternatively, type: /run Settings.OpenToCategory(18)",
-			addonNameWithIcon,
-			CAA_COMBAT_AUDIO_ALERTS_LABEL,
-			KEY_ESCAPE,
-			OPTIONS_MENU,
-			ACCESSIBILITY_LABEL,
-			ACCESSIBILITY_AUDIO_LABEL
-		)
-	or nil
+L.Functionality.CAAEnabledWarning = string.format(
+	"%s\n\nThis addon automatically enabled '%s' and configured it as you've enabled Sound/TTS.\n\nYou can find the settings under %s -> %s -> left side %s > %s.\n\nAlternatively, type: /run Settings.OpenToCategory(18)",
+	addonNameWithIcon,
+	CAA_COMBAT_AUDIO_ALERTS_LABEL,
+	KEY_ESCAPE,
+	OPTIONS_MENU,
+	ACCESSIBILITY_LABEL,
+	ACCESSIBILITY_AUDIO_LABEL
+)
 
--- L.Functionality.CAADisabledWarning = Private.IsMidnight
--- 		and string.format(
--- 			"%s This addon automatically disabled '%s' as you're no longer using neither Sound nor TTS.",
--- 			addonNameWithIcon,
--- 			CAA_COMBAT_AUDIO_ALERTS_LABEL
--- 		)
--- 	or nil
-L.Functionality.CAAManuallyDisabledWarning = Private.IsMidnight
-		and string.format(
-			"%s\n\nYou disabled '%s', but this addon relies on it for its sound-related functionality.\n\nPlease either turn it on again by clicking %s or adjust your %s sound settings.",
-			addonNameWithIcon,
-			CAA_COMBAT_AUDIO_ALERTS_LABEL,
-			ENABLE,
-			L.EditMode.TargetedSpellsSelfLabel
-		)
-	or nil
-L.Functionality.CAASayIfTargetedDisabledWarning = Private.IsMidnight
-		and string.format(
-			"%s\n\nYou disabled '%s', but this addon relies on it for its sound-related functionality.\n\nPlease either turn it on again by clicking %s or adjust your %s sound settings.",
-			addonNameWithIcon,
-			CAA_SAY_IF_TARGETED_LABEL,
-			ENABLE,
-			L.EditMode.TargetedSpellsSelfLabel
-		)
-	or nil
+-- L.Functionality.CAADisabledWarning = string.format(
+-- 	"%s This addon automatically disabled '%s' as you're no longer using neither Sound nor TTS.",
+-- 	addonNameWithIcon,
+-- 	CAA_COMBAT_AUDIO_ALERTS_LABEL
+-- )
+L.Functionality.CAAManuallyDisabledWarning = string.format(
+	"%s\n\nYou disabled '%s', but this addon relies on it for its sound-related functionality.\n\nPlease either turn it on again by clicking %s or adjust your %s sound settings.",
+	addonNameWithIcon,
+	CAA_COMBAT_AUDIO_ALERTS_LABEL,
+	ENABLE,
+	L.EditMode.TargetedSpellsSelfLabel
+)
+L.Functionality.CAASayIfTargetedDisabledWarning = string.format(
+	"%s\n\nYou disabled '%s', but this addon relies on it for its sound-related functionality.\n\nPlease either turn it on again by clicking %s or adjust your %s sound settings.",
+	addonNameWithIcon,
+	CAA_SAY_IF_TARGETED_LABEL,
+	ENABLE,
+	L.EditMode.TargetedSpellsSelfLabel
+)
 
 L.Settings.EnabledLabel = "Actif/Activé"
 L.Settings.EnabledTooltip = nil
@@ -79,9 +69,7 @@ L.Settings.AddonCompartmentTooltipLine2 =
 
 L.Settings.LoadConditionContentTypeLabel = "Condition de chargement: Type de contenu"
 L.Settings.LoadConditionContentTypeLabelAbbreviated = "Charger dans le contenu"
-L.Settings.LoadConditionContentTypeTooltip = not Private.IsMidnight
-		and "This setting is only configurable via Edit Mode until the Midnight Pre-Patch due to lacking the settings primitives until then."
-	or nil
+L.Settings.LoadConditionContentTypeTooltip = nil
 L.Settings.LoadConditionContentTypeLabels = {
 	[Private.Enum.ContentType.OpenWorld] = "Open World",
 	[Private.Enum.ContentType.Delve] = "Delves",
@@ -93,9 +81,7 @@ L.Settings.LoadConditionContentTypeLabels = {
 
 L.Settings.LoadConditionRoleLabel = "Condition de chargement: Rôle"
 L.Settings.LoadConditionRoleLabelAbbreviated = "Chargement sur Rôle"
-L.Settings.LoadConditionRoleTooltip = not Private.IsMidnight
-		and "This setting is only configurable via Edit Mode until the Midnight Pre-Patch due to lacking the settings primitives until then."
-	or nil
+L.Settings.LoadConditionRoleTooltip = nil
 L.Settings.LoadConditionRoleLabels = {
 	[Private.Enum.Role.Healer] = "Healer",
 	[Private.Enum.Role.Tank] = "Tank",
@@ -171,9 +157,8 @@ L.Settings.SoundChannelLabels = {
 
 L.Settings.LoadConditionSoundContentTypeLabel = "Load Condition: Sound"
 L.Settings.LoadConditionSoundContentTypeLabelAbbreviated = "Play Sound in Content"
-L.Settings.LoadConditionSoundContentTypeTooltip = not Private.IsMidnight
-		and "This setting is only configurable via Edit Mode until the Midnight Pre-Patch due to lacking the settings primitives until then."
-	or "Under which circumstances the above sound settings (both custom sound and TTS) should apply."
+L.Settings.LoadConditionSoundContentTypeTooltip =
+	"Under which circumstances the above sound settings (both custom sound and TTS) should apply."
 L.Settings.LoadConditionSoundContentTypeLabels = L.Settings.LoadConditionContentTypeLabels
 
 L.Settings.ShowDurationLabel = "Montrer la durée"

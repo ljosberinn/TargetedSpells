@@ -60,11 +60,8 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_STOP")
 		self.frame:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
 		self.frame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
-
-		if Private.IsMidnight then
-			self.frame:RegisterEvent("CVAR_UPDATE")
-			self.frame:RegisterEvent("PLAYER_LOGIN")
-		end
+		self.frame:RegisterEvent("CVAR_UPDATE")
+		self.frame:RegisterEvent("PLAYER_LOGIN")
 
 		self.frame:SetScript("OnEvent", GenerateClosure(self.OnFrameEvent, self))
 	end
@@ -76,7 +73,6 @@ function TargetedSpellsDriver:AcquireFrames(castingUnit)
 	if
 		TargetedSpellsSaved.Settings.Self.Enabled
 		and not self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Self)
-		and (Private.IsMidnight and true or UnitIsUnit(string.format("%starget", castingUnit), "player"))
 	then
 		local selfTargetingFrame = self.framePool:Acquire()
 		selfTargetingFrame:SetParent(self.frame)
@@ -94,10 +90,7 @@ function TargetedSpellsDriver:AcquireFrames(castingUnit)
 		for i = 1, partyMemberCount do
 			local unit = i == partyMemberCount and "player" or "party" .. i
 
-			if
-				(Private.IsMidnight and true or UnitIsUnit(string.format("%starget", castingUnit), unit))
-				and ((unit == "player" and TargetedSpellsSaved.Settings.Party.IncludeSelfInParty) or unit ~= "player")
-			then
+			if (unit == "player" and TargetedSpellsSaved.Settings.Party.IncludeSelfInParty) or unit ~= "player" then
 				local frame = self.framePool:Acquire()
 				frame:PostCreate(unit, Private.Enum.FrameKind.Party, castingUnit)
 				table.insert(frames, frame)
@@ -250,7 +243,7 @@ function TargetedSpellsDriver:RepositionFrames()
 	end
 end
 
-function TargetedSpellsDriver:CleanUpUnit(unit, exceptSpellId, id)
+function TargetedSpellsDriver:CleanUpUnit(unit, id)
 	local frames = self.frames[unit]
 
 	if frames == nil then
@@ -261,7 +254,7 @@ function TargetedSpellsDriver:CleanUpUnit(unit, exceptSpellId, id)
 	local cleanedEverythingUp = true
 
 	for i, frame in pairs(frames) do
-		if frame:CanBeHidden(exceptSpellId, id) then
+		if frame:CanBeHidden(id) then
 			self:ReleaseFrame(frame)
 			frames[i] = nil
 			cleanedSomethingUp = true
@@ -404,11 +397,6 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			castId = select(3, ...)
 		end
 
-		local id = castGuid
-		if Private.IsMidnight then
-			id = castId
-		end
-
 		C_Timer.After(
 			self.delay,
 			GenerateClosure(
@@ -421,7 +409,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 					unit = unit,
 					spellId = spellId,
 					startTime = GetTime(),
-					id = id,
+					id = castId,
 				}
 			)
 		)
@@ -434,49 +422,16 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		end
 
 		local delayEvent = Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START
+		-- best we can do. _possibly_ wrong depending on when the enemy turned
 		---@type number|nil
-		local spellId = nil
-		---@type number|nil
-		local startTime = nil
-		---@type number|string|nil
-		local id = nil
+		local startTime = GetTime()
 
-		if Private.IsMidnight then
-			local _, _, _, _, _, _, _, _, castingSpellId, castId = UnitCastingInfo(unit)
+		local _, _, _, _, _, _, _, _, spellId, id = UnitCastingInfo(unit)
 
-			spellId = castingSpellId
-			id = castId
+		if spellId == nil then
+			_, _, _, _, _, _, _, spellId, _, _, id = UnitChannelInfo(unit)
 
-			if spellId == nil then
-				_, _, _, _, _, _, _, castingSpellId, _, _, castId = UnitChannelInfo(unit)
-
-				spellId = castingSpellId
-				id = castId
-				delayEvent = Private.Enum.Events.DELAYED_UNIT_SPELLCAST_CHANNEL_START
-			end
-
-			-- best we can do. _possibly_ wrong depending on when the enemy turned
-			startTime = GetTime()
-		else
-			local _, _, _, startTimeMs, _, _, castGuid, _, castingSpellId = UnitCastingInfo(unit)
-
-			if castingSpellId == nil then
-				_, _, _, startTimeMs, _, _, _, castingSpellId = UnitChannelInfo(unit)
-			end
-
-			if castingSpellId == nil then
-				return
-			end
-
-			startTime = startTimeMs / 1000
-
-			-- UNIT_TARGET fires before spell cast (channel) start, so its safe to ignore this
-			if (GetTime() - startTime) < self.delay then
-				return
-			end
-
-			spellId = castingSpellId
-			id = castGuid
+			delayEvent = Private.Enum.Events.DELAYED_UNIT_SPELLCAST_CHANNEL_START
 		end
 
 		if spellId == nil then
@@ -497,51 +452,21 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			return
 		end
 
-		local spellId = nil
-		local startTime = nil
-		---@type DurationObjectDummy|number|nil
-		local durationOrCastTime = nil
-		---@type number|string|nil
-		local id = nil
+		local _, _, _, _, _, _, _, _, spellId, id = UnitCastingInfo(unit)
 
-		if Private.IsMidnight then
-			local _, _, _, _, _, _, _, _, castingSpellId, castId = UnitCastingInfo(unit)
+		if spellId == nil then
+			_, _, _, _, _, _, _, spellId, _, _, id = UnitChannelInfo(unit)
+		end
 
-			spellId = castingSpellId
-			id = castId
+		if spellId == nil then
+			return
+		end
 
-			if spellId == nil then
-				_, _, _, _, _, _, _, castingSpellId, _, _, castId = UnitChannelInfo(unit)
-				spellId = castingSpellId
-				id = castId
-			end
+		---@type DurationObjectDummy|nil
+		local duration = UnitCastingDuration(unit) or UnitChannelDuration(unit)
 
-			if spellId == nil then
-				return
-			end
-
-			durationOrCastTime = UnitCastingDuration(unit) or UnitChannelDuration(unit)
-
-			if durationOrCastTime == nil then
-				return
-			end
-
-			startTime = GetTime() -- todo: this is wrong, but we can't do better yet
-		else
-			local _, _, _, startTimeMs, endTimeMs, _, castGuid, _, castingSpellId = UnitCastingInfo(unit)
-
-			if castingSpellId == nil then
-				_, _, _, startTimeMs, endTimeMs, _, _, castingSpellId = UnitChannelInfo(unit)
-			end
-
-			if castingSpellId == nil then
-				return
-			end
-
-			spellId = castingSpellId
-			startTime = startTimeMs / 1000
-			durationOrCastTime = (endTimeMs - startTimeMs) / 1000
-			id = castGuid
+		if duration == nil then
+			return
 		end
 
 		local frames = self:AcquireFrames(unit)
@@ -553,17 +478,18 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		if self.frames[unit] == nil then
 			self.frames[unit] = {}
 		else
-			self:CleanUpUnit(unit, spellId)
+			self:CleanUpUnit(unit)
 		end
+
+		-- todo: this is wrong, but we can't do better. the DurationObject fixes it visually at least
+		local startTime = GetTime()
 
 		for i, frame in ipairs(frames) do
 			table.insert(self.frames[unit], frame)
 			frame:SetSpellId(spellId)
 			frame:SetStartTime(startTime)
-			frame:SetDuration(durationOrCastTime)
+			frame:SetDuration(duration)
 			frame:SetId(id)
-			frame:AttemptToPlaySound(self.contentType, unit)
-			frame:AttemptToPlayTTS(self.contentType, unit)
 		end
 
 		self:RepositionFrames()
@@ -642,23 +568,18 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 
 		---@type number|string|nil
 		local id = nil
+		local index = nil
 
-		if Private.IsMidnight then
-			local index = nil
+		if event == "UNIT_SPELLCAST_CHANNEL_STOP" or event == "UNIT_SPELLCAST_INTERRUPTED" then
+			index = 5
+		elseif event == "UNIT_SPELLCAST_EMPOWER_STOP" then
+			index = 6
+		elseif event == "UNIT_SPELLCAST_STOP" then
+			index = 4
+		end
 
-			if event == "UNIT_SPELLCAST_CHANNEL_STOP" or event == "UNIT_SPELLCAST_INTERRUPTED" then
-				index = 5
-			elseif event == "UNIT_SPELLCAST_EMPOWER_STOP" then
-				index = 6
-			elseif event == "UNIT_SPELLCAST_STOP" then
-				index = 4
-			end
-
-			if index ~= nil then
-				id = select(index, ...)
-			end
-		else
-			id = castGuid
+		if index ~= nil then
+			id = select(index, ...)
 		end
 
 		if
@@ -710,7 +631,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			end
 		end
 
-		if self:CleanUpUnit(unit, nil, id) then
+		if self:CleanUpUnit(unit, id) then
 			self:RepositionFrames()
 		end
 	elseif
@@ -731,7 +652,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		local frames = self:AcquireFrames(info.unit)
 
 		if #frames == 0 then
-			if self:CleanUpUnit(info.unit, info.spellId) then
+			if self:CleanUpUnit(info.unit) then
 				self:RepositionFrames()
 			end
 
@@ -741,27 +662,15 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		if self.frames[info.unit] == nil then
 			self.frames[info.unit] = {}
 		else
-			self:CleanUpUnit(info.unit, info.spellId, info.id)
+			self:CleanUpUnit(info.unit, info.id)
 		end
 
-		---@type DurationObjectDummy|number|nil
-		local durationOrCastTime = nil
+		---@type DurationObjectDummy|nil
+		local duration = UnitCastingDuration(info.unit) or UnitChannelDuration(info.unit)
 
-		if Private.IsMidnight then
-			durationOrCastTime = UnitCastingDuration(info.unit) or UnitChannelDuration(info.unit)
-
-			-- without `nameplateShowOffscreen` active, castTime may stay nil
-			if durationOrCastTime == nil then
-				return
-			end
-		else
-			local _, _, _, startTimeMs, endTimeMs = UnitCastingInfo(info.unit)
-
-			if startTimeMs == nil then
-				_, _, _, startTimeMs, endTimeMs = UnitChannelInfo(info.unit)
-			end
-
-			durationOrCastTime = (endTimeMs - startTimeMs) / 1000
+		-- without `nameplateShowOffscreen` active, castTime may stay nil
+		if duration == nil then
+			return
 		end
 
 		for i, frame in ipairs(frames) do
@@ -769,9 +678,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			frame:SetSpellId(info.spellId)
 			frame:SetStartTime(info.startTime)
 			frame:SetId(info.id)
-			frame:SetDuration(durationOrCastTime)
-			frame:AttemptToPlaySound(self.contentType, info.unit)
-			frame:AttemptToPlayTTS(self.contentType, info.unit)
+			frame:SetDuration(duration)
 		end
 
 		self:RepositionFrames()
@@ -894,10 +801,6 @@ function TargetedSpellsDriver:OnSettingsChanged(key, value)
 			self:SetupFrame(false)
 		end
 	elseif key == Private.Settings.Keys.Self.PlayTTS or key == Private.Settings.Keys.Self.PlaySound then
-		if not Private.IsMidnight then
-			return
-		end
-
 		if value then
 			local state = C_CombatAudioAlert.GetSpecSetting(Enum.CombatAudioAlertSpecSetting.SayIfTargeted)
 
@@ -921,10 +824,6 @@ function TargetedSpellsDriver:OnSettingsChanged(key, value)
 end
 
 function TargetedSpellsDriver:MaybeApplyCombatAudioAlertOverride()
-	if not Private.IsMidnight then
-		return
-	end
-
 	---@param spellId number
 	local function MaybePlaySoundOrTTS(spellId)
 		if TargetedSpellsSaved.Settings.Self.PlaySound then

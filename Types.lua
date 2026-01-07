@@ -1,7 +1,6 @@
 ---@meta
 
 ---@class TargetedSpells
----@field IsMidnight boolean
 ---@field EventRegistry CallbackRegistryMixin
 ---@field Events table<string, string>
 ---@field Enum TargetedSpellsEnums
@@ -132,7 +131,7 @@
 ---@field kind FrameKind?
 ---@field unit string? -- secret?
 ---@field startTime number?
----@field duration DurationObjectDummy|number|nil -- secret
+---@field duration DurationObjectDummy|nil -- secret
 ---@field spellId number? -- secret
 ---@field id number? -- secret
 ---@field _AutoCastGlow Frame?
@@ -147,14 +146,13 @@
 ---@field SetId fun(self: TargetedSpellsMixin, id: number?)
 ---@field GetId fun(self: TargetedSpellsMixin): number?
 ---@field SetInterrupted fun(self: TargetedSpellsMixin)
----@field CanBeHidden fun(self: TargetedSpellsMixin, exceptSpellId:number?, id: number|string|nil): boolean
+---@field CanBeHidden fun(self: TargetedSpellsMixin, id: number?): boolean
 ---@field OnUpdate fun(self: TargetedSpellsMixin, elapsed: number)
 ---@field SetShowDuration fun(self: TargetedSpellsMixin, showDuration: boolean, showFractions: boolean)
 ---@field SetShowBorder fun(self: TargetedSpellsMixin, bool: boolean)
 ---@field OnSizeChanged fun(self: TargetedSpellsMixin, width: number, height: number)
 ---@field OnSettingChanged fun(self: TargetedSpellsMixin, key: string, value: number|string)
 ---@field SetDuration fun(self: TargetedSpellsMixin, duration: DurationObjectDummy|number)
----@field GetDuration fun(self: TargetedSpellsMixin): DurationObjectDummy|number)?
 ---@field SetStartTime fun(self: TargetedSpellsMixin, startTime: number?)
 ---@field GetStartTime fun(self: TargetedSpellsMixin): number?
 ---@field ShowGlow fun(self: TargetedSpellsMixin, isImportant: boolean) -- secret bool, but passed explicitly in EditMode code
@@ -171,8 +169,6 @@
 ---@field PostCreate fun(self: TargetedSpellsMixin, unit: string, kind: FrameKind, castingUnit: string?)
 ---@field Reset fun(self: TargetedSpellsMixin)
 ---@field SetFontSize fun(self: TargetedSpellsMixin, fontSize: number)
----@field AttemptToPlaySound fun(self: TargetedSpellsMixin, contentType: ContentType, unit: string)
----@field AttemptToPlayTTS fun(self: TargetedSpellsMixin, contentType: ContentType, unit: string)
 
 ---@class TargetedSpellsEditModeMixin : Frame
 ---@field editModeFrame Frame
