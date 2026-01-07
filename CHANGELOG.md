@@ -1,3 +1,8 @@
+## Version 1.0.3
+
+- fixed a bug where icons were lingering as interrupted when an enemy died mid-cast
+- fixed a bug failing to account for the Midnight Beta realm being behind the Midnight PTR in terms of API level
+
 ## Version 1.0.2
 
 - reintroduce unconditional delay of 200ms for each cast again as it breaks channels with windup casts

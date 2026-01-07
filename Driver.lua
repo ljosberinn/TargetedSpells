@@ -404,6 +404,11 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			castId = select(3, ...)
 		end
 
+		local id = castGuid
+		if Private.IsMidnight then
+			id = castId
+		end
+
 		C_Timer.After(
 			self.delay,
 			GenerateClosure(
@@ -416,7 +421,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 					unit = unit,
 					spellId = spellId,
 					startTime = GetTime(),
-					id = Private.IsMidnight and castId or castGuid,
+					id = id,
 				}
 			)
 		)

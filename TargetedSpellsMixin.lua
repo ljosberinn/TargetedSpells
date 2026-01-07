@@ -71,7 +71,7 @@ function TargetedSpellsMixin:CanBeHidden(exceptSpellId, id)
 		end
 
 		if Private.IsMidnight then
-			return false
+			return true
 		end
 
 		return self.spellId ~= exceptSpellId

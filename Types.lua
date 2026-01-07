@@ -232,7 +232,7 @@
 ---@field SetupFrame fun(self: TargetedSpellsDriver, isBoot: boolean)
 ---@field AcquireFrames fun(self: TargetedSpellsDriver, castingUnit: string): TargetedSpellsMixin[]
 ---@field RepositionFrames fun(self: TargetedSpellsDriver)
----@field CleanUpUnit fun(self: TargetedSpellsMixin, unit: string, exceptSpellId?: number, id?: number): boolean
+---@field CleanUpUnit fun(self: TargetedSpellsDriver, unit: string, exceptSpellId?: number, id?: number): boolean
 ---@field LoadConditionsProhibitExecution fun(self: TargetedSpellsDriver, kind: FrameKind): boolean
 ---@field UnitIsIrrelevant fun(self: TargetedSpellsDriver, unit: string, skipTargetCheck?: boolean): boolean
 ---@field OnFrameEvent fun(self: TargetedSpellsDriver, listenerFrame: Frame, event: WowEvent, ...)
