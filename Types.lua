@@ -146,7 +146,7 @@
 ---@field SetId fun(self: TargetedSpellsMixin, id: number?)
 ---@field GetId fun(self: TargetedSpellsMixin): number?
 ---@field SetInterrupted fun(self: TargetedSpellsMixin)
----@field CanBeHidden fun(self: TargetedSpellsMixin, id: number|nil): boolean
+---@field CanBeHidden fun(self: TargetedSpellsMixin, id: number?): boolean
 ---@field OnUpdate fun(self: TargetedSpellsMixin, elapsed: number)
 ---@field SetShowDuration fun(self: TargetedSpellsMixin, showDuration: boolean, showFractions: boolean)
 ---@field SetShowBorder fun(self: TargetedSpellsMixin, bool: boolean)
@@ -228,7 +228,7 @@
 ---@field SetupFrame fun(self: TargetedSpellsDriver, isBoot: boolean)
 ---@field AcquireFrames fun(self: TargetedSpellsDriver, castingUnit: string): TargetedSpellsMixin[]
 ---@field RepositionFrames fun(self: TargetedSpellsDriver)
----@field CleanUpUnit fun(self: TargetedSpellsMixin, unit: string, id?: number): boolean
+---@field CleanUpUnit fun(self: TargetedSpellsDriver, unit: string, exceptSpellId?: number, id?: number): boolean
 ---@field LoadConditionsProhibitExecution fun(self: TargetedSpellsDriver, kind: FrameKind): boolean
 ---@field UnitIsIrrelevant fun(self: TargetedSpellsDriver, unit: string, skipTargetCheck?: boolean): boolean
 ---@field OnFrameEvent fun(self: TargetedSpellsDriver, listenerFrame: Frame, event: WowEvent, ...)

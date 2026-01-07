@@ -58,7 +58,11 @@ function TargetedSpellsMixin:CanBeHidden(id)
 		return GetTime() >= self.doNotHideBefore
 	end
 
-	return id == nil and false or id == self:GetId()
+	if id == nil then
+		return true
+	end
+
+	return id == self:GetId()
 end
 
 ---@param self TargetedSpellsMixin

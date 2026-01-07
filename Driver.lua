@@ -584,10 +584,8 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 
 		if
 			event == "UNIT_SPELLCAST_INTERRUPTED"
-			and (
-				TargetedSpellsSaved.Settings.Self.IndicateInterrupts
-				or TargetedSpellsSaved.Settings.Party.IndicateInterrupts
-			)
+			and (TargetedSpellsSaved.Settings.Self.IndicateInterrupts or TargetedSpellsSaved.Settings.Party.IndicateInterrupts)
+			and UnitExists(unit) -- event gets sent when unit dies mid-cast, incorrectly implying it was interrupted
 		then
 			local frames = self.frames[unit]
 
