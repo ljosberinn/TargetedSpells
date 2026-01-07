@@ -640,74 +640,37 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			return
 		end
 
+		local frames = self.frames[unit]
+
+		if frames == nil or #frames == 0 then
+			return
+		end
+
 		---@type number|string|nil
 		local id = nil
 
 		if Private.IsMidnight then
-			local index = nil
+			local interruptedBy = nil
 
 			if event == "UNIT_SPELLCAST_CHANNEL_STOP" or event == "UNIT_SPELLCAST_INTERRUPTED" then
-				index = 5
+				interruptedBy = select(4, ...)
+				id = select(5, ...)
 			elseif event == "UNIT_SPELLCAST_EMPOWER_STOP" then
-				index = 6
+				interruptedBy = select(5, ...)
+				id = select(6, ...)
 			elseif event == "UNIT_SPELLCAST_STOP" then
-				index = 4
+				id = select(4, ...)
 			end
 
-			if index ~= nil then
-				id = select(index, ...)
+			if interruptedBy ~= nil and self:MaybeMarkAsInterruptedAndDelay(unit, id, interruptedBy) then
+				return
 			end
 		else
 			id = castGuid
 		end
 
-		if
-			event == "UNIT_SPELLCAST_INTERRUPTED"
-			and (TargetedSpellsSaved.Settings.Self.IndicateInterrupts or TargetedSpellsSaved.Settings.Party.IndicateInterrupts)
-			and UnitExists(unit) -- event gets sent when unit dies mid-cast, incorrectly implying it was interrupted
-		then
-			local frames = self.frames[unit]
-
-			if frames == nil then
-				return
-			end
-
-			local kindsToDelay = {
-				[Private.Enum.FrameKind.Self] = false,
-				[Private.Enum.FrameKind.Party] = false,
-			}
-
-			for i, frame in pairs(frames) do
-				local tableRef = frame:GetKind() == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
-					or TargetedSpellsSaved.Settings.Party
-
-				if tableRef.IndicateInterrupts then
-					frame:SetInterrupted()
-
-					kindsToDelay[frame:GetKind()] = true
-				end
-			end
-
-			if kindsToDelay[Private.Enum.FrameKind.Self] or kindsToDelay[Private.Enum.FrameKind.Party] then
-				---@type DelayInfo
-				local delayInfo = {
-					unit = unit,
-					kinds = kindsToDelay,
-					id = id,
-				}
-
-				C_Timer.After(
-					1,
-					GenerateClosure(
-						self.OnFrameEvent,
-						self,
-						self.listenerFrame,
-						Private.Enum.Events.DELAYED_FRAME_CLEANUP,
-						delayInfo
-					)
-				)
-				return
-			end
+		if event == "UNIT_SPELLCAST_INTERRUPTED" and self:MaybeMarkAsInterruptedAndDelay(unit, id) then
+			return
 		end
 
 		if self:CleanUpUnit(unit, nil, id) then
@@ -962,6 +925,85 @@ function TargetedSpellsDriver:MaybeApplyCombatAudioAlertOverride()
 
 		return ""
 	end
+end
+
+function TargetedSpellsDriver:MaybeMarkAsInterruptedAndDelay(unit, id, interruptedBy)
+	if
+		not TargetedSpellsSaved.Settings.Self.IndicateInterrupts
+		and not TargetedSpellsSaved.Settings.Party.IndicateInterrupts
+	then
+		return false
+	end
+
+	-- either via events that don't communicate interruptedBy, or via interrupt events briefly before deaths, e.g. on totems that cast something like Cinderbrew Meadery barrels
+	if Private.IsMidnight and interruptedBy == nil then
+		return false
+	end
+
+	-- event gets sent when unit dies mid-cast, incorrectly implying it was interrupted
+	if not UnitExists(unit) then
+		return false
+	end
+
+	local interruptInfo = {
+		name = nil,
+		color = nil,
+	}
+
+	if interruptedBy ~= nil then
+		local _, englishClass, _, _, _, name = GetPlayerInfoByGUID(interruptedBy)
+
+		if name == nil then
+			local token = UnitTokenFromGUID(interruptedBy)
+			if token ~= nil then
+				name = UnitName(token)
+			end
+		end
+
+		interruptInfo.name = name
+		interruptInfo.color = englishClass and C_ClassColor.GetClassColor(englishClass) or nil
+	end
+
+	local kindsToDelay = {
+		[Private.Enum.FrameKind.Self] = false,
+		[Private.Enum.FrameKind.Party] = false,
+	}
+
+	local frames = self.frames[unit]
+
+	for i, frame in pairs(frames) do
+		local tableRef = frame:GetKind() == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
+			or TargetedSpellsSaved.Settings.Party
+
+		if tableRef.IndicateInterrupts then
+			frame:SetInterrupted(interruptInfo)
+
+			kindsToDelay[frame:GetKind()] = true
+		end
+	end
+
+	if kindsToDelay[Private.Enum.FrameKind.Self] or kindsToDelay[Private.Enum.FrameKind.Party] then
+		---@type DelayInfo
+		local delayInfo = {
+			unit = unit,
+			kinds = kindsToDelay,
+			id = id,
+		}
+
+		C_Timer.After(
+			1,
+			GenerateClosure(
+				self.OnFrameEvent,
+				self,
+				self.listenerFrame,
+				Private.Enum.Events.DELAYED_FRAME_CLEANUP,
+				delayInfo
+			)
+		)
+		return true
+	end
+
+	return false
 end
 
 table.insert(Private.LoginFnQueue, GenerateClosure(TargetedSpellsDriver.Init, TargetedSpellsDriver))

@@ -36,6 +36,10 @@
 ---@field kinds table<FrameKind, boolean>
 ---@field id number|string|nil
 
+---@class InterruptInfo
+---@field name string?
+---@field color ColorMixin?
+
 ---@class TargetedSpellsSettings
 ---@field Keys table<'Self' | 'Party', table<string, string>>
 ---@field GetSettingsDisplayOrder fun(kind: FrameKind): string[]
@@ -143,10 +147,11 @@
 ---@field DurationText FontString
 ---@field Border Frame | BackdropTemplate
 ---@field InterruptIcon Texture
+---@field InterruptSource FontString
 ---@field OnLoad fun(self: TargetedSpellsMixin)
 ---@field SetId fun(self: TargetedSpellsMixin, id: number?)
 ---@field GetId fun(self: TargetedSpellsMixin): number?
----@field SetInterrupted fun(self: TargetedSpellsMixin)
+---@field SetInterrupted fun(self: TargetedSpellsMixin, interruptInfo: InterruptInfo)
 ---@field CanBeHidden fun(self: TargetedSpellsMixin, exceptSpellId:number?, id: number|string|nil): boolean
 ---@field OnUpdate fun(self: TargetedSpellsMixin, elapsed: number)
 ---@field SetShowDuration fun(self: TargetedSpellsMixin, showDuration: boolean, showFractions: boolean)
@@ -240,6 +245,7 @@
 ---@field MaybeApplyCombatAudioAlertOverride fun(self: TargetedSpellsMixin)
 ---@field ReleaseFrame fun(self: TargetedSpellsDriver, frame: TargetedSpellsMixin)
 ---@field DetermineSpellDelayRequirement fun(self: TargetedSpellsDriver): boolean
+---@field MaybeMarkAsInterruptedAndDelay fun(self: TargetedSpellsDriver, unit: string, id: number|string|nil, interruptedBy: string?): boolean
 
 ----- type patching / completion
 

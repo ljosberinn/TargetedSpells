@@ -25,6 +25,15 @@
                         <Anchor point="BOTTOMRIGHT" x="-4" y="4" />
                     </Anchors>
                 </Texture>
+                <FontString hidden="true" parentKey="InterruptSource" font="GameFontHighlightSmall" justifyV="TOP" setAllPoints="true">
+                    <Anchors>
+                        <Anchor point="TOP" relativePoint="TOP">
+                            <Offset>
+                                <AbsDimension x="0" y="5" />
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </FontString>
             </Layer>
         </Layers>
         <Frames>

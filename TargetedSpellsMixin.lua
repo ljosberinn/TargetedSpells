@@ -51,13 +51,26 @@ function TargetedSpellsMixin:GetId()
 	return self.id
 end
 
-function TargetedSpellsMixin:SetInterrupted()
+function TargetedSpellsMixin:SetInterrupted(interruptInfo)
 	self.wasInterrupted = true
 	self.doNotHideBefore = GetTime() + 0.95
 	self.InterruptIcon:Show()
 	self.Icon:SetDesaturated(true)
 	self.Cooldown:SetDrawSwipe(false)
 	self:SetShowDuration(false, false)
+	self:HideGlow()
+
+	if interruptInfo.name == nil then
+		return
+	end
+
+	self.InterruptSource:SetText(interruptInfo.name)
+
+	if interruptInfo.color ~= nil then
+		self.InterruptSource:SetTextColor(interruptInfo.color.r, interruptInfo.color.g, interruptInfo.color.b)
+	end
+
+	self.InterruptSource:Show()
 end
 
 function TargetedSpellsMixin:CanBeHidden(exceptSpellId, id)
@@ -471,6 +484,9 @@ function TargetedSpellsMixin:Reset()
 	self.Icon:SetDesaturated(false)
 	self.Cooldown:SetDrawSwipe(true)
 	self:SetId()
+	self.InterruptSource:SetText()
+	self.InterruptSource:Hide()
+	self.InterruptSource:SetTextColor(1, 1, 1)
 
 	local tableRef = self.kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
 		or TargetedSpellsSaved.Settings.Party

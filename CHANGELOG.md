@@ -1,3 +1,9 @@
+## Version 1.0.4
+
+- _interrupted_ (not stopped) channels are now correctly highlighted as such
+- when using interrupt indication, the source of the interrupt will now be mentioned at the top
+- glows will now get hidden upon interrupting an important spell
+
 ## Version 1.0.3
 
 - fixed a bug where icons were lingering as interrupted when an enemy died mid-cast

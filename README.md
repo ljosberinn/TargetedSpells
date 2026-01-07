@@ -46,7 +46,8 @@
   - opacity
   - option to selectively toggle this feature based on player role or content type
   - option to briefly highlight interrupted spells - only works for non-channels
-    - this desaturates the frame, puts the cross raid marker on top of it and delays hiding by one second
+    - this desaturates the frame, puts the cross raid marker on top of it, puts the interrupt source if available at the top of the frame and delays hiding by one second
+    - handy for vod review
 
 ### Party
 
@@ -67,7 +68,8 @@
   - opacity
   - option to selectively toggle this feature based on player role or content type
   - option to briefly highlight interrupted spells - only works for non-channels
-    - this desaturates the frame, puts the cross raid marker on top of it and delays hiding by one second
+    - this desaturates the frame, puts the cross raid marker on top of it, puts the interrupt source if available at the top of the frame and delays hiding by one second
+    - handy for vod review
 
 ## Known Issues / Limitations
 
@@ -87,20 +89,20 @@ Blizzards function solely relies on the `UNIT_TARGET` event which sometimes (~10
 
 In these cases you'll see the spell icon for the spell being cast, but no sound will be played, making this addon - for now - clearly superior over default UI functionality.
 
-There's also the following edge case: if an enemy does not change target between two consecutive spells on you, it'll only announce the first one, as the npc hasn't swapped back and forth between tank and you between the casts. In that case, again, the addon will correctly show both spells on you, but again, no sound will be played for the second spell.
+There's also the following edge case: if an enemy does not change target between two consecutive spells on you, it'll only announce the first one, as the enemy hasn't swapped back and forth between tank and you between the casts. In that case, again, the addon will correctly show both spells on you, but again, no sound will be played for the second spell.
 
 #### Sound / TTS Only Sometimes Playing As Tank
 
 Goes hand in hand with the above. The Blizzard function is intended to only fire on enemies changing target to you. You as a tank should be targeted most of the time, so the only times this will work as expected are:
 
 - an enemy spamcasts spells, first on another player (targeting them), then on you
-- someone else had aggro firs, then you and instantly started casting
+- someone else had aggro first, then you and instantly started casting
 
 ### Sorting
 
 **Currently not fixable as the cast time of a spell is secret.**
 
-It's not possible to sort spells targeting a player in order of cast end, making it imposible to easily surface which spell hits first.
+It's not possible to sort spells targeting a player in order of cast end, making it impossible to easily surface which spell hits first.
 
 ### Layouting
 
