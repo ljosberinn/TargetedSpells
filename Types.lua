@@ -130,24 +130,24 @@
 ---@field Animation AnimationGroup
 
 ---@class TargetedSpellsMixin : Frame
----@field Overlay Texture
----@field Icon Texture
----@field Cooldown ExtendedCooldownTypes
----@field kind FrameKind?
----@field unit string? -- secret?
----@field startTime number?
----@field duration DurationObjectDummy|number|nil -- secret
----@field spellId number? -- secret
----@field id number? -- secret
----@field _AutoCastGlow Frame?
----@field _ButtonGlow Frame?
----@field _PixelGlow Frame?
----@field _ProcGlow Frame?
----@field _Star4 Star4Glow?
----@field DurationText FontString
----@field Border Frame | BackdropTemplate
----@field InterruptIcon Texture
----@field InterruptSource FontString
+---@field private Overlay Texture
+---@field private Icon Texture
+---@field private Cooldown ExtendedCooldownTypes
+---@field private kind FrameKind?
+---@field private unit string? -- secret?
+---@field private startTime number?
+---@field private duration DurationObjectDummy|number|nil -- secret
+---@field private spellId number? -- secret
+---@field private id number? -- secret
+---@field private _AutoCastGlow Frame?
+---@field private _ButtonGlow Frame?
+---@field private _PixelGlow Frame?
+---@field private _ProcGlow Frame?
+---@field private _Star4 Star4Glow?
+---@field private DurationText FontString
+---@field private Border Frame | BackdropTemplate
+---@field private InterruptIcon Texture
+---@field private InterruptSource FontString
 ---@field OnLoad fun(self: TargetedSpellsMixin)
 ---@field SetId fun(self: TargetedSpellsMixin, id: number?)
 ---@field GetId fun(self: TargetedSpellsMixin): number?
@@ -180,12 +180,12 @@
 ---@field AttemptToPlayTTS fun(self: TargetedSpellsMixin, contentType: ContentType, unit: string)
 
 ---@class TargetedSpellsEditModeMixin : Frame
----@field editModeFrame Frame
----@field demoPlaying boolean
----@field framePool FramePool
----@field frames table<number, TargetedSpellsMixin[]> | TargetedSpellsMixin[]
----@field demoTimers { tickers: table<number, FunctionContainer>, timers: table<number, FunctionContainer> }
----@field buildingFrames true|nil
+---@field protected editModeFrame Frame
+---@field private demoPlaying boolean
+---@field private framePool FramePool
+---@field private frames table<number, TargetedSpellsMixin[]> | TargetedSpellsMixin[]
+---@field protected demoTimers { tickers: table<number, FunctionContainer>, timers: table<number, FunctionContainer> }
+---@field private buildingFrames true|nil
 ---@field Init fun(self: TargetedSpellsEditModeMixin, displayName: string, frameKind: FrameKind)
 ---@field OnSettingsChanged fun(self: TargetedSpellsEditModeMixin, key: string, value: number|string)
 ---@field CreateSetting fun(self: TargetedSpellsEditModeMixin, key: string, defaults: SavedVariablesSettingsParty|SavedVariablesSettingsSelf): LibEditModeCheckbox | LibEditModeDropdown | LibEditModeSlider
@@ -201,8 +201,8 @@
 ---@field EndDemo fun(self: TargetedSpellsEditModeMixin)
 
 ---@class TargetedSpellsSelfEditMode : TargetedSpellsEditModeMixin
----@field maxFrames number
----@field frames TargetedSpellsMixin[]
+---@field private maxFrames number
+---@field private frames TargetedSpellsMixin[]
 ---@field Init fun(self: TargetedSpellsSelfEditMode)
 ---@field ResizeEditModeFrame fun(self: TargetedSpellsSelfEditMode)
 ---@field ReleaseAllFrames fun(self: TargetedSpellsEditModeMixin)
@@ -214,10 +214,10 @@
 ---@field OnLayoutSettingChanged fun(self: TargetedSpellsEditModeMixin, key: string, value: number|string)
 
 ---@class TargetedSpellsPartyEditMode : TargetedSpellsEditModeMixin
----@field maxUnitCount number
----@field useRaidStylePartyFrames boolean
----@field amountOfPreviewFramesPerUnit number
----@field frames table<number, TargetedSpellsMixin[]>
+---@field private maxUnitCount number
+---@field private useRaidStylePartyFrames boolean
+---@field private amountOfPreviewFramesPerUnit number
+---@field private frames table<number, TargetedSpellsMixin[]>
 ---@field Init fun(self: TargetedSpellsPartyEditMode)
 ---@field AppendSettings fun(self: TargetedSpellsEditModeMixin)
 ---@field RepositionPreviewFrames fun(self: TargetedSpellsEditModeMixin)
@@ -228,16 +228,16 @@
 ---@field ReleaseAllFrames fun(self: TargetedSpellsEditModeMixin)
 
 ---@class TargetedSpellsDriver
----@field framePool FramePool
----@field listenerFrame Frame
----@field role Role
----@field contentType ContentType
----@field sawPlayerLogin boolean
+---@field private framePool FramePool
+---@field private frame Frame
+---@field private role Role
+---@field private contentType ContentType
+---@field private sawPlayerLogin boolean
 ---@field frames table<string, TargetedSpellsMixin[]>
 ---@field SetupFrame fun(self: TargetedSpellsDriver, isBoot: boolean)
 ---@field AcquireFrames fun(self: TargetedSpellsDriver, castingUnit: string): TargetedSpellsMixin[]
 ---@field RepositionFrames fun(self: TargetedSpellsDriver)
----@field CleanUpUnit fun(self: TargetedSpellsDriver, unit: string, exceptSpellId?: number, id?: number): boolean
+---@field ReleaseFrameForUnit fun(self: TargetedSpellsDriver, unit: string, removeUnit: boolean, exceptSpellId?: number, id?: number): boolean
 ---@field LoadConditionsProhibitExecution fun(self: TargetedSpellsDriver, kind: FrameKind): boolean
 ---@field UnitIsIrrelevant fun(self: TargetedSpellsDriver, unit: string, skipTargetCheck?: boolean): boolean
 ---@field OnFrameEvent fun(self: TargetedSpellsDriver, listenerFrame: Frame, event: WowEvent, ...)

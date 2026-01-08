@@ -45,7 +45,7 @@
   - show border
   - opacity
   - option to selectively toggle this feature based on player role or content type
-  - option to briefly highlight interrupted spells - only works for non-channels
+  - option to briefly highlight interrupted spells
     - this desaturates the frame, puts the cross raid marker on top of it, puts the interrupt source if available at the top of the frame and delays hiding by one second
     - handy for vod review
 
@@ -67,7 +67,7 @@
   - show border
   - opacity
   - option to selectively toggle this feature based on player role or content type
-  - option to briefly highlight interrupted spells - only works for non-channels
+  - option to briefly highlight interrupted spells
     - this desaturates the frame, puts the cross raid marker on top of it, puts the interrupt source if available at the top of the frame and delays hiding by one second
     - handy for vod review
 

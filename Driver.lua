@@ -20,16 +20,6 @@ end
 function TargetedSpellsDriver:SetupFrame(isBoot)
 	if isBoot then
 		self.frame = CreateFrame("Frame", "TargetedSpellsDriverFrame", UIParent)
-
-		-- awkward due to the need to pass self.frame to the callback
-		Private.EventRegistry:RegisterCallback(
-			Private.Enum.Events.EDIT_MODE_POSITION_CHANGED,
-			self.OnFrameEvent,
-			self,
-			self,
-			Private.Enum.Events.EDIT_MODE_POSITION_CHANGED
-		)
-
 		self.frame:SetSize(1, 1)
 		self.frame:ClearAllPoints()
 		self.frame:SetPoint(
@@ -38,10 +28,19 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 			TargetedSpellsSaved.Settings.Self.Position.y
 		)
 		self.frame:Show()
+
+		Private.EventRegistry:RegisterCallback(
+			Private.Enum.Events.EDIT_MODE_POSITION_CHANGED,
+			self.OnFrameEvent,
+			self,
+			self.frame,
+			Private.Enum.Events.EDIT_MODE_POSITION_CHANGED
+			-- the remaining args are being passed when the event gets triggered
+		)
 	end
 
 	if
-		(Private.Settings.Keys.Self.Enabled or Private.Settings.Keys.Party.Enabled)
+		(TargetedSpellsSaved.Settings.Self.Enabled or TargetedSpellsSaved.Settings.Party.Enabled)
 		and not self.frame:IsEventRegistered("UNIT_SPELLCAST_START")
 	then
 		self.frame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
@@ -162,23 +161,25 @@ function TargetedSpellsDriver:RepositionFrames()
 	local activeFrames = {}
 
 	for sourceUnit, frames in pairs(self.frames) do
-		for i, frame in ipairs(frames) do
-			local kind = frame:GetKind()
+		for i, frame in pairs(frames) do
+			if frame then
+				local kind = frame:GetKind()
 
-			if kind == Private.Enum.FrameKind.Self then
-				if activeFrames[kind] == nil then
-					activeFrames[kind] = {}
+				if kind == Private.Enum.FrameKind.Self then
+					if activeFrames[kind] == nil then
+						activeFrames[kind] = {}
+					end
+
+					table.insert(activeFrames[kind], frame)
+				elseif kind == Private.Enum.FrameKind.Party then
+					local targetUnit = frame:GetUnit()
+
+					if activeFrames[targetUnit] == nil then
+						activeFrames[targetUnit] = {}
+					end
+
+					table.insert(activeFrames[targetUnit], frame)
 				end
-
-				table.insert(activeFrames[kind], frame)
-			elseif kind == Private.Enum.FrameKind.Party then
-				local targetUnit = frame:GetUnit()
-
-				if activeFrames[targetUnit] == nil then
-					activeFrames[targetUnit] = {}
-				end
-
-				table.insert(activeFrames[targetUnit], frame)
 			end
 		end
 	end
@@ -201,7 +202,7 @@ function TargetedSpellsDriver:RepositionFrames()
 
 			for i, frame in ipairs(frames) do
 				local x = 0
-				local y = -(height / 2)
+				local y = 0
 
 				if isHorizontal then
 					x = Private.Utils.CalculateCoordinate(i, width, gap, width, total, 0, grow)
@@ -250,7 +251,7 @@ function TargetedSpellsDriver:RepositionFrames()
 	end
 end
 
-function TargetedSpellsDriver:CleanUpUnit(unit, exceptSpellId, id)
+function TargetedSpellsDriver:ReleaseFrameForUnit(unit, removeUnit, exceptSpellId, id)
 	local frames = self.frames[unit]
 
 	if frames == nil then
@@ -272,6 +273,10 @@ function TargetedSpellsDriver:CleanUpUnit(unit, exceptSpellId, id)
 
 	if cleanedEverythingUp then
 		table.wipe(frames)
+
+		if removeUnit then
+			self.frames[unit] = nil
+		end
 
 		return true
 	end
@@ -385,9 +390,9 @@ function TargetedSpellsDriver:UnitIsIrrelevant(unit, skipTargetCheck)
 	return false
 end
 
----@param listenerFrame Frame -- identical to self.frame
+---@param _ Frame -- identical to self.frame
 ---@param event "DELAYED_FRAME_CLEANUP" | "PLAYER_LOGIN" | "UNIT_SPELLCAST_INTERRUPTED" | "UNIT_SPELLCAST_FAILED_QUIET" | "ZONE_CHANGED_NEW_AREA" | "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" | "UNIT_SPELLCAST_SUCCEEDED" |"EDIT_MODE_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "DELAYED_UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED"
-function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
+function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 	if
 		event == "UNIT_SPELLCAST_START"
 		or event == "UNIT_SPELLCAST_CHANNEL_START"
@@ -414,7 +419,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			GenerateClosure(
 				self.OnFrameEvent,
 				self,
-				self.listenerFrame,
+				self.frame,
 				event == "UNIT_SPELLCAST_START" and Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START
 					or Private.Enum.Events.DELAYED_UNIT_SPELLCAST_CHANNEL_START,
 				{
@@ -483,7 +488,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			return
 		end
 
-		self:OnFrameEvent(self.listenerFrame, delayEvent, {
+		self:OnFrameEvent(self.frame, delayEvent, {
 			unit = unit,
 			spellId = spellId,
 			startTime = startTime,
@@ -553,7 +558,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		if self.frames[unit] == nil then
 			self.frames[unit] = {}
 		else
-			self:CleanUpUnit(unit, spellId)
+			self:ReleaseFrameForUnit(unit, false, spellId)
 		end
 
 		for i, frame in ipairs(frames) do
@@ -578,7 +583,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			local cleanedSomethingUp = false
 
 			for unit in pairs(self.frames) do
-				if self:CleanUpUnit(unit) then
+				if self:ReleaseFrameForUnit(unit, true) then
 					cleanedSomethingUp = true
 				end
 			end
@@ -673,7 +678,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 			return
 		end
 
-		if self:CleanUpUnit(unit, nil, id) then
+		if self:ReleaseFrameForUnit(unit, true, nil, id) then
 			self:RepositionFrames()
 		end
 	elseif
@@ -694,7 +699,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		local frames = self:AcquireFrames(info.unit)
 
 		if #frames == 0 then
-			if self:CleanUpUnit(info.unit, info.spellId) then
+			if self:ReleaseFrameForUnit(info.unit, true, info.spellId) then
 				self:RepositionFrames()
 			end
 
@@ -704,7 +709,7 @@ function TargetedSpellsDriver:OnFrameEvent(listenerFrame, event, ...)
 		if self.frames[info.unit] == nil then
 			self.frames[info.unit] = {}
 		else
-			self:CleanUpUnit(info.unit, info.spellId, info.id)
+			self:ReleaseFrameForUnit(info.unit, false, info.spellId, info.id)
 		end
 
 		---@type DurationObjectDummy|number|nil
@@ -992,13 +997,7 @@ function TargetedSpellsDriver:MaybeMarkAsInterruptedAndDelay(unit, id, interrupt
 
 		C_Timer.After(
 			1,
-			GenerateClosure(
-				self.OnFrameEvent,
-				self,
-				self.listenerFrame,
-				Private.Enum.Events.DELAYED_FRAME_CLEANUP,
-				delayInfo
-			)
+			GenerateClosure(self.OnFrameEvent, self, self.frame, Private.Enum.Events.DELAYED_FRAME_CLEANUP, delayInfo)
 		)
 		return true
 	end

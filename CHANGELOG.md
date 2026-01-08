@@ -1,3 +1,11 @@
+## Version 1.0.5
+
+- fixed a bug incorrectly leading to event registration when both Self and Party modules were disabled
+- fixed a bug where the sound selection would show an empty selected value if another addon registered the selected sound under the same name before this addon loaded
+- reduced memory footprint by a tiny amount
+- fixed a bug where sometimes a frame would not properly reposition and appear behind others
+- fixed a bug where player-targeted frames were incorrectly positioned in relation to the edit mode element
+
 ## Version 1.0.4
 
 - _interrupted_ (not stopped) channels are now correctly highlighted as such

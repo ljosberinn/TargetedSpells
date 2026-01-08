@@ -4,8 +4,8 @@ local LibSharedMedia = LibStub("LibSharedMedia-3.0")
 
 table.insert(Private.LoginFnQueue, function()
 	local customSounds = {
-		{ name = "Water Drop", path = "WaterDrop.ogg" },
-		{ name = "Banana Peel Slip", path = "BananaPeelSlip.ogg" },
+		{ name = "TargetedSpells Water Drop", path = "WaterDrop.ogg" },
+		{ name = "TargetedSpells Banana Peel Slip", path = "BananaPeelSlip.ogg" },
 	}
 
 	for i, sound in pairs(customSounds) do
