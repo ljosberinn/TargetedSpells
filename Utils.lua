@@ -264,7 +264,7 @@ do
 			end
 
 			-- of course this vibecoded mess doesn't adhere to any standards so its using completely different
-			-- frames in edit mode that also don't communicate the unit they intend to resemble. clown emoji
+			-- frames in edit mode that also don't communicate the unit they intend to resemble. 🤡
 			local id = (unit == "player" and 5 or string.gsub(unit, "party", ""))
 			-- even worse, it uses two frames with the same name so you can't globally access them as needed.
 			-- only occurs after opening edit mode the second time tho
