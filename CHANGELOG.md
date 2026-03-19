@@ -1,3 +1,8 @@
+## Version 2.0.1
+
+- use a more future-proof approach of dealing with Layouting given the presumably upcoming restriction changes
+- fix Icon Zoom and Border Style internationalization breaking non-English clients
+
 ## Version 2.0.0
 
 ### Layouting
