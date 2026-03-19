@@ -678,14 +678,17 @@ function TargetedSpellsMixin:PostCreate(unit, kind, castingUnit)
 	self:SetKind(kind)
 
 	if castingUnit ~= nil then
-		if kind == Private.Enum.FrameKind.Self then
-			self:SetAlphaFromBoolean(PlayerIsSpellTarget(castingUnit, unit))
-		else
-			self:SetAlphaFromBoolean(UnitIsUnit(string.format("%starget", castingUnit), unit))
-		end
-	end
+		local targetsThatUnit = nil
 
-	self.Bar:SetValue(self:GetAlpha())
+		if kind == Private.Enum.FrameKind.Self then
+			targetsThatUnit = PlayerIsSpellTarget(castingUnit, unit)
+		else
+			targetsThatUnit = UnitIsUnit(string.format("%starget", castingUnit), unit)
+		end
+
+		self:SetAlphaFromBoolean(targetsThatUnit)
+		self.Bar:SetValue(C_CurveUtil.EvaluateColorValueFromBoolean(targetsThatUnit, 1, 0))
+	end
 end
 
 function TargetedSpellsMixin:Reset()
