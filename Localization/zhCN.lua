@@ -135,8 +135,15 @@ L.Settings.RenderInterruptSourceNameTooltip = nil
 L.Settings.ShowSwipeLabel = "显示滑动"
 L.Settings.ShowSwipeTooltip = nil
 
+L.Settings.BorderStyleLabel = "Border Style"
+L.Settings.BorderStyleTooltip = nil
+L.Settings.BorderStyleSolid = "Solid"
+
 L.Settings.OpacityLabel = "不透明度"
 L.Settings.OpacityTooltip = nil
+
+L.Settings.IconZoomLabel = "Icon Zoom"
+L.Settings.IconZoomTooltip = nil
 
 L.Settings.FrameOffsetXLabel = "X轴偏移"
 L.Settings.FrameOffsetXTooltip = nil

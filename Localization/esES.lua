@@ -135,8 +135,15 @@ L.Settings.RenderInterruptSourceNameTooltip = nil
 L.Settings.ShowSwipeLabel = "Mostrar barrido"
 L.Settings.ShowSwipeTooltip = nil
 
+L.Settings.BorderStyleLabel = "Border Style"
+L.Settings.BorderStyleTooltip = nil
+L.Settings.BorderStyleSolid = "Solid"
+
 L.Settings.OpacityLabel = "Opacidad"
 L.Settings.OpacityTooltip = nil
+
+L.Settings.IconZoomLabel = "Icon Zoom"
+L.Settings.IconZoomTooltip = nil
 
 L.Settings.FrameOffsetXLabel = "Desplazamiento X"
 L.Settings.FrameOffsetXTooltip = nil

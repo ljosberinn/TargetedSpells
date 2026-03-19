@@ -135,8 +135,15 @@ L.Settings.RenderInterruptSourceNameTooltip = nil
 L.Settings.ShowSwipeLabel = "회전 표시"
 L.Settings.ShowSwipeTooltip = nil
 
+L.Settings.BorderStyleLabel = "Border Style"
+L.Settings.BorderStyleTooltip = nil
+L.Settings.BorderStyleSolid = "Solid"
+
 L.Settings.OpacityLabel = "불투명도"
 L.Settings.OpacityTooltip = nil
+
+L.Settings.IconZoomLabel = "Icon Zoom"
+L.Settings.IconZoomTooltip = nil
 
 L.Settings.FrameOffsetXLabel = "X 위치 조정"
 L.Settings.FrameOffsetXTooltip = nil
