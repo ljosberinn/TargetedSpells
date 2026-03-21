@@ -29,7 +29,7 @@ L.Functionality.CVarWarning = string.format(
 )
 
 L.Functionality.V2DeprecationWarning = string.format(
-	"%s\n\nDue to the changes in v2, the following settings were reset for you:\n\n%s\n\nAdditionally, we suggest verifying your layouting as it may also be impacted.",
+	"%s\n\nEn raison des changements dans la v2, les paramètres suivants ont été réinitialisés:\n\n%s\n\nDe plus, nous suggérons de vérifier votre configuration car elle pourrait aussi être impactée.",
 	addonNameWithIcon,
 	"%s"
 )
@@ -183,7 +183,7 @@ L.Settings.FeatureFlagLabels = {
 }
 
 L.Settings.FeatureFlagSettingTitles = {
-	[Private.Enum.FeatureFlag.GlowImportant] = "Display",
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = "Interrupt Settings",
-	[Private.Enum.FeatureFlag.IncludeSelfInParty] = "Party Settings",
+	[Private.Enum.FeatureFlag.GlowImportant] = "Affichage",
+	[Private.Enum.FeatureFlag.IndicateInterrupts] = "Paramètres d'interruption",
+	[Private.Enum.FeatureFlag.IncludeSelfInParty] = "Paramètres de groupe",
 }
