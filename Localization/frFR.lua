@@ -28,11 +28,7 @@ L.Functionality.CVarWarning = string.format(
 	ENABLE
 )
 
-L.Functionality.V2DeprecationWarning = string.format(
-	"%s\n\nEn raison des changements dans la v2, les paramètres suivants ont été réinitialisés:\n\n%s\n\nDe plus, nous suggérons de vérifier votre configuration car elle pourrait aussi être impactée.",
-	addonNameWithIcon,
-	"%s"
-)
+L.Functionality.V3DeprecationWarning = "TODO"
 
 L.Settings.EnabledLabel = "Activé"
 L.Settings.EnabledTooltip = nil

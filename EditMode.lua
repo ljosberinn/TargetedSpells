@@ -61,10 +61,6 @@ function TargetedSpellsEditModeMixin:OnSettingsChanged(key, flagIdOrValue, newBo
 		or key == Private.Settings.Keys.Party.Direction
 		or key == Private.Settings.Keys.Party.Width
 		or key == Private.Settings.Keys.Party.Height
-		or key == Private.Settings.Keys.Party.OffsetX
-		or key == Private.Settings.Keys.Party.OffsetY
-		or key == Private.Settings.Keys.Party.SourceAnchor
-		or key == Private.Settings.Keys.Party.TargetAnchor
 		or key == Private.Settings.Keys.Party.SortOrder
 		or key == Private.Settings.Keys.Party.Grow
 		or key == Private.Settings.Keys.Party.GlowType
@@ -104,13 +100,6 @@ function TargetedSpellsEditModeMixin:OnSettingsChanged(key, flagIdOrValue, newBo
 				self:EndDemo()
 				self:StartDemo()
 			end
-		elseif flagId == Private.Enum.FeatureFlag.IncludeSelfInParty then
-			if self.frameKind ~= Private.Enum.FrameKind.Party or not LibEditMode:IsInEditMode() then
-				return
-			end
-
-			self:EndDemo()
-			self:StartDemo()
 		end
 	end
 end
@@ -1208,11 +1197,7 @@ function TargetedSpellsEditModeMixin:AppendSettings()
 end
 
 function TargetedSpellsEditModeMixin:AcquireFrame()
-	local frame = Private.Utils.Pool:Acquire()
-
-	frame:PostCreate("preview", self.frameKind, nil)
-
-	return frame
+	-- Implement in your derived mixin.
 end
 
 function TargetedSpellsEditModeMixin:OnEditModePositionChanged(frame, layoutName, point, x, y)
@@ -1318,9 +1303,17 @@ function SelfEditModeMixin:ResizeEditModeFrame()
 	end
 end
 
+function SelfEditModeMixin:AcquireFrame()
+	local frame = Private.Utils.Pools.Self:Acquire()
+
+	frame:PostCreate("preview")
+
+	return frame
+end
+
 function SelfEditModeMixin:ReleaseAllFrames()
 	for index, frame in ipairs(self.frames) do
-		Private.Utils.Pool:Release(frame)
+		Private.Utils.Pools.Self:Release(frame)
 	end
 
 	table.wipe(self.frames)
@@ -1330,7 +1323,7 @@ function SelfEditModeMixin:AppendSettings()
 	LibEditMode:AddFrame(
 		self.editModeFrame,
 		GenerateClosure(self.OnEditModePositionChanged, self),
-		Private.Settings.GetDefaultEditModeFramePosition(),
+		Private.Settings.GetDefaultSelfEditModeFramePosition(),
 		Private.L.EditMode.TargetedSpellsSelfLabel
 	)
 
@@ -1373,7 +1366,7 @@ function SelfEditModeMixin:RepositionPreviewFrames()
 		return
 	end
 
-	---@type TargetedSpellsMixin[]
+	---@type TargetedSpellsIconMixin[]
 	local activeFrames = {}
 
 	for index = 1, self.maxFrames do
@@ -1399,20 +1392,19 @@ function SelfEditModeMixin:RepositionPreviewFrames()
 		return
 	end
 
-	local tableRef = TargetedSpellsSaved.Settings.Self
-
-	Private.Utils.SortFrames(activeFrames, tableRef.SortOrder)
+	Private.Utils.SortFrames(activeFrames, TargetedSpellsSaved.Settings.Self.SortOrder)
 
 	local layouting = Private.Utils.CollectLayoutingArguments(
-		tableRef.Direction,
-		tableRef.Grow,
-		tableRef.Width,
-		tableRef.Height,
-		tableRef.Gap
+		TargetedSpellsSaved.Settings.Self.Direction,
+		TargetedSpellsSaved.Settings.Self.Grow,
+		TargetedSpellsSaved.Settings.Self.Width,
+		TargetedSpellsSaved.Settings.Self.Height,
+		TargetedSpellsSaved.Settings.Self.Gap
 	)
 
 	local parentDimension = layouting.isHorizontal and self.editModeFrame:GetWidth() or self.editModeFrame:GetHeight()
-	local offset = layouting.isGrowEnd and (parentDimension / 2 - tableRef.Gap) or (-parentDimension / 2)
+	local offset = layouting.isGrowEnd and (parentDimension / 2 - TargetedSpellsSaved.Settings.Self.Gap)
+		or (-parentDimension / 2)
 
 	Private.Utils.AdjustLayout(
 		activeFrames,
@@ -1486,95 +1478,45 @@ local PartyEditModeMixin = CreateFromMixins(TargetedSpellsEditModeMixin)
 
 function PartyEditModeMixin:Init()
 	TargetedSpellsEditModeMixin.Init(self, Private.L.EditMode.TargetedSpellsPartyLabel, Private.Enum.FrameKind.Party)
-	self.maxUnitCount = 5
-	self.amountOfPreviewFramesPerUnit = 3
-	self.useRaidStylePartyFrames = self.useRaidStylePartyFrames or EditModeManagerFrame:UseRaidStylePartyFrames()
-	self:RepositionEditModeFrame()
+	self.maxFrames = 5
 
-	-- when this executes, layouts aren't loaded yet
-	hooksecurefunc(EditModeManagerFrame, "UpdateLayoutInfo", function(editModeManagerSelf)
-		if TargetedSpellsSaved.Settings.Party.Enabled then
-			local accountSettings = C_EditMode.GetAccountSettings()
+	self:RestoreEditModePosition()
+	self:ResizeEditModeFrame()
+end
 
-			for i, setting in pairs(accountSettings) do
-				if setting.setting == Enum.EditModeAccountSetting.ShowPartyFrames and setting.value == 0 then
-					C_EditMode.SetAccountSetting(Enum.EditModeAccountSetting.ShowPartyFrames, 1)
-					break
-				end
-			end
-		end
+function PartyEditModeMixin:ResizeEditModeFrame()
+	if TargetedSpellsSaved.Settings.Party.Direction == Private.Enum.Direction.Horizontal then
+		local totalWidth = (self.maxFrames * TargetedSpellsSaved.Settings.Party.Width)
+			+ (self.maxFrames - 1) * TargetedSpellsSaved.Settings.Party.Gap
+		PixelUtil.SetSize(self.editModeFrame, totalWidth, TargetedSpellsSaved.Settings.Party.Height)
+	else
+		local totalHeight = (self.maxFrames * TargetedSpellsSaved.Settings.Party.Height)
+			+ (self.maxFrames - 1) * TargetedSpellsSaved.Settings.Party.Gap
+		PixelUtil.SetSize(self.editModeFrame, TargetedSpellsSaved.Settings.Party.Width, totalHeight)
+	end
+end
 
-		local useRaidStylePartyFrames = EditModeManagerFrame:UseRaidStylePartyFrames()
-
-		if useRaidStylePartyFrames == self.useRaidStylePartyFrames then
-			return
-		end
-
-		self.useRaidStylePartyFrames = useRaidStylePartyFrames
-		self:RepositionEditModeFrame()
-	end)
-
-	-- dirtying checkboxes while edit mode is opened doesn't fire any events
-	hooksecurefunc(EditModeManagerFrame, "OnAccountSettingChanged", function(editModeManagerSelf, accountSetting, value)
-		if
-			not TargetedSpellsSaved.Settings.Party.Enabled
-			or accountSetting ~= Enum.EditModeAccountSetting.ShowPartyFrames
-		then
-			return
-		end
-
-		if value then
-			self:StartDemo()
-			self:RepositionEditModeFrame()
-			self.editModeFrame:Show()
-		else
-			self:EndDemo()
-			self.editModeFrame:Hide()
-		end
-	end)
-
-	-- dirtying settings while edit mode is opened doesn't fire any events eitehr
-	hooksecurefunc(EditModeSystemSettingsDialog, "OnSettingValueChanged", function(settingsSelf, setting, checked)
-		if
-			not TargetedSpellsSaved.Settings.Party.Enabled
-			or setting ~= Enum.EditModeUnitFrameSetting.UseRaidStylePartyFrames
-		then
-			return
-		end
-
-		local useRaidStylePartyFrames = checked == 1
-
-		if useRaidStylePartyFrames == self.useRaidStylePartyFrames then
-			return
-		end
-
-		self.useRaidStylePartyFrames = useRaidStylePartyFrames
-		self:RepositionEditModeFrame()
-
-		if TargetedSpellsSaved.Settings.Party.Enabled then
-			self:EndDemo()
-			self:StartDemo()
-		end
-	end)
+function PartyEditModeMixin:RestoreEditModePosition()
+	self.editModeFrame:ClearAllPoints()
+	PixelUtil.SetPoint(
+		self.editModeFrame,
+		"CENTER",
+		UIParent,
+		TargetedSpellsSaved.Settings.Party.Position.point,
+		TargetedSpellsSaved.Settings.Party.Position.x,
+		TargetedSpellsSaved.Settings.Party.Position.y
+	)
 end
 
 function PartyEditModeMixin:AppendSettings()
 	LibEditMode:AddFrame(
 		self.editModeFrame,
 		GenerateClosure(self.OnEditModePositionChanged, self),
-		Private.Settings.GetDefaultEditModeFramePosition(),
-		"Targeted Spells - Party"
+		Private.Settings.GetDefaultBarsEditModeFramePosition(),
+		Private.L.EditMode.TargetedSpellsPartyLabel
 	)
-	self.editModeFrame:SetScript("OnDragStart", nil)
-	self.editModeFrame:SetScript("OnDragStop", nil)
 
-	do
-		local cb = GenerateClosure(self.RepositionEditModeFrame, self)
-
-		LibEditMode:RegisterCallback("enter", QUI == nil and cb or function()
-			C_Timer.After(0.25, cb)
-		end)
-	end
+	LibEditMode:RegisterCallback("layout", GenerateClosure(self.RestoreEditModePosition, self))
 
 	local settingsOrder = Private.Settings.GetSettingsDisplayOrder(Private.Enum.FrameKind.Party)
 	local settings = {}
@@ -1588,73 +1530,36 @@ function PartyEditModeMixin:AppendSettings()
 	LibEditMode:AddFrameSettingsButtons(self.editModeFrame, self:CreateImportExportButtons())
 end
 
----@param useRaidStylePartyFrames boolean
----@return Frame, number
-local function GetEditModePartyParentFrame(useRaidStylePartyFrames)
-	if Vd1 ~= nil then
-		return Vd1, Vd1:GetWidth()
-	end
+function PartyEditModeMixin:OnEditModePositionChanged(frame, layoutName, point, x, y)
+	TargetedSpellsSaved.Settings.Party.Position.point = point
+	TargetedSpellsSaved.Settings.Party.Position.x = x
+	TargetedSpellsSaved.Settings.Party.Position.y = y
 
-	if ShadowUF ~= nil and SUFHeaderparty ~= nil then
-		return SUFHeaderparty, SUFHeaderparty:GetWidth()
-	end
-
-	if EnhanceQoL ~= nil and EQOLUFPartyHeader ~= nil then
-		return EQOLUFPartyHeader, EQOLUFPartyHeader:GetWidth()
-	end
-
-	if
-		ElvUI ~= nil
-		and ElvUI[1].db ~= nil
-		and ElvUI[1].db.unitframe.units.party.enable ~= nil
-		and ElvUF_Party ~= nil
-		and ElvUF_Party:IsShown()
-	then
-		return ElvUF_Party, ElvUF_Party:GetWidth()
-	end
-
-	if QUI ~= nil then
-		if QUI_PartyHeader ~= nil and QUI_PartyHeader:IsShown() then
-			return QUI_PartyHeader, QUI_PartyHeader:GetWidth()
-		end
-
-		if QUI_GroupFramesMover ~= nil then
-			return QUI_GroupFramesMover, QUI_GroupFramesMover:GetWidth()
-		end
-	end
-
-	if Cell ~= nil and CellPartyFrameHeader ~= nil then
-		return CellPartyFrameHeader, CellPartyFrameHeader:GetWidth()
-	end
-
-	if Private.Utils.HasThirdPartyCandidates() or Grid2 ~= nil or DandersFrames ~= nil then
-		local maybeFrame = Private.Utils.FindThirdPartyGroupFrameForUnit("player")
-
-		if maybeFrame then
-			local maybeParent = maybeFrame:GetParent()
-
-			if maybeParent then
-				return maybeParent, maybeParent:GetWidth()
-			end
-		end
-	end
-
-	if useRaidStylePartyFrames then
-		return CompactPartyFrame, CompactPartyFrame.memberUnitFrames[1]:GetWidth()
-	end
-
-	return PartyFrame, 125
+	Private.EventRegistry:TriggerEvent(Private.Enum.Events.EDIT_MODE_POSITION_CHANGED, point, x, y)
 end
 
-function PartyEditModeMixin:RepositionEditModeFrame()
-	local parent, width = GetEditModePartyParentFrame(self.useRaidStylePartyFrames)
-	PixelUtil.SetSize(self.editModeFrame, width, 16)
-	self.editModeFrame:ClearAllPoints()
-	PixelUtil.SetPoint(self.editModeFrame, "CENTER", parent, "TOP", 0, 16)
+function PartyEditModeMixin:AcquireFrame()
+	local frame = Private.Utils.Pools.Bar:Acquire()
+
+	frame:PostCreate("preview")
+
+	return frame
 end
 
-function PartyEditModeMixin:OnEditModePositionChanged()
-	self:RepositionEditModeFrame()
+function PartyEditModeMixin:LoopFrame(frame, index)
+	frame:SetStartTime()
+	frame:Show()
+
+	self:RepositionPreviewFrames()
+
+	table.insert(
+		self.demoTimers.timers,
+		C_Timer.NewTimer(4 + index / 2, function()
+			frame:ClearStartTime()
+			frame:Hide()
+			self:RepositionPreviewFrames()
+		end)
+	)
 end
 
 function PartyEditModeMixin:OnLayoutSettingChanged(key, value)
@@ -1663,40 +1568,19 @@ function PartyEditModeMixin:OnLayoutSettingChanged(key, value)
 		or key == Private.Settings.Keys.Party.Direction
 		or key == Private.Settings.Keys.Party.Width
 		or key == Private.Settings.Keys.Party.Height
-		or key == Private.Settings.Keys.Party.OffsetX
-		or key == Private.Settings.Keys.Party.OffsetY
-		or key == Private.Settings.Keys.Party.SourceAnchor
-		or key == Private.Settings.Keys.Party.TargetAnchor
 		or key == Private.Settings.Keys.Party.SortOrder
 		or key == Private.Settings.Keys.Party.Grow
 	then
+		if
+			key == Private.Settings.Keys.Party.Width
+			or key == Private.Settings.Keys.Party.Height
+			or key == Private.Settings.Keys.Party.Gap
+			or key == Private.Settings.Keys.Party.Direction
+		then
+			self:ResizeEditModeFrame()
+		end
+
 		self:RepositionPreviewFrames()
-	elseif key == Private.Settings.Keys.Party.GlowImportant then
-		local glowEnabled = value
-
-		for i, frames in pairs(self.frames) do
-			for j, frame in ipairs(frames) do
-				if frame:IsVisible() and glowEnabled and Private.Utils.RollDice() then
-					frame:ShowGlow(true)
-				else
-					frame:HideGlow()
-				end
-			end
-		end
-	elseif key == Private.Settings.Keys.Party.GlowType then
-		if not TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.GlowImportant] then
-			return
-		end
-
-		for i, frames in pairs(self.frames) do
-			for j, frame in ipairs(frames) do
-				if frame:IsVisible() and Private.Utils.RollDice() then
-					frame:ShowGlow(true)
-				else
-					frame:HideGlow()
-				end
-			end
-		end
 	end
 end
 
@@ -1705,94 +1589,37 @@ function PartyEditModeMixin:RepositionPreviewFrames()
 		return
 	end
 
-	local tableRef = TargetedSpellsSaved.Settings.Party
+	---@type TargetedSpellsBarMixin[]
+	local activeFrames = {}
 
-	local offsetX, offsetY, sortOrder, targetAnchor =
-		tableRef.OffsetX, tableRef.OffsetY, tableRef.SortOrder, tableRef.TargetAnchor
+	for index = 1, self.maxFrames do
+		if self.frames[index] == nil then
+			self.frames[index] = self:AcquireFrame()
 
-	local layouting = Private.Utils.CollectLayoutingArguments(
-		tableRef.Direction,
-		tableRef.Grow,
-		tableRef.Width,
-		tableRef.Height,
-		tableRef.Gap
-	)
+			local delay = (index - 1) * 1
 
-	for i = 1, self.maxUnitCount do
-		if
-			i < 5
-			or (i == 5 and TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.IncludeSelfInParty])
-		then
-			local token = i == 5 and "player" or string.format("party%d", i)
-			local parentFrame = Private.Utils.FindThirdPartyGroupFrameForUnit(token)
+			C_Timer.After(delay, function()
+				table.insert(
+					self.demoTimers.tickers,
+					C_Timer.NewTicker(5 + index, GenerateClosure(self.LoopFrame, self, self.frames[index], index))
+				)
 
-			if parentFrame == nil then
-				if self.useRaidStylePartyFrames then
-					-- some addons like Danders set alpha to 0
-					if CompactPartyFrame:GetAlpha() > 0 then
-						---@type Frame
-						parentFrame = CompactPartyFrame.memberUnitFrames[i]
-					end
-				else
-					-- same as above
-					if PartyFrame:GetAlpha() > 0 then
-						for memberFrame in PartyFrame.PartyMemberFramePool:EnumerateActive() do
-							if memberFrame.layoutIndex == i then
-								---@type Frame
-								parentFrame = memberFrame
-								break
-							end
-						end
-					end
-				end
-			end
+				self:LoopFrame(self.frames[index], index)
+			end)
+		end
 
-			if parentFrame ~= nil then
-				if self.frames[i] == nil then
-					self.frames[i] = {}
-				end
-
-				---@type TargetedSpellsMixin[]
-				local activeFrames = {}
-
-				for j = 1, self.amountOfPreviewFramesPerUnit do
-					if self.frames[i][j] == nil then
-						self.frames[i][j] = self:AcquireFrame()
-
-						table.insert(
-							self.demoTimers.tickers,
-							C_Timer.NewTicker(
-								5 + j + i,
-								GenerateClosure(self.LoopFrame, self, self.frames[i][j], j + i)
-							)
-						)
-
-						self:LoopFrame(self.frames[i][j], j + i)
-					end
-
-					local frame = self.frames[i][j]
-
-					if frame:ShouldBeShown() then
-						table.insert(activeFrames, frame)
-					end
-				end
-
-				if #activeFrames > 0 then
-					Private.Utils.SortFrames(activeFrames, sortOrder)
-
-					Private.Utils.AdjustLayout(
-						activeFrames,
-						layouting,
-						parentFrame,
-						targetAnchor,
-						offsetX,
-						offsetY,
-						true
-					)
-				end
-			end
+		if self.frames[index]:ShouldBeShown() then
+			table.insert(activeFrames, self.frames[index])
 		end
 	end
+
+	if #activeFrames == 0 then
+		return
+	end
+
+	Private.Utils.SortFrames(activeFrames, TargetedSpellsSaved.Settings.Party.SortOrder)
+
+	-- TODO: call bar layout method here once TargetedSpellsBarMixin layout is implemented
 end
 
 function PartyEditModeMixin:StartDemo()
@@ -1806,18 +1633,12 @@ function PartyEditModeMixin:StartDemo()
 end
 
 function PartyEditModeMixin:ReleaseAllFrames()
-	for unit = 1, self.maxUnitCount do
-		local frames = self.frames[unit]
+	for index = 1, self.maxFrames do
+		local frame = self.frames[index]
 
-		if frames ~= nil then
-			for index = 1, self.amountOfPreviewFramesPerUnit do
-				local frame = frames[index]
-
-				if frame then
-					Private.Utils.Pool:Release(frame)
-					frames[index] = nil
-				end
-			end
+		if frame ~= nil then
+			Private.Utils.Pools.Bar:Release(frame)
+			self.frames[index] = nil
 		end
 	end
 end

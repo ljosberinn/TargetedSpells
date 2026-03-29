@@ -9,8 +9,6 @@ function TargetedSpellsDriver:Init()
 	self.frames = {}
 	self.role = Private.Enum.Role.Damager
 	self.contentType = Private.Enum.ContentType.OpenWorld
-	self.anyRoleFilterActive = Private.Settings.IsAnyRoleFilterActive()
-
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingsChanged, self)
 
 	self:SetupFrame(true)
@@ -112,7 +110,7 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 end
 
 do
-	---@type table<string, TargetedSpellsMixin[]>
+	---@type table<string, TargetedSpellsIconMixin[]>
 	local frames = {}
 
 	function TargetedSpellsDriver:AcquireFrames(castingUnit)
@@ -122,8 +120,8 @@ do
 			TargetedSpellsSaved.Settings.Self.Enabled
 			and not self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Self)
 		then
-			local selfTargetingFrame = Private.Utils.Pool:Acquire()
-			selfTargetingFrame:PostCreate("player", Private.Enum.FrameKind.Self, castingUnit)
+			local selfTargetingFrame = Private.Utils.Pools.Self:Acquire()
+			selfTargetingFrame:PostCreate("player", castingUnit)
 			table.insert(frames, selfTargetingFrame)
 		end
 
@@ -143,8 +141,8 @@ do
 						and TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.IncludeSelfInParty]
 					) or unit ~= "player"
 				then
-					local frame = Private.Utils.Pool:Acquire()
-					frame:PostCreate(unit, Private.Enum.FrameKind.Party, castingUnit)
+					local frame = Private.Utils.Pools.Bar:Acquire()
+					frame:PostCreate(unit)
 					table.insert(frames, frame)
 				end
 			end
@@ -154,51 +152,8 @@ do
 	end
 end
 
----@param unit string
----@return Frame?
-local function FindParentFrameForPartyMember(unit)
-	local thirdPartyFrame = Private.Utils.FindThirdPartyGroupFrameForUnit(unit)
-
-	if thirdPartyFrame then
-		return thirdPartyFrame
-	end
-
-	if unit == "player" then
-		if not EditModeManagerFrame:UseRaidStylePartyFrames() then
-			-- non-raid style party frames don't include the player
-			return nil
-		end
-
-		for _, frame in pairs(CompactPartyFrame.memberUnitFrames) do
-			if frame.unit == "player" then
-				return frame
-			end
-		end
-
-		return nil
-	end
-
-	if EditModeManagerFrame:UseRaidStylePartyFrames() then
-		for _, frame in pairs(CompactPartyFrame.memberUnitFrames) do
-			if frame.unit == unit then
-				return frame
-			end
-		end
-
-		return nil
-	end
-
-	for memberFrame in PartyFrame.PartyMemberFramePool:EnumerateActive() do
-		if memberFrame.unitToken == unit then
-			return memberFrame
-		end
-	end
-
-	return nil
-end
-
 function TargetedSpellsDriver:RepositionFrames()
-	---@type table<string, TargetedSpellsMixin[]>
+	---@type table<string, TargetedSpellsIconMixin[]>
 	local activeFrames = {}
 
 	for sourceUnit, frames in pairs(self.frames) do
@@ -213,6 +168,7 @@ function TargetedSpellsDriver:RepositionFrames()
 
 					table.insert(activeFrames[kind], frame)
 				elseif kind == Private.Enum.FrameKind.Party then
+					-- todo: this needs to be adjusted for bars
 					local targetUnit = frame:GetUnit()
 
 					if activeFrames[targetUnit] == nil then
@@ -226,7 +182,7 @@ function TargetedSpellsDriver:RepositionFrames()
 	end
 
 	local selfTableRef = TargetedSpellsSaved.Settings.Self
-	local partyTableRef = TargetedSpellsSaved.Settings.Party
+	-- local partyTableRef = TargetedSpellsSaved.Settings.Party
 
 	for targetUnit, frames in pairs(activeFrames) do
 		-- may not use "player" here as the unit token in party for the player is identical
@@ -243,29 +199,30 @@ function TargetedSpellsDriver:RepositionFrames()
 
 			Private.Utils.AdjustLayout(frames, layouting, self.frame, "CENTER", 0, 0, false)
 		else
-			local parentFrame = FindParentFrameForPartyMember(targetUnit)
+			-- todo: this entire branch needs to be restructured as there's no longer a party frame to anchor to
+			-- local parentFrame = FindParentFrameForPartyMember(targetUnit)
 
-			if parentFrame ~= nil then
-				Private.Utils.SortFrames(frames, partyTableRef.SortOrder)
+			-- if parentFrame ~= nil then
+			-- 	Private.Utils.SortFrames(frames, partyTableRef.SortOrder)
 
-				local layouting = Private.Utils.CollectLayoutingArguments(
-					partyTableRef.Direction,
-					partyTableRef.Grow,
-					partyTableRef.Width,
-					partyTableRef.Height,
-					partyTableRef.Gap
-				)
+			-- 	local layouting = Private.Utils.CollectLayoutingArguments(
+			-- 		partyTableRef.Direction,
+			-- 		partyTableRef.Grow,
+			-- 		partyTableRef.Width,
+			-- 		partyTableRef.Height,
+			-- 		partyTableRef.Gap
+			-- 	)
 
-				Private.Utils.AdjustLayout(
-					frames,
-					layouting,
-					parentFrame,
-					partyTableRef.TargetAnchor,
-					partyTableRef.OffsetX,
-					partyTableRef.OffsetY,
-					false
-				)
-			end
+			-- 	Private.Utils.AdjustLayout(
+			-- 		frames,
+			-- 		layouting,
+			-- 		parentFrame,
+			-- 		partyTableRef.TargetAnchor,
+			-- 		partyTableRef.OffsetX,
+			-- 		partyTableRef.OffsetY,
+			-- 		false
+			-- 	)
+			-- end
 		end
 	end
 end
@@ -285,7 +242,11 @@ function TargetedSpellsDriver:ReleaseFrameForUnit(unit, removeUnit, id)
 
 		if frame then
 			if frame:CanBeHidden(id) then
-				Private.Utils.Pool:Release(frame)
+				if frame:GetKind() == Private.Enum.FrameKind.Self then
+					Private.Utils.Pools.Self:Release(frame)
+				else
+					Private.Utils.Pools.Bar:Release(frame)
+				end
 				table.remove(frames, i)
 				cleanedSomethingUp = true
 			else
@@ -320,30 +281,6 @@ function TargetedSpellsDriver:LoadConditionsProhibitExecution(kind)
 	end
 
 	return false
-end
-
-function TargetedSpellsDriver:RoleFilterPreventsExecution(unit)
-	if not self.anyRoleFilterActive then
-		return false
-	end
-
-	if not IsInGroup() then
-		return false
-	end
-
-	local target = string.format("%starget", unit)
-
-	if not UnitExists(target) or not UnitInParty(target) or UnitCanAttack("player", target) then
-		return false
-	end
-
-	local role = UnitGroupRolesAssigned(target)
-
-	local roleKey = role == "TANK" and Private.Enum.Role.Tank
-		or role == "HEALER" and Private.Enum.Role.Healer
-		or Private.Enum.Role.Damager
-
-	return not TargetedSpellsSaved.Settings.Party.RoleFilter[roleKey]
 end
 
 function TargetedSpellsDriver:UnitIsIrrelevant(unit, skipTargetCheck)
@@ -587,10 +524,6 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 			return
 		end
 
-		if self:RoleFilterPreventsExecution(info.unit) then
-			return
-		end
-
 		local frames = self:AcquireFrames(info.unit)
 
 		if #frames == 0 then
@@ -640,8 +573,14 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		local cleanedSomethingUp = false
 
 		for i, frame in pairs(frames) do
-			if delayInfo.kinds[frame:GetKind()] and frame:GetId() == delayInfo.id then
-				Private.Utils.Pool:Release(frame)
+			local kind = frame:GetKind()
+
+			if delayInfo.kinds[kind] and frame:GetId() == delayInfo.id then
+				if kind == Private.Enum.FrameKind.Self then
+					Private.Utils.Pools.Self:Release(frame)
+				else
+					Private.Utils.Pools.Bar:Release(frame)
+				end
 				frames[i] = nil
 				cleanedSomethingUp = true
 			end
@@ -751,8 +690,6 @@ function TargetedSpellsDriver:OnSettingsChanged(key, value)
 		or key == Private.Settings.Keys.Self.Gap
 	then
 		self:PositionSelfFrame()
-	elseif key == Private.Settings.Keys.Party.RoleFilter then
-		self.anyRoleFilterActive = Private.Settings.IsAnyRoleFilterActive()
 	end
 end
 
@@ -792,8 +729,9 @@ function TargetedSpellsDriver:MaybeMarkAsInterruptedAndDelay(unit, id, interrupt
 
 	for i, frame in pairs(frames) do
 		local indicateInterrupts = false
+		local kind = frame:GetKind()
 
-		if frame:GetKind() == Private.Enum.FrameKind.Self then
+		if kind == Private.Enum.FrameKind.Self then
 			indicateInterrupts =
 				TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.IndicateInterrupts]
 		else
@@ -804,7 +742,7 @@ function TargetedSpellsDriver:MaybeMarkAsInterruptedAndDelay(unit, id, interrupt
 		if indicateInterrupts then
 			frame:SetInterrupted(interruptName, interruptColor)
 
-			kindsToDelay[frame:GetKind()] = true
+			kindsToDelay[kind] = true
 		end
 	end
 

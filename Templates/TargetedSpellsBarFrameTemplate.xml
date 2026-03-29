@@ -1,0 +1,55 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/ https://raw.githubusercontent.com/Gethe/wow-ui-source/live/Interface/AddOns/Blizzard_SharedXML/UI.xsd">
+    <Frame name="TargetedSpellsBarFrameTemplate" mixin="TargetedSpellsBarMixin" virtual="true" ignoreParentAlpha="true" enableMouse="false" propagateMouseInput="Both">
+        <Layers>
+            <Layer level="OVERLAY">
+                <Texture parentKey="TargetMarker" hidden="true">
+                    <Size>
+                        <AbsDimension x="16" y="16" />
+                    </Size>
+                    <Anchors>
+                        <Anchor point="RIGHT" relativePoint="LEFT">
+                            <Offset>
+                                <AbsDimension x="-4" y="0" />
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </Texture>
+                <FontString parentKey="SpellName" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE">
+                    <Anchors>
+                        <Anchor point="LEFT" relativePoint="LEFT">
+                            <Offset>
+                                <AbsDimension x="4" y="0" />
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </FontString>
+                <FontString parentKey="TargetName" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE">
+                    <Anchors>
+                        <Anchor point="LEFT" relativeKey="$parent.SpellName" relativePoint="RIGHT">
+                            <Offset>
+                                <AbsDimension x="4" y="0" />
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </FontString>
+                <FontString parentKey="Duration" font="GameFontHighlightSmall" justifyH="RIGHT" justifyV="MIDDLE">
+                    <Anchors>
+                        <Anchor point="RIGHT" relativePoint="RIGHT">
+                            <Offset>
+                                <AbsDimension x="-4" y="0" />
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </FontString>
+            </Layer>
+        </Layers>
+        <Frames>
+            <StatusBar parentKey="Bar" ignoreParentAlpha="true" minValue="0" maxValue="1" />
+        </Frames>
+        <Scripts>
+            <OnLoad method="OnLoad" />
+            <OnSizeChanged method="OnSizeChanged" />
+            <OnUpdate method="OnUpdate" />
+        </Scripts>
+    </Frame>
+</Ui>

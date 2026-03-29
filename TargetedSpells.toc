@@ -18,6 +18,7 @@ Libs\LibEditMode\embed.xml
 Libs\LibSharedMedia-3.0\lib.xml
 
 Templates\TargetedSpellsFrameTemplate.xml
+Templates\TargetedSpellsBarFrameTemplate.xml
 
 Enum.lua
 Init.lua
@@ -28,6 +29,7 @@ Localization\enUS.lua
 Localization\[TextLocale].lua [AllowLoadTextLocale deDE, frFR, zhCN, esES, esMX, koKR]
 
 Settings.lua
-TargetedSpellsMixin.lua
+TargetedSpellsIconMixin.lua
+TargetedSpellsBarMixin.lua
 EditMode.lua
 Driver.lua

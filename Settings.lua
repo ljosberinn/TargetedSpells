@@ -31,27 +31,19 @@ Private.Settings.Keys = {
 		Enabled = "ENABLED_PARTY",
 		LoadConditionContentType = "LOAD_CONDITION_CONTENT_TYPE_PARTY",
 		LoadConditionRole = "LOAD_CONDITION_ROLE_PARTY",
-		RoleFilter = "ROLE_EXCLUSION_PARTY",
 		Width = "FRAME_WIDTH_PARTY",
 		Height = "FRAME_HEIGHT_PARTY",
 		FontSize = "FONT_SIZE_PARTY",
 		Gap = "FRAME_GAP_PARTY",
 		Direction = "GROW_DIRECTION_PARTY",
-		OffsetX = "FRAME_OFFSET_X_PARTY",
-		OffsetY = "FRAME_OFFSET_Y_PARTY",
-		SourceAnchor = "FRAME_SOURCE_ANCHOR_PARTY",
-		TargetAnchor = "FRAME_TARGET_ANCHOR_PARTY",
 		SortOrder = "FRAME_SORT_ORDER_PARTY",
-		Grow = "FRAME_GROW_PARTY",
 		GlowType = "GLOW_TYPE_PARTY",
 		Opacity = "OPACITY_PARTY",
-		IconZoom = "ICON_ZOOM_PARTY",
 		Import = "IMPORT_PARTY",
 		Export = "EXPORT_PARTY",
 		Font = "FONT_PARTY",
 		FontFlags = "FONT_FLAGS_PARTY",
 		FeatureFlags = "FEATURE_FLAGS_PARTY",
-		BorderStyle = "BORDER_STYLE_PARTY",
 	},
 }
 
@@ -82,25 +74,17 @@ function Private.Settings.GetSettingsDisplayOrder(kind)
 		Private.Settings.Keys.Party.Enabled,
 		Private.Settings.Keys.Party.LoadConditionContentType,
 		Private.Settings.Keys.Party.LoadConditionRole,
-		Private.Settings.Keys.Party.RoleFilter,
 		Private.Settings.Keys.Party.Width,
 		Private.Settings.Keys.Party.Height,
 		Private.Settings.Keys.Party.Gap,
 		Private.Settings.Keys.Party.Direction,
-		Private.Settings.Keys.Party.SourceAnchor,
-		Private.Settings.Keys.Party.TargetAnchor,
-		Private.Settings.Keys.Party.Grow,
-		Private.Settings.Keys.Party.OffsetX,
-		Private.Settings.Keys.Party.OffsetY,
 		Private.Settings.Keys.Party.SortOrder,
 		Private.Settings.Keys.Party.GlowType,
 		Private.Settings.Keys.Party.FeatureFlags,
-		Private.Settings.Keys.Party.BorderStyle,
 		Private.Settings.Keys.Party.Font,
 		Private.Settings.Keys.Party.FontSize,
 		Private.Settings.Keys.Party.FontFlags,
 		Private.Settings.Keys.Party.Opacity,
-		Private.Settings.Keys.Party.IconZoom,
 	}
 end
 
@@ -118,18 +102,16 @@ function Private.Settings.GetFeatureFlagsForKind(kind)
 	end
 
 	return {
-		Private.Enum.FeatureFlag.IncludeSelfInParty,
-		Private.Enum.FeatureFlag.GlowImportant,
-		Private.Enum.FeatureFlag.OnlyImportant,
-		Private.Enum.FeatureFlag.ShowDuration,
-		Private.Enum.FeatureFlag.ShowDurationFractions,
-		Private.Enum.FeatureFlag.ShowSwipe,
 		Private.Enum.FeatureFlag.IndicateInterrupts,
 		Private.Enum.FeatureFlag.RenderInterruptSourceName,
 	}
 end
 
-function Private.Settings.GetDefaultEditModeFramePosition()
+function Private.Settings.GetDefaultSelfEditModeFramePosition()
+	return { point = "CENTER", x = 0, y = 100 }
+end
+
+function Private.Settings.GetDefaultBarsEditModeFramePosition()
 	return { point = "CENTER", x = 0, y = 100 }
 end
 
@@ -166,9 +148,17 @@ function Private.Settings.GetSliderSettingsForOption(key)
 		}
 	end
 
-	if key == Private.Settings.Keys.Party.Width or key == Private.Settings.Keys.Party.Height then
+	if key == Private.Settings.Keys.Party.Width then
 		return {
-			min = 16,
+			min = 60,
+			max = 400,
+			step = 1,
+		}
+	end
+
+	if key == Private.Settings.Keys.Party.Height then
+		return {
+			min = 10,
 			max = 60,
 			step = 1,
 		}
@@ -186,14 +176,6 @@ function Private.Settings.GetSliderSettingsForOption(key)
 		return {
 			min = -60,
 			max = 60,
-			step = 1,
-		}
-	end
-
-	if key == Private.Settings.Keys.Party.OffsetX or key == Private.Settings.Keys.Party.OffsetY then
-		return {
-			min = -200,
-			max = 200,
 			step = 1,
 		}
 	end
@@ -230,7 +212,7 @@ function Private.Settings.GetSelfDefaultSettings()
 		SortOrder = Private.Enum.SortOrder.Ascending,
 		Grow = Private.Enum.Grow.Start,
 		FontSize = 20,
-		Position = Private.Settings.GetDefaultEditModeFramePosition(),
+		Position = Private.Settings.GetDefaultSelfEditModeFramePosition(),
 		Opacity = 1,
 		IconZoom = 1,
 		GlowType = Private.Enum.GlowType.PixelGlow,
@@ -256,11 +238,11 @@ end
 function Private.Settings.GetPartyDefaultSettings()
 	return {
 		Enabled = true,
-		Width = 36,
-		Height = 36,
+		Width = 200,
+		Height = 20,
 		FontSize = 14,
 		Gap = 2,
-		Direction = Private.Enum.Direction.Horizontal,
+		Direction = Private.Enum.Direction.Vertical,
 		LoadConditionContentType = {
 			[Private.Enum.ContentType.OpenWorld] = false,
 			[Private.Enum.ContentType.Delve] = true,
@@ -274,19 +256,8 @@ function Private.Settings.GetPartyDefaultSettings()
 			[Private.Enum.Role.Tank] = true,
 			[Private.Enum.Role.Damager] = true,
 		},
-		RoleFilter = {
-			[Private.Enum.Role.Healer] = true,
-			[Private.Enum.Role.Tank] = true,
-			[Private.Enum.Role.Damager] = true,
-		},
-		OffsetX = 2,
-		OffsetY = 15,
-		SourceAnchor = Private.Enum.Anchor.Left,
-		TargetAnchor = Private.Enum.Anchor.Right,
 		SortOrder = Private.Enum.SortOrder.Ascending,
-		Grow = Private.Enum.Grow.Start,
 		Opacity = 1,
-		IconZoom = 1,
 		GlowType = Private.Enum.GlowType.PixelGlow,
 		Font = "Fonts\\FRIZQT__.TTF",
 		FontFlags = {
@@ -294,16 +265,10 @@ function Private.Settings.GetPartyDefaultSettings()
 			[Private.Enum.FontFlags.SHADOW] = false,
 		},
 		FeatureFlags = {
-			[Private.Enum.FeatureFlag.GlowImportant] = true,
-			[Private.Enum.FeatureFlag.OnlyImportant] = false,
-			[Private.Enum.FeatureFlag.ShowDuration] = true,
-			[Private.Enum.FeatureFlag.ShowDurationFractions] = true,
-			[Private.Enum.FeatureFlag.ShowSwipe] = true,
 			[Private.Enum.FeatureFlag.IndicateInterrupts] = true,
 			[Private.Enum.FeatureFlag.RenderInterruptSourceName] = true,
-			[Private.Enum.FeatureFlag.IncludeSelfInParty] = true,
 		},
-		BorderStyle = "Blizzard Tooltip Border",
+		Position = Private.Settings.GetDefaultBarsEditModeFramePosition(),
 	}
 end
 
@@ -344,12 +309,6 @@ function Private.Settings.IsContentTypeAvailableForKind(kind, contentTypeId)
 	return true
 end
 
-function Private.Settings.IsAnyRoleFilterActive()
-	return not TargetedSpellsSaved.Settings.Party.RoleFilter[Private.Enum.Role.Healer]
-		or not TargetedSpellsSaved.Settings.Party.RoleFilter[Private.Enum.Role.Tank]
-		or not TargetedSpellsSaved.Settings.Party.RoleFilter[Private.Enum.Role.Damager]
-		or false
-end
 
 table.insert(Private.LoginFnQueue, function()
 	LibSharedMedia:Register(

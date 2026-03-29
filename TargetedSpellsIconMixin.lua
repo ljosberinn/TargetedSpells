@@ -18,10 +18,10 @@ end
 local BACKDROP_COORD_START = 0.0625
 local BACKDROP_COORD_END = 1 - BACKDROP_COORD_START
 
----@class TargetedSpellsMixin
-TargetedSpellsMixin = {}
+---@class TargetedSpellsIconMixin
+TargetedSpellsIconMixin = {}
 
-function TargetedSpellsMixin:OnLoad()
+function TargetedSpellsIconMixin:OnLoad()
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingChanged, self)
 
 	self.Bar:SetStatusBarTexture("")
@@ -45,7 +45,7 @@ do
 		["Blizzard Tooltip"] = 3,
 	}
 
-	function TargetedSpellsMixin:ApplyBorderStyle(styleName)
+	function TargetedSpellsIconMixin:ApplyBorderStyle(styleName)
 		if styleName == "Solid" then
 			self.BorderTopLeft:Hide()
 			self.BorderTopRight:Hide()
@@ -215,15 +215,15 @@ do
 	end
 end
 
-function TargetedSpellsMixin:SetId(id)
+function TargetedSpellsIconMixin:SetId(id)
 	self.id = id
 end
 
-function TargetedSpellsMixin:GetId()
+function TargetedSpellsIconMixin:GetId()
 	return self.id
 end
 
-function TargetedSpellsMixin:SetInterrupted(name, color)
+function TargetedSpellsIconMixin:SetInterrupted(name, color)
 	self.wasInterrupted = true
 	self.doNotHideBefore = GetTime() + 0.95
 	self.InterruptIcon:Show()
@@ -257,7 +257,7 @@ function TargetedSpellsMixin:SetInterrupted(name, color)
 	self.InterruptSource:Show()
 end
 
-function TargetedSpellsMixin:CanBeHidden(id)
+function TargetedSpellsIconMixin:CanBeHidden(id)
 	if self.wasInterrupted then
 		return GetTime() >= self.doNotHideBefore
 	end
@@ -272,7 +272,7 @@ end
 do
 	local formatter = nil
 
-	function TargetedSpellsMixin:OnUpdate(elapsed)
+	function TargetedSpellsIconMixin:OnUpdate(elapsed)
 		self.elapsed = self.elapsed + elapsed
 
 		if self.elapsed < 0.1 then
@@ -336,19 +336,17 @@ do
 	end
 end
 
-function TargetedSpellsMixin:SetShowDuration(showDuration, showFractions)
+function TargetedSpellsIconMixin:SetShowDuration(showDuration, showFractions)
 	self.Cooldown:SetHideCountdownNumbers(not showDuration or showFractions)
 	self.Cooldown.DurationText:SetShown(showDuration and showFractions)
 	self:SetScript("OnUpdate", showDuration and showFractions and self.OnUpdate or nil)
 end
 
 --- shamelessly ~~stolen~~ repurposed from WeakAuras2
-function TargetedSpellsMixin:OnSizeChanged()
-	local tableRef = self.kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
-		or TargetedSpellsSaved.Settings.Party
-	local width = tableRef.Width
-	local height = tableRef.Height
-	local zoom = tableRef.IconZoom
+function TargetedSpellsIconMixin:OnSizeChanged()
+	local width = TargetedSpellsSaved.Settings.Self.Width
+	local height = TargetedSpellsSaved.Settings.Self.Height
+	local zoom = TargetedSpellsSaved.Settings.Self.IconZoom
 
 	local coordinates = { 0, 0, 0, 1, 1, 0, 1, 1 }
 	local aspectRatio = width / height
@@ -390,7 +388,7 @@ function TargetedSpellsMixin:OnSizeChanged()
 	end
 end
 
-function TargetedSpellsMixin:OnSettingChanged(key, flagIdOrValue, newBool)
+function TargetedSpellsIconMixin:OnSettingChanged(key, flagIdOrValue, newBool)
 	if self.kind == Private.Enum.FrameKind.Self then
 		if key == Private.Settings.Keys.Self.Width then
 			PixelUtil.SetSize(self, flagIdOrValue, TargetedSpellsSaved.Settings.Self.Height)
@@ -478,7 +476,7 @@ do
 	IsLongCastCurve:AddPoint(60, 1)
 	IsLongCastCurve:AddPoint(60.001, 0)
 
-	function TargetedSpellsMixin:SetDuration(duration)
+	function TargetedSpellsIconMixin:SetDuration(duration)
 		self.duration = duration
 		self.Cooldown:SetCooldownFromDurationObject(duration)
 
@@ -494,15 +492,15 @@ do
 	end
 end
 
-function TargetedSpellsMixin:GetDuration()
+function TargetedSpellsIconMixin:GetDuration()
 	return self.duration
 end
 
-function TargetedSpellsMixin:SetStartTime(startTime)
+function TargetedSpellsIconMixin:SetStartTime(startTime)
 	self.startTime = startTime or GetTime()
 end
 
-function TargetedSpellsMixin:GetStartTime()
+function TargetedSpellsIconMixin:GetStartTime()
 	return self.startTime
 end
 
@@ -549,14 +547,13 @@ local function CreateStar4Glow(parent, width, height)
 	return Star4
 end
 
-function TargetedSpellsMixin:ShowGlow(isImportant)
-	local tableRef = self.kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
-		or TargetedSpellsSaved.Settings.Party
-	local glowType = tableRef.GlowType
+function TargetedSpellsIconMixin:ShowGlow(isImportant)
+	local glowType = TargetedSpellsSaved.Settings.Self.GlowType
 
 	if glowType == Private.Enum.GlowType.Star4 then
 		if self._Star4 == nil then
-			self._Star4 = CreateStar4Glow(self, tableRef.Width, tableRef.Height)
+			self._Star4 =
+				CreateStar4Glow(self, TargetedSpellsSaved.Settings.Self.Width, TargetedSpellsSaved.Settings.Self.Height)
 		end
 
 		self._Star4:Show()
@@ -566,21 +563,33 @@ function TargetedSpellsMixin:ShowGlow(isImportant)
 
 		self._Star4:SetAlphaFromBoolean(isImportant)
 	elseif glowType == Private.Enum.GlowType.PixelGlow then
-		Private.Glows.PixelGlow_Start(self, tableRef.Width, tableRef.Height)
+		Private.Glows.PixelGlow_Start(
+			self,
+			TargetedSpellsSaved.Settings.Self.Width,
+			TargetedSpellsSaved.Settings.Self.Height
+		)
 
 		self._PixelGlow:SetAlphaFromBoolean(isImportant)
 	elseif glowType == Private.Enum.GlowType.AutoCastGlow then
-		Private.Glows.AutoCastGlow_Start(self, tableRef.Width, tableRef.Height)
+		Private.Glows.AutoCastGlow_Start(
+			self,
+			TargetedSpellsSaved.Settings.Self.Width,
+			TargetedSpellsSaved.Settings.Self.Height
+		)
 
 		self._AutoCastGlow:SetAlphaFromBoolean(isImportant)
 	elseif glowType == Private.Enum.GlowType.ProcGlow then
-		Private.Glows.ProcGlow_Start(self, tableRef.Width, tableRef.Height)
+		Private.Glows.ProcGlow_Start(
+			self,
+			TargetedSpellsSaved.Settings.Self.Width,
+			TargetedSpellsSaved.Settings.Self.Height
+		)
 
 		self._ProcGlow:SetAlphaFromBoolean(isImportant)
 	end
 end
 
-function TargetedSpellsMixin:HideGlow()
+function TargetedSpellsIconMixin:HideGlow()
 	if self._Star4 ~= nil then
 		self._Star4:Hide()
 		self._Star4.Inner:Hide()
@@ -593,7 +602,7 @@ function TargetedSpellsMixin:HideGlow()
 	Private.Glows.ProcGlow_Stop(self)
 end
 
-function TargetedSpellsMixin:IsSpellImportant(boolOverride)
+function TargetedSpellsIconMixin:IsSpellImportant(boolOverride)
 	if boolOverride ~= nil then
 		return boolOverride
 	end
@@ -605,7 +614,7 @@ function TargetedSpellsMixin:IsSpellImportant(boolOverride)
 	return C_Spell.IsSpellImportant(self.spellId)
 end
 
-function TargetedSpellsMixin:SetSpellId(spellId)
+function TargetedSpellsIconMixin:SetSpellId(spellId)
 	self.spellId = spellId
 	local texture = spellId and C_Spell.GetSpellTexture(spellId) or GetRandomIcon()
 	self.Icon:SetTexture(texture)
@@ -614,10 +623,7 @@ function TargetedSpellsMixin:SetSpellId(spellId)
 		return
 	end
 
-	local tableRef = self.kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
-		or TargetedSpellsSaved.Settings.Party
-
-	if not tableRef.FeatureFlags[Private.Enum.FeatureFlag.GlowImportant] then
+	if not TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.GlowImportant] then
 		return
 	end
 
@@ -625,73 +631,42 @@ function TargetedSpellsMixin:SetSpellId(spellId)
 
 	self:ShowGlow(isImportant)
 
-	if tableRef.FeatureFlags[Private.Enum.FeatureFlag.OnlyImportant] then
+	if TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.OnlyImportant] then
 		self:SetAlphaFromBoolean(isImportant, 1, 0)
 	end
 end
 
-function TargetedSpellsMixin:ShouldBeShown()
+function TargetedSpellsIconMixin:ShouldBeShown()
 	return self.startTime ~= nil
 end
 
-function TargetedSpellsMixin:ClearStartTime()
+function TargetedSpellsIconMixin:ClearStartTime()
 	self.startTime = nil
 end
 
-function TargetedSpellsMixin:SetUnit(unit)
+function TargetedSpellsIconMixin:SetUnit(unit)
 	self.unit = unit
 end
 
-function TargetedSpellsMixin:SetKind(kind)
-	if self.kind == kind then
-		return
-	end
-
-	self.kind = kind
-
-	local tableRef = kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
-		or TargetedSpellsSaved.Settings.Party
-
-	PixelUtil.SetSize(self, tableRef.Width, tableRef.Height)
-	self:SetFontSize()
-	self:SetFont()
-	self:HideGlow()
-	self:ApplyBorderStyle(tableRef.BorderStyle)
-	self:SetAlpha(tableRef.Opacity)
-	self:SetShowDuration(
-		tableRef.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration],
-		tableRef.FeatureFlags[Private.Enum.FeatureFlag.ShowDurationFractions]
-	)
-	self.Cooldown:SetDrawSwipe(tableRef.FeatureFlags[Private.Enum.FeatureFlag.ShowSwipe])
-end
-
-function TargetedSpellsMixin:GetKind()
+function TargetedSpellsIconMixin:GetKind()
 	return self.kind
 end
 
-function TargetedSpellsMixin:GetUnit()
+function TargetedSpellsIconMixin:GetUnit()
 	return self.unit
 end
 
-function TargetedSpellsMixin:PostCreate(unit, kind, castingUnit)
+function TargetedSpellsIconMixin:PostCreate(unit, castingUnit)
 	self:SetUnit(unit)
-	self:SetKind(kind)
 
 	if castingUnit ~= nil then
-		local targetsThatUnit = nil
-
-		if kind == Private.Enum.FrameKind.Self then
-			targetsThatUnit = PlayerIsSpellTarget(castingUnit, unit)
-		else
-			targetsThatUnit = UnitIsUnit(string.format("%starget", castingUnit), unit)
-		end
-
+		local targetsThatUnit = PlayerIsSpellTarget(castingUnit, unit)
 		self:SetAlphaFromBoolean(targetsThatUnit)
 		self.Bar:SetValue(C_CurveUtil.EvaluateColorValueFromBoolean(targetsThatUnit, 1, 0))
 	end
 end
 
-function TargetedSpellsMixin:Reset()
+function TargetedSpellsIconMixin:Reset()
 	self:SetParent(UIParent)
 	self.Bar:ClearAllPoints()
 	self.Bar:SetParent(self)
@@ -711,11 +686,8 @@ function TargetedSpellsMixin:Reset()
 	self.InterruptSource:SetTextColor(1, 1, 1)
 	self.Cooldown:SetScript("OnCooldownDone", nil)
 
-	local tableRef = self.kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
-		or TargetedSpellsSaved.Settings.Party
-
-	if tableRef.FeatureFlags[Private.Enum.FeatureFlag.GlowImportant] then
-		local glowType = tableRef.GlowType
+	if TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.GlowImportant] then
+		local glowType = TargetedSpellsSaved.Settings.Self.GlowType
 
 		if glowType == Private.Enum.GlowType.PixelGlow then
 			if self._PixelGlow ~= nil then
@@ -735,22 +707,19 @@ function TargetedSpellsMixin:Reset()
 	self:HideGlow()
 
 	self:SetShowDuration(
-		tableRef.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration],
-		tableRef.FeatureFlags[Private.Enum.FeatureFlag.ShowDurationFractions]
+		TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration],
+		TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowDurationFractions]
 	)
-	self.Cooldown:SetDrawSwipe(tableRef.FeatureFlags[Private.Enum.FeatureFlag.ShowSwipe])
+	self.Cooldown:SetDrawSwipe(TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowSwipe])
 
 	-- important to come last - the cooldown swipe ignores display status of its parent
 	self:Hide()
 end
 
-function TargetedSpellsMixin:SetFontSize()
-	local tableRef = self.kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
-		or TargetedSpellsSaved.Settings.Party
-
+function TargetedSpellsIconMixin:SetFontSize()
 	local fontString = nil
 
-	if tableRef.FeatureFlags[Private.Enum.FeatureFlag.ShowDurationFractions] then
+	if TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowDurationFractions] then
 		fontString = self.Cooldown.DurationText
 	else
 		fontString = self.Cooldown:GetCountdownFontString()
@@ -758,32 +727,29 @@ function TargetedSpellsMixin:SetFontSize()
 
 	local font, size, flags = fontString:GetFont()
 
-	if size == tableRef.FontSize then
+	if size == TargetedSpellsSaved.Settings.Self.FontSize then
 		return
 	end
 
-	fontString:SetFont(font, tableRef.FontSize, flags)
+	fontString:SetFont(font, TargetedSpellsSaved.Settings.Self.FontSize, flags)
 end
 
-function TargetedSpellsMixin:SetFont()
-	local tableRef = self.kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
-		or TargetedSpellsSaved.Settings.Party
-
+function TargetedSpellsIconMixin:SetFont()
 	local fontString = nil
 
-	if tableRef.FeatureFlags[Private.Enum.FeatureFlag.ShowDurationFractions] then
+	if TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowDurationFractions] then
 		fontString = self.Cooldown.DurationText
 	else
 		fontString = self.Cooldown:GetCountdownFontString()
 	end
 
 	fontString:SetFont(
-		tableRef.Font,
-		tableRef.FontSize,
-		tableRef.FontFlags[Private.Enum.FontFlags.OUTLINE] and "OUTLINE" or ""
+		TargetedSpellsSaved.Settings.Self.Font,
+		TargetedSpellsSaved.Settings.Self.FontSize,
+		TargetedSpellsSaved.Settings.Self.FontFlags[Private.Enum.FontFlags.OUTLINE] and "OUTLINE" or ""
 	)
 
-	if tableRef.FontFlags[Private.Enum.FontFlags.SHADOW] then
+	if TargetedSpellsSaved.Settings.Self.FontFlags[Private.Enum.FontFlags.SHADOW] then
 		fontString:SetShadowOffset(1, -1)
 		fontString:SetShadowColor(0, 0, 0, 1)
 	else
@@ -791,6 +757,6 @@ function TargetedSpellsMixin:SetFont()
 	end
 end
 
-function TargetedSpellsMixin:SetOnCooldownDone(callback)
+function TargetedSpellsIconMixin:SetOnCooldownDone(callback)
 	self.Cooldown:SetScript("OnCooldownDone", callback)
 end

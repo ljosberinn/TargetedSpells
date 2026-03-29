@@ -34,7 +34,6 @@ EventUtil.ContinueOnAddOnLoaded(addonName, function()
 	---@class SavedVariablesSettingsParty
 	TargetedSpellsSaved.Settings.Party = TargetedSpellsSaved.Settings.Party or {}
 
-	local resetKeys = {}
 	local selfDefaults = Private.Settings.GetSelfDefaultSettings()
 	local partyDefaults = Private.Settings.GetPartyDefaultSettings()
 
@@ -46,11 +45,7 @@ EventUtil.ContinueOnAddOnLoaded(addonName, function()
 			TargetedSpellsSaved.Settings.Self[key] = value
 		end
 
-		local resetKey = Private.Utils.ApplyMigration(key, Private.Enum.FrameKind.Self, selfDefaults)
-
-		if resetKey then
-			table.insert(resetKeys, resetKey)
-		end
+		Private.Utils.ApplyMigration(key, Private.Enum.FrameKind.Self, selfDefaults)
 	end
 
 	for key, value in pairs(partyDefaults) do
@@ -60,58 +55,14 @@ EventUtil.ContinueOnAddOnLoaded(addonName, function()
 		then
 			TargetedSpellsSaved.Settings.Party[key] = value
 		end
-
-		local resetKey = Private.Utils.ApplyMigration(key, Private.Enum.FrameKind.Self, selfDefaults)
-
-		if resetKey then
-			table.insert(resetKeys, resetKey)
-		end
 	end
 
-	if TargetedSpellsSaved.v2DeprecationWarningSeen == nil then
-		TargetedSpellsSaved.v2DeprecationWarningSeen = true
-
-		local function MigrateFeatureFlags(kind)
-			local flagSourceMap = {
-				[Private.Enum.FeatureFlag.GlowImportant] = "GlowImportant",
-				[Private.Enum.FeatureFlag.OnlyImportant] = "OnlyImportant",
-				[Private.Enum.FeatureFlag.ShowDuration] = "ShowDuration",
-				[Private.Enum.FeatureFlag.ShowDurationFractions] = "ShowDurationFractions",
-				[Private.Enum.FeatureFlag.ShowSwipe] = "ShowSwipe",
-				[Private.Enum.FeatureFlag.IndicateInterrupts] = "IndicateInterrupts",
-				[Private.Enum.FeatureFlag.RenderInterruptSourceName] = "RenderInterruptSourceName",
-			}
-
-			local settings, flagDefaults = nil, nil
-			if kind == Private.Enum.FrameKind.Self then
-				settings = TargetedSpellsSaved.Settings.Self
-				flagDefaults = selfDefaults.FeatureFlags
-			else
-				flagSourceMap[Private.Enum.FeatureFlag.IncludeSelfInParty] = "IncludeSelfInParty"
-				settings = TargetedSpellsSaved.Settings.Party
-				flagDefaults = partyDefaults.FeatureFlags
-			end
-
-			if settings.FeatureFlags == nil then
-				settings.FeatureFlags = {}
-			end
-
-			for flagId, oldKey in pairs(flagSourceMap) do
-				if settings.FeatureFlags[flagId] == nil then
-					settings.FeatureFlags[flagId] = (settings[oldKey] ~= nil) and settings[oldKey]
-						or flagDefaults[flagId]
-				end
-
-				settings[oldKey] = nil
-			end
-		end
-
-		MigrateFeatureFlags(Private.Enum.FrameKind.Self)
-		MigrateFeatureFlags(Private.Enum.FrameKind.Party)
-
-		if #resetKeys > 0 then
-			Private.Utils.ShowMigrationPopup(resetKeys, "login")
-		end
+	if TargetedSpellsSaved.v3DeprecationWarningSeen == nil then
+		TargetedSpellsSaved.v3DeprecationWarningSeen = true
+		TargetedSpellsSaved.Settings.Party = Private.Utils.MigratePartySettingsToV3(
+			TargetedSpellsSaved.Settings.Party
+		)
+		Private.Utils.ShowMigrationPopup()
 	end
 
 	for i = 1, #Private.LoginFnQueue do

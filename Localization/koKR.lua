@@ -28,11 +28,7 @@ L.Functionality.CVarWarning = string.format(
 	ENABLE
 )
 
-L.Functionality.V2DeprecationWarning = string.format(
-	"%s\n\nDue to the changes in v2, the following settings were reset for you:\n\n%s\n\nAdditionally, we suggest verifying your layouting as it may also be impacted.",
-	addonNameWithIcon,
-	"%s"
-)
+L.Functionality.V3DeprecationWarning = "TODO"
 
 L.Settings.EnabledLabel = "활성화"
 L.Settings.EnabledTooltip = nil

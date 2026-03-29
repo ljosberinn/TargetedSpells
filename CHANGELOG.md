@@ -1,3 +1,14 @@
+## Version 3.0.0
+
+Due to the 12.0.5 restrictions, the Party functionality has been redesigned and now offers to render bars per ongoing cast. It is no longer possible to attach icons to frames.
+
+Settings not applying to the new Party functionality were dropped. These remain:
+
+- Enabled
+- Load Conditions
+- Glow
+- Font & Font Size
+
 ## Version 2.0.1
 
 - use a more future-proof approach of dealing with Layouting given the presumably upcoming restriction changes

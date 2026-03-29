@@ -21,23 +21,20 @@
 
 ---@class TargetedSpellsUtils
 ---@field CollectLayoutingArguments fun(direction: Direction, grow: Grow, width: number, height: number, gap: number): CollectLayoutingArguments
----@field AdjustLayout fun(frames: TargetedSpellsMixin[], geo: CollectLayoutingArguments, barParent: Frame, firstAnchorPoint: FramePoint, firstOffsetX: number, firstOffsetY: number, isEditMode: boolean)
----@field SortFrames fun(frames: TargetedSpellsMixin[], sortOrder: SortOrder)
+---@field AdjustLayout fun(frames: TargetedSpellsIconMixin[], geo: CollectLayoutingArguments, barParent: Frame, firstAnchorPoint: FramePoint, firstOffsetX: number, firstOffsetY: number, isEditMode: boolean)
+---@field SortFrames fun(frames: TargetedSpellsIconMixin[], sortOrder: SortOrder)
 ---@field RollDice fun(): boolean
----@field FindThirdPartyGroupFrameForUnit fun(unit: string): Frame?
 ---@field ShowStaticPopup fun(args: StaticPopupDialogsArgs)
 ---@field Import fun(string: string): boolean
 ---@field Export fun(): string
 ---@field RegisterEditModeFrame fun(frameKind: FrameKind, frame: Frame)
 ---@field GetEditModeFrame fun(frameKind: FrameKind): Frame?
----@field RegisterFrameByName fun(frameName: string): boolean
----@field UnregisterFrameByName fun(frameName: string): boolean
----@field MaybeApplyElvUISkin fun(frame: TargetedSpellsMixin)
+---@field MaybeApplyElvUISkin fun(frame: TargetedSpellsIconMixin)
 ---@field CreateEditablePopup fun(title: string, text: string, button1: string): StaticPopupDialogsArgs
----@field HasThirdPartyCandidates fun(): boolean
----@field Pool FramePool<TargetedSpellsMixin>
----@field ShowMigrationPopup fun(resetKeys: string[], kind: "import"|"login")
----@field ApplyMigration fun(key: string, kind: FrameKind, defaults: SavedVariablesSettingsSelf|SavedVariablesSettingsParty): string?
+---@field Pools { Self: FramePool<TargetedSpellsIconMixin>, Bar: FramePool<TargetedSpellsBarMixin> }
+---@field ShowMigrationPopup fun()
+---@field MigratePartySettingsToV3 fun(existing: table): SavedVariablesSettingsParty
+---@field ApplyMigration fun(key: string, kind: FrameKind, defaults: SavedVariablesSettingsSelf|SavedVariablesSettingsParty)
 
 ---@class GlowFunctions
 ---@field PixelGlow_Start fun(frame: Frame, width: number, height: number)
@@ -90,7 +87,8 @@
 ---@class TargetedSpellsSettings
 ---@field Keys table<'Self' | 'Party', table<string, string>>
 ---@field GetSettingsDisplayOrder fun(kind: FrameKind): string[]
----@field GetDefaultEditModeFramePosition fun(): FramePosition
+---@field GetDefaultSelfEditModeFramePosition fun(): FramePosition
+---@field GetDefaultBarsEditModeFramePosition fun(): FramePosition
 ---@field GetSliderSettingsForOption fun(key: string): SliderSettings
 ---@field GetSelfDefaultSettings fun(): SavedVariablesSettingsSelf
 ---@field GetPartyDefaultSettings fun(): SavedVariablesSettingsParty
@@ -139,24 +137,18 @@
 ---@field Direction Direction
 ---@field LoadConditionContentType table<number, boolean>
 ---@field LoadConditionRole table<number, boolean>
----@field RoleFilter table<number, boolean>
----@field OffsetX number
----@field OffsetY number
----@field SourceAnchor FramePoint
----@field TargetAnchor FramePoint
 ---@field SortOrder SortOrder
 ---@field Grow Grow
 ---@field FontSize number
 ---@field GlowType GlowType
 ---@field Opacity number
----@field IconZoom number
 ---@field Font string
 ---@field FontFlags table<FontFlags, boolean>
 ---@field FeatureFlags table<FeatureFlag, boolean>
----@field BorderStyle string
+---@field Position FramePosition
 
 ---@class TargetedSpellsSelfPreviewFrame: Frame
----@field GetChildren fun(self: TargetedSpellsSelfPreviewFrame): TargetedSpellsMixin
+---@field GetChildren fun(self: TargetedSpellsSelfPreviewFrame): TargetedSpellsIconMixin
 
 ---@class Star4Glow : Frame
 ---@field Inner Texture
@@ -166,7 +158,7 @@
 ---@class CustomCooldown : ExtendedCooldownTypes
 ---@field DurationText FontString
 
----@class TargetedSpellsMixin : Frame
+---@class TargetedSpellsIconMixin : Frame
 ---@field private Overlay Texture
 ---@field private Icon Texture
 ---@field private Cooldown CustomCooldown
@@ -198,34 +190,54 @@
 ---@field private wasInterrupted boolean
 ---@field private doNotHideBefore number?
 ---@field Bar StatusBar
----@field OnLoad fun(self: TargetedSpellsMixin)
----@field SetId fun(self: TargetedSpellsMixin, id: number?)
----@field GetId fun(self: TargetedSpellsMixin): number?
----@field SetInterrupted fun(self: TargetedSpellsMixin, name: string?, color: colorRGB?)
----@field CanBeHidden fun(self: TargetedSpellsMixin, id: number|string|nil): boolean
----@field OnUpdate fun(self: TargetedSpellsMixin, elapsed: number)
----@field SetShowDuration fun(self: TargetedSpellsMixin, showDuration: boolean, showFractions: boolean)
----@field ApplyBorderStyle fun(self: TargetedSpellsMixin, styleName: string)
----@field OnSizeChanged fun(self: TargetedSpellsMixin)
----@field OnSettingChanged fun(self: TargetedSpellsMixin, key: string, flagIdOrValue: number|string|boolean|table, newBool: boolean?)
----@field SetDuration fun(self: TargetedSpellsMixin, duration: DurationObject)
----@field GetDuration fun(self: TargetedSpellsMixin): DurationObject|nil
----@field SetStartTime fun(self: TargetedSpellsMixin, startTime: number?)
----@field GetStartTime fun(self: TargetedSpellsMixin): number?
----@field ShowGlow fun(self: TargetedSpellsMixin, isImportant: boolean) -- secret bool, but passed explicitly in EditMode code
----@field HideGlow fun(self: TargetedSpellsMixin)
----@field IsSpellImportant fun(self: TargetedSpellsMixin, boolOverride: boolean?): boolean
----@field SetSpellId fun(self: TargetedSpellsMixin, spellId: number?)
----@field ShouldBeShown fun(self: TargetedSpellsMixin): boolean
----@field ClearStartTime fun(self: TargetedSpellsMixin)
----@field SetUnit fun(self: TargetedSpellsMixin, unit: string)
----@field SetKind fun(self: TargetedSpellsMixin, kind: FrameKind)
----@field GetKind fun(self: TargetedSpellsMixin): FrameKind?
----@field GetUnit fun(self: TargetedSpellsMixin): string
----@field PostCreate fun(self: TargetedSpellsMixin, unit: string, kind: FrameKind, castingUnit: string?)
----@field Reset fun(self: TargetedSpellsMixin)
----@field SetFontSize fun(self: TargetedSpellsMixin)
----@field SetFont fun(self: TargetedSpellsMixin)
+---@field OnLoad fun(self: TargetedSpellsIconMixin)
+---@field SetId fun(self: TargetedSpellsIconMixin, id: number?)
+---@field GetId fun(self: TargetedSpellsIconMixin): number?
+---@field SetInterrupted fun(self: TargetedSpellsIconMixin, name: string?, color: colorRGB?)
+---@field CanBeHidden fun(self: TargetedSpellsIconMixin, id: number|string|nil): boolean
+---@field OnUpdate fun(self: TargetedSpellsIconMixin, elapsed: number)
+---@field SetShowDuration fun(self: TargetedSpellsIconMixin, showDuration: boolean, showFractions: boolean)
+---@field ApplyBorderStyle fun(self: TargetedSpellsIconMixin, styleName: string)
+---@field OnSizeChanged fun(self: TargetedSpellsIconMixin)
+---@field OnSettingChanged fun(self: TargetedSpellsIconMixin, key: string, flagIdOrValue: number|string|boolean|table, newBool: boolean?)
+---@field SetDuration fun(self: TargetedSpellsIconMixin, duration: DurationObject)
+---@field GetDuration fun(self: TargetedSpellsIconMixin): DurationObject|nil
+---@field SetStartTime fun(self: TargetedSpellsIconMixin, startTime: number?)
+---@field GetStartTime fun(self: TargetedSpellsIconMixin): number?
+---@field ShowGlow fun(self: TargetedSpellsIconMixin, isImportant: boolean) -- secret bool, but passed explicitly in EditMode code
+---@field HideGlow fun(self: TargetedSpellsIconMixin)
+---@field IsSpellImportant fun(self: TargetedSpellsIconMixin, boolOverride: boolean?): boolean
+---@field SetSpellId fun(self: TargetedSpellsIconMixin, spellId: number?)
+---@field ShouldBeShown fun(self: TargetedSpellsIconMixin): boolean
+---@field ClearStartTime fun(self: TargetedSpellsIconMixin)
+---@field SetUnit fun(self: TargetedSpellsIconMixin, unit: string)
+---@field SetKind fun(self: TargetedSpellsIconMixin, kind: FrameKind)
+---@field GetKind fun(self: TargetedSpellsIconMixin): FrameKind?
+---@field GetUnit fun(self: TargetedSpellsIconMixin): string
+---@field PostCreate fun(self: TargetedSpellsIconMixin, unit: string, castingUnit: string?)
+---@field Reset fun(self: TargetedSpellsIconMixin)
+---@field SetFontSize fun(self: TargetedSpellsIconMixin)
+---@field SetFont fun(self: TargetedSpellsIconMixin)
+
+---@class TargetedSpellsBarMixin : Frame
+---@field Bar StatusBar
+---@field SpellName FontString
+---@field TargetName FontString
+---@field Duration FontString
+---@field TargetMarker Texture
+---@field private kind FrameKind?
+---@field private startTime number?
+---@field OnLoad fun(self: TargetedSpellsBarMixin)
+---@field OnSizeChanged fun(self: TargetedSpellsBarMixin)
+---@field OnUpdate fun(self: TargetedSpellsBarMixin)
+---@field Reset fun(self: TargetedSpellsBarMixin)
+---@field PostCreate fun(self: TargetedSpellsBarMixin, castingUnit: string)
+---@field SetKind fun(self: TargetedSpellsBarMixin, kind: FrameKind)
+---@field GetKind fun(self: TargetedSpellsBarMixin): FrameKind?
+---@field SetStartTime fun(self: TargetedSpellsBarMixin)
+---@field ClearStartTime fun(self: TargetedSpellsBarMixin)
+---@field GetStartTime fun(self: TargetedSpellsBarMixin): number?
+---@field ShouldBeShown fun(self: TargetedSpellsBarMixin): boolean
 
 ---@class EditModeFrame : Frame
 ---@field firstFrameTimestamp number
@@ -234,17 +246,17 @@
 ---@field protected editModeFrame EditModeFrame
 ---@field protected frameKind FrameKind
 ---@field private demoPlaying boolean
----@field private frames table<number, TargetedSpellsMixin[]> | TargetedSpellsMixin[]
+---@field private frames table<number, TargetedSpellsIconMixin[]> | TargetedSpellsIconMixin[]
 ---@field protected demoTimers { tickers: table<number, FunctionContainer>, timers: table<number, FunctionContainer> }
 ---@field Init fun(self: TargetedSpellsEditModeMixin, displayName: string, frameKind: FrameKind)
 ---@field OnSettingsChanged fun(self: TargetedSpellsEditModeMixin, key: string, flagIdOrValue: number|string|boolean|table, newBool: boolean?)
 ---@field CreateSetting fun(self: TargetedSpellsEditModeMixin, key: string, defaults: SavedVariablesSettingsParty|SavedVariablesSettingsSelf): LibEditModeButton|LibEditModeCheckbox | LibEditModeDropdown | LibEditModeSlider
 ---@field OnLayoutSettingChanged fun(self: TargetedSpellsEditModeMixin, key: string, value: number|string, newBool: boolean?)
 ---@field AppendSettings fun(self: TargetedSpellsEditModeMixin)
----@field AcquireFrame fun(self: TargetedSpellsEditModeMixin): TargetedSpellsMixin
+---@field AcquireFrame fun(self: TargetedSpellsEditModeMixin): TargetedSpellsIconMixin
 ---@field OnEditModePositionChanged fun(self: TargetedSpellsEditModeMixin, frame: Frame, layoutName: string, point: FramePoint, x: number, y: number)
 ---@field RepositionPreviewFrames fun(self: TargetedSpellsEditModeMixin)
----@field LoopFrame fun(self: TargetedSpellsEditModeMixin, frame: TargetedSpellsMixin, index: number)
+---@field LoopFrame fun(self: TargetedSpellsEditModeMixin, frame: TargetedSpellsIconMixin, index: number)
 ---@field StartDemo fun(self: TargetedSpellsEditModeMixin)
 ---@field ReleaseAllFrames fun(self: TargetedSpellsEditModeMixin)
 ---@field EndDemo fun(self: TargetedSpellsEditModeMixin)
@@ -256,7 +268,7 @@
 
 ---@class TargetedSpellsSelfEditMode : TargetedSpellsEditModeMixin
 ---@field private maxFrames number
----@field private frames TargetedSpellsMixin[]
+---@field private frames TargetedSpellsIconMixin[]
 ---@field Init fun(self: TargetedSpellsSelfEditMode)
 ---@field ResizeEditModeFrame fun(self: TargetedSpellsSelfEditMode)
 ---@field ReleaseAllFrames fun(self: TargetedSpellsEditModeMixin)
@@ -268,28 +280,29 @@
 ---@field OnLayoutSettingChanged fun(self: TargetedSpellsEditModeMixin, key: string, value: number|string, newBool: boolean?)
 
 ---@class TargetedSpellsPartyEditMode : TargetedSpellsEditModeMixin
----@field private maxUnitCount number
----@field private useRaidStylePartyFrames boolean
----@field private amountOfPreviewFramesPerUnit number
----@field private frames table<number, TargetedSpellsMixin[]>
+---@field private maxFrames number
+---@field private frames TargetedSpellsBarMixin[]
 ---@field Init fun(self: TargetedSpellsPartyEditMode)
----@field AppendSettings fun(self: TargetedSpellsEditModeMixin)
----@field RepositionPreviewFrames fun(self: TargetedSpellsEditModeMixin)
----@field OnEditModePositionChanged fun(self: TargetedSpellsEditModeMixin, frame: Frame, layoutName: string, point: FramePoint, x: number, y: number)
----@field OnLayoutSettingChanged fun(self: TargetedSpellsEditModeMixin, key: string, value: number|string, newBool: boolean?)
----@field RepositionPreviewFrames fun(self: TargetedSpellsEditModeMixin)
----@field StartDemo fun(self: TargetedSpellsEditModeMixin)
----@field ReleaseAllFrames fun(self: TargetedSpellsEditModeMixin)
+---@field ResizeEditModeFrame fun(self: TargetedSpellsPartyEditMode)
+---@field RestoreEditModePosition fun(self: TargetedSpellsPartyEditMode)
+---@field AppendSettings fun(self: TargetedSpellsPartyEditMode)
+---@field AcquireFrame fun(self: TargetedSpellsPartyEditMode): TargetedSpellsBarMixin
+---@field LoopFrame fun(self: TargetedSpellsPartyEditMode, frame: TargetedSpellsBarMixin, index: number)
+---@field RepositionPreviewFrames fun(self: TargetedSpellsPartyEditMode)
+---@field OnEditModePositionChanged fun(self: TargetedSpellsPartyEditMode, frame: Frame, layoutName: string, point: FramePoint, x: number, y: number)
+---@field OnLayoutSettingChanged fun(self: TargetedSpellsPartyEditMode, key: string, value: number|string, newBool: boolean?)
+---@field StartDemo fun(self: TargetedSpellsPartyEditMode)
+---@field ReleaseAllFrames fun(self: TargetedSpellsPartyEditMode)
 
 ---@class TargetedSpellsDriver
----@field private framePool FramePool<TargetedSpellsMixin>
+---@field private framePool FramePool<TargetedSpellsIconMixin>
 ---@field private frame Frame
 ---@field private role Role
 ---@field private contentType ContentType
 ---@field private delay number
----@field frames table<string, TargetedSpellsMixin[]>
+---@field frames table<string, (TargetedSpellsIconMixin|TargetedSpellsBarMixin)[]>
 ---@field SetupFrame fun(self: TargetedSpellsDriver, isBoot: boolean)
----@field AcquireFrames fun(self: TargetedSpellsDriver, castingUnit: string): TargetedSpellsMixin[]
+---@field AcquireFrames fun(self: TargetedSpellsDriver, castingUnit: string): (TargetedSpellsIconMixin|TargetedSpellsBarMixin)[]
 ---@field RepositionFrames fun(self: TargetedSpellsDriver)
 ---@field ReleaseFrameForUnit fun(self: TargetedSpellsDriver, unit: string, removeUnit: boolean, id?: number): boolean
 ---@field LoadConditionsProhibitExecution fun(self: TargetedSpellsDriver, kind: FrameKind): boolean
