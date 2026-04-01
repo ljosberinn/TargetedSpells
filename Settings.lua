@@ -44,6 +44,10 @@ Private.Settings.Keys = {
 		Font = "FONT_PARTY",
 		FontFlags = "FONT_FLAGS_PARTY",
 		FeatureFlags = "FEATURE_FLAGS_PARTY",
+		-- todo: implement these
+		-- TankColor = "TANK_COLOR_PARTY",
+		-- HealerColor = "HEALER_COLOR_PARTY",
+		-- DamageColor = "DAMAGE_COLOR_PARTY",
 	},
 }
 

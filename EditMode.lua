@@ -1310,18 +1310,19 @@ function SelfEditModeMixin:RepositionPreviewFrames()
 	local activeFrames = {}
 
 	for index = 1, self.maxFrames do
-		if self.frames[index] == nil then
-			self.frames[index] = self:AcquireFrame()
+		local frame = self.frames[index]
+
+		if frame == nil then
+			frame = self:AcquireFrame()
+			self.frames[index] = frame
 
 			table.insert(
 				self.demoTimers.tickers,
-				C_Timer.NewTicker(5 + index, GenerateClosure(self.LoopFrame, self, self.frames[index], index))
+				C_Timer.NewTicker(5 + index, GenerateClosure(self.LoopFrame, self, frame, index))
 			)
 
-			self:LoopFrame(self.frames[index], index)
+			self:LoopFrame(frame, index)
 		end
-
-		local frame = self.frames[index]
 
 		if frame:ShouldBeShown() then
 			table.insert(activeFrames, frame)
@@ -1525,6 +1526,33 @@ function PartyEditModeMixin:OnLayoutSettingChanged(key, value)
 end
 
 function PartyEditModeMixin:RepositionPreviewFrames()
+	-- ---@type TargetedSpellsIconMixin[]
+	-- local activeFrames = {}
+
+	-- for index = 1, self.maxFrames do
+	-- 	local frame = self.frames[index]
+
+	-- 	if frame == nil then
+	-- 		frame = self:AcquireFrame()
+	-- 		self.frames[index] = frame
+
+	-- 		table.insert(
+	-- 			self.demoTimers.tickers,
+	-- 			C_Timer.NewTicker(5 + index, GenerateClosure(self.LoopFrame, self, frame, index))
+	-- 		)
+
+	-- 		self:LoopFrame(frame, index)
+	-- 	end
+
+	-- 	if frame:ShouldBeShown() then
+	-- 		table.insert(activeFrames, frame)
+	-- 	end
+	-- end
+
+	-- if #activeFrames == 0 then
+	-- 	return
+	-- end
+
 	if not self.demoPlaying then
 		return
 	end
@@ -1533,23 +1561,34 @@ function PartyEditModeMixin:RepositionPreviewFrames()
 	local activeFrames = {}
 
 	for index = 1, self.maxFrames do
-		if self.frames[index] == nil then
-			self.frames[index] = self:AcquireFrame()
+		local frame = self.frames[index]
 
-			local delay = (index - 1) * 1
+		if frame == nil then
+			frame = self:AcquireFrame()
+			self.frames[index] = frame
 
-			C_Timer.After(delay, function()
-				table.insert(
-					self.demoTimers.tickers,
-					C_Timer.NewTicker(5 + index, GenerateClosure(self.LoopFrame, self, self.frames[index], index))
-				)
+			table.insert(
+				self.demoTimers.tickers,
+				C_Timer.NewTicker(5 + index, GenerateClosure(self.LoopFrame, self, frame, index))
+			)
 
-				self:LoopFrame(self.frames[index], index)
-			end)
+			-- local delay = (index - 1) * 1
+
+			-- table.insert(
+			-- 	self.demoTimers.timers,
+			-- 	C_Timer.NewTimer(delay, function()
+			-- 		table.insert(
+			-- 			self.demoTimers.tickers,
+			-- 			C_Timer.NewTicker(5 + index, GenerateClosure(self.LoopFrame, self, frame, index))
+			-- 		)
+
+			-- 		self:LoopFrame(frame, index)
+			-- 	end)
+			-- )
 		end
 
-		if self.frames[index]:ShouldBeShown() then
-			table.insert(activeFrames, self.frames[index])
+		if frame:ShouldBeShown() then
+			table.insert(activeFrames, frame)
 		end
 	end
 

@@ -27,8 +27,8 @@ function TargetedSpellsBarMixin:GetKind()
 	return self.kind
 end
 
-function TargetedSpellsBarMixin:SetStartTime()
-	self.startTime = GetTime()
+function TargetedSpellsBarMixin:SetStartTime(startTime)
+	self.startTime = startTime or GetTime()
 end
 
 function TargetedSpellsBarMixin:ClearStartTime()

@@ -232,7 +232,7 @@
 ---@field Reset fun(self: TargetedSpellsBarMixin)
 ---@field PostCreate fun(self: TargetedSpellsBarMixin, castingUnit: string)
 ---@field GetKind fun(self: TargetedSpellsBarMixin): FrameKind?
----@field SetStartTime fun(self: TargetedSpellsBarMixin)
+---@field SetStartTime fun(self: TargetedSpellsBarMixin, startTime: number?)
 ---@field ClearStartTime fun(self: TargetedSpellsBarMixin)
 ---@field GetStartTime fun(self: TargetedSpellsBarMixin): number?
 ---@field ShouldBeShown fun(self: TargetedSpellsBarMixin): boolean
