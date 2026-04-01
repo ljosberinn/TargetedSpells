@@ -695,66 +695,6 @@ function TargetedSpellsEditModeMixin:CreateSetting(key, defaults)
 		}
 	end
 
-	if key == Private.Settings.Keys.Party.RoleFilter then
-		local function Generator(owner, rootDescription, data)
-			for label, id in pairs(Private.Enum.Role) do
-				local function IsEnabled()
-					return TargetedSpellsSaved.Settings.Party.RoleFilter[id] == true
-				end
-
-				local function Toggle()
-					TargetedSpellsSaved.Settings.Party.RoleFilter[id] =
-						not TargetedSpellsSaved.Settings.Party.RoleFilter[id]
-
-					Private.EventRegistry:TriggerEvent(
-						Private.Enum.Events.SETTING_CHANGED,
-						key,
-						TargetedSpellsSaved.Settings.Party.RoleFilter
-					)
-				end
-
-				local translated = L.Settings.RoleFilterLabels[id]
-
-				rootDescription:CreateCheckbox(translated, IsEnabled, Toggle, {
-					value = label,
-					multiple = true,
-				})
-			end
-		end
-
-		---@param layoutName string
-		---@param values table<string, boolean>
-		local function Set(layoutName, values)
-			local hasChanges = false
-
-			for id, bool in pairs(values) do
-				if TargetedSpellsSaved.Settings.Party.RoleFilter[id] ~= bool then
-					TargetedSpellsSaved.Settings.Party.RoleFilter[id] = bool
-					hasChanges = true
-				end
-			end
-
-			if hasChanges then
-				Private.EventRegistry:TriggerEvent(
-					Private.Enum.Events.SETTING_CHANGED,
-					key,
-					TargetedSpellsSaved.Settings.Party.RoleFilter
-				)
-			end
-		end
-
-		---@type LibEditModeDropdown
-		return {
-			name = L.Settings.RoleFilterLabel,
-			kind = Enum.EditModeSettingDisplayType.Dropdown,
-			default = defaults.RoleFilter,
-			desc = L.Settings.RoleFilterTooltip,
-			generator = Generator,
-			-- technically is a reset only
-			set = Set,
-		}
-	end
-
 	if key == Private.Settings.Keys.Self.FontSize or key == Private.Settings.Keys.Party.FontSize then
 		local tableRef = key == Private.Settings.Keys.Self.FontSize and TargetedSpellsSaved.Settings.Self
 			or TargetedSpellsSaved.Settings.Party

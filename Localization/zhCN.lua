@@ -60,10 +60,6 @@ L.Settings.LoadConditionRoleLabels = {
 	[Private.Enum.Role.Damager] = "输出",
 }
 
-L.Settings.RoleFilterLabel = "Role Filter"
-L.Settings.RoleFilterTooltip = "Allows you to ignore certain roles from being shown. Use at your own risk."
-L.Settings.RoleFilterLabels = L.Settings.LoadConditionRoleLabels
-
 L.Settings.FrameWidthLabel = "宽度"
 L.Settings.FrameWidthTooltip = nil
 
