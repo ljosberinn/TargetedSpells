@@ -211,7 +211,6 @@
 ---@field ShouldBeShown fun(self: TargetedSpellsIconMixin): boolean
 ---@field ClearStartTime fun(self: TargetedSpellsIconMixin)
 ---@field SetUnit fun(self: TargetedSpellsIconMixin, unit: string)
----@field SetKind fun(self: TargetedSpellsIconMixin, kind: FrameKind)
 ---@field GetKind fun(self: TargetedSpellsIconMixin): FrameKind?
 ---@field GetUnit fun(self: TargetedSpellsIconMixin): string
 ---@field PostCreate fun(self: TargetedSpellsIconMixin, unit: string, castingUnit: string?)
@@ -232,7 +231,6 @@
 ---@field OnUpdate fun(self: TargetedSpellsBarMixin)
 ---@field Reset fun(self: TargetedSpellsBarMixin)
 ---@field PostCreate fun(self: TargetedSpellsBarMixin, castingUnit: string)
----@field SetKind fun(self: TargetedSpellsBarMixin, kind: FrameKind)
 ---@field GetKind fun(self: TargetedSpellsBarMixin): FrameKind?
 ---@field SetStartTime fun(self: TargetedSpellsBarMixin)
 ---@field ClearStartTime fun(self: TargetedSpellsBarMixin)

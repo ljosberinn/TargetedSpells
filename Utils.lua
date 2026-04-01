@@ -17,7 +17,6 @@ Private.Utils.Pools.Self = CreateFramePool(
 	end,
 	false,
 	function(frame)
-		frame:SetKind(Private.Enum.FrameKind.Self) -- todo: move this into XML
 		PixelUtil.SetSize(frame, TargetedSpellsSaved.Settings.Self.Width, TargetedSpellsSaved.Settings.Self.Height)
 		frame:SetFontSize()
 		frame:SetFont()
@@ -43,7 +42,6 @@ Private.Utils.Pools.Bar = CreateFramePool(
 	end,
 	false,
 	function(frame)
-		frame:SetKind(Private.Enum.FrameKind.Party) -- todo: move this into XML
 		PixelUtil.SetSize(frame, TargetedSpellsSaved.Settings.Party.Width, TargetedSpellsSaved.Settings.Party.Height)
 	end
 )
