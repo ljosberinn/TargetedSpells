@@ -163,6 +163,10 @@ L.Settings.FontTooltip = nil
 L.Settings.FeatureFlagsLabel = "Features"
 L.Settings.FeatureFlagsTooltip = nil
 
+L.Settings.ShowIconLabel = "Show Icon"
+L.Settings.ShowTargetMarkerLabel = "Show Target Marker"
+L.Settings.ShowNameLabel = "Show Name"
+
 L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.GlowImportant] = L.Settings.GlowImportantLabel,
 	[Private.Enum.FeatureFlag.OnlyImportant] = L.Settings.OnlyImportantLabel,
@@ -172,6 +176,9 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
 	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,
 	[Private.Enum.FeatureFlag.IncludeSelfInParty] = L.Settings.IncludeSelfInPartyLabel,
+	[Private.Enum.FeatureFlag.ShowIcon] = L.Settings.ShowIconLabel,
+	[Private.Enum.FeatureFlag.ShowTargetMarker] = L.Settings.ShowTargetMarkerLabel,
+	[Private.Enum.FeatureFlag.ShowName] = L.Settings.ShowNameLabel,
 }
 
 L.Settings.FeatureFlagSettingTitles = {

@@ -220,6 +220,8 @@
 
 ---@class TargetedSpellsBarMixin : Frame
 ---@field Bar StatusBar
+---@field ProgressBar StatusBar
+---@field Icon Texture
 ---@field SpellName FontString
 ---@field TargetName FontString
 ---@field Duration FontString

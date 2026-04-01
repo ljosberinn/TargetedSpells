@@ -1,5 +1,5 @@
 ---@type string, TargetedSpells
-local addonName, Private = ...
+local _, Private = ...
 
 ---@class TargetedSpellsEnums
 Private.Enum = {}
@@ -94,4 +94,7 @@ Private.Enum.FeatureFlag = {
 	IndicateInterrupts = 7,
 	RenderInterruptSourceName = 8,
 	IncludeSelfInParty = 9,
+	ShowIcon = 10,
+	ShowTargetMarker = 11,
+	ShowName = 12,
 }

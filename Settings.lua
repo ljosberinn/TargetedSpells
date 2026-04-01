@@ -108,6 +108,9 @@ function Private.Settings.GetFeatureFlagsForKind(kind)
 	return {
 		Private.Enum.FeatureFlag.IndicateInterrupts,
 		Private.Enum.FeatureFlag.RenderInterruptSourceName,
+		Private.Enum.FeatureFlag.ShowIcon,
+		Private.Enum.FeatureFlag.ShowTargetMarker,
+		Private.Enum.FeatureFlag.ShowName,
 	}
 end
 
@@ -271,6 +274,9 @@ function Private.Settings.GetPartyDefaultSettings()
 		FeatureFlags = {
 			[Private.Enum.FeatureFlag.IndicateInterrupts] = true,
 			[Private.Enum.FeatureFlag.RenderInterruptSourceName] = true,
+			[Private.Enum.FeatureFlag.ShowIcon] = true,
+			[Private.Enum.FeatureFlag.ShowTargetMarker] = true,
+			[Private.Enum.FeatureFlag.ShowName] = true,
 		},
 		Position = Private.Settings.GetDefaultBarsEditModeFramePosition(),
 	}

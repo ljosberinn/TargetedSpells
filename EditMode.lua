@@ -86,7 +86,11 @@ function TargetedSpellsEditModeMixin:OnSettingsChanged(key, flagIdOrValue, newBo
 
 		if flagId == Private.Enum.FeatureFlag.GlowImportant then
 			self:OnLayoutSettingChanged(key, flagId, newBool)
-		elseif flagId == Private.Enum.FeatureFlag.OnlyImportant then
+		elseif
+			flagId == Private.Enum.FeatureFlag.OnlyImportant
+			or flagId == Private.Enum.FeatureFlag.ShowIcon
+			or flagId == Private.Enum.FeatureFlag.ShowTargetMarker
+		then
 			if not LibEditMode:IsInEditMode() then
 				return
 			end
@@ -1488,14 +1492,31 @@ function PartyEditModeMixin:AcquireFrame()
 end
 
 function PartyEditModeMixin:LoopFrame(frame, index)
+	frame:SetSpellId()
 	frame:SetStartTime()
+
+	local castTime = 4 + index / 2
+	local duration = C_DurationUtil.CreateDuration()
+	duration:SetTimeFromStart(GetTime(), castTime)
+	frame:SetDuration(duration)
 	frame:Show()
+
+	frame.TargetMarker:Hide()
+
+	if
+		TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowTargetMarker]
+		and Private.Utils.RollDice()
+	then
+		-- todo: use format
+		frame.TargetMarker:SetTexture("Interface\\TARGETINGFRAME\\UI-RaidTargetingIcon_" .. math.random(1, 8) .. ".blp")
+		frame.TargetMarker:Show()
+	end
 
 	self:RepositionPreviewFrames()
 
 	table.insert(
 		self.demoTimers.timers,
-		C_Timer.NewTimer(4 + index / 2, function()
+		C_Timer.NewTimer(castTime, function()
 			frame:ClearStartTime()
 			frame:Hide()
 			self:RepositionPreviewFrames()
@@ -1526,33 +1547,6 @@ function PartyEditModeMixin:OnLayoutSettingChanged(key, value)
 end
 
 function PartyEditModeMixin:RepositionPreviewFrames()
-	-- ---@type TargetedSpellsIconMixin[]
-	-- local activeFrames = {}
-
-	-- for index = 1, self.maxFrames do
-	-- 	local frame = self.frames[index]
-
-	-- 	if frame == nil then
-	-- 		frame = self:AcquireFrame()
-	-- 		self.frames[index] = frame
-
-	-- 		table.insert(
-	-- 			self.demoTimers.tickers,
-	-- 			C_Timer.NewTicker(5 + index, GenerateClosure(self.LoopFrame, self, frame, index))
-	-- 		)
-
-	-- 		self:LoopFrame(frame, index)
-	-- 	end
-
-	-- 	if frame:ShouldBeShown() then
-	-- 		table.insert(activeFrames, frame)
-	-- 	end
-	-- end
-
-	-- if #activeFrames == 0 then
-	-- 	return
-	-- end
-
 	if not self.demoPlaying then
 		return
 	end
@@ -1572,19 +1566,7 @@ function PartyEditModeMixin:RepositionPreviewFrames()
 				C_Timer.NewTicker(5 + index, GenerateClosure(self.LoopFrame, self, frame, index))
 			)
 
-			-- local delay = (index - 1) * 1
-
-			-- table.insert(
-			-- 	self.demoTimers.timers,
-			-- 	C_Timer.NewTimer(delay, function()
-			-- 		table.insert(
-			-- 			self.demoTimers.tickers,
-			-- 			C_Timer.NewTicker(5 + index, GenerateClosure(self.LoopFrame, self, frame, index))
-			-- 		)
-
-			-- 		self:LoopFrame(frame, index)
-			-- 	end)
-			-- )
+			self:LoopFrame(frame, index)
 		end
 
 		if frame:ShouldBeShown() then
@@ -1598,7 +1580,27 @@ function PartyEditModeMixin:RepositionPreviewFrames()
 
 	Private.Utils.SortFrames(activeFrames, TargetedSpellsSaved.Settings.Party.SortOrder)
 
-	-- TODO: call bar layout method here once TargetedSpellsBarMixin layout is implemented
+	local layouting = Private.Utils.CollectLayoutingArguments(
+		TargetedSpellsSaved.Settings.Party.Direction,
+		TargetedSpellsSaved.Settings.Party.Grow,
+		TargetedSpellsSaved.Settings.Party.Width,
+		TargetedSpellsSaved.Settings.Party.Height,
+		TargetedSpellsSaved.Settings.Party.Gap
+	)
+
+	local parentDimension = layouting.isHorizontal and self.editModeFrame:GetWidth() or self.editModeFrame:GetHeight()
+	local offset = layouting.isGrowEnd and (parentDimension / 2 - TargetedSpellsSaved.Settings.Party.Gap)
+		or (-parentDimension / 2)
+
+	Private.Utils.AdjustLayout(
+		activeFrames,
+		layouting,
+		self.editModeFrame,
+		"CENTER",
+		layouting.isHorizontal and offset or 0,
+		(not layouting.isHorizontal) and offset or 0,
+		true
+	)
 end
 
 function PartyEditModeMixin:StartDemo()
