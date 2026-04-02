@@ -143,15 +143,6 @@ L.Settings.FrameOffsetXTooltip = nil
 L.Settings.FrameOffsetYLabel = "Y轴偏移"
 L.Settings.FrameOffsetYTooltip = nil
 
-L.Settings.FrameSourceAnchorLabel = "源锚点"
-L.Settings.FrameSourceAnchorTooltip = nil
-
-L.Settings.FrameTargetAnchorLabel = "目标锚点"
-L.Settings.FrameTargetAnchorTooltip = nil
-
-L.Settings.IncludeSelfInPartyLabel = "在小队中包含自己"
-L.Settings.IncludeSelfInPartyTooltip = "仅在使用团队样式小队框架时生效。"
-
 L.Settings.ClickToOpenSettingsLabel = "点击打开设置"
 
 L.Settings.Import = "导入"
@@ -159,6 +150,8 @@ L.Settings.Export = "导出"
 
 L.Settings.FontLabel = "字体"
 L.Settings.FontTooltip = nil
+
+L.Settings.TargetNamePreviewText = "目标名称"
 
 L.Settings.FeatureFlagsLabel = "Features"
 L.Settings.FeatureFlagsTooltip = nil
@@ -172,6 +165,11 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
 	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,
 	[Private.Enum.FeatureFlag.IncludeSelfInParty] = L.Settings.IncludeSelfInPartyLabel,
+	[Private.Enum.FeatureFlag.ShowIcon] = "显示图标",
+	[Private.Enum.FeatureFlag.ShowTargetMarker] = "显示目标标记",
+	[Private.Enum.FeatureFlag.ShowSpellName] = "显示法术名称",
+	[Private.Enum.FeatureFlag.ShowTargetName] = "显示目标名称",
+	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "显示目标职业颜色",
 }
 
 L.Settings.FeatureFlagSettingTitles = {

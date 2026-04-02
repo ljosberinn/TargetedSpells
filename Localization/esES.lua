@@ -143,15 +143,6 @@ L.Settings.FrameOffsetXTooltip = nil
 L.Settings.FrameOffsetYLabel = "Desplazamiento Y"
 L.Settings.FrameOffsetYTooltip = nil
 
-L.Settings.FrameSourceAnchorLabel = "Ancla de origen"
-L.Settings.FrameSourceAnchorTooltip = nil
-
-L.Settings.FrameTargetAnchorLabel = "Ancla de destino"
-L.Settings.FrameTargetAnchorTooltip = nil
-
-L.Settings.IncludeSelfInPartyLabel = "Incluirse a uno mismo en el grupo"
-L.Settings.IncludeSelfInPartyTooltip = "Solo funciona cuando se usan los marcos de grupo estilo banda."
-
 L.Settings.ClickToOpenSettingsLabel = "Haz clic para abrir la configuración"
 
 L.Settings.Import = "Importar"
@@ -159,6 +150,8 @@ L.Settings.Export = "Exportar"
 
 L.Settings.FontLabel = "Fuente"
 L.Settings.FontTooltip = nil
+
+L.Settings.TargetNamePreviewText = "Nombre del objetivo"
 
 L.Settings.FeatureFlagsLabel = "Features"
 L.Settings.FeatureFlagsTooltip = nil
@@ -172,6 +165,11 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
 	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,
 	[Private.Enum.FeatureFlag.IncludeSelfInParty] = L.Settings.IncludeSelfInPartyLabel,
+	[Private.Enum.FeatureFlag.ShowIcon] = "Mostrar icono",
+	[Private.Enum.FeatureFlag.ShowTargetMarker] = "Mostrar marcador de objetivo",
+	[Private.Enum.FeatureFlag.ShowSpellName] = "Mostrar nombre del hechizo",
+	[Private.Enum.FeatureFlag.ShowTargetName] = "Mostrar nombre del objetivo",
+	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Mostrar color de clase del objetivo",
 }
 
 L.Settings.FeatureFlagSettingTitles = {

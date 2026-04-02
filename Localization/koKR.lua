@@ -143,15 +143,6 @@ L.Settings.FrameOffsetXTooltip = nil
 L.Settings.FrameOffsetYLabel = "Y 위치 조정"
 L.Settings.FrameOffsetYTooltip = nil
 
-L.Settings.FrameSourceAnchorLabel = "기준 앵커"
-L.Settings.FrameSourceAnchorTooltip = nil
-
-L.Settings.FrameTargetAnchorLabel = "대상 앵커"
-L.Settings.FrameTargetAnchorTooltip = nil
-
-L.Settings.IncludeSelfInPartyLabel = "파티에 자신 포함"
-L.Settings.IncludeSelfInPartyTooltip = "공격대 스타일 파티 프레임을 사용할 때만 작동합니다."
-
 L.Settings.ClickToOpenSettingsLabel = "클릭 설정 열기"
 
 L.Settings.Import = "가져오기"
@@ -160,6 +151,8 @@ L.Settings.Export = "내보내기"
 L.Settings.FontLabel = "글꼴"
 
 L.Settings.FontTooltip = nil
+
+L.Settings.TargetNamePreviewText = "대상 이름"
 
 L.Settings.FeatureFlagsLabel = "Features"
 L.Settings.FeatureFlagsTooltip = nil
@@ -173,6 +166,11 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
 	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,
 	[Private.Enum.FeatureFlag.IncludeSelfInParty] = L.Settings.IncludeSelfInPartyLabel,
+	[Private.Enum.FeatureFlag.ShowIcon] = "아이콘 표시",
+	[Private.Enum.FeatureFlag.ShowTargetMarker] = "대상 마커 표시",
+	[Private.Enum.FeatureFlag.ShowSpellName] = "주문 이름 표시",
+	[Private.Enum.FeatureFlag.ShowTargetName] = "대상 이름 표시",
+	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "대상 직업 색상 표시",
 }
 
 L.Settings.FeatureFlagSettingTitles = {

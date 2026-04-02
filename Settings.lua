@@ -39,6 +39,8 @@ Private.Settings.Keys = {
 		SortOrder = "FRAME_SORT_ORDER_PARTY",
 		GlowType = "GLOW_TYPE_PARTY",
 		Opacity = "OPACITY_PARTY",
+		SpellNameWidth = "SPELL_NAME_WIDTH_PARTY",
+		TargetNameWidth = "TARGET_NAME_WIDTH_PARTY",
 		Import = "IMPORT_PARTY",
 		Export = "EXPORT_PARTY",
 		Font = "FONT_PARTY",
@@ -89,6 +91,8 @@ function Private.Settings.GetSettingsDisplayOrder(kind)
 		Private.Settings.Keys.Party.FontSize,
 		Private.Settings.Keys.Party.FontFlags,
 		Private.Settings.Keys.Party.Opacity,
+		Private.Settings.Keys.Party.SpellNameWidth,
+		Private.Settings.Keys.Party.TargetNameWidth,
 	}
 end
 
@@ -106,11 +110,17 @@ function Private.Settings.GetFeatureFlagsForKind(kind)
 	end
 
 	return {
-		Private.Enum.FeatureFlag.IndicateInterrupts,
-		Private.Enum.FeatureFlag.RenderInterruptSourceName,
+		Private.Enum.FeatureFlag.GlowImportant,
+		Private.Enum.FeatureFlag.OnlyImportant,
+		Private.Enum.FeatureFlag.ShowDuration,
+		Private.Enum.FeatureFlag.ShowDurationFractions,
 		Private.Enum.FeatureFlag.ShowIcon,
 		Private.Enum.FeatureFlag.ShowTargetMarker,
-		Private.Enum.FeatureFlag.ShowName,
+		Private.Enum.FeatureFlag.ShowSpellName,
+		Private.Enum.FeatureFlag.ShowTargetName,
+		Private.Enum.FeatureFlag.ShowTargetClassColor,
+		Private.Enum.FeatureFlag.IndicateInterrupts,
+		Private.Enum.FeatureFlag.RenderInterruptSourceName,
 	}
 end
 
@@ -119,7 +129,7 @@ function Private.Settings.GetDefaultSelfEditModeFramePosition()
 end
 
 function Private.Settings.GetDefaultBarsEditModeFramePosition()
-	return { point = "CENTER", x = 0, y = 100 }
+	return { point = "CENTER", x = 0, y = 250 }
 end
 
 function Private.Settings.GetSliderSettingsForOption(key)
@@ -158,7 +168,7 @@ function Private.Settings.GetSliderSettingsForOption(key)
 	if key == Private.Settings.Keys.Party.Width then
 		return {
 			min = 60,
-			max = 400,
+			max = 800,
 			step = 1,
 		}
 	end
@@ -166,7 +176,7 @@ function Private.Settings.GetSliderSettingsForOption(key)
 	if key == Private.Settings.Keys.Party.Height then
 		return {
 			min = 10,
-			max = 60,
+			max = 120,
 			step = 1,
 		}
 	end
@@ -181,8 +191,16 @@ function Private.Settings.GetSliderSettingsForOption(key)
 
 	if key == Private.Settings.Keys.Party.Gap then
 		return {
-			min = -60,
+			min = -10,
 			max = 60,
+			step = 1,
+		}
+	end
+
+	if key == Private.Settings.Keys.Party.SpellNameWidth or key == Private.Settings.Keys.Party.TargetNameWidth then
+		return {
+			min = 0,
+			max = 500,
 			step = 1,
 		}
 	end
@@ -245,8 +263,8 @@ end
 function Private.Settings.GetPartyDefaultSettings()
 	return {
 		Enabled = true,
-		Width = 200,
-		Height = 20,
+		Width = 5 * 48 + 4 * 2,
+		Height = 40,
 		FontSize = 14,
 		Gap = 2,
 		Direction = Private.Enum.Direction.Vertical,
@@ -272,12 +290,20 @@ function Private.Settings.GetPartyDefaultSettings()
 			[Private.Enum.FontFlags.SHADOW] = false,
 		},
 		FeatureFlags = {
+			[Private.Enum.FeatureFlag.GlowImportant] = true,
+			[Private.Enum.FeatureFlag.OnlyImportant] = false,
 			[Private.Enum.FeatureFlag.IndicateInterrupts] = true,
 			[Private.Enum.FeatureFlag.RenderInterruptSourceName] = true,
+			[Private.Enum.FeatureFlag.ShowDuration] = true,
+			[Private.Enum.FeatureFlag.ShowDurationFractions] = true,
 			[Private.Enum.FeatureFlag.ShowIcon] = true,
 			[Private.Enum.FeatureFlag.ShowTargetMarker] = true,
-			[Private.Enum.FeatureFlag.ShowName] = true,
+			[Private.Enum.FeatureFlag.ShowSpellName] = true,
+			[Private.Enum.FeatureFlag.ShowTargetName] = true,
+			[Private.Enum.FeatureFlag.ShowTargetClassColor] = true,
 		},
+		SpellNameWidth = 0,
+		TargetNameWidth = 0,
 		Position = Private.Settings.GetDefaultBarsEditModeFramePosition(),
 	}
 end
@@ -599,97 +625,16 @@ table.insert(Private.LoginFnQueue, function()
 			}
 		end
 
-		if key == Private.Settings.Keys.Party.TargetAnchor then
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Party.TargetAnchor
-			end
-
-			local function SetValue(value)
-				if value ~= TargetedSpellsSaved.Settings.Party.TargetAnchor then
-					TargetedSpellsSaved.Settings.Party.TargetAnchor = value
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-				end
-			end
-
-			local function GetOptions()
-				local container = Settings.CreateControlTextContainer()
-
-				for k, v in pairs(Private.Enum.Anchor) do
-					container:Add(v, k)
-				end
-
-				return container:GetData()
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.String,
-				L.Settings.FrameTargetAnchorLabel,
-				defaults.TargetAnchor,
-				GetValue,
-				SetValue
-			)
-			local initializer =
-				Settings.CreateDropdown(category, setting, GetOptions, L.Settings.FrameTargetAnchorTooltip)
-
-			return {
-				initializer = initializer,
-				hideSteppers = false,
-				IsSectionEnabled = nil,
-			}
-		end
-
-		if key == Private.Settings.Keys.Party.SourceAnchor then
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Party.SourceAnchor
-			end
-
-			local function SetValue(value)
-				if value ~= TargetedSpellsSaved.Settings.Party.SourceAnchor then
-					TargetedSpellsSaved.Settings.Party.SourceAnchor = value
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-				end
-			end
-
-			local function GetOptions()
-				local container = Settings.CreateControlTextContainer()
-
-				for k, v in pairs(Private.Enum.Anchor) do
-					container:Add(v, k)
-				end
-
-				return container:GetData()
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.String,
-				L.Settings.FrameSourceAnchorLabel,
-				defaults.SourceAnchor,
-				GetValue,
-				SetValue
-			)
-			local initializer =
-				Settings.CreateDropdown(category, setting, GetOptions, L.Settings.FrameSourceAnchorTooltip)
-			return {
-				initializer = initializer,
-				hideSteppers = false,
-				IsSectionEnabled = nil,
-			}
-		end
-
-		if key == Private.Settings.Keys.Party.OffsetY then
+		if key == Private.Settings.Keys.Party.SpellNameWidth then
 			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
 
 			local function GetValue()
-				return TargetedSpellsSaved.Settings.Party.OffsetY
+				return TargetedSpellsSaved.Settings.Party.SpellNameWidth
 			end
 
 			local function SetValue(value)
-				if value ~= TargetedSpellsSaved.Settings.Party.OffsetY then
-					TargetedSpellsSaved.Settings.Party.OffsetY = value
+				if value ~= TargetedSpellsSaved.Settings.Party.SpellNameWidth then
+					TargetedSpellsSaved.Settings.Party.SpellNameWidth = value
 
 					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 				end
@@ -699,15 +644,15 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.Number,
-				L.Settings.FrameOffsetYLabel,
-				defaults.OffsetY,
+				L.Settings.SpellNameWidthLabel,
+				defaults.SpellNameWidth,
 				GetValue,
 				SetValue
 			)
 			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
-			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
+			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, FormatPercentage)
 
-			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FrameOffsetYTooltip)
+			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.SpellNameWidthTooltip)
 
 			return {
 				initializer = initializer,
@@ -716,16 +661,16 @@ table.insert(Private.LoginFnQueue, function()
 			}
 		end
 
-		if key == Private.Settings.Keys.Party.OffsetX then
+		if key == Private.Settings.Keys.Party.TargetNameWidth then
 			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
 
 			local function GetValue()
-				return TargetedSpellsSaved.Settings.Party.OffsetX
+				return TargetedSpellsSaved.Settings.Party.TargetNameWidth
 			end
 
 			local function SetValue(value)
-				if value ~= TargetedSpellsSaved.Settings.Party.OffsetX then
-					TargetedSpellsSaved.Settings.Party.OffsetX = value
+				if value ~= TargetedSpellsSaved.Settings.Party.TargetNameWidth then
+					TargetedSpellsSaved.Settings.Party.TargetNameWidth = value
 
 					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 				end
@@ -735,15 +680,15 @@ table.insert(Private.LoginFnQueue, function()
 				category,
 				key,
 				Settings.VarType.Number,
-				L.Settings.FrameOffsetXLabel,
-				defaults.OffsetX,
+				L.Settings.TargetNameWidthLabel,
+				defaults.TargetNameWidth,
 				GetValue,
 				SetValue
 			)
 			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
-			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
+			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, FormatPercentage)
 
-			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.FrameOffsetXTooltip)
+			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.TargetNameWidthTooltip)
 
 			return {
 				initializer = initializer,
@@ -790,18 +735,16 @@ table.insert(Private.LoginFnQueue, function()
 			}
 		end
 
-		if key == Private.Settings.Keys.Self.IconZoom or key == Private.Settings.Keys.Party.IconZoom then
-			local tableRef = key == Private.Settings.Keys.Self.IconZoom and TargetedSpellsSaved.Settings.Self
-				or TargetedSpellsSaved.Settings.Party
+		if key == Private.Settings.Keys.Self.IconZoom then
 			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
 
 			local function GetValue()
-				return tableRef.IconZoom
+				return TargetedSpellsSaved.Settings.Self.IconZoom
 			end
 
 			local function SetValue(value)
-				if value ~= tableRef.IconZoom then
-					tableRef.IconZoom = value
+				if value ~= TargetedSpellsSaved.Settings.Self.IconZoom then
+					TargetedSpellsSaved.Settings.Self.IconZoom = value
 
 					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 				end
@@ -873,17 +816,14 @@ table.insert(Private.LoginFnQueue, function()
 			}
 		end
 
-		if key == Private.Settings.Keys.Self.Grow or key == Private.Settings.Keys.Party.Grow then
-			local tableRef = key == Private.Settings.Keys.Self.Grow and TargetedSpellsSaved.Settings.Self
-				or TargetedSpellsSaved.Settings.Party
-
+		if key == Private.Settings.Keys.Self.Grow then
 			local function GetValue()
-				return tableRef.Grow
+				return TargetedSpellsSaved.Settings.Self.Grow
 			end
 
 			local function SetValue(value)
-				if value ~= tableRef.Grow then
-					tableRef.Grow = value
+				if value ~= TargetedSpellsSaved.Settings.Self.Grow then
+					TargetedSpellsSaved.Settings.Self.Grow = value
 					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 				end
 			end

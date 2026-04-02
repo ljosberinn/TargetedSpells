@@ -145,6 +145,8 @@
 ---@field Font string
 ---@field FontFlags table<FontFlags, boolean>
 ---@field FeatureFlags table<FeatureFlag, boolean>
+---@field SpellNameWidth number
+---@field TargetNameWidth number
 ---@field Position FramePosition
 
 ---@class TargetedSpellsSelfPreviewFrame: Frame
@@ -218,14 +220,19 @@
 ---@field SetFontSize fun(self: TargetedSpellsIconMixin)
 ---@field SetFont fun(self: TargetedSpellsIconMixin)
 
----@class TargetedSpellsBarMixin : Frame
----@field Bar StatusBar
----@field ProgressBar StatusBar
----@field Icon Texture
+---@class TargetedSpellsBarProgressBar : StatusBar
 ---@field SpellName FontString
 ---@field TargetName FontString
 ---@field Duration FontString
+
+---@class TargetedSpellsBarCustomElementsFrame : Frame
 ---@field TargetMarker Texture
+
+---@class TargetedSpellsBarMixin : Frame
+---@field Bar StatusBar
+---@field ProgressBar TargetedSpellsBarProgressBar
+---@field CustomElementsFrame TargetedSpellsBarCustomElementsFrame
+---@field Icon Texture
 ---@field private kind FrameKind?
 ---@field private startTime number?
 ---@field OnLoad fun(self: TargetedSpellsBarMixin)

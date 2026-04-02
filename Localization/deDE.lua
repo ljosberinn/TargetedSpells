@@ -141,16 +141,6 @@ L.Settings.FrameOffsetXTooltip = nil
 L.Settings.FrameOffsetYLabel = "Versatz Y-Achse"
 L.Settings.FrameOffsetYTooltip = nil
 
-L.Settings.FrameSourceAnchorLabel = "Ursprungsanker"
-L.Settings.FrameSourceAnchorTooltip = nil
-
-L.Settings.FrameTargetAnchorLabel = "Zielanker"
-L.Settings.FrameTargetAnchorTooltip = nil
-
-L.Settings.IncludeSelfInPartyLabel = "Spieler auch in Gruppe anzeigen"
-L.Settings.IncludeSelfInPartyTooltip =
-	"Funktioniert nur wenn Gruppen im selben Stil wie Schlachtzüge angezeigt werden."
-
 L.Settings.ClickToOpenSettingsLabel = "Klicken um Einstellungen zu öffnen"
 
 L.Settings.Import = "Importieren"
@@ -158,6 +148,8 @@ L.Settings.Export = "Exportieren"
 
 L.Settings.FontLabel = "Schriftart"
 L.Settings.FontTooltip = nil
+
+L.Settings.TargetNamePreviewText = "Zielname"
 
 L.Settings.FeatureFlagsLabel = "Features"
 L.Settings.FeatureFlagsTooltip = nil
@@ -171,6 +163,11 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
 	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,
 	[Private.Enum.FeatureFlag.IncludeSelfInParty] = L.Settings.IncludeSelfInPartyLabel,
+	[Private.Enum.FeatureFlag.ShowIcon] = "Symbol anzeigen",
+	[Private.Enum.FeatureFlag.ShowTargetMarker] = "Zielmarkierung anzeigen",
+	[Private.Enum.FeatureFlag.ShowSpellName] = "Zaubernamen anzeigen",
+	[Private.Enum.FeatureFlag.ShowTargetName] = "Zielnamen anzeigen",
+	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Zielklassenfarbe anzeigen",
 }
 
 L.Settings.FeatureFlagSettingTitles = {

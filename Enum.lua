@@ -96,5 +96,7 @@ Private.Enum.FeatureFlag = {
 	IncludeSelfInParty = 9,
 	ShowIcon = 10,
 	ShowTargetMarker = 11,
-	ShowName = 12,
+	ShowSpellName = 12,
+	ShowTargetName = 13,
+	ShowTargetClassColor = 14,
 }

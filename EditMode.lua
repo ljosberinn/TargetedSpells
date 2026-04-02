@@ -90,6 +90,9 @@ function TargetedSpellsEditModeMixin:OnSettingsChanged(key, flagIdOrValue, newBo
 			flagId == Private.Enum.FeatureFlag.OnlyImportant
 			or flagId == Private.Enum.FeatureFlag.ShowIcon
 			or flagId == Private.Enum.FeatureFlag.ShowTargetMarker
+			or flagId == Private.Enum.FeatureFlag.ShowSpellName
+			or flagId == Private.Enum.FeatureFlag.ShowTargetName
+			or flagId == Private.Enum.FeatureFlag.ShowTargetClassColor
 		then
 			if not LibEditMode:IsInEditMode() then
 				return
@@ -363,21 +366,83 @@ function TargetedSpellsEditModeMixin:CreateSetting(key, defaults)
 		}
 	end
 
-	if key == Private.Settings.Keys.Self.IconZoom or key == Private.Settings.Keys.Party.IconZoom then
-		local tableRef = key == Private.Settings.Keys.Self.IconZoom and TargetedSpellsSaved.Settings.Self
-			or TargetedSpellsSaved.Settings.Party
+	if key == Private.Settings.Keys.Party.SpellNameWidth then
 		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
 
 		---@param layoutName string
 		local function Get(layoutName)
-			return tableRef.IconZoom
+			return TargetedSpellsSaved.Settings.Party.SpellNameWidth
 		end
 
 		---@param layoutName string
 		---@param value number
 		local function Set(layoutName, value)
-			if value ~= tableRef.IconZoom then
-				tableRef.IconZoom = value
+			if value ~= TargetedSpellsSaved.Settings.Party.SpellNameWidth then
+				TargetedSpellsSaved.Settings.Party.SpellNameWidth = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+		end
+
+		---@type LibEditModeSlider
+		return {
+			name = L.Settings.SpellNameWidthLabel,
+			kind = Enum.EditModeSettingDisplayType.Slider,
+			default = defaults.SpellNameWidth,
+			desc = L.Settings.SpellNameWidthTooltip,
+			get = Get,
+			set = Set,
+			minValue = sliderSettings.min,
+			maxValue = sliderSettings.max,
+			valueStep = sliderSettings.step,
+			disabled = not TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowSpellName],
+		}
+	end
+
+	if key == Private.Settings.Keys.Party.TargetNameWidth then
+		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+
+		---@param layoutName string
+		local function Get(layoutName)
+			return TargetedSpellsSaved.Settings.Party.TargetNameWidth
+		end
+
+		---@param layoutName string
+		---@param value number
+		local function Set(layoutName, value)
+			if value ~= TargetedSpellsSaved.Settings.Party.TargetNameWidth then
+				TargetedSpellsSaved.Settings.Party.TargetNameWidth = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+		end
+
+		---@type LibEditModeSlider
+		return {
+			name = L.Settings.TargetNameWidthLabel,
+			kind = Enum.EditModeSettingDisplayType.Slider,
+			default = defaults.TargetNameWidth,
+			desc = L.Settings.TargetNameWidthTooltip,
+			get = Get,
+			set = Set,
+			minValue = sliderSettings.min,
+			maxValue = sliderSettings.max,
+			valueStep = sliderSettings.step,
+			disabled = not TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowTargetName],
+		}
+	end
+
+	if key == Private.Settings.Keys.Self.IconZoom then
+		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
+
+		---@param layoutName string
+		local function Get(layoutName)
+			return TargetedSpellsSaved.Settings.Self.IconZoom
+		end
+
+		---@param layoutName string
+		---@param value number
+		local function Set(layoutName, value)
+			if value ~= TargetedSpellsSaved.Settings.Self.IconZoom then
+				TargetedSpellsSaved.Settings.Self.IconZoom = value
 				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 			end
 		end
@@ -718,6 +783,16 @@ function TargetedSpellsEditModeMixin:CreateSetting(key, defaults)
 			end
 		end
 
+		local disabled = false
+
+		if key == Private.Settings.Keys.Self.FontSize then
+			disabled = not tableRef.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration]
+		else
+			disabled = not tableRef.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration]
+				and not tableRef.FeatureFlags[Private.Enum.FeatureFlag.ShowSpellName]
+				and not tableRef.FeatureFlags[Private.Enum.FeatureFlag.ShowTargetName]
+		end
+
 		---@type LibEditModeSlider
 		return {
 			name = L.Settings.FontSizeLabel,
@@ -729,7 +804,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key, defaults)
 			minValue = sliderSettings.min,
 			maxValue = sliderSettings.max,
 			valueStep = sliderSettings.step,
-			disabled = not tableRef.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration],
+			disabled = disabled,
 		}
 	end
 
@@ -873,138 +948,6 @@ function TargetedSpellsEditModeMixin:CreateSetting(key, defaults)
 		}
 	end
 
-	if key == Private.Settings.Keys.Party.OffsetX then
-		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
-
-		---@param layoutName string
-		local function Get(layoutName)
-			return TargetedSpellsSaved.Settings.Party.OffsetX
-		end
-
-		---@param layoutName string
-		---@param value number
-		local function Set(layoutName, value)
-			if value ~= TargetedSpellsSaved.Settings.Party.OffsetX then
-				TargetedSpellsSaved.Settings.Party.OffsetX = value
-				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-			end
-		end
-
-		---@type LibEditModeSlider
-		return {
-			name = L.Settings.FrameOffsetXLabel,
-			kind = Enum.EditModeSettingDisplayType.Slider,
-			default = defaults.OffsetX,
-			desc = L.Settings.FrameOffsetXTooltip,
-			get = Get,
-			set = Set,
-			minValue = sliderSettings.min,
-			maxValue = sliderSettings.max,
-			valueStep = sliderSettings.step,
-		}
-	end
-
-	if key == Private.Settings.Keys.Party.OffsetY then
-		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
-
-		---@param layoutName string
-		local function Get(layoutName)
-			return TargetedSpellsSaved.Settings.Party.OffsetY
-		end
-
-		---@param layoutName string
-		---@param value number
-		local function Set(layoutName, value)
-			if value ~= TargetedSpellsSaved.Settings.Party.OffsetY then
-				TargetedSpellsSaved.Settings.Party.OffsetY = value
-				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-			end
-		end
-
-		---@type LibEditModeSlider
-		return {
-			name = L.Settings.FrameOffsetYLabel,
-			kind = Enum.EditModeSettingDisplayType.Slider,
-			default = defaults.OffsetY,
-			desc = L.Settings.FrameOffsetYTooltip,
-			get = Get,
-			set = Set,
-			minValue = sliderSettings.min,
-			maxValue = sliderSettings.max,
-			valueStep = sliderSettings.step,
-		}
-	end
-
-	if key == Private.Settings.Keys.Party.SourceAnchor then
-		---@param layoutName string
-		---@param value string
-		local function Set(layoutName, value)
-			if TargetedSpellsSaved.Settings.Party.SourceAnchor ~= value then
-				TargetedSpellsSaved.Settings.Party.SourceAnchor = value
-				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-			end
-		end
-
-		local function Generator(owner, rootDescription, data)
-			for label, enumValue in pairs(Private.Enum.Anchor) do
-				local function IsEnabled()
-					return TargetedSpellsSaved.Settings.Party.SourceAnchor == enumValue
-				end
-
-				local function SetProxy()
-					Set(LibEditMode:GetActiveLayoutName(), enumValue)
-				end
-
-				rootDescription:CreateRadio(label, IsEnabled, SetProxy)
-			end
-		end
-
-		---@type LibEditModeDropdown
-		return {
-			name = L.Settings.FrameSourceAnchorLabel,
-			kind = Enum.EditModeSettingDisplayType.Dropdown,
-			default = defaults.SourceAnchor,
-			desc = L.Settings.FrameSourceAnchorTooltip,
-			generator = Generator,
-			set = Set,
-		}
-	end
-
-	if key == Private.Settings.Keys.Party.TargetAnchor then
-		---@param layoutName string
-		---@param value string
-		local function Set(layoutName, value)
-			if TargetedSpellsSaved.Settings.Party.TargetAnchor ~= value then
-				TargetedSpellsSaved.Settings.Party.TargetAnchor = value
-				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-			end
-		end
-
-		local function Generator(owner, rootDescription, data)
-			for label, enumValue in pairs(Private.Enum.Anchor) do
-				local function IsEnabled()
-					return TargetedSpellsSaved.Settings.Party.TargetAnchor == enumValue
-				end
-
-				local function SetProxy()
-					Set(LibEditMode:GetActiveLayoutName(), enumValue)
-				end
-
-				rootDescription:CreateRadio(label, IsEnabled, SetProxy)
-			end
-		end
-
-		---@type LibEditModeDropdown
-		return {
-			name = L.Settings.FrameTargetAnchorLabel,
-			kind = Enum.EditModeSettingDisplayType.Dropdown,
-			default = defaults.TargetAnchor,
-			desc = L.Settings.FrameTargetAnchorTooltip,
-			generator = Generator,
-			set = Set,
-		}
-	end
-
 	if key == Private.Settings.Keys.Self.SortOrder or key == Private.Settings.Keys.Party.SortOrder then
 		local tableRef = key == Private.Settings.Keys.Self.SortOrder and TargetedSpellsSaved.Settings.Self
 			or TargetedSpellsSaved.Settings.Party
@@ -1046,15 +989,12 @@ function TargetedSpellsEditModeMixin:CreateSetting(key, defaults)
 		}
 	end
 
-	if key == Private.Settings.Keys.Self.Grow or key == Private.Settings.Keys.Party.Grow then
-		local tableRef = key == Private.Settings.Keys.Self.Grow and TargetedSpellsSaved.Settings.Self
-			or TargetedSpellsSaved.Settings.Party
-
+	if key == Private.Settings.Keys.Self.Grow then
 		---@param layoutName string
 		---@param value number
 		local function Set(layoutName, value)
-			if tableRef.Grow ~= value then
-				tableRef.Grow = value
+			if TargetedSpellsSaved.Settings.Self.Grow ~= value then
+				TargetedSpellsSaved.Settings.Self.Grow = value
 				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 			end
 		end
@@ -1062,7 +1002,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key, defaults)
 		local function Generator(owner, rootDescription, data)
 			for label, id in pairs(Private.Enum.Grow) do
 				local function IsEnabled()
-					return tableRef.Grow == id
+					return TargetedSpellsSaved.Settings.Self.Grow == id
 				end
 
 				local function SetProxy()
@@ -1086,15 +1026,12 @@ function TargetedSpellsEditModeMixin:CreateSetting(key, defaults)
 		}
 	end
 
-	if key == Private.Settings.Keys.Self.BorderStyle or key == Private.Settings.Keys.Party.BorderStyle then
-		local tableRef = key == Private.Settings.Keys.Self.BorderStyle and TargetedSpellsSaved.Settings.Self
-			or TargetedSpellsSaved.Settings.Party
-
+	if key == Private.Settings.Keys.Self.BorderStyle then
 		---@param layoutName string
 		---@param value string
 		local function Set(layoutName, value)
-			if tableRef.BorderStyle ~= value then
-				tableRef.BorderStyle = value
+			if TargetedSpellsSaved.Settings.Self.BorderStyle ~= value then
+				TargetedSpellsSaved.Settings.Self.BorderStyle = value
 				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 			end
 		end
@@ -1102,7 +1039,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(key, defaults)
 		local function Generator(owner, rootDescription, data)
 			for _, label in ipairs(Private.Settings.GetBorderOptions()) do
 				local function IsEnabled()
-					return tableRef.BorderStyle == label
+					return TargetedSpellsSaved.Settings.Self.BorderStyle == label
 				end
 
 				local function SetProxy()
@@ -1501,15 +1438,16 @@ function PartyEditModeMixin:LoopFrame(frame, index)
 	frame:SetDuration(duration)
 	frame:Show()
 
-	frame.TargetMarker:Hide()
+	frame.CustomElementsFrame.TargetMarker:Hide()
 
 	if
 		TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowTargetMarker]
 		and Private.Utils.RollDice()
 	then
-		-- todo: use format
-		frame.TargetMarker:SetTexture("Interface\\TARGETINGFRAME\\UI-RaidTargetingIcon_" .. math.random(1, 8) .. ".blp")
-		frame.TargetMarker:Show()
+		frame.CustomElementsFrame.TargetMarker:SetTexture(
+			string.format("Interface\\TARGETINGFRAME\\UI-RaidTargetingIcon_%d.blp", math.random(1, 8))
+		)
+		frame.CustomElementsFrame.TargetMarker:Show()
 	end
 
 	self:RepositionPreviewFrames()

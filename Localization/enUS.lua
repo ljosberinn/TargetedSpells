@@ -134,6 +134,12 @@ L.Settings.BorderStyleSolid = "Solid"
 L.Settings.OpacityLabel = "Opacity"
 L.Settings.OpacityTooltip = nil
 
+L.Settings.SpellNameWidthLabel = "Spell Name Length"
+L.Settings.SpellNameWidthTooltip = "Maximum width of the spell name text. Set to 0 for no limit."
+
+L.Settings.TargetNameWidthLabel = "Target Name Length"
+L.Settings.TargetNameWidthTooltip = "Maximum width of the target name text. Set to 0 for no limit."
+
 L.Settings.IconZoomLabel = "Icon Zoom"
 L.Settings.IconZoomTooltip = nil
 
@@ -143,15 +149,6 @@ L.Settings.FrameOffsetXTooltip = nil
 L.Settings.FrameOffsetYLabel = "Offset Y"
 L.Settings.FrameOffsetYTooltip = nil
 
-L.Settings.FrameSourceAnchorLabel = "Source Anchor"
-L.Settings.FrameSourceAnchorTooltip = nil
-
-L.Settings.FrameTargetAnchorLabel = "Target Anchor"
-L.Settings.FrameTargetAnchorTooltip = nil
-
-L.Settings.IncludeSelfInPartyLabel = "Include Self In Party"
-L.Settings.IncludeSelfInPartyTooltip = "Only works when using Raid-Style Party Frames."
-
 L.Settings.ClickToOpenSettingsLabel = "Click to open settings"
 
 L.Settings.Import = "Import"
@@ -160,12 +157,10 @@ L.Settings.Export = "Export"
 L.Settings.FontLabel = "Font"
 L.Settings.FontTooltip = nil
 
+L.Settings.TargetNamePreviewText = "Target Name"
+
 L.Settings.FeatureFlagsLabel = "Features"
 L.Settings.FeatureFlagsTooltip = nil
-
-L.Settings.ShowIconLabel = "Show Icon"
-L.Settings.ShowTargetMarkerLabel = "Show Target Marker"
-L.Settings.ShowNameLabel = "Show Name"
 
 L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.GlowImportant] = L.Settings.GlowImportantLabel,
@@ -176,9 +171,11 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
 	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,
 	[Private.Enum.FeatureFlag.IncludeSelfInParty] = L.Settings.IncludeSelfInPartyLabel,
-	[Private.Enum.FeatureFlag.ShowIcon] = L.Settings.ShowIconLabel,
-	[Private.Enum.FeatureFlag.ShowTargetMarker] = L.Settings.ShowTargetMarkerLabel,
-	[Private.Enum.FeatureFlag.ShowName] = L.Settings.ShowNameLabel,
+	[Private.Enum.FeatureFlag.ShowIcon] = "Show Icon",
+	[Private.Enum.FeatureFlag.ShowTargetMarker] = "Show Target Marker",
+	[Private.Enum.FeatureFlag.ShowSpellName] = "Show Spell Name",
+	[Private.Enum.FeatureFlag.ShowTargetName] = "Show Target Name",
+	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Show Target Class Color",
 }
 
 L.Settings.FeatureFlagSettingTitles = {

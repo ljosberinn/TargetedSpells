@@ -143,15 +143,6 @@ L.Settings.FrameOffsetXTooltip = nil
 L.Settings.FrameOffsetYLabel = "Offset Y"
 L.Settings.FrameOffsetYTooltip = nil
 
-L.Settings.FrameSourceAnchorLabel = "Source Anchor"
-L.Settings.FrameSourceAnchorTooltip = nil
-
-L.Settings.FrameTargetAnchorLabel = "Target Anchor"
-L.Settings.FrameTargetAnchorTooltip = nil
-
-L.Settings.IncludeSelfInPartyLabel = "S'inclure dans le groupe"
-L.Settings.IncludeSelfInPartyTooltip = "Fonctionne uniquement avec les cadres de groupe Raid-Style."
-
 L.Settings.ClickToOpenSettingsLabel = "Cliquer pour ouvrir les paramètres"
 
 L.Settings.Import = "Importer"
@@ -159,6 +150,8 @@ L.Settings.Export = "Exporter"
 
 L.Settings.FontLabel = "Police"
 L.Settings.FontTooltip = nil
+
+L.Settings.TargetNamePreviewText = "Nom de la cible"
 
 L.Settings.FeatureFlagsLabel = "Features"
 L.Settings.FeatureFlagsTooltip = nil
@@ -172,6 +165,11 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
 	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,
 	[Private.Enum.FeatureFlag.IncludeSelfInParty] = L.Settings.IncludeSelfInPartyLabel,
+	[Private.Enum.FeatureFlag.ShowIcon] = "Afficher l'icône",
+	[Private.Enum.FeatureFlag.ShowTargetMarker] = "Afficher le marqueur de cible",
+	[Private.Enum.FeatureFlag.ShowSpellName] = "Afficher le nom du sort",
+	[Private.Enum.FeatureFlag.ShowTargetName] = "Afficher le nom de la cible",
+	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Afficher la couleur de classe de la cible",
 }
 
 L.Settings.FeatureFlagSettingTitles = {
