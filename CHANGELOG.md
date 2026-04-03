@@ -17,7 +17,7 @@ Please make sure to look around in Edit Mode again.
 
 - the remaining duration, if shown, is now always showing fractions below 3 seconds and is properly formatted above
   - the `Show Duration Fractions` has been removed
-- fixed a bug where opacity was also impacting the layouting of elements in edit mode and was broken in actual use
+- Opacity was removed in general for technical reasons
 
 ## Version 2.0.1
 

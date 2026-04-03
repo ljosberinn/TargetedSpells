@@ -18,7 +18,6 @@ Private.Settings.Keys = {
 		SortOrder = "FRAME_SORT_ORDER_SELF",
 		GlowType = "GLOW_TYPE_SELF",
 		Grow = "FRAME_GROW_SELF",
-		Opacity = "OPACITY_SELF",
 		IconZoom = "ICON_ZOOM_SELF",
 		Import = "IMPORT_SELF",
 		Export = "EXPORT_SELF",
@@ -39,7 +38,6 @@ Private.Settings.Keys = {
 		SortOrder = "FRAME_SORT_ORDER_PARTY",
 		GlowType = "GLOW_TYPE_PARTY",
 		Grow = "FRAME_GROW_PARTY",
-		Opacity = "OPACITY_PARTY",
 		SpellNameWidth = "SPELL_NAME_WIDTH_PARTY",
 		TargetNameWidth = "TARGET_NAME_WIDTH_PARTY",
 		NameDivider = "NAME_DIVIDER_PARTY",
@@ -76,7 +74,6 @@ function Private.Settings.GetSettingsDisplayOrder(kind)
 			Private.Settings.Keys.Self.Font,
 			Private.Settings.Keys.Self.FontSize,
 			Private.Settings.Keys.Self.FontFlags,
-			Private.Settings.Keys.Self.Opacity,
 			Private.Settings.Keys.Self.IconZoom,
 		}
 	end
@@ -96,7 +93,6 @@ function Private.Settings.GetSettingsDisplayOrder(kind)
 		Private.Settings.Keys.Party.Font,
 		Private.Settings.Keys.Party.FontSize,
 		Private.Settings.Keys.Party.FontFlags,
-		Private.Settings.Keys.Party.Opacity,
 		Private.Settings.Keys.Party.SpellNameWidth,
 		Private.Settings.Keys.Party.TargetNameWidth,
 		Private.Settings.Keys.Party.NameDivider,
@@ -141,14 +137,6 @@ function Private.Settings.GetDefaultBarsEditModeFramePosition()
 end
 
 function Private.Settings.GetSliderSettingsForOption(key)
-	if key == Private.Settings.Keys.Self.Opacity or key == Private.Settings.Keys.Party.Opacity then
-		return {
-			min = 0.2,
-			max = 1,
-			step = 0.01,
-		}
-	end
-
 	if key == Private.Settings.Keys.Self.IconZoom or key == Private.Settings.Keys.Party.IconZoom then
 		return {
 			min = 1,
@@ -246,7 +234,6 @@ function Private.Settings.GetSelfDefaultSettings()
 		Grow = Private.Enum.Grow.Start,
 		FontSize = 20,
 		Position = Private.Settings.GetDefaultSelfEditModeFramePosition(),
-		Opacity = 1,
 		IconZoom = 1,
 		GlowType = Private.Enum.GlowType.PixelGlow,
 		Font = "Fonts\\FRIZQT__.TTF",
@@ -290,7 +277,6 @@ function Private.Settings.GetPartyDefaultSettings()
 		},
 		SortOrder = Private.Enum.SortOrder.Ascending,
 		Grow = Private.Enum.Grow.Start,
-		Opacity = 1,
 		GlowType = Private.Enum.GlowType.PixelGlow,
 		Font = "Fonts\\FRIZQT__.TTF",
 		FontFlags = {
@@ -868,44 +854,6 @@ table.insert(Private.LoginFnQueue, function()
 				SetValue
 			)
 			local initializer = Settings.CreateColorSwatch(category, setting, L.Settings.BackgroundBarColorTooltip)
-
-			return {
-				initializer = initializer,
-				hideSteppers = false,
-				IsSectionEnabled = nil,
-			}
-		end
-
-		if key == Private.Settings.Keys.Self.Opacity or key == Private.Settings.Keys.Party.Opacity then
-			local tableRef = key == Private.Settings.Keys.Self.Opacity and TargetedSpellsSaved.Settings.Self
-				or TargetedSpellsSaved.Settings.Party
-			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
-
-			local function GetValue()
-				return tableRef.Opacity
-			end
-
-			local function SetValue(value)
-				if value ~= tableRef.Opacity then
-					tableRef.Opacity = value
-
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-				end
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Number,
-				L.Settings.OpacityLabel,
-				defaults.Opacity,
-				GetValue,
-				SetValue
-			)
-			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
-			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, FormatPercentage)
-
-			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.OpacityTooltip)
 
 			return {
 				initializer = initializer,

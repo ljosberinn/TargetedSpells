@@ -353,8 +353,6 @@ function TargetedSpellsIconMixin:OnSettingChanged(key, flagIdOrValue, newBool)
 			or key == Private.Settings.Keys.Party.FontFlags
 		then
 			self:SetFont()
-		elseif key == Private.Settings.Keys.Party.Opacity then
-			self:SetAlpha(flagIdOrValue)
 		elseif key == Private.Settings.Keys.Party.IconZoom then
 			self:OnSizeChanged()
 		elseif key == Private.Settings.Keys.Party.GlowType then

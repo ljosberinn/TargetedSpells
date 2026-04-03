@@ -338,40 +338,6 @@ function TargetedSpellsEditModeMixin:CreateSetting(key, defaults)
 		}
 	end
 
-	if key == Private.Settings.Keys.Self.Opacity or key == Private.Settings.Keys.Party.Opacity then
-		local tableRef = key == Private.Settings.Keys.Self.Opacity and TargetedSpellsSaved.Settings.Self
-			or TargetedSpellsSaved.Settings.Party
-		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
-
-		---@param layoutName string
-		local function Get(layoutName)
-			return tableRef.Opacity
-		end
-
-		---@param layoutName string
-		---@param value number
-		local function Set(layoutName, value)
-			if value ~= tableRef.Opacity then
-				tableRef.Opacity = value
-				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-			end
-		end
-
-		---@type LibEditModeSlider
-		return {
-			name = L.Settings.OpacityLabel,
-			kind = Enum.EditModeSettingDisplayType.Slider,
-			default = defaults.Opacity,
-			desc = L.Settings.OpacityTooltip,
-			get = Get,
-			set = Set,
-			minValue = sliderSettings.min,
-			maxValue = sliderSettings.max,
-			valueStep = sliderSettings.step,
-			formatter = FormatPercentage,
-		}
-	end
-
 	if key == Private.Settings.Keys.Party.SpellNameWidth then
 		local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
 

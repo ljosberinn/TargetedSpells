@@ -122,7 +122,6 @@
 ---@field FontSize number
 ---@field Position FramePosition
 ---@field GlowType GlowType
----@field Opacity number
 ---@field IconZoom number
 ---@field Font string
 ---@field FontFlags table<FontFlags, boolean>
@@ -141,7 +140,6 @@
 ---@field Grow Grow
 ---@field FontSize number
 ---@field GlowType GlowType
----@field Opacity number
 ---@field Font string
 ---@field FontFlags table<FontFlags, boolean>
 ---@field FeatureFlags table<FeatureFlag, boolean>
@@ -243,6 +241,8 @@
 ---@field InterruptIcon Texture
 ---@field private kind FrameKind?
 ---@field private startTime number?
+---@field private wasInterrupted boolean
+---@field private doNotHideBefore number?
 ---@field OnLoad fun(self: TargetedSpellsBarMixin)
 ---@field OnSizeChanged fun(self: TargetedSpellsBarMixin)
 ---@field OnUpdate fun(self: TargetedSpellsBarMixin)

@@ -171,7 +171,6 @@ function Private.Utils.MigratePartySettingsToV3(existing)
 		"Font",
 		"GlowType",
 		"FontFlags",
-		"Opacity",
 	}
 
 	for _, key in ipairs(compatibleKeys) do
