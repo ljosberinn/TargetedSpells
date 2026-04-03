@@ -1,5 +1,6 @@
 ---@type string, TargetedSpells
 local addonName, Private = ...
+local LibSharedMedia = LibStub("LibSharedMedia-3.0")
 
 ---@class TargetedSpellsBarMixin
 TargetedSpellsBarMixin = {}
@@ -126,6 +127,10 @@ function TargetedSpellsBarMixin:OnSettingChanged(key, flagIdOrValue, newBool)
 	elseif key == Private.Settings.Keys.Party.NameDivider then
 		self:SetDivider()
 		self:OnSizeChanged()
+	elseif key == Private.Settings.Keys.Party.ForegroundBarTexture then
+		self:SetForegroundBarTexture()
+	elseif key == Private.Settings.Keys.Party.BackgroundBarTexture then
+		self:SetBackgroundBarTexture()
 	elseif key == Private.Settings.Keys.Party.SpellNameWidth then
 		self.ProgressBar.SpellName:SetWidth(flagIdOrValue)
 	elseif key == Private.Settings.Keys.Party.TargetNameWidth then
@@ -162,6 +167,30 @@ function TargetedSpellsBarMixin:SetDivider()
 	end
 
 	self.ProgressBar.Divider:Show()
+end
+
+function TargetedSpellsBarMixin:SetForegroundBarTexture()
+	self.ProgressBar:SetStatusBarTexture(
+		LibSharedMedia:Fetch(
+			LibSharedMedia.MediaType.STATUSBAR,
+			TargetedSpellsSaved.Settings.Party.ForegroundBarTexture
+		)
+	)
+end
+
+function TargetedSpellsBarMixin:SetBackgroundBarTexture()
+	self.ProgressBar.Background:SetTexture(
+		LibSharedMedia:Fetch(
+			LibSharedMedia.MediaType.BACKGROUND,
+			TargetedSpellsSaved.Settings.Party.BackgroundBarTexture
+		)
+	)
+end
+
+function TargetedSpellsBarMixin:SetBackgroundBarColor()
+	local color = CreateColorFromHexString(TargetedSpellsSaved.Settings.Party.BackgroundBarColor)
+
+	self.ProgressBar.Background:SetVertexColor(color.r, color.g, color.b, color.a)
 end
 
 function TargetedSpellsBarMixin:SetShowDuration(showDuration)
@@ -390,61 +419,20 @@ function TargetedSpellsBarMixin:SetFont()
 	end
 end
 
-do
-	local formatter = C_StringUtil.CreateNumericRuleFormatter()
+function TargetedSpellsBarMixin:OnUpdate(elapsed)
+	self.elapsed = self.elapsed + elapsed
 
-	formatter:SetBreakpoints({
-		{
-			threshold = 0,
-			rounding = Enum.NumericRuleFormatRounding.Nearest,
-			format = "%.1f",
-			step = 0.1,
-		},
-		{
-			threshold = 3,
-			rounding = Enum.NumericRuleFormatRounding.Nearest,
-			format = "%d",
-		},
-		{
-			threshold = 60,
-			rounding = Enum.NumericRuleFormatRounding.Nearest,
-			format = "%d:%02d",
-			components = {
-				{
-					div = 60,
-				},
-				{
-					mod = 60,
-				},
-			},
-		},
-		{
-			threshold = 300,
-			rounding = Enum.NumericRuleFormatRounding.Up,
-			format = "%dm",
-			components = {
-				{
-					div = 60,
-				},
-			},
-		},
-	})
-
-	function TargetedSpellsBarMixin:OnUpdate(elapsed)
-		self.elapsed = self.elapsed + elapsed
-
-		if self.elapsed < 0.1 then
-			return
-		end
-
-		self.elapsed = self.elapsed - 0.1
-
-		local duration = self.ProgressBar:GetTimerDuration()
-
-		if duration == nil then
-			return
-		end
-
-		self.ProgressBar.Duration:SetText(duration:FormatRemainingDuration(formatter))
+	if self.elapsed < 0.1 then
+		return
 	end
+
+	self.elapsed = self.elapsed - 0.1
+
+	local duration = self.ProgressBar:GetTimerDuration()
+
+	if duration == nil then
+		return
+	end
+
+	self.ProgressBar.Duration:SetText(duration:FormatRemainingDuration(Private.Utils.Formatter))
 end

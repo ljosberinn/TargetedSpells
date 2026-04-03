@@ -17,6 +17,9 @@
             <StatusBar parentKey="Bar" ignoreParentAlpha="true" minValue="0" maxValue="1" />
             <StatusBar parentKey="ProgressBar">
                 <Layers>
+                    <Layer level="BACKGROUND">
+                        <Texture parentKey="Background" setAllPoints="true" file="Interface\Buttons\WHITE8X8" />
+                    </Layer>
                     <Layer level="OVERLAY">
                         <FontString parentKey="SpellName" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE" wordwrap="false" />
                         <FontString parentKey="Divider" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE" wordwrap="false">

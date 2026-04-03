@@ -81,6 +81,16 @@ function TargetedSpellsEditModeMixin:OnSettingsChanged(key, flagIdOrValue, newBo
 				self:EndDemo()
 			end
 		end
+	elseif key == Private.Settings.Keys.Party.BackgroundBarColor then
+		if not LibEditMode:IsInEditMode() then
+			return
+		end
+
+		for _, frame in pairs(self.frames) do
+			if frame.SetBackgroundBarColor then
+				frame:SetBackgroundBarColor()
+			end
+		end
 	elseif key == Private.Settings.Keys.Self.FeatureFlags or key == Private.Settings.Keys.Party.FeatureFlags then
 		local flagId = flagIdOrValue
 
@@ -460,6 +470,114 @@ function TargetedSpellsEditModeMixin:CreateSetting(key, defaults)
 			default = defaults.NameDivider,
 			multiple = false,
 			generator = Generator,
+			set = Set,
+		}
+	end
+
+	if key == Private.Settings.Keys.Party.ForegroundBarTexture then
+		---@param layoutName string
+		---@param value string
+		local function Set(layoutName, value)
+			if TargetedSpellsSaved.Settings.Party.ForegroundBarTexture ~= value then
+				TargetedSpellsSaved.Settings.Party.ForegroundBarTexture = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+		end
+
+		local function Generator(owner, rootDescription, data)
+			for _, label in ipairs(Private.Settings.GetStatusBarOptions()) do
+				local function IsEnabled()
+					return TargetedSpellsSaved.Settings.Party.ForegroundBarTexture == label
+				end
+
+				local function SetProxy()
+					Set(LibEditMode:GetActiveLayoutName(), label)
+				end
+
+				rootDescription:CreateRadio(label, IsEnabled, SetProxy)
+			end
+		end
+
+		---@type LibEditModeDropdown
+		return {
+			name = L.Settings.ForegroundBarTextureLabel,
+			kind = Enum.EditModeSettingDisplayType.Dropdown,
+			desc = L.Settings.ForegroundBarTextureTooltip,
+			default = defaults.ForegroundBarTexture,
+			multiple = false,
+			generator = Generator,
+			set = Set,
+		}
+	end
+
+	if key == Private.Settings.Keys.Party.BackgroundBarTexture then
+		---@param layoutName string
+		---@param value string
+		local function Set(layoutName, value)
+			if TargetedSpellsSaved.Settings.Party.BackgroundBarTexture ~= value then
+				TargetedSpellsSaved.Settings.Party.BackgroundBarTexture = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+		end
+
+		local function Generator(owner, rootDescription, data)
+			for _, label in ipairs(Private.Settings.GetBackgroundOptions()) do
+				local function IsEnabled()
+					return TargetedSpellsSaved.Settings.Party.BackgroundBarTexture == label
+				end
+
+				local function SetProxy()
+					Set(LibEditMode:GetActiveLayoutName(), label)
+				end
+
+				rootDescription:CreateRadio(label, IsEnabled, SetProxy)
+			end
+		end
+
+		---@type LibEditModeDropdown
+		return {
+			name = L.Settings.BackgroundBarTextureLabel,
+			kind = Enum.EditModeSettingDisplayType.Dropdown,
+			desc = L.Settings.BackgroundBarTextureTooltip,
+			default = defaults.BackgroundBarTexture,
+			multiple = false,
+			generator = Generator,
+			set = Set,
+		}
+	end
+
+	if key == Private.Settings.Keys.Party.BackgroundBarColor then
+		---@param value number
+		---@return string
+		local function FloatToHex(value)
+			return string.format("%02X", math.floor(value * 255 + 0.5))
+		end
+
+		---@param layoutName string
+		---@param value ColorMixin
+		local function Set(layoutName, value)
+			local r, g, b, a = value:GetRGBA()
+			local hex = FloatToHex(a) .. FloatToHex(r) .. FloatToHex(g) .. FloatToHex(b)
+
+			if TargetedSpellsSaved.Settings.Party.BackgroundBarColor ~= hex then
+				TargetedSpellsSaved.Settings.Party.BackgroundBarColor = hex
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, hex)
+			end
+		end
+
+		---@param layoutName string
+		local function Get(layoutName)
+			return CreateColorFromHexString(TargetedSpellsSaved.Settings.Party.BackgroundBarColor)
+		end
+
+		---@type LibEditModeColorPicker
+		return {
+			name = L.Settings.BackgroundBarColorLabel,
+			kind = LibEditMode.SettingType.ColorPicker,
+			desc = L.Settings.BackgroundBarColorTooltip,
+			default = CreateColorFromHexString(defaults.BackgroundBarColor),
+			hasOpacity = true,
+			get = Get,
 			set = Set,
 		}
 	end

@@ -4,44 +4,111 @@ local addonName, Private = ...
 ---@class TargetedSpellsUtils
 Private.Utils = {}
 
-Private.Utils.Pools = {}
+Private.Utils.Formatter = C_StringUtil.CreateNumericRuleFormatter()
 
-Private.Utils.Pools.Self = CreateFramePool(
-	"Frame",
-	UIParent,
-	"TargetedSpellsFrameTemplate",
-	---@param pool FramePool<TargetedSpellsIconMixin>
-	---@param frame TargetedSpellsIconMixin
-	function(pool, frame)
-		frame:Reset()
-	end,
-	false,
-	function(frame)
-		PixelUtil.SetSize(frame, TargetedSpellsSaved.Settings.Self.Width, TargetedSpellsSaved.Settings.Self.Height)
-		frame:SetFont()
-		frame:HideGlow()
-		frame:ApplyBorderStyle(TargetedSpellsSaved.Settings.Self.BorderStyle)
-		frame:SetShowDuration(TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration])
-		frame.Cooldown:SetDrawSwipe(TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowSwipe])
-	end
-)
+-- thanks to m33shoq for this
+Private.Utils.Formatter:SetBreakpoints({
+	{
+		threshold = 0,
+		format = "%.1f",
+	},
+	{
+		threshold = 3.01,
+		format = "%d",
+	},
+	{
+		threshold = 60,
+		format = "%d:%02d",
+		components = {
+			{
+				div = 60,
+			},
+			{
+				mod = 60,
+			},
+		},
+	},
+	{
+		threshold = 600, -- 10 minutes
+		format = "%dm",
+		components = {
+			{
+				div = 60,
+			},
+		},
+	},
+	{
+		threshold = 3600, -- 1 hour
+		format = "%dh",
+		components = {
+			{
+				div = 3600,
+			},
+		},
+	},
+	{
+		threshold = 86400, -- 1 day
+		format = "%dd",
+		components = {
+			{
+				div = 86400,
+			},
+		},
+	},
+})
 
-Private.Utils.Pools.Bar = CreateFramePool(
-	"Frame",
-	UIParent,
-	"TargetedSpellsBarFrameTemplate",
-	---@param pool FramePool<TargetedSpellsBarMixin>
-	---@param frame TargetedSpellsBarMixin
-	function(pool, frame)
-		frame:Reset()
-	end,
-	false,
-	function(frame)
-		PixelUtil.SetSize(frame, TargetedSpellsSaved.Settings.Party.Width, TargetedSpellsSaved.Settings.Party.Height)
-		frame:SetFont()
-		frame:SetShowDuration(TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration])
-	end
-)
+Private.Utils.Pools = {
+	Self = CreateFramePool(
+		"Frame",
+		UIParent,
+		"TargetedSpellsFrameTemplate",
+		---@param pool FramePool<TargetedSpellsIconMixin>
+		---@param frame TargetedSpellsIconMixin
+		function(pool, frame)
+			frame:Reset()
+		end,
+		false,
+		function(frame)
+			PixelUtil.SetSize(frame, TargetedSpellsSaved.Settings.Self.Width, TargetedSpellsSaved.Settings.Self.Height)
+			frame:SetFont()
+			frame:HideGlow()
+			frame:ApplyBorderStyle(TargetedSpellsSaved.Settings.Self.BorderStyle)
+			frame:SetShowDuration(TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration])
+			frame.Cooldown:SetDrawSwipe(
+				TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowSwipe]
+			)
+			frame.Cooldown:SetCountdownFormatter(Private.Utils.Formatter)
+			frame.Cooldown:SetCountdownFont("GameFontHighlightHugeOutline")
+			frame.Bar:SetStatusBarTexture("")
+			Private.Utils.MaybeApplyElvUISkin(frame)
+		end
+	),
+	Bar = CreateFramePool(
+		"Frame",
+		UIParent,
+		"TargetedSpellsBarFrameTemplate",
+		---@param pool FramePool<TargetedSpellsBarMixin>
+		---@param frame TargetedSpellsBarMixin
+		function(pool, frame)
+			frame:Reset()
+		end,
+		false,
+		function(frame)
+			PixelUtil.SetSize(
+				frame,
+				TargetedSpellsSaved.Settings.Party.Width,
+				TargetedSpellsSaved.Settings.Party.Height
+			)
+			frame:SetFont()
+			frame:SetShowDuration(
+				TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration]
+			)
+			frame:SetForegroundBarTexture()
+			frame:SetBackgroundBarTexture()
+			frame:SetBackgroundBarColor()
+		end
+	),
+}
 
 do
 	local function sortAsc(a, b)

@@ -132,13 +132,24 @@ L.Settings.OpacityLabel = "불투명도"
 L.Settings.OpacityTooltip = nil
 
 L.Settings.SpellNameWidthLabel = "주문 이름 길이"
-L.Settings.SpellNameWidthTooltip = "주문 이름 텍스트의 최대 너비입니다. 제한 없음으로 설정하려면 0을 입력하세요."
+L.Settings.SpellNameWidthTooltip =
+	"주문 이름 텍스트의 최대 너비입니다. 제한 없음으로 설정하려면 0을 입력하세요."
 
 L.Settings.TargetNameWidthLabel = "대상 이름 길이"
-L.Settings.TargetNameWidthTooltip = "대상 이름 텍스트의 최대 너비입니다. 제한 없음으로 설정하려면 0을 입력하세요."
+L.Settings.TargetNameWidthTooltip =
+	"대상 이름 텍스트의 최대 너비입니다. 제한 없음으로 설정하려면 0을 입력하세요."
 
 L.Settings.NameDividerLabel = "이름 구분자"
 L.Settings.NameDividerNone = "없음"
+
+L.Settings.ForegroundBarTextureLabel = "진행 바 텍스처"
+L.Settings.ForegroundBarTextureTooltip = nil
+
+L.Settings.BackgroundBarTextureLabel = "배경 바 텍스처"
+L.Settings.BackgroundBarTextureTooltip = nil
+
+L.Settings.BackgroundBarColorLabel = "배경 바 색상"
+L.Settings.BackgroundBarColorTooltip = nil
 
 L.Settings.IconZoomLabel = "Icon Zoom"
 L.Settings.IconZoomTooltip = nil

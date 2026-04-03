@@ -23,13 +23,9 @@ TargetedSpellsIconMixin = {}
 
 function TargetedSpellsIconMixin:OnLoad()
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingChanged, self)
-
-	self.Bar:SetStatusBarTexture("")
-	self.Cooldown:SetCountdownFont("GameFontHighlightHugeOutline")
 	self.wasInterrupted = false
 	self.doNotHideBefore = nil
 	self.elapsed = 0
-	Private.Utils.MaybeApplyElvUISkin(self)
 end
 
 do
@@ -269,65 +265,8 @@ function TargetedSpellsIconMixin:CanBeHidden(id)
 	return id == self:GetId()
 end
 
-do
-	local formatter = C_StringUtil.CreateNumericRuleFormatter()
-	formatter:SetBreakpoints({
-		{
-			threshold = 0,
-			rounding = Enum.NumericRuleFormatRounding.Nearest,
-			format = "%.1f",
-			step = 0.1,
-		},
-		{
-			threshold = 3,
-			rounding = Enum.NumericRuleFormatRounding.Nearest,
-			format = "%d",
-		},
-		{
-			threshold = 60,
-			rounding = Enum.NumericRuleFormatRounding.Nearest,
-			format = "%d:%02d",
-			components = {
-				{
-					div = 60,
-				},
-				{
-					mod = 60,
-				},
-			},
-		},
-		{
-			threshold = 300,
-			rounding = Enum.NumericRuleFormatRounding.Up,
-			format = "%dm",
-			components = {
-				{
-					div = 60,
-				},
-			},
-		},
-	})
-
-	function TargetedSpellsIconMixin:OnUpdate(elapsed)
-		self.elapsed = self.elapsed + elapsed
-
-		if self.elapsed < 0.1 then
-			return
-		end
-
-		self.elapsed = self.elapsed - 0.1
-
-		if self.duration == nil then
-			return
-		end
-
-		self.Cooldown.DurationText:SetText(self.duration:FormatRemainingDuration(formatter))
-	end
-end
-
 function TargetedSpellsIconMixin:SetShowDuration(showDuration)
-	self.Cooldown.DurationText:SetShown(showDuration)
-	self:SetScript("OnUpdate", showDuration and self.OnUpdate or nil)
+	self.Cooldown:SetHideCountdownNumbers(not showDuration)
 end
 
 --- shamelessly ~~stolen~~ repurposed from WeakAuras2

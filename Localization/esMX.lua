@@ -140,6 +140,15 @@ L.Settings.TargetNameWidthTooltip = "Anchura máxima del texto del nombre del ob
 L.Settings.NameDividerLabel = "Separador de nombres"
 L.Settings.NameDividerNone = "Ninguno"
 
+L.Settings.ForegroundBarTextureLabel = "Textura de la barra de progreso"
+L.Settings.ForegroundBarTextureTooltip = nil
+
+L.Settings.BackgroundBarTextureLabel = "Textura de fondo de la barra"
+L.Settings.BackgroundBarTextureTooltip = nil
+
+L.Settings.BackgroundBarColorLabel = "Color de fondo de la barra"
+L.Settings.BackgroundBarColorTooltip = nil
+
 L.Settings.IconZoomLabel = "Icon Zoom"
 L.Settings.IconZoomTooltip = nil
 

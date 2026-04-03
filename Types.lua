@@ -148,6 +148,9 @@
 ---@field SpellNameWidth number
 ---@field TargetNameWidth number
 ---@field NameDivider NameDivider
+---@field ForegroundBarTexture string
+---@field BackgroundBarTexture string
+---@field BackgroundBarColor string
 ---@field Position FramePosition
 
 ---@class TargetedSpellsSelfPreviewFrame: Frame
@@ -221,6 +224,7 @@
 ---@field SetFont fun(self: TargetedSpellsIconMixin)
 
 ---@class TargetedSpellsBarProgressBar : StatusBar
+---@field Background Texture
 ---@field SpellName FontString
 ---@field Divider FontString
 ---@field TargetName FontString
@@ -254,11 +258,11 @@
 ---@field protected editModeFrame EditModeFrame
 ---@field protected frameKind FrameKind
 ---@field private demoPlaying boolean
----@field private frames table<number, TargetedSpellsIconMixin[]> | TargetedSpellsIconMixin[]
+---@field private frames TargetedSpellsIconMixin[] | TargetedSpellsBarMixin[]
 ---@field protected demoTimers { tickers: table<number, FunctionContainer>, timers: table<number, FunctionContainer> }
 ---@field Init fun(self: TargetedSpellsEditModeMixin, displayName: string, frameKind: FrameKind)
 ---@field OnSettingsChanged fun(self: TargetedSpellsEditModeMixin, key: string, flagIdOrValue: number|string|boolean|table, newBool: boolean?)
----@field CreateSetting fun(self: TargetedSpellsEditModeMixin, key: string, defaults: SavedVariablesSettingsParty|SavedVariablesSettingsSelf): LibEditModeButton|LibEditModeCheckbox | LibEditModeDropdown | LibEditModeSlider
+---@field CreateSetting fun(self: TargetedSpellsEditModeMixin, key: string, defaults: SavedVariablesSettingsParty|SavedVariablesSettingsSelf): LibEditModeButton|LibEditModeCheckbox|LibEditModeDropdown|LibEditModeSlider|LibEditModeColorPicker
 ---@field OnLayoutSettingChanged fun(self: TargetedSpellsEditModeMixin, key: string, value: number|string, newBool: boolean?)
 ---@field AppendSettings fun(self: TargetedSpellsEditModeMixin)
 ---@field AcquireFrame fun(self: TargetedSpellsEditModeMixin): TargetedSpellsIconMixin
@@ -333,6 +337,7 @@
 ---@field SetMinimumCountdownDuration fun(self: ExtendedCooldownTypes, minimumDuration: number)
 ---@field GetCountdownFontString fun(self: ExtendedCooldownTypes): FontString
 ---@field SetCooldownFromDurationObject fun(self: ExtendedCooldownTypes, durationObject: DurationObject, clearIfZero?: boolean)
+---@field SetCountdownFormatter fun(self: ExtendedCooldownTypes, formatter: NumericFormatter)
 
 ---@class IconDataProviderMixin
 ---@field GetRandomIcon fun(self: IconDataProviderMixin): number

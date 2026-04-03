@@ -42,6 +42,9 @@ Private.Settings.Keys = {
 		SpellNameWidth = "SPELL_NAME_WIDTH_PARTY",
 		TargetNameWidth = "TARGET_NAME_WIDTH_PARTY",
 		NameDivider = "NAME_DIVIDER_PARTY",
+		ForegroundBarTexture = "FOREGROUND_BAR_TEXTURE_PARTY",
+		BackgroundBarTexture = "BACKGROUND_BAR_TEXTURE_PARTY",
+		BackgroundBarColor = "BACKGROUND_BAR_COLOR_PARTY",
 		Import = "IMPORT_PARTY",
 		Export = "EXPORT_PARTY",
 		Font = "FONT_PARTY",
@@ -95,6 +98,9 @@ function Private.Settings.GetSettingsDisplayOrder(kind)
 		Private.Settings.Keys.Party.SpellNameWidth,
 		Private.Settings.Keys.Party.TargetNameWidth,
 		Private.Settings.Keys.Party.NameDivider,
+		Private.Settings.Keys.Party.ForegroundBarTexture,
+		Private.Settings.Keys.Party.BackgroundBarTexture,
+		Private.Settings.Keys.Party.BackgroundBarColor,
 	}
 end
 
@@ -303,6 +309,9 @@ function Private.Settings.GetPartyDefaultSettings()
 		SpellNameWidth = 85,
 		TargetNameWidth = 0,
 		NameDivider = Private.Enum.NameDivider.Arrow,
+		ForegroundBarTexture = "Blizzard Raid Bar",
+		BackgroundBarTexture = "Solid",
+		BackgroundBarColor = "FF1A1A1A",
 		Position = Private.Settings.GetDefaultBarsEditModeFramePosition(),
 	}
 end
@@ -316,6 +325,20 @@ function Private.Settings.GetFontOptions()
 		fonts = fonts,
 		byLabel = byLabel,
 	}
+end
+
+function Private.Settings.GetStatusBarOptions()
+	local bars = CopyTable(LibSharedMedia:List(LibSharedMedia.MediaType.STATUSBAR))
+	table.sort(bars)
+
+	return bars
+end
+
+function Private.Settings.GetBackgroundOptions()
+	local backgrounds = CopyTable(LibSharedMedia:List(LibSharedMedia.MediaType.BACKGROUND))
+	table.sort(backgrounds)
+
+	return backgrounds
 end
 
 function Private.Settings.GetBorderOptions()
@@ -729,6 +752,119 @@ table.insert(Private.LoginFnQueue, function()
 				SetValue
 			)
 			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.NameDividerTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if key == Private.Settings.Keys.Party.ForegroundBarTexture then
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Party.ForegroundBarTexture
+			end
+
+			local function SetValue(value)
+				if value ~= TargetedSpellsSaved.Settings.Party.ForegroundBarTexture then
+					TargetedSpellsSaved.Settings.Party.ForegroundBarTexture = value
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
+			end
+
+			local function GetOptions()
+				local container = Settings.CreateControlTextContainer()
+
+				for _, label in ipairs(Private.Settings.GetStatusBarOptions()) do
+					container:Add(label, label)
+				end
+
+				return container:GetData()
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.String,
+				L.Settings.ForegroundBarTextureLabel,
+				defaults.ForegroundBarTexture,
+				GetValue,
+				SetValue
+			)
+			local initializer =
+				Settings.CreateDropdown(category, setting, GetOptions, L.Settings.ForegroundBarTextureTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if key == Private.Settings.Keys.Party.BackgroundBarTexture then
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Party.BackgroundBarTexture
+			end
+
+			local function SetValue(value)
+				if value ~= TargetedSpellsSaved.Settings.Party.BackgroundBarTexture then
+					TargetedSpellsSaved.Settings.Party.BackgroundBarTexture = value
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
+			end
+
+			local function GetOptions()
+				local container = Settings.CreateControlTextContainer()
+
+				for _, label in ipairs(Private.Settings.GetBackgroundOptions()) do
+					container:Add(label, label)
+				end
+
+				return container:GetData()
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.String,
+				L.Settings.BackgroundBarTextureLabel,
+				defaults.BackgroundBarTexture,
+				GetValue,
+				SetValue
+			)
+			local initializer =
+				Settings.CreateDropdown(category, setting, GetOptions, L.Settings.BackgroundBarTextureTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if key == Private.Settings.Keys.Party.BackgroundBarColor then
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Party.BackgroundBarColor
+			end
+
+			local function SetValue(value)
+				print(value)
+				if value ~= TargetedSpellsSaved.Settings.Party.BackgroundBarColor then
+					TargetedSpellsSaved.Settings.Party.BackgroundBarColor = value
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.String,
+				L.Settings.BackgroundBarColorLabel,
+				defaults.BackgroundBarColor,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateColorSwatch(category, setting, L.Settings.BackgroundBarColorTooltip)
 
 			return {
 				initializer = initializer,

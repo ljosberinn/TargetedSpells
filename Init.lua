@@ -19,6 +19,7 @@ end
 Private.LoginFnQueue = {}
 
 EventUtil.ContinueOnAddOnLoaded(addonName, function()
+	local isFirstRun = TargetedSpellsSaved == nil
 	---@class SavedVariables
 	TargetedSpellsSaved = TargetedSpellsSaved or {}
 
@@ -57,11 +58,9 @@ EventUtil.ContinueOnAddOnLoaded(addonName, function()
 		end
 	end
 
-	if TargetedSpellsSaved.v3DeprecationWarningSeen == nil then
+	if TargetedSpellsSaved.v3DeprecationWarningSeen == nil and not isFirstRun then
 		TargetedSpellsSaved.v3DeprecationWarningSeen = true
-		TargetedSpellsSaved.Settings.Party = Private.Utils.MigratePartySettingsToV3(
-			TargetedSpellsSaved.Settings.Party
-		)
+		TargetedSpellsSaved.Settings.Party = Private.Utils.MigratePartySettingsToV3(TargetedSpellsSaved.Settings.Party)
 		Private.Utils.ShowMigrationPopup()
 	end
 

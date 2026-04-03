@@ -140,6 +140,15 @@ L.Settings.TargetNameWidthTooltip = "目标名称文本的最大宽度。设置�
 L.Settings.NameDividerLabel = "名称分隔符"
 L.Settings.NameDividerNone = "无"
 
+L.Settings.ForegroundBarTextureLabel = "进度条纹理"
+L.Settings.ForegroundBarTextureTooltip = nil
+
+L.Settings.BackgroundBarTextureLabel = "背景条纹理"
+L.Settings.BackgroundBarTextureTooltip = nil
+
+L.Settings.BackgroundBarColorLabel = "背景条颜色"
+L.Settings.BackgroundBarColorTooltip = nil
+
 L.Settings.IconZoomLabel = "Icon Zoom"
 L.Settings.IconZoomTooltip = nil
 

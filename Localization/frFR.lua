@@ -140,6 +140,15 @@ L.Settings.TargetNameWidthTooltip = "Largeur maximale du texte du nom de la cibl
 L.Settings.NameDividerLabel = "Séparateur de noms"
 L.Settings.NameDividerNone = "Aucun"
 
+L.Settings.ForegroundBarTextureLabel = "Texture de la barre de progression"
+L.Settings.ForegroundBarTextureTooltip = nil
+
+L.Settings.BackgroundBarTextureLabel = "Texture de fond de la barre"
+L.Settings.BackgroundBarTextureTooltip = nil
+
+L.Settings.BackgroundBarColorLabel = "Couleur de fond de la barre"
+L.Settings.BackgroundBarColorTooltip = nil
+
 L.Settings.IconZoomLabel = "Icon Zoom"
 L.Settings.IconZoomTooltip = nil
 

@@ -141,6 +141,16 @@ L.Settings.NameDividerLabel = "Name Divider"
 L.Settings.NameDividerTooltip = nil
 L.Settings.NameDividerNone = "None"
 
+L.Settings.ForegroundBarTextureLabel = "Progress Bar Texture"
+L.Settings.ForegroundBarTextureTooltip = nil
+
+L.Settings.BackgroundBarTextureLabel = "Background Bar Texture"
+L.Settings.BackgroundBarTextureTooltip = nil
+
+L.Settings.BackgroundBarColorLabel = "Background Bar Color"
+L.Settings.BackgroundBarColorTooltip =
+	"Opacity is only available in Edit Mode due to the default settings UI not exposing it."
+
 L.Settings.IconZoomLabel = "Icon Zoom"
 L.Settings.IconZoomTooltip = nil
 

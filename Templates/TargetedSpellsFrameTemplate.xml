@@ -109,23 +109,16 @@
             </Layer>
         </Layers>
         <Frames>
-            <Cooldown parentKey="Cooldown" setAllPoints="true" minimumCountdownDuration="0" hideCountdownNumbers="true">
+            <Cooldown parentKey="Cooldown" setAllPoints="true" minimumCountdownDuration="0">
                 <SwipeTexture file="Interface\HUD\UI-HUD-CoolDownManager-Icon-Swipe">
                     <Color r="0" g="0" b="0" a="0.7" />
                 </SwipeTexture>
-                <Layers>
-                    <Layer level="OVERLAY">
-                        <FontString hidden="true" parentKey="DurationText" font="GameFontHighlightHugeOutline" justifyH="CENTER" setAllPoints="true">
-                        </FontString>
-                    </Layer>
-                </Layers>
             </Cooldown>
             <StatusBar parentKey="Bar" ignoreParentAlpha="true" minValue="0" maxValue="1" />
         </Frames>
         <Scripts>
             <OnLoad method="OnLoad" />
             <OnSizeChanged method="OnSizeChanged" />
-            <OnUpdate method="OnUpdate" />
         </Scripts>
     </Frame>
 </Ui>

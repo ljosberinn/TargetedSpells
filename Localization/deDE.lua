@@ -138,6 +138,15 @@ L.Settings.TargetNameWidthTooltip = "Maximale Breite des Zielnamentextes. Auf 0 
 L.Settings.NameDividerLabel = "Namens-Trennzeichen"
 L.Settings.NameDividerNone = "Keines"
 
+L.Settings.ForegroundBarTextureLabel = "Fortschrittsbalken-Textur"
+L.Settings.ForegroundBarTextureTooltip = nil
+
+L.Settings.BackgroundBarTextureLabel = "Hintergrundbalken-Textur"
+L.Settings.BackgroundBarTextureTooltip = nil
+
+L.Settings.BackgroundBarColorLabel = "Hintergrundbalken-Farbe"
+L.Settings.BackgroundBarColorTooltip = nil
+
 L.Settings.IconZoomLabel = "Icon Zoom"
 L.Settings.IconZoomTooltip = nil
 
