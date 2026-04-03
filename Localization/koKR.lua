@@ -114,9 +114,6 @@ L.Settings.GlowTypeLabels = {
 L.Settings.ShowDurationLabel = "지속시간 표시"
 L.Settings.ShowDurationTooltip = nil
 
-L.Settings.ShowDurationFractionsLabel = "소수점 표시"
-L.Settings.ShowDurationFractionsTooltip = nil
-
 L.Settings.IndicateInterruptsLabel = "차단 표시"
 L.Settings.IndicateInterruptsTooltip =
 	"아이콘을 흑백으로 표시하고, 아이콘 위에 표시기를 보여주며, 아이콘 숨김을 1초 지연합니다. 정신 집중 주문에는 작동하지 않습니다."
@@ -133,6 +130,15 @@ L.Settings.BorderStyleSolid = "Solid"
 
 L.Settings.OpacityLabel = "불투명도"
 L.Settings.OpacityTooltip = nil
+
+L.Settings.SpellNameWidthLabel = "주문 이름 길이"
+L.Settings.SpellNameWidthTooltip = "주문 이름 텍스트의 최대 너비입니다. 제한 없음으로 설정하려면 0을 입력하세요."
+
+L.Settings.TargetNameWidthLabel = "대상 이름 길이"
+L.Settings.TargetNameWidthTooltip = "대상 이름 텍스트의 최대 너비입니다. 제한 없음으로 설정하려면 0을 입력하세요."
+
+L.Settings.NameDividerLabel = "이름 구분자"
+L.Settings.NameDividerNone = "없음"
 
 L.Settings.IconZoomLabel = "Icon Zoom"
 L.Settings.IconZoomTooltip = nil
@@ -161,7 +167,6 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.GlowImportant] = L.Settings.GlowImportantLabel,
 	[Private.Enum.FeatureFlag.OnlyImportant] = L.Settings.OnlyImportantLabel,
 	[Private.Enum.FeatureFlag.ShowDuration] = L.Settings.ShowDurationLabel,
-	[Private.Enum.FeatureFlag.ShowDurationFractions] = L.Settings.ShowDurationFractionsLabel,
 	[Private.Enum.FeatureFlag.ShowSwipe] = L.Settings.ShowSwipeLabel,
 	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
 	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,

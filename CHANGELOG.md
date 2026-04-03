@@ -1,5 +1,7 @@
 ## Version 3.0.0
 
+## Breaking Changes
+
 Due to the 12.0.5 restrictions, the Party functionality has been redesigned and now offers to render bars per ongoing cast. It is no longer possible to attach icons to frames.
 
 Settings not applying to the new Party functionality were dropped. These remain:
@@ -8,6 +10,14 @@ Settings not applying to the new Party functionality were dropped. These remain:
 - Load Conditions
 - Glow
 - Font & Font Size
+
+Please make sure to look around in Edit Mode again.
+
+## Other
+
+- the remaining duration, if shown, is now always showing fractions below 3 seconds and is properly formatted above
+  - the `Show Duration Fractions` has been removed
+- fixed a bug where opacity was also impacting the layouting of elements in edit mode and was broken in actual use
 
 ## Version 2.0.1
 

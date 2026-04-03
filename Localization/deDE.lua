@@ -112,9 +112,6 @@ L.Settings.GlowTypeLabels = {
 L.Settings.ShowDurationLabel = "Dauer anzeigen"
 L.Settings.ShowDurationTooltip = nil
 
-L.Settings.ShowDurationFractionsLabel = "Sekundenbruchteile anzeigen"
-L.Settings.ShowDurationFractionsTooltip = nil
-
 L.Settings.IndicateInterruptsLabel = "Unterbrechungen anzeigen"
 L.Settings.IndicateInterruptsTooltip =
 	"Desaturiert das Icon, zeigt einen Indikator an und verzögert das Ausblenden des Icons um eine Sekunde. Funktioniert nicht bei kanalisierten Zaubern."
@@ -131,6 +128,15 @@ L.Settings.BorderStyleSolid = "Solid"
 
 L.Settings.OpacityLabel = "Deckkraft"
 L.Settings.OpacityTooltip = nil
+
+L.Settings.SpellNameWidthLabel = "Zaubernamenlänge"
+L.Settings.SpellNameWidthTooltip = "Maximale Breite des Zaubernamentextes. Auf 0 setzen für keine Begrenzung."
+
+L.Settings.TargetNameWidthLabel = "Zielnamenlänge"
+L.Settings.TargetNameWidthTooltip = "Maximale Breite des Zielnamentextes. Auf 0 setzen für keine Begrenzung."
+
+L.Settings.NameDividerLabel = "Namens-Trennzeichen"
+L.Settings.NameDividerNone = "Keines"
 
 L.Settings.IconZoomLabel = "Icon Zoom"
 L.Settings.IconZoomTooltip = nil
@@ -158,7 +164,6 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.GlowImportant] = L.Settings.GlowImportantLabel,
 	[Private.Enum.FeatureFlag.OnlyImportant] = L.Settings.OnlyImportantLabel,
 	[Private.Enum.FeatureFlag.ShowDuration] = L.Settings.ShowDurationLabel,
-	[Private.Enum.FeatureFlag.ShowDurationFractions] = L.Settings.ShowDurationFractionsLabel,
 	[Private.Enum.FeatureFlag.ShowSwipe] = L.Settings.ShowSwipeLabel,
 	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
 	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,

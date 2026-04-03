@@ -114,9 +114,6 @@ L.Settings.GlowTypeLabels = {
 L.Settings.ShowDurationLabel = "Show Duration"
 L.Settings.ShowDurationTooltip = nil
 
-L.Settings.ShowDurationFractionsLabel = "Show Fractions"
-L.Settings.ShowDurationFractionsTooltip = nil
-
 L.Settings.IndicateInterruptsLabel = "Indicate Interrupts"
 L.Settings.IndicateInterruptsTooltip =
 	"Desaturates the icon, shows an indicator on top of the icon and delays hiding the icon by 1 second. Does not work with channeled spells."
@@ -139,6 +136,10 @@ L.Settings.SpellNameWidthTooltip = "Maximum width of the spell name text. Set to
 
 L.Settings.TargetNameWidthLabel = "Target Name Length"
 L.Settings.TargetNameWidthTooltip = "Maximum width of the target name text. Set to 0 for no limit."
+
+L.Settings.NameDividerLabel = "Name Divider"
+L.Settings.NameDividerTooltip = nil
+L.Settings.NameDividerNone = "None"
 
 L.Settings.IconZoomLabel = "Icon Zoom"
 L.Settings.IconZoomTooltip = nil
@@ -166,7 +167,6 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.GlowImportant] = L.Settings.GlowImportantLabel,
 	[Private.Enum.FeatureFlag.OnlyImportant] = L.Settings.OnlyImportantLabel,
 	[Private.Enum.FeatureFlag.ShowDuration] = L.Settings.ShowDurationLabel,
-	[Private.Enum.FeatureFlag.ShowDurationFractions] = L.Settings.ShowDurationFractionsLabel,
 	[Private.Enum.FeatureFlag.ShowSwipe] = L.Settings.ShowSwipeLabel,
 	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
 	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,

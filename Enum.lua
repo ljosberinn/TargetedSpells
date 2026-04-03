@@ -83,12 +83,21 @@ Private.Enum.FontFlags = {
 	SHADOW = 2,
 }
 
+---@enum NameDivider
+Private.Enum.NameDivider = {
+	None = "",
+	Arrow = ">",
+	Arrows = ">>",
+	Pipe = "|",
+	Colon = ":",
+}
+
 ---@enum FeatureFlag
 Private.Enum.FeatureFlag = {
 	GlowImportant = 1,
 	OnlyImportant = 2,
 	ShowDuration = 3,
-	ShowDurationFractions = 4,
+	-- ShowDurationFractions = 4, -- deprecated
 	-- ShowBorder = 5, -- deprecated
 	ShowSwipe = 6,
 	IndicateInterrupts = 7,

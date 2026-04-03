@@ -114,9 +114,6 @@ L.Settings.GlowTypeLabels = {
 L.Settings.ShowDurationLabel = "Montrer la durée"
 L.Settings.ShowDurationTooltip = nil
 
-L.Settings.ShowDurationFractionsLabel = "Montrer les nombres décimaux"
-L.Settings.ShowDurationFractionsTooltip = nil
-
 L.Settings.IndicateInterruptsLabel = "Montrer l'interruption"
 L.Settings.IndicateInterruptsTooltip =
 	"Désature l'icône, affiche un indicateur par-dessus et retarde sa disparition de 1 seconde. Ne marche pas avec les sorts canalisés."
@@ -133,6 +130,15 @@ L.Settings.BorderStyleSolid = "Solid"
 
 L.Settings.OpacityLabel = "Opacité"
 L.Settings.OpacityTooltip = nil
+
+L.Settings.SpellNameWidthLabel = "Longueur du nom du sort"
+L.Settings.SpellNameWidthTooltip = "Largeur maximale du texte du nom du sort. Mettre à 0 pour aucune limite."
+
+L.Settings.TargetNameWidthLabel = "Longueur du nom de la cible"
+L.Settings.TargetNameWidthTooltip = "Largeur maximale du texte du nom de la cible. Mettre à 0 pour aucune limite."
+
+L.Settings.NameDividerLabel = "Séparateur de noms"
+L.Settings.NameDividerNone = "Aucun"
 
 L.Settings.IconZoomLabel = "Icon Zoom"
 L.Settings.IconZoomTooltip = nil
@@ -160,7 +166,6 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.GlowImportant] = L.Settings.GlowImportantLabel,
 	[Private.Enum.FeatureFlag.OnlyImportant] = L.Settings.OnlyImportantLabel,
 	[Private.Enum.FeatureFlag.ShowDuration] = L.Settings.ShowDurationLabel,
-	[Private.Enum.FeatureFlag.ShowDurationFractions] = L.Settings.ShowDurationFractionsLabel,
 	[Private.Enum.FeatureFlag.ShowSwipe] = L.Settings.ShowSwipeLabel,
 	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
 	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,

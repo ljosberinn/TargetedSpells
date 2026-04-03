@@ -114,9 +114,6 @@ L.Settings.GlowTypeLabels = {
 L.Settings.ShowDurationLabel = "显示持续时间"
 L.Settings.ShowDurationTooltip = nil
 
-L.Settings.ShowDurationFractionsLabel = "显示小数"
-L.Settings.ShowDurationFractionsTooltip = nil
-
 L.Settings.IndicateInterruptsLabel = "标记可打断法术"
 L.Settings.IndicateInterruptsTooltip =
 	"使图标去色，在图标上显示标记，并延迟1秒隐藏图标。对引导类法术无效。"
@@ -133,6 +130,15 @@ L.Settings.BorderStyleSolid = "Solid"
 
 L.Settings.OpacityLabel = "不透明度"
 L.Settings.OpacityTooltip = nil
+
+L.Settings.SpellNameWidthLabel = "法术名称长度"
+L.Settings.SpellNameWidthTooltip = "法术名称文本的最大宽度。设置为0则无限制。"
+
+L.Settings.TargetNameWidthLabel = "目标名称长度"
+L.Settings.TargetNameWidthTooltip = "目标名称文本的最大宽度。设置为0则无限制。"
+
+L.Settings.NameDividerLabel = "名称分隔符"
+L.Settings.NameDividerNone = "无"
 
 L.Settings.IconZoomLabel = "Icon Zoom"
 L.Settings.IconZoomTooltip = nil
@@ -160,7 +166,6 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.GlowImportant] = L.Settings.GlowImportantLabel,
 	[Private.Enum.FeatureFlag.OnlyImportant] = L.Settings.OnlyImportantLabel,
 	[Private.Enum.FeatureFlag.ShowDuration] = L.Settings.ShowDurationLabel,
-	[Private.Enum.FeatureFlag.ShowDurationFractions] = L.Settings.ShowDurationFractionsLabel,
 	[Private.Enum.FeatureFlag.ShowSwipe] = L.Settings.ShowSwipeLabel,
 	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
 	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,

@@ -114,9 +114,6 @@ L.Settings.GlowTypeLabels = {
 L.Settings.ShowDurationLabel = "Mostrar duración"
 L.Settings.ShowDurationTooltip = nil
 
-L.Settings.ShowDurationFractionsLabel = "Mostrar fracciones"
-L.Settings.ShowDurationFractionsTooltip = nil
-
 L.Settings.IndicateInterruptsLabel = "Indicar interrupciones"
 L.Settings.IndicateInterruptsTooltip =
 	"Desatura el icono, muestra un indicador encima del icono y retrasa ocultar el icono por 1 segundo. No funciona con hechizos canalizados."
@@ -133,6 +130,15 @@ L.Settings.BorderStyleSolid = "Solid"
 
 L.Settings.OpacityLabel = "Opacidad"
 L.Settings.OpacityTooltip = nil
+
+L.Settings.SpellNameWidthLabel = "Longitud del nombre del hechizo"
+L.Settings.SpellNameWidthTooltip = "Anchura máxima del texto del nombre del hechizo. Establece 0 para sin límite."
+
+L.Settings.TargetNameWidthLabel = "Longitud del nombre del objetivo"
+L.Settings.TargetNameWidthTooltip = "Anchura máxima del texto del nombre del objetivo. Establece 0 para sin límite."
+
+L.Settings.NameDividerLabel = "Separador de nombres"
+L.Settings.NameDividerNone = "Ninguno"
 
 L.Settings.IconZoomLabel = "Icon Zoom"
 L.Settings.IconZoomTooltip = nil
@@ -160,7 +166,6 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.GlowImportant] = L.Settings.GlowImportantLabel,
 	[Private.Enum.FeatureFlag.OnlyImportant] = L.Settings.OnlyImportantLabel,
 	[Private.Enum.FeatureFlag.ShowDuration] = L.Settings.ShowDurationLabel,
-	[Private.Enum.FeatureFlag.ShowDurationFractions] = L.Settings.ShowDurationFractionsLabel,
 	[Private.Enum.FeatureFlag.ShowSwipe] = L.Settings.ShowSwipeLabel,
 	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
 	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,

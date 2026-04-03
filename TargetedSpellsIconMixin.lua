@@ -229,7 +229,7 @@ function TargetedSpellsIconMixin:SetInterrupted(name, color)
 	self.InterruptIcon:Show()
 	self.Icon:SetDesaturated(true)
 	self.Cooldown:SetDrawSwipe(false)
-	self:SetShowDuration(false, false)
+	self:SetShowDuration(false)
 	self:HideGlow()
 
 	if name == nil then
@@ -270,7 +270,43 @@ function TargetedSpellsIconMixin:CanBeHidden(id)
 end
 
 do
-	local formatter = nil
+	local formatter = C_StringUtil.CreateNumericRuleFormatter()
+	formatter:SetBreakpoints({
+		{
+			threshold = 0,
+			rounding = Enum.NumericRuleFormatRounding.Nearest,
+			format = "%.1f",
+			step = 0.1,
+		},
+		{
+			threshold = 3,
+			rounding = Enum.NumericRuleFormatRounding.Nearest,
+			format = "%d",
+		},
+		{
+			threshold = 60,
+			rounding = Enum.NumericRuleFormatRounding.Nearest,
+			format = "%d:%02d",
+			components = {
+				{
+					div = 60,
+				},
+				{
+					mod = 60,
+				},
+			},
+		},
+		{
+			threshold = 300,
+			rounding = Enum.NumericRuleFormatRounding.Up,
+			format = "%dm",
+			components = {
+				{
+					div = 60,
+				},
+			},
+		},
+	})
 
 	function TargetedSpellsIconMixin:OnUpdate(elapsed)
 		self.elapsed = self.elapsed + elapsed
@@ -285,61 +321,13 @@ do
 			return
 		end
 
-		if C_StringUtil.CreateNumericRuleFormatter == nil then
-			self.Cooldown.DurationText:SetFormattedText("%.1f", self.duration:GetRemainingDuration())
-		else
-			if formatter == nil then
-				formatter = C_StringUtil.CreateNumericRuleFormatter()
-
-				local breakpoints = {
-					{
-						threshold = 0,
-						rounding = Enum.NumericRuleFormatRounding.Nearest,
-						format = "%.1f",
-						step = 0.1,
-					},
-					{
-						threshold = 3,
-						rounding = Enum.NumericRuleFormatRounding.Nearest,
-						format = "%d",
-					},
-					{
-						threshold = 60,
-						rounding = Enum.NumericRuleFormatRounding.Nearest,
-						format = "%d:%02d",
-						components = {
-							{
-								div = 60,
-							},
-							{
-								mod = 60,
-							},
-						},
-					},
-					{
-						threshold = 300,
-						rounding = Enum.NumericRuleFormatRounding.Up,
-						format = "%dm",
-						components = {
-							{
-								div = 60,
-							},
-						},
-					},
-				}
-
-				formatter:SetBreakpoints(breakpoints)
-			end
-
-			self.Cooldown.DurationText:SetText(self.duration:FormatRemainingDuration(formatter))
-		end
+		self.Cooldown.DurationText:SetText(self.duration:FormatRemainingDuration(formatter))
 	end
 end
 
-function TargetedSpellsIconMixin:SetShowDuration(showDuration, showFractions)
-	self.Cooldown:SetHideCountdownNumbers(not showDuration or showFractions)
-	self.Cooldown.DurationText:SetShown(showDuration and showFractions)
-	self:SetScript("OnUpdate", showDuration and showFractions and self.OnUpdate or nil)
+function TargetedSpellsIconMixin:SetShowDuration(showDuration)
+	self.Cooldown.DurationText:SetShown(showDuration)
+	self:SetScript("OnUpdate", showDuration and self.OnUpdate or nil)
 end
 
 --- shamelessly ~~stolen~~ repurposed from WeakAuras2
@@ -394,12 +382,12 @@ function TargetedSpellsIconMixin:OnSettingChanged(key, flagIdOrValue, newBool)
 			PixelUtil.SetSize(self, flagIdOrValue, TargetedSpellsSaved.Settings.Self.Height)
 		elseif key == Private.Settings.Keys.Self.Height then
 			PixelUtil.SetSize(self, TargetedSpellsSaved.Settings.Self.Width, flagIdOrValue)
-		elseif key == Private.Settings.Keys.Self.FontSize then
-			self:SetFontSize()
-		elseif key == Private.Settings.Keys.Self.Font or key == Private.Settings.Keys.Self.FontFlags then
+		elseif
+			key == Private.Settings.Keys.Self.FontSize
+			or key == Private.Settings.Keys.Self.Font
+			or key == Private.Settings.Keys.Self.FontFlags
+		then
 			self:SetFont()
-		elseif key == Private.Settings.Keys.Self.Opacity then
-			self:SetAlpha(flagIdOrValue)
 		elseif key == Private.Settings.Keys.Self.IconZoom then
 			self:OnSizeChanged()
 		elseif key == Private.Settings.Keys.Self.GlowType then
@@ -411,13 +399,9 @@ function TargetedSpellsIconMixin:OnSettingChanged(key, flagIdOrValue, newBool)
 		elseif key == Private.Settings.Keys.Self.BorderStyle then
 			self:ApplyBorderStyle(flagIdOrValue)
 		elseif key == Private.Settings.Keys.Self.FeatureFlags then
-			if
-				flagIdOrValue == Private.Enum.FeatureFlag.ShowDuration
-				or flagIdOrValue == Private.Enum.FeatureFlag.ShowDurationFractions
-			then
+			if flagIdOrValue == Private.Enum.FeatureFlag.ShowDuration then
 				self:SetShowDuration(
-					TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration],
-					TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowDurationFractions]
+					TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration]
 				)
 			elseif flagIdOrValue == Private.Enum.FeatureFlag.ShowSwipe then
 				self.Cooldown:SetDrawSwipe(newBool)
@@ -432,9 +416,11 @@ function TargetedSpellsIconMixin:OnSettingChanged(key, flagIdOrValue, newBool)
 			PixelUtil.SetSize(self, flagIdOrValue, TargetedSpellsSaved.Settings.Party.Height)
 		elseif key == Private.Settings.Keys.Party.Height then
 			PixelUtil.SetSize(self, TargetedSpellsSaved.Settings.Party.Width, flagIdOrValue)
-		elseif key == Private.Settings.Keys.Party.FontSize then
-			self:SetFontSize()
-		elseif key == Private.Settings.Keys.Party.Font or key == Private.Settings.Keys.Party.FontFlags then
+		elseif
+			key == Private.Settings.Keys.Party.FontSize
+			or key == Private.Settings.Keys.Party.Font
+			or key == Private.Settings.Keys.Party.FontFlags
+		then
 			self:SetFont()
 		elseif key == Private.Settings.Keys.Party.Opacity then
 			self:SetAlpha(flagIdOrValue)
@@ -449,13 +435,9 @@ function TargetedSpellsIconMixin:OnSettingChanged(key, flagIdOrValue, newBool)
 		elseif key == Private.Settings.Keys.Party.BorderStyle then
 			self:ApplyBorderStyle(flagIdOrValue)
 		elseif key == Private.Settings.Keys.Party.FeatureFlags then
-			if
-				flagIdOrValue == Private.Enum.FeatureFlag.ShowDuration
-				or flagIdOrValue == Private.Enum.FeatureFlag.ShowDurationFractions
-			then
+			if flagIdOrValue == Private.Enum.FeatureFlag.ShowDuration then
 				self:SetShowDuration(
-					TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration],
-					TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowDurationFractions]
+					TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration]
 				)
 			elseif flagIdOrValue == Private.Enum.FeatureFlag.ShowSwipe then
 				self.Cooldown:SetDrawSwipe(newBool)
@@ -469,26 +451,9 @@ function TargetedSpellsIconMixin:OnSettingChanged(key, flagIdOrValue, newBool)
 end
 
 do
-	-- todo: remove in 12.0.5
-	local IsLongCastCurve = C_CurveUtil.CreateCurve()
-	IsLongCastCurve:SetType(Enum.LuaCurveType.Linear)
-	IsLongCastCurve:AddPoint(0, 1)
-	IsLongCastCurve:AddPoint(60, 1)
-	IsLongCastCurve:AddPoint(60.001, 0)
-
 	function TargetedSpellsIconMixin:SetDuration(duration)
 		self.duration = duration
 		self.Cooldown:SetCooldownFromDurationObject(duration)
-
-		local tableRef = self.kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
-			or TargetedSpellsSaved.Settings.Party
-
-		if
-			tableRef.FeatureFlags[Private.Enum.FeatureFlag.ShowDurationFractions]
-			and duration.FormatRemainingDuration == nil
-		then
-			self.Cooldown.DurationText:SetAlpha(duration:EvaluateRemainingDuration(IsLongCastCurve))
-		end
 	end
 end
 
@@ -674,7 +639,6 @@ function TargetedSpellsIconMixin:Reset()
 	self.spellId = nil
 	self.Cooldown:Clear()
 	self.duration = nil
-	self.Cooldown.DurationText:SetAlpha(1)
 	self:ClearAllPoints()
 	self.wasInterrupted = false
 	self.doNotHideBefore = nil
@@ -706,42 +670,15 @@ function TargetedSpellsIconMixin:Reset()
 
 	self:HideGlow()
 
-	self:SetShowDuration(
-		TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration],
-		TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowDurationFractions]
-	)
+	self:SetShowDuration(TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration])
 	self.Cooldown:SetDrawSwipe(TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowSwipe])
 
 	-- important to come last - the cooldown swipe ignores display status of its parent
 	self:Hide()
 end
 
-function TargetedSpellsIconMixin:SetFontSize()
-	local fontString = nil
-
-	if TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowDurationFractions] then
-		fontString = self.Cooldown.DurationText
-	else
-		fontString = self.Cooldown:GetCountdownFontString()
-	end
-
-	local font, size, flags = fontString:GetFont()
-
-	if size == TargetedSpellsSaved.Settings.Self.FontSize then
-		return
-	end
-
-	fontString:SetFont(font, TargetedSpellsSaved.Settings.Self.FontSize, flags)
-end
-
 function TargetedSpellsIconMixin:SetFont()
-	local fontString = nil
-
-	if TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowDurationFractions] then
-		fontString = self.Cooldown.DurationText
-	else
-		fontString = self.Cooldown:GetCountdownFontString()
-	end
+	local fontString = self.Cooldown:GetCountdownFontString()
 
 	fontString:SetFont(
 		TargetedSpellsSaved.Settings.Self.Font,

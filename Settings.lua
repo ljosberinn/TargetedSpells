@@ -41,6 +41,7 @@ Private.Settings.Keys = {
 		Opacity = "OPACITY_PARTY",
 		SpellNameWidth = "SPELL_NAME_WIDTH_PARTY",
 		TargetNameWidth = "TARGET_NAME_WIDTH_PARTY",
+		NameDivider = "NAME_DIVIDER_PARTY",
 		Import = "IMPORT_PARTY",
 		Export = "EXPORT_PARTY",
 		Font = "FONT_PARTY",
@@ -93,6 +94,7 @@ function Private.Settings.GetSettingsDisplayOrder(kind)
 		Private.Settings.Keys.Party.Opacity,
 		Private.Settings.Keys.Party.SpellNameWidth,
 		Private.Settings.Keys.Party.TargetNameWidth,
+		Private.Settings.Keys.Party.NameDivider,
 	}
 end
 
@@ -102,7 +104,6 @@ function Private.Settings.GetFeatureFlagsForKind(kind)
 			Private.Enum.FeatureFlag.GlowImportant,
 			Private.Enum.FeatureFlag.OnlyImportant,
 			Private.Enum.FeatureFlag.ShowDuration,
-			Private.Enum.FeatureFlag.ShowDurationFractions,
 			Private.Enum.FeatureFlag.ShowSwipe,
 			Private.Enum.FeatureFlag.IndicateInterrupts,
 			Private.Enum.FeatureFlag.RenderInterruptSourceName,
@@ -113,7 +114,6 @@ function Private.Settings.GetFeatureFlagsForKind(kind)
 		Private.Enum.FeatureFlag.GlowImportant,
 		Private.Enum.FeatureFlag.OnlyImportant,
 		Private.Enum.FeatureFlag.ShowDuration,
-		Private.Enum.FeatureFlag.ShowDurationFractions,
 		Private.Enum.FeatureFlag.ShowIcon,
 		Private.Enum.FeatureFlag.ShowTargetMarker,
 		Private.Enum.FeatureFlag.ShowSpellName,
@@ -152,7 +152,7 @@ function Private.Settings.GetSliderSettingsForOption(key)
 	if key == Private.Settings.Keys.Self.FontSize or key == Private.Settings.Keys.Party.FontSize then
 		return {
 			min = 8,
-			max = key == Private.Settings.Keys.Self.FontSize and 32 or 24,
+			max = 32,
 			step = 1,
 		}
 	end
@@ -250,7 +250,6 @@ function Private.Settings.GetSelfDefaultSettings()
 			[Private.Enum.FeatureFlag.GlowImportant] = true,
 			[Private.Enum.FeatureFlag.OnlyImportant] = false,
 			[Private.Enum.FeatureFlag.ShowDuration] = true,
-			[Private.Enum.FeatureFlag.ShowDurationFractions] = true,
 			[Private.Enum.FeatureFlag.ShowSwipe] = true,
 			[Private.Enum.FeatureFlag.IndicateInterrupts] = false,
 			[Private.Enum.FeatureFlag.RenderInterruptSourceName] = false,
@@ -263,7 +262,7 @@ end
 function Private.Settings.GetPartyDefaultSettings()
 	return {
 		Enabled = true,
-		Width = 5 * 48 + 4 * 2,
+		Width = 300,
 		Height = 40,
 		FontSize = 14,
 		Gap = 2,
@@ -295,15 +294,15 @@ function Private.Settings.GetPartyDefaultSettings()
 			[Private.Enum.FeatureFlag.IndicateInterrupts] = true,
 			[Private.Enum.FeatureFlag.RenderInterruptSourceName] = true,
 			[Private.Enum.FeatureFlag.ShowDuration] = true,
-			[Private.Enum.FeatureFlag.ShowDurationFractions] = true,
 			[Private.Enum.FeatureFlag.ShowIcon] = true,
-			[Private.Enum.FeatureFlag.ShowTargetMarker] = true,
+			[Private.Enum.FeatureFlag.ShowTargetMarker] = false,
 			[Private.Enum.FeatureFlag.ShowSpellName] = true,
 			[Private.Enum.FeatureFlag.ShowTargetName] = true,
 			[Private.Enum.FeatureFlag.ShowTargetClassColor] = true,
 		},
-		SpellNameWidth = 0,
+		SpellNameWidth = 85,
 		TargetNameWidth = 0,
+		NameDivider = Private.Enum.NameDivider.Arrow,
 		Position = Private.Settings.GetDefaultBarsEditModeFramePosition(),
 	}
 end
@@ -689,6 +688,47 @@ table.insert(Private.LoginFnQueue, function()
 			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, FormatPercentage)
 
 			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.TargetNameWidthTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if key == Private.Settings.Keys.Party.NameDivider then
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Party.NameDivider
+			end
+
+			local function SetValue(value)
+				if value ~= TargetedSpellsSaved.Settings.Party.NameDivider then
+					TargetedSpellsSaved.Settings.Party.NameDivider = value
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
+			end
+
+			local function GetOptions()
+				local container = Settings.CreateControlTextContainer()
+
+				for _, value in pairs(Private.Enum.NameDivider) do
+					local label = value == Private.Enum.NameDivider.None and L.Settings.NameDividerNone or value
+					container:Add(value, label)
+				end
+
+				return container:GetData()
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.String,
+				L.Settings.NameDividerLabel,
+				defaults.NameDivider,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.NameDividerTooltip)
 
 			return {
 				initializer = initializer,

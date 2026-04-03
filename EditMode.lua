@@ -88,10 +88,6 @@ function TargetedSpellsEditModeMixin:OnSettingsChanged(key, flagIdOrValue, newBo
 			self:OnLayoutSettingChanged(key, flagId, newBool)
 		elseif
 			flagId == Private.Enum.FeatureFlag.OnlyImportant
-			or flagId == Private.Enum.FeatureFlag.ShowIcon
-			or flagId == Private.Enum.FeatureFlag.ShowTargetMarker
-			or flagId == Private.Enum.FeatureFlag.ShowSpellName
-			or flagId == Private.Enum.FeatureFlag.ShowTargetName
 			or flagId == Private.Enum.FeatureFlag.ShowTargetClassColor
 		then
 			if not LibEditMode:IsInEditMode() then
@@ -427,6 +423,44 @@ function TargetedSpellsEditModeMixin:CreateSetting(key, defaults)
 			maxValue = sliderSettings.max,
 			valueStep = sliderSettings.step,
 			disabled = not TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowTargetName],
+		}
+	end
+
+	if key == Private.Settings.Keys.Party.NameDivider then
+		---@param layoutName string
+		---@param value NameDivider
+		local function Set(layoutName, value)
+			if TargetedSpellsSaved.Settings.Party.NameDivider ~= value then
+				TargetedSpellsSaved.Settings.Party.NameDivider = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+		end
+
+		local function Generator(owner, rootDescription, data)
+			for _, value in pairs(Private.Enum.NameDivider) do
+				local label = value == Private.Enum.NameDivider.None and L.Settings.NameDividerNone or value
+
+				local function IsEnabled()
+					return TargetedSpellsSaved.Settings.Party.NameDivider == value
+				end
+
+				local function SetProxy()
+					Set(LibEditMode:GetActiveLayoutName(), value)
+				end
+
+				rootDescription:CreateRadio(label, IsEnabled, SetProxy)
+			end
+		end
+
+		---@type LibEditModeDropdown
+		return {
+			name = L.Settings.NameDividerLabel,
+			kind = Enum.EditModeSettingDisplayType.Dropdown,
+			desc = L.Settings.NameDividerTooltip,
+			default = defaults.NameDivider,
+			multiple = false,
+			generator = Generator,
+			set = Set,
 		}
 	end
 

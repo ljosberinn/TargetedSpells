@@ -18,15 +18,10 @@ Private.Utils.Pools.Self = CreateFramePool(
 	false,
 	function(frame)
 		PixelUtil.SetSize(frame, TargetedSpellsSaved.Settings.Self.Width, TargetedSpellsSaved.Settings.Self.Height)
-		frame:SetFontSize()
 		frame:SetFont()
 		frame:HideGlow()
 		frame:ApplyBorderStyle(TargetedSpellsSaved.Settings.Self.BorderStyle)
-		frame:SetAlpha(TargetedSpellsSaved.Settings.Self.Opacity)
-		frame:SetShowDuration(
-			TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration],
-			TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowDurationFractions]
-		)
+		frame:SetShowDuration(TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration])
 		frame.Cooldown:SetDrawSwipe(TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowSwipe])
 	end
 )
@@ -43,6 +38,8 @@ Private.Utils.Pools.Bar = CreateFramePool(
 	false,
 	function(frame)
 		PixelUtil.SetSize(frame, TargetedSpellsSaved.Settings.Party.Width, TargetedSpellsSaved.Settings.Party.Height)
+		frame:SetFont()
+		frame:SetShowDuration(TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration])
 	end
 )
 

@@ -147,6 +147,7 @@
 ---@field FeatureFlags table<FeatureFlag, boolean>
 ---@field SpellNameWidth number
 ---@field TargetNameWidth number
+---@field NameDivider NameDivider
 ---@field Position FramePosition
 
 ---@class TargetedSpellsSelfPreviewFrame: Frame
@@ -198,7 +199,7 @@
 ---@field SetInterrupted fun(self: TargetedSpellsIconMixin, name: string?, color: colorRGB?)
 ---@field CanBeHidden fun(self: TargetedSpellsIconMixin, id: number|string|nil): boolean
 ---@field OnUpdate fun(self: TargetedSpellsIconMixin, elapsed: number)
----@field SetShowDuration fun(self: TargetedSpellsIconMixin, showDuration: boolean, showFractions: boolean)
+---@field SetShowDuration fun(self: TargetedSpellsIconMixin, showDuration: boolean)
 ---@field ApplyBorderStyle fun(self: TargetedSpellsIconMixin, styleName: string)
 ---@field OnSizeChanged fun(self: TargetedSpellsIconMixin)
 ---@field OnSettingChanged fun(self: TargetedSpellsIconMixin, key: string, flagIdOrValue: number|string|boolean|table, newBool: boolean?)
@@ -217,11 +218,11 @@
 ---@field GetUnit fun(self: TargetedSpellsIconMixin): string
 ---@field PostCreate fun(self: TargetedSpellsIconMixin, unit: string, castingUnit: string?)
 ---@field Reset fun(self: TargetedSpellsIconMixin)
----@field SetFontSize fun(self: TargetedSpellsIconMixin)
 ---@field SetFont fun(self: TargetedSpellsIconMixin)
 
 ---@class TargetedSpellsBarProgressBar : StatusBar
 ---@field SpellName FontString
+---@field Divider FontString
 ---@field TargetName FontString
 ---@field Duration FontString
 
@@ -480,7 +481,7 @@ PixelUtil = {
 	SetPoint =
 		---@param region Region
 		---@param point FramePoint
-		---@param relativeTo Frame
+		---@param relativeTo Region
 		---@param relativePoint FramePoint
 		---@param offsetX number
 		---@param offsetY number
