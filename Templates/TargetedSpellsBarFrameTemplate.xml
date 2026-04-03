@@ -12,6 +12,22 @@
                     </Anchors>
                 </Texture>
             </Layer>
+            <Layer level="OVERLAY">
+                <Texture parentKey="InterruptIcon" hidden="true" file="Interface\TARGETINGFRAME\UI-RaidTargetingIcon_7.blp">
+                    <Anchors>
+                        <Anchor point="TOPLEFT" relativeKey="$parent.Icon" relativePoint="TOPLEFT">
+                            <Offset>
+                                <AbsDimension x="4" y="-4" />
+                            </Offset>
+                        </Anchor>
+                        <Anchor point="BOTTOMRIGHT" relativeKey="$parent.Icon" relativePoint="BOTTOMRIGHT">
+                            <Offset>
+                                <AbsDimension x="-4" y="4" />
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </Texture>
+            </Layer>
         </Layers>
         <Frames>
             <StatusBar parentKey="Bar" ignoreParentAlpha="true" minValue="0" maxValue="1" />
@@ -22,6 +38,7 @@
                     </Layer>
                     <Layer level="OVERLAY">
                         <FontString parentKey="SpellName" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE" wordwrap="false" />
+                        <FontString parentKey="InterruptSource" hidden="true" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE" wordwrap="false" />
                         <FontString parentKey="Divider" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE" wordwrap="false">
                             <Anchors>
                                 <Anchor point="LEFT" relativeKey="$parent.SpellName" relativePoint="RIGHT" />
@@ -37,6 +54,15 @@
                                 <Anchor point="RIGHT" relativePoint="RIGHT">
                                     <Offset>
                                         <AbsDimension x="-4" y="0" />
+                                    </Offset>
+                                </Anchor>
+                            </Anchors>
+                        </FontString>
+                        <FontString parentKey="InterruptSource" hidden="true" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE" wordwrap="false">
+                            <Anchors>
+                                <Anchor point="LEFT" relativePoint="LEFT">
+                                    <Offset>
+                                        <AbsDimension x="4" y="0" />
                                     </Offset>
                                 </Anchor>
                             </Anchors>

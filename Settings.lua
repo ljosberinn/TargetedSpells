@@ -38,6 +38,7 @@ Private.Settings.Keys = {
 		Direction = "GROW_DIRECTION_PARTY",
 		SortOrder = "FRAME_SORT_ORDER_PARTY",
 		GlowType = "GLOW_TYPE_PARTY",
+		Grow = "FRAME_GROW_PARTY",
 		Opacity = "OPACITY_PARTY",
 		SpellNameWidth = "SPELL_NAME_WIDTH_PARTY",
 		TargetNameWidth = "TARGET_NAME_WIDTH_PARTY",
@@ -89,6 +90,7 @@ function Private.Settings.GetSettingsDisplayOrder(kind)
 		Private.Settings.Keys.Party.Gap,
 		Private.Settings.Keys.Party.Direction,
 		Private.Settings.Keys.Party.SortOrder,
+		Private.Settings.Keys.Party.Grow,
 		Private.Settings.Keys.Party.GlowType,
 		Private.Settings.Keys.Party.FeatureFlags,
 		Private.Settings.Keys.Party.Font,
@@ -287,6 +289,7 @@ function Private.Settings.GetPartyDefaultSettings()
 			[Private.Enum.Role.Damager] = true,
 		},
 		SortOrder = Private.Enum.SortOrder.Ascending,
+		Grow = Private.Enum.Grow.Start,
 		Opacity = 1,
 		GlowType = Private.Enum.GlowType.PixelGlow,
 		Font = "Fonts\\FRIZQT__.TTF",
@@ -306,7 +309,7 @@ function Private.Settings.GetPartyDefaultSettings()
 			[Private.Enum.FeatureFlag.ShowTargetName] = true,
 			[Private.Enum.FeatureFlag.ShowTargetClassColor] = true,
 		},
-		SpellNameWidth = 85,
+		SpellNameWidth = 110,
 		TargetNameWidth = 0,
 		NameDivider = Private.Enum.NameDivider.Arrow,
 		ForegroundBarTexture = "Blizzard Raid Bar",
@@ -1000,6 +1003,47 @@ table.insert(Private.LoginFnQueue, function()
 			local function SetValue(value)
 				if value ~= TargetedSpellsSaved.Settings.Self.Grow then
 					TargetedSpellsSaved.Settings.Self.Grow = value
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
+			end
+
+			local function GetOptions()
+				local container = Settings.CreateControlTextContainer()
+
+				for label, id in pairs(Private.Enum.Grow) do
+					local translated = L.Settings.FrameGrowLabels[id]
+					container:Add(id, translated)
+				end
+
+				return container:GetData()
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				L.Settings.FrameGrowLabel,
+				defaults.Grow,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.FrameGrowTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if key == Private.Settings.Keys.Party.Grow then
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Party.Grow
+			end
+
+			local function SetValue(value)
+				if value ~= TargetedSpellsSaved.Settings.Party.Grow then
+					TargetedSpellsSaved.Settings.Party.Grow = value
 					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 				end
 			end

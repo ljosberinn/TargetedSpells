@@ -9,6 +9,8 @@ function TargetedSpellsBarMixin:OnLoad()
 	self.Bar:SetStatusBarTexture("")
 	self.ProgressBar:SetStatusBarTexture("Interface\\RaidFrame\\Raid-Bar-Hp-Fill")
 	self.elapsed = 0
+	self.wasInterrupted = false
+	self.doNotHideBefore = nil
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingChanged, self)
 end
 
@@ -203,6 +205,13 @@ function TargetedSpellsBarMixin:Reset()
 	self.Bar:SetParent(self)
 	self:ClearAllPoints()
 	self.startTime = nil
+	self.wasInterrupted = false
+	self.doNotHideBefore = nil
+	self.InterruptIcon:Hide()
+	self.Icon:SetDesaturated(false)
+	self.ProgressBar.InterruptSource:SetText("")
+	self.ProgressBar.InterruptSource:Hide()
+	self.ProgressBar.InterruptSource:SetTextColor(1, 1, 1)
 	self.CustomElementsFrame.TargetMarker:Hide()
 	self.ProgressBar.Divider:Hide()
 	self.ProgressBar.TargetName:Hide()
@@ -229,17 +238,16 @@ do
 				color = C_ClassColor.GetClassColor(select(2, UnitClass("player")))
 			end
 		else
-			local targetUnit = UnitSpellTargetName(castingUnit)
+			name = UnitSpellTargetName(castingUnit)
 
-			if targetUnit ~= nil then
-				name = UnitName(targetUnit)
+			if
+				name ~= nil
+				and TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowTargetClassColor]
+			then
+				local targetClass = UnitSpellTargetClass(castingUnit)
 
-				if TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowTargetClassColor] then
-					local targetClass = UnitSpellTargetClass(targetUnit)
-
-					if targetClass ~= nil then
-						color = C_ClassColor.GetClassColor(targetClass)
-					end
+				if targetClass ~= nil then
+					color = C_ClassColor.GetClassColor(targetClass)
 				end
 			end
 
@@ -258,8 +266,60 @@ do
 	end
 end
 
+function TargetedSpellsBarMixin:SetOnCooldownDone() end
+
+function TargetedSpellsBarMixin:SetInterrupted(name, color)
+	self.wasInterrupted = true
+	local now = GetTime()
+	self.doNotHideBefore = now + 0.95
+	self.InterruptIcon:Show()
+	self.Icon:SetDesaturated(true)
+	self.ProgressBar:GetTimerDuration():SetTimeSpan(now - 1, now)
+	self:SetShowDuration(false)
+	self:HideGlow()
+	self.ProgressBar.SpellName:Hide()
+	self.ProgressBar.Divider:Hide()
+	self.ProgressBar.TargetName:Hide()
+
+	if name == nil then
+		return
+	end
+
+	if TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.RenderInterruptSourceName] then
+		self.ProgressBar.InterruptSource:SetText(name)
+
+		if color ~= nil then
+			self.ProgressBar.InterruptSource:SetTextColor(color.r, color.g, color.b)
+		end
+
+		self.ProgressBar.InterruptSource:Show()
+	else
+		self.ProgressBar.InterruptSource:Hide()
+	end
+end
+
 function TargetedSpellsBarMixin:GetKind()
 	return self.kind
+end
+
+function TargetedSpellsBarMixin:SetId(id)
+	self.id = id
+end
+
+function TargetedSpellsBarMixin:GetId()
+	return self.id
+end
+
+function TargetedSpellsBarMixin:CanBeHidden(id)
+	if self.wasInterrupted then
+		return GetTime() >= self.doNotHideBefore
+	end
+
+	if id == nil then
+		return true
+	end
+
+	return id == self:GetId()
 end
 
 function TargetedSpellsBarMixin:SetStartTime(startTime)
@@ -393,6 +453,7 @@ end
 
 function TargetedSpellsBarMixin:SetDuration(duration)
 	self.ProgressBar.Duration:SetText("")
+	self:SetShowDuration(TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration])
 	self.ProgressBar:SetTimerDuration(duration)
 end
 
@@ -404,6 +465,7 @@ function TargetedSpellsBarMixin:SetFont()
 		self.ProgressBar.Divider,
 		self.ProgressBar.TargetName,
 		self.ProgressBar.Duration,
+		self.ProgressBar.InterruptSource,
 	}) do
 		fontString:SetFont(
 			TargetedSpellsSaved.Settings.Party.Font,

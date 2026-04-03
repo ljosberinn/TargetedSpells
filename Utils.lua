@@ -375,6 +375,31 @@ do
 						end
 					end
 				end
+
+				local frame = editModeFrameByKind[kindString]
+				-- needs nil check since the import could be from before v3
+				local importedPosition = result[kind] and result[kind].Position
+
+				if importedPosition ~= nil then
+					local point, x, y = importedPosition.point, importedPosition.x, importedPosition.y
+
+					if
+						frame ~= nil
+						and (point ~= tableRef.Position.point or x ~= tableRef.Position.x or y ~= tableRef.Position.y)
+					then
+						frame:ClearAllPoints()
+						PixelUtil.SetPoint(frame, point, UIParent, "CENTER", x, y)
+						tableRef.Position.point = point
+						tableRef.Position.x = x
+						tableRef.Position.y = y
+						Private.EventRegistry:TriggerEvent(
+							Private.Enum.Events.EDIT_MODE_PARTY_POSITION_CHANGED,
+							point,
+							x,
+							y
+						)
+					end
+				end
 			else
 				local frame = editModeFrameByKind[kindString]
 
@@ -389,7 +414,7 @@ do
 					tableRef.Position.point = point
 					tableRef.Position.x = x
 					tableRef.Position.y = y
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.EDIT_MODE_POSITION_CHANGED, point, x, y)
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.EDIT_MODE_SELF_POSITION_CHANGED, point, x, y)
 				end
 
 				local anyPrimaryLoadConditionIsDisabled = false

@@ -222,6 +222,7 @@
 ---@field PostCreate fun(self: TargetedSpellsIconMixin, unit: string, castingUnit: string?)
 ---@field Reset fun(self: TargetedSpellsIconMixin)
 ---@field SetFont fun(self: TargetedSpellsIconMixin)
+---@field SetOnCooldownDone fun(self: TargetedSpellsIconMixin, callback: function)
 
 ---@class TargetedSpellsBarProgressBar : StatusBar
 ---@field Background Texture
@@ -229,6 +230,7 @@
 ---@field Divider FontString
 ---@field TargetName FontString
 ---@field Duration FontString
+---@field InterruptSource FontString
 
 ---@class TargetedSpellsBarCustomElementsFrame : Frame
 ---@field TargetMarker Texture
@@ -238,6 +240,7 @@
 ---@field ProgressBar TargetedSpellsBarProgressBar
 ---@field CustomElementsFrame TargetedSpellsBarCustomElementsFrame
 ---@field Icon Texture
+---@field InterruptIcon Texture
 ---@field private kind FrameKind?
 ---@field private startTime number?
 ---@field OnLoad fun(self: TargetedSpellsBarMixin)
@@ -250,6 +253,12 @@
 ---@field ClearStartTime fun(self: TargetedSpellsBarMixin)
 ---@field GetStartTime fun(self: TargetedSpellsBarMixin): number?
 ---@field ShouldBeShown fun(self: TargetedSpellsBarMixin): boolean
+---@field CanBeHidden fun(self: TargetedSpellsBarMixin, id: number|string|nil): boolean
+---@field OnUpdate fun(self: TargetedSpellsBarMixin, elapsed: number)
+---@field SetShowDuration fun(self: TargetedSpellsBarMixin, showDuration: boolean)
+---@field SetFont fun(self: TargetedSpellsBarMixin)
+---@field SetOnCooldownDone fun(self: TargetedSpellsBarMixin)
+---@field SetInterrupted fun(self: TargetedSpellsBarMixin, name: string?, color: colorRGB?)
 
 ---@class EditModeFrame : Frame
 ---@field firstFrameTimestamp number
@@ -265,10 +274,10 @@
 ---@field CreateSetting fun(self: TargetedSpellsEditModeMixin, key: string, defaults: SavedVariablesSettingsParty|SavedVariablesSettingsSelf): LibEditModeButton|LibEditModeCheckbox|LibEditModeDropdown|LibEditModeSlider|LibEditModeColorPicker
 ---@field OnLayoutSettingChanged fun(self: TargetedSpellsEditModeMixin, key: string, value: number|string, newBool: boolean?)
 ---@field AppendSettings fun(self: TargetedSpellsEditModeMixin)
----@field AcquireFrame fun(self: TargetedSpellsEditModeMixin): TargetedSpellsIconMixin
+---@field AcquireFrame fun(self: TargetedSpellsEditModeMixin): TargetedSpellsIconMixin|TargetedSpellsBarMixin
 ---@field OnEditModePositionChanged fun(self: TargetedSpellsEditModeMixin, frame: Frame, layoutName: string, point: FramePoint, x: number, y: number)
 ---@field RepositionPreviewFrames fun(self: TargetedSpellsEditModeMixin)
----@field LoopFrame fun(self: TargetedSpellsEditModeMixin, frame: TargetedSpellsIconMixin, index: number)
+---@field LoopFrame fun(self: TargetedSpellsEditModeMixin, frame: TargetedSpellsIconMixin|TargetedSpellsBarMixin, index: number)
 ---@field StartDemo fun(self: TargetedSpellsEditModeMixin)
 ---@field ReleaseAllFrames fun(self: TargetedSpellsEditModeMixin)
 ---@field EndDemo fun(self: TargetedSpellsEditModeMixin)
@@ -307,7 +316,6 @@
 ---@field ReleaseAllFrames fun(self: TargetedSpellsPartyEditMode)
 
 ---@class TargetedSpellsDriver
----@field private framePool FramePool<TargetedSpellsIconMixin>
 ---@field private frame Frame
 ---@field private role Role
 ---@field private contentType ContentType

@@ -232,25 +232,17 @@ function TargetedSpellsIconMixin:SetInterrupted(name, color)
 		return
 	end
 
-	local renderInterruptSourceName = false
-
-	if self.kind == Private.Enum.FrameKind.Self then
-		renderInterruptSourceName =
-			TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.RenderInterruptSourceName]
-	else
-		renderInterruptSourceName =
-			TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.RenderInterruptSourceName]
-	end
-
-	if renderInterruptSourceName then
+	if TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.RenderInterruptSourceName] then
 		self.InterruptSource:SetText(name)
 
 		if color ~= nil then
 			self.InterruptSource:SetTextColor(color.r, color.g, color.b)
 		end
-	end
 
-	self.InterruptSource:Show()
+		self.InterruptSource:Show()
+	else
+		self.InterruptSource:Hide()
+	end
 end
 
 function TargetedSpellsIconMixin:CanBeHidden(id)

@@ -1141,6 +1141,43 @@ function TargetedSpellsEditModeMixin:CreateSetting(key, defaults)
 		}
 	end
 
+	if key == Private.Settings.Keys.Party.Grow then
+		---@param layoutName string
+		---@param value number
+		local function Set(layoutName, value)
+			if TargetedSpellsSaved.Settings.Party.Grow ~= value then
+				TargetedSpellsSaved.Settings.Party.Grow = value
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+			end
+		end
+
+		local function Generator(owner, rootDescription, data)
+			for label, id in pairs(Private.Enum.Grow) do
+				local function IsEnabled()
+					return TargetedSpellsSaved.Settings.Party.Grow == id
+				end
+
+				local function SetProxy()
+					Set(LibEditMode:GetActiveLayoutName(), id)
+				end
+
+				local translated = L.Settings.FrameGrowLabels[id]
+
+				rootDescription:CreateRadio(translated, IsEnabled, SetProxy)
+			end
+		end
+
+		---@type LibEditModeDropdown
+		return {
+			name = L.Settings.FrameGrowLabel,
+			kind = Enum.EditModeSettingDisplayType.Dropdown,
+			default = defaults.Grow,
+			desc = L.Settings.FrameGrowTooltip,
+			generator = Generator,
+			set = Set,
+		}
+	end
+
 	if key == Private.Settings.Keys.Self.Grow then
 		---@param layoutName string
 		---@param value number
@@ -1391,7 +1428,7 @@ function SelfEditModeMixin:OnEditModePositionChanged(frame, layoutName, point, x
 	TargetedSpellsSaved.Settings.Self.Position.x = x
 	TargetedSpellsSaved.Settings.Self.Position.y = y
 
-	Private.EventRegistry:TriggerEvent(Private.Enum.Events.EDIT_MODE_POSITION_CHANGED, point, x, y)
+	Private.EventRegistry:TriggerEvent(Private.Enum.Events.EDIT_MODE_SELF_POSITION_CHANGED, point, x, y)
 end
 
 function SelfEditModeMixin:RepositionPreviewFrames()
@@ -1569,7 +1606,7 @@ function PartyEditModeMixin:OnEditModePositionChanged(frame, layoutName, point, 
 	TargetedSpellsSaved.Settings.Party.Position.x = x
 	TargetedSpellsSaved.Settings.Party.Position.y = y
 
-	Private.EventRegistry:TriggerEvent(Private.Enum.Events.EDIT_MODE_POSITION_CHANGED, point, x, y)
+	Private.EventRegistry:TriggerEvent(Private.Enum.Events.EDIT_MODE_PARTY_POSITION_CHANGED, point, x, y)
 end
 
 function PartyEditModeMixin:AcquireFrame()

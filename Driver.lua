@@ -67,19 +67,81 @@ function TargetedSpellsDriver:PositionSelfFrame()
 	self.frame:Show()
 end
 
+function TargetedSpellsDriver:PositionPartyFrame()
+	local offsetX = 0
+	local offsetY = 0
+
+	local editModeFrame = Private.Utils.GetEditModeFrame(Private.Enum.FrameKind.Party)
+
+	if editModeFrame ~= nil then
+		local AnchorSign = {
+			[Private.Enum.Anchor.Center] = { x = 0, y = 0 },
+			[Private.Enum.Anchor.Top] = { x = 0, y = 1 },
+			[Private.Enum.Anchor.Bottom] = { x = 0, y = -1 },
+			[Private.Enum.Anchor.Left] = { x = -1, y = 0 },
+			[Private.Enum.Anchor.Right] = { x = 1, y = 0 },
+			[Private.Enum.Anchor.TopLeft] = { x = -1, y = 1 },
+			[Private.Enum.Anchor.TopRight] = { x = 1, y = 1 },
+			[Private.Enum.Anchor.BottomLeft] = { x = -1, y = -1 },
+			[Private.Enum.Anchor.BottomRight] = { x = 1, y = -1 },
+		}
+
+		local GrowTarget = {
+			[Private.Enum.Direction.Horizontal] = {
+				[Private.Enum.Grow.Start] = { x = -1, y = 0 },
+				[Private.Enum.Grow.End] = { x = 1, y = 0 },
+			},
+			[Private.Enum.Direction.Vertical] = {
+				[Private.Enum.Grow.Start] = { x = 0, y = -1 },
+				[Private.Enum.Grow.End] = { x = 0, y = 1 },
+			},
+		}
+
+		local width, height = editModeFrame:GetSize()
+
+		local anchor = AnchorSign[TargetedSpellsSaved.Settings.Party.Position.point]
+		local target = GrowTarget[TargetedSpellsSaved.Settings.Party.Direction][TargetedSpellsSaved.Settings.Party.Grow]
+
+		offsetX = (target.x - anchor.x) * (width / 2)
+		offsetY = (target.y - anchor.y) * (height / 2)
+	end
+
+	self.partyFrame:ClearAllPoints()
+	PixelUtil.SetPoint(
+		self.partyFrame,
+		"CENTER",
+		UIParent,
+		TargetedSpellsSaved.Settings.Party.Position.point,
+		TargetedSpellsSaved.Settings.Party.Position.x + offsetX,
+		TargetedSpellsSaved.Settings.Party.Position.y + offsetY
+	)
+	self.partyFrame:Show()
+end
+
 function TargetedSpellsDriver:SetupFrame(isBoot)
 	if isBoot then
 		self.frame = CreateFrame("Frame", "TargetedSpellsDriverFrame", UIParent)
 		self.frame:SetSize(1, 1)
 		self:PositionSelfFrame()
 
+		self.partyFrame = CreateFrame("Frame", "TargetedSpellsPartyDriverFrame", UIParent)
+		self.partyFrame:SetSize(1, 1)
+		self:PositionPartyFrame()
+
 		Private.EventRegistry:RegisterCallback(
-			Private.Enum.Events.EDIT_MODE_POSITION_CHANGED,
+			Private.Enum.Events.EDIT_MODE_SELF_POSITION_CHANGED,
 			self.OnFrameEvent,
 			self,
 			self.frame,
-			Private.Enum.Events.EDIT_MODE_POSITION_CHANGED
-			-- the remaining args are being passed when the event gets triggered
+			Private.Enum.Events.EDIT_MODE_SELF_POSITION_CHANGED
+		)
+
+		Private.EventRegistry:RegisterCallback(
+			Private.Enum.Events.EDIT_MODE_PARTY_POSITION_CHANGED,
+			self.OnFrameEvent,
+			self,
+			self.frame,
+			Private.Enum.Events.EDIT_MODE_PARTY_POSITION_CHANGED
 		)
 	end
 
@@ -110,7 +172,7 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 end
 
 do
-	---@type table<string, TargetedSpellsIconMixin[]>
+	---@type table<string, (TargetedSpellsIconMixin|TargetedSpellsBarMixin)[]>
 	local frames = {}
 
 	function TargetedSpellsDriver:AcquireFrames(castingUnit)
@@ -142,7 +204,7 @@ do
 					) or unit ~= "player"
 				then
 					local frame = Private.Utils.Pools.Bar:Acquire()
-					frame:PostCreate(unit)
+					frame:PostCreate(castingUnit)
 					table.insert(frames, frame)
 				end
 			end
@@ -153,77 +215,45 @@ do
 end
 
 function TargetedSpellsDriver:RepositionFrames()
-	---@type table<string, TargetedSpellsIconMixin[]>
+	---@type table<string, (TargetedSpellsIconMixin|TargetedSpellsBarMixin)[]>
 	local activeFrames = {}
 
 	for sourceUnit, frames in pairs(self.frames) do
 		for i, frame in pairs(frames) do
-			if frame then
+			if frame ~= nil then
 				local kind = frame:GetKind()
 
-				if kind == Private.Enum.FrameKind.Self then
+				if kind ~= nil then
 					if activeFrames[kind] == nil then
 						activeFrames[kind] = {}
 					end
 
 					table.insert(activeFrames[kind], frame)
-				elseif kind == Private.Enum.FrameKind.Party then
-					-- todo: this needs to be adjusted for bars
-					local targetUnit = frame:GetUnit()
-
-					if activeFrames[targetUnit] == nil then
-						activeFrames[targetUnit] = {}
-					end
-
-					table.insert(activeFrames[targetUnit], frame)
 				end
 			end
 		end
 	end
 
-	local selfTableRef = TargetedSpellsSaved.Settings.Self
-	-- local partyTableRef = TargetedSpellsSaved.Settings.Party
+	for kind, frames in pairs(activeFrames) do
+		local tableRef = kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
+			or TargetedSpellsSaved.Settings.Party
 
-	for targetUnit, frames in pairs(activeFrames) do
-		-- may not use "player" here as the unit token in party for the player is identical
-		if targetUnit == Private.Enum.FrameKind.Self then
-			Private.Utils.SortFrames(frames, selfTableRef.SortOrder)
-
-			local layouting = Private.Utils.CollectLayoutingArguments(
-				selfTableRef.Direction,
-				selfTableRef.Grow,
-				selfTableRef.Width,
-				selfTableRef.Height,
-				selfTableRef.Gap
-			)
-
-			Private.Utils.AdjustLayout(frames, layouting, self.frame, "CENTER", 0, 0, false)
-		else
-			-- todo: this entire branch needs to be restructured as there's no longer a party frame to anchor to
-			-- local parentFrame = FindParentFrameForPartyMember(targetUnit)
-
-			-- if parentFrame ~= nil then
-			-- 	Private.Utils.SortFrames(frames, partyTableRef.SortOrder)
-
-			-- 	local layouting = Private.Utils.CollectLayoutingArguments(
-			-- 		partyTableRef.Direction,
-			-- 		partyTableRef.Grow,
-			-- 		partyTableRef.Width,
-			-- 		partyTableRef.Height,
-			-- 		partyTableRef.Gap
-			-- 	)
-
-			-- 	Private.Utils.AdjustLayout(
-			-- 		frames,
-			-- 		layouting,
-			-- 		parentFrame,
-			-- 		partyTableRef.TargetAnchor,
-			-- 		partyTableRef.OffsetX,
-			-- 		partyTableRef.OffsetY,
-			-- 		false
-			-- 	)
-			-- end
-		end
+		Private.Utils.SortFrames(frames, tableRef.SortOrder)
+		Private.Utils.AdjustLayout(
+			frames,
+			Private.Utils.CollectLayoutingArguments(
+				tableRef.Direction,
+				tableRef.Grow,
+				tableRef.Width,
+				tableRef.Height,
+				tableRef.Gap
+			),
+			kind == Private.Enum.FrameKind.Self and self.frame or self.partyFrame,
+			"CENTER",
+			0,
+			0,
+			false
+		)
 	end
 end
 
@@ -322,7 +352,7 @@ function TargetedSpellsDriver:UnitIsIrrelevant(unit, skipTargetCheck)
 end
 
 ---@param _ Frame -- identical to self.frame
----@param event "DELAYED_FRAME_CLEANUP" | "UNIT_SPELLCAST_INTERRUPTED" | "UNIT_SPELLCAST_FAILED_QUIET" | "ZONE_CHANGED_NEW_AREA" | "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" | "UNIT_SPELLCAST_SUCCEEDED" |"EDIT_MODE_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "DELAYED_UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED"
+---@param event "DELAYED_FRAME_CLEANUP" | "UNIT_SPELLCAST_INTERRUPTED" | "UNIT_SPELLCAST_FAILED_QUIET" | "ZONE_CHANGED_NEW_AREA" | "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" | "UNIT_SPELLCAST_SUCCEEDED" |"EDIT_MODE_SELF_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "DELAYED_UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED"
 function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 	if
 		event == "UNIT_SPELLCAST_START"
@@ -652,8 +682,10 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		else
 			self.role = Private.Enum.Role.Damager
 		end
-	elseif event == Private.Enum.Events.EDIT_MODE_POSITION_CHANGED then
+	elseif event == Private.Enum.Events.EDIT_MODE_SELF_POSITION_CHANGED then
 		self:PositionSelfFrame()
+	elseif event == Private.Enum.Events.EDIT_MODE_PARTY_POSITION_CHANGED then
+		self:PositionPartyFrame()
 	end
 end
 
@@ -690,6 +722,14 @@ function TargetedSpellsDriver:OnSettingsChanged(key, value)
 		or key == Private.Settings.Keys.Self.Gap
 	then
 		self:PositionSelfFrame()
+	elseif
+		key == Private.Settings.Keys.Party.Grow
+		or key == Private.Settings.Keys.Party.Direction
+		or key == Private.Settings.Keys.Party.Width
+		or key == Private.Settings.Keys.Party.Height
+		or key == Private.Settings.Keys.Party.Gap
+	then
+		self:PositionPartyFrame()
 	end
 end
 
