@@ -66,21 +66,6 @@ Private.Utils.Pools = {
 		---@param frame TargetedSpellsIconMixin
 		function(pool, frame)
 			frame:Reset()
-		end,
-		false,
-		function(frame)
-			PixelUtil.SetSize(frame, TargetedSpellsSaved.Settings.Self.Width, TargetedSpellsSaved.Settings.Self.Height)
-			frame:SetFont()
-			frame:HideGlow()
-			frame:ApplyBorderStyle(TargetedSpellsSaved.Settings.Self.BorderStyle)
-			frame:SetShowDuration(TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration])
-			frame.Cooldown:SetDrawSwipe(
-				TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowSwipe]
-			)
-			frame.Cooldown:SetCountdownFormatter(Private.Utils.Formatter)
-			frame.Cooldown:SetCountdownFont("GameFontHighlightHugeOutline")
-			frame.Bar:SetStatusBarTexture("")
-			Private.Utils.MaybeApplyElvUISkin(frame)
 		end
 	),
 	Bar = CreateFramePool(
@@ -91,21 +76,6 @@ Private.Utils.Pools = {
 		---@param frame TargetedSpellsBarMixin
 		function(pool, frame)
 			frame:Reset()
-		end,
-		false,
-		function(frame)
-			PixelUtil.SetSize(
-				frame,
-				TargetedSpellsSaved.Settings.Party.Width,
-				TargetedSpellsSaved.Settings.Party.Height
-			)
-			frame:SetFont()
-			frame:SetShowDuration(
-				TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration]
-			)
-			frame:SetForegroundBarTexture()
-			frame:SetBackgroundBarTexture()
-			frame:SetBackgroundBarColor()
 		end
 	),
 }

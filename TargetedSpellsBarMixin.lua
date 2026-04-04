@@ -2,16 +2,18 @@
 local addonName, Private = ...
 local LibSharedMedia = LibStub("LibSharedMedia-3.0")
 
----@class TargetedSpellsBarMixin
-TargetedSpellsBarMixin = {}
+---@class TargetedSpellsBarMixin : TargetedSpellsMixin
+TargetedSpellsBarMixin = CreateFromMixins(TargetedSpellsMixin)
 
 function TargetedSpellsBarMixin:OnLoad()
+	TargetedSpellsMixin.OnLoad(self)
 	self.Bar:SetStatusBarTexture("")
-	self.ProgressBar:SetStatusBarTexture("Interface\\RaidFrame\\Raid-Bar-Hp-Fill")
-	self.elapsed = 0
-	self.wasInterrupted = false
-	self.doNotHideBefore = nil
-	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingChanged, self)
+	PixelUtil.SetSize(self, TargetedSpellsSaved.Settings.Party.Width, TargetedSpellsSaved.Settings.Party.Height)
+	self:SetFont()
+	self:SetShowDuration(TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration])
+	self:SetForegroundBarTexture()
+	self:SetBackgroundBarTexture()
+	self:SetBackgroundBarColor()
 end
 
 function TargetedSpellsBarMixin:OnSizeChanged()
@@ -200,22 +202,13 @@ function TargetedSpellsBarMixin:SetShowDuration(showDuration)
 end
 
 function TargetedSpellsBarMixin:Reset()
-	self:SetParent(UIParent)
-	self.Bar:ClearAllPoints()
-	self.Bar:SetParent(self)
-	self:ClearAllPoints()
-	self.startTime = nil
-	self.wasInterrupted = false
-	self.doNotHideBefore = nil
-	self.InterruptIcon:Hide()
-	self.Icon:SetDesaturated(false)
+	TargetedSpellsMixin.Reset(self)
 	self.ProgressBar.InterruptSource:SetText("")
 	self.ProgressBar.InterruptSource:Hide()
 	self.ProgressBar.InterruptSource:SetTextColor(1, 1, 1)
 	self.CustomElementsFrame.TargetMarker:Hide()
 	self.ProgressBar.Divider:Hide()
 	self.ProgressBar.TargetName:Hide()
-	self:Hide()
 end
 
 do
@@ -269,14 +262,10 @@ end
 function TargetedSpellsBarMixin:SetOnCooldownDone() end
 
 function TargetedSpellsBarMixin:SetInterrupted(name, color)
-	self.wasInterrupted = true
+	TargetedSpellsMixin.SetInterrupted(self, name, color)
 	local now = GetTime()
-	self.doNotHideBefore = now + 0.95
-	self.InterruptIcon:Show()
-	self.Icon:SetDesaturated(true)
+
 	self.ProgressBar:GetTimerDuration():SetTimeSpan(now - 1, now)
-	self:SetShowDuration(false)
-	self:HideGlow()
 	self.ProgressBar.SpellName:Hide()
 	self.ProgressBar.Divider:Hide()
 	self.ProgressBar.TargetName:Hide()
@@ -298,63 +287,7 @@ function TargetedSpellsBarMixin:SetInterrupted(name, color)
 	end
 end
 
-function TargetedSpellsBarMixin:GetKind()
-	return self.kind
-end
-
-function TargetedSpellsBarMixin:SetId(id)
-	self.id = id
-end
-
-function TargetedSpellsBarMixin:GetId()
-	return self.id
-end
-
-function TargetedSpellsBarMixin:CanBeHidden(id)
-	if self.wasInterrupted then
-		return GetTime() >= self.doNotHideBefore
-	end
-
-	if id == nil then
-		return true
-	end
-
-	return id == self:GetId()
-end
-
-function TargetedSpellsBarMixin:SetStartTime(startTime)
-	self.startTime = startTime or GetTime()
-end
-
-function TargetedSpellsBarMixin:ClearStartTime()
-	self.startTime = nil
-end
-
-function TargetedSpellsBarMixin:GetStartTime()
-	return self.startTime
-end
-
-function TargetedSpellsBarMixin:ShouldBeShown()
-	return self.startTime ~= nil
-end
-
-local PreviewIconDataProvider = nil
-
----@return IconDataProviderMixin
-local function GetRandomIcon()
-	if PreviewIconDataProvider == nil then
-		PreviewIconDataProvider =
-			CreateAndInitFromMixin(IconDataProviderMixin, IconDataProviderExtraType.Spellbook, true)
-	end
-
-	return PreviewIconDataProvider:GetRandomIcon()
-end
-
 function TargetedSpellsBarMixin:SetSpellId(spellId)
-	self.spellId = spellId
-	local texture = spellId and C_Spell.GetSpellTexture(spellId) or GetRandomIcon()
-	self.Icon:SetTexture(texture)
-
 	if TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowSpellName] then
 		self.ProgressBar.SpellName:SetText(spellId == nil and addonName or C_Spell.GetSpellName(spellId))
 		self.ProgressBar.SpellName:Show()
@@ -364,91 +297,7 @@ function TargetedSpellsBarMixin:SetSpellId(spellId)
 
 	self:SetDivider()
 
-	if spellId == nil then
-		return
-	end
-
-	if not TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.GlowImportant] then
-		return
-	end
-
-	local isImportant = self:IsSpellImportant()
-
-	self:ShowGlow(isImportant)
-
-	if TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.OnlyImportant] then
-		self:SetAlphaFromBoolean(isImportant, 1, 0)
-	end
-end
-
-function TargetedSpellsBarMixin:ShowGlow(isImportant)
-	local glowType = TargetedSpellsSaved.Settings.Party.GlowType
-
-	if glowType == Private.Enum.GlowType.Star4 then
-		if self._Star4 == nil then
-			self._Star4 = CreateStar4Glow(
-				self,
-				TargetedSpellsSaved.Settings.Party.Width,
-				TargetedSpellsSaved.Settings.Party.Height
-			)
-		end
-
-		self._Star4:Show()
-		self._Star4.Inner:Show()
-		self._Star4.Outer:Show()
-		self._Star4.Animation:Play()
-
-		self._Star4:SetAlphaFromBoolean(isImportant)
-	elseif glowType == Private.Enum.GlowType.PixelGlow then
-		Private.Glows.PixelGlow_Start(
-			self,
-			TargetedSpellsSaved.Settings.Party.Width,
-			TargetedSpellsSaved.Settings.Party.Height
-		)
-
-		self._PixelGlow:SetAlphaFromBoolean(isImportant)
-	elseif glowType == Private.Enum.GlowType.AutoCastGlow then
-		Private.Glows.AutoCastGlow_Start(
-			self,
-			TargetedSpellsSaved.Settings.Party.Width,
-			TargetedSpellsSaved.Settings.Party.Height
-		)
-
-		self._AutoCastGlow:SetAlphaFromBoolean(isImportant)
-	elseif glowType == Private.Enum.GlowType.ProcGlow then
-		Private.Glows.ProcGlow_Start(
-			self,
-			TargetedSpellsSaved.Settings.Party.Width,
-			TargetedSpellsSaved.Settings.Party.Height
-		)
-
-		self._ProcGlow:SetAlphaFromBoolean(isImportant)
-	end
-end
-
-function TargetedSpellsBarMixin:HideGlow()
-	if self._Star4 ~= nil then
-		self._Star4:Hide()
-		self._Star4.Inner:Hide()
-		self._Star4.Outer:Hide()
-		self._Star4.Animation:Stop()
-	end
-
-	Private.Glows.PixelGlow_Stop(self)
-	Private.Glows.AutoCastGlow_Stop(self)
-	Private.Glows.ProcGlow_Stop(self)
-end
-
-function TargetedSpellsBarMixin:IsSpellImportant(boolOverride)
-	if boolOverride ~= nil then
-		return boolOverride
-	end
-
-	if self.spellId == nil then
-		return false
-	end
-
-	return C_Spell.IsSpellImportant(self.spellId)
+	TargetedSpellsMixin.SetSpellId(self, spellId)
 end
 
 function TargetedSpellsBarMixin:SetDuration(duration)

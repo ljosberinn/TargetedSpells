@@ -161,21 +161,46 @@
 ---@class CustomCooldown : ExtendedCooldownTypes
 ---@field DurationText FontString
 
----@class TargetedSpellsIconMixin : Frame
----@field private Overlay Texture
----@field private Icon Texture
----@field private Cooldown CustomCooldown
+---@class TargetedSpellsMixin : Frame
 ---@field private kind FrameKind?
----@field private unit string?
 ---@field private startTime number?
----@field private duration DurationObject|nil
----@field private spellId number? -- secret
----@field private id number? -- secret
+---@field private spellId number?
+---@field private id number?
+---@field private elapsed number
+---@field private wasInterrupted boolean
+---@field private doNotHideBefore number?
 ---@field private _AutoCastGlow Frame?
 ---@field private _PixelGlow Frame?
 ---@field private _ProcGlow Frame?
 ---@field private _Star4 Star4Glow?
----@field private InterruptIcon Texture
+---@field Bar StatusBar
+---@field Icon Texture
+---@field InterruptIcon Texture
+---@field OnLoad fun(self: TargetedSpellsMixin)
+---@field SetId fun(self: TargetedSpellsMixin, id: number?)
+---@field GetId fun(self: TargetedSpellsMixin): number?
+---@field GetKind fun(self: TargetedSpellsMixin): FrameKind?
+---@field CanBeHidden fun(self: TargetedSpellsMixin, id: number|string|nil): boolean
+---@field SetStartTime fun(self: TargetedSpellsMixin, startTime: number?)
+---@field GetStartTime fun(self: TargetedSpellsMixin): number?
+---@field ClearStartTime fun(self: TargetedSpellsMixin)
+---@field ShouldBeShown fun(self: TargetedSpellsMixin): boolean
+---@field IsSpellImportant fun(self: TargetedSpellsMixin, boolOverride: boolean?): boolean
+---@field HideGlow fun(self: TargetedSpellsMixin)
+---@field ShowGlow fun(self: TargetedSpellsMixin, isImportant: boolean)
+---@field SetSpellId fun(self: TargetedSpellsMixin, spellId: number?)
+---@field SetInterrupted fun(self: TargetedSpellsMixin, name: string?, color: colorRGB?)
+---@field Reset fun(self: TargetedSpellsMixin)
+---@field SetFont fun(self: TargetedSpellsMixin)
+---@field SetShowDuration fun(self: TargetedSpellsMixin, showDuration: boolean)
+---@field SetDuration fun(self: TargetedSpellsMixin, duration: DurationObject)
+---@field SetOnCooldownDone fun(self: TargetedSpellsMixin, callback: function?)
+
+---@class TargetedSpellsIconMixin : TargetedSpellsMixin
+---@field private Overlay Texture
+---@field private Cooldown CustomCooldown
+---@field private unit string?
+---@field private duration DurationObject|nil
 ---@field private InterruptSource FontString
 ---@field private BorderSolidTop Texture
 ---@field private BorderSolidBottom Texture
@@ -189,32 +214,14 @@
 ---@field private BorderBottom Texture
 ---@field private BorderLeft Texture
 ---@field private BorderRight Texture
----@field private elapsed number
----@field private wasInterrupted boolean
----@field private doNotHideBefore number?
----@field Bar StatusBar
 ---@field OnLoad fun(self: TargetedSpellsIconMixin)
----@field SetId fun(self: TargetedSpellsIconMixin, id: number?)
----@field GetId fun(self: TargetedSpellsIconMixin): number?
----@field SetInterrupted fun(self: TargetedSpellsIconMixin, name: string?, color: colorRGB?)
----@field CanBeHidden fun(self: TargetedSpellsIconMixin, id: number|string|nil): boolean
----@field OnUpdate fun(self: TargetedSpellsIconMixin, elapsed: number)
 ---@field SetShowDuration fun(self: TargetedSpellsIconMixin, showDuration: boolean)
 ---@field ApplyBorderStyle fun(self: TargetedSpellsIconMixin, styleName: string)
 ---@field OnSizeChanged fun(self: TargetedSpellsIconMixin)
 ---@field OnSettingChanged fun(self: TargetedSpellsIconMixin, key: string, flagIdOrValue: number|string|boolean|table, newBool: boolean?)
 ---@field SetDuration fun(self: TargetedSpellsIconMixin, duration: DurationObject)
 ---@field GetDuration fun(self: TargetedSpellsIconMixin): DurationObject|nil
----@field SetStartTime fun(self: TargetedSpellsIconMixin, startTime: number?)
----@field GetStartTime fun(self: TargetedSpellsIconMixin): number?
----@field ShowGlow fun(self: TargetedSpellsIconMixin, isImportant: boolean) -- secret bool, but passed explicitly in EditMode code
----@field HideGlow fun(self: TargetedSpellsIconMixin)
----@field IsSpellImportant fun(self: TargetedSpellsIconMixin, boolOverride: boolean?): boolean
----@field SetSpellId fun(self: TargetedSpellsIconMixin, spellId: number?)
----@field ShouldBeShown fun(self: TargetedSpellsIconMixin): boolean
----@field ClearStartTime fun(self: TargetedSpellsIconMixin)
 ---@field SetUnit fun(self: TargetedSpellsIconMixin, unit: string)
----@field GetKind fun(self: TargetedSpellsIconMixin): FrameKind?
 ---@field GetUnit fun(self: TargetedSpellsIconMixin): string
 ---@field PostCreate fun(self: TargetedSpellsIconMixin, unit: string, castingUnit: string?)
 ---@field Reset fun(self: TargetedSpellsIconMixin)
@@ -232,32 +239,21 @@
 ---@class TargetedSpellsBarCustomElementsFrame : Frame
 ---@field TargetMarker Texture
 
----@class TargetedSpellsBarMixin : Frame
----@field Bar StatusBar
+---@class TargetedSpellsBarMixin : TargetedSpellsMixin
 ---@field ProgressBar TargetedSpellsBarProgressBar
 ---@field CustomElementsFrame TargetedSpellsBarCustomElementsFrame
----@field Icon Texture
----@field InterruptIcon Texture
----@field private kind FrameKind?
----@field private startTime number?
----@field private wasInterrupted boolean
----@field private doNotHideBefore number?
 ---@field OnLoad fun(self: TargetedSpellsBarMixin)
 ---@field OnSizeChanged fun(self: TargetedSpellsBarMixin)
----@field OnUpdate fun(self: TargetedSpellsBarMixin)
+---@field OnUpdate fun(self: TargetedSpellsBarMixin, elapsed: number)
 ---@field Reset fun(self: TargetedSpellsBarMixin)
 ---@field PostCreate fun(self: TargetedSpellsBarMixin, castingUnit: string)
----@field GetKind fun(self: TargetedSpellsBarMixin): FrameKind?
----@field SetStartTime fun(self: TargetedSpellsBarMixin, startTime: number?)
----@field ClearStartTime fun(self: TargetedSpellsBarMixin)
----@field GetStartTime fun(self: TargetedSpellsBarMixin): number?
----@field ShouldBeShown fun(self: TargetedSpellsBarMixin): boolean
----@field CanBeHidden fun(self: TargetedSpellsBarMixin, id: number|string|nil): boolean
----@field OnUpdate fun(self: TargetedSpellsBarMixin, elapsed: number)
 ---@field SetShowDuration fun(self: TargetedSpellsBarMixin, showDuration: boolean)
 ---@field SetFont fun(self: TargetedSpellsBarMixin)
----@field SetOnCooldownDone fun(self: TargetedSpellsBarMixin)
----@field SetInterrupted fun(self: TargetedSpellsBarMixin, name: string?, color: colorRGB?)
+---@field SetDuration fun(self: TargetedSpellsBarMixin, duration: DurationObject)
+---@field SetDivider fun(self: TargetedSpellsBarMixin)
+---@field SetForegroundBarTexture fun(self: TargetedSpellsBarMixin)
+---@field SetBackgroundBarTexture fun(self: TargetedSpellsBarMixin)
+---@field SetBackgroundBarColor fun(self: TargetedSpellsBarMixin)
 
 ---@class EditModeFrame : Frame
 ---@field firstFrameTimestamp number

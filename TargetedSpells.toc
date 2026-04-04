@@ -29,6 +29,7 @@ Localization\enUS.lua
 Localization\[TextLocale].lua [AllowLoadTextLocale deDE, frFR, zhCN, esES, esMX, koKR]
 
 Settings.lua
+TargetedSpellsMixin.lua
 TargetedSpellsIconMixin.lua
 TargetedSpellsBarMixin.lua
 EditMode.lua
