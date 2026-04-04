@@ -126,7 +126,6 @@ L.Settings.ShowSwipeTooltip = nil
 
 L.Settings.BorderStyleLabel = "Border Style"
 L.Settings.BorderStyleTooltip = nil
-L.Settings.BorderStyleSolid = "Solid"
 
 L.Settings.OpacityLabel = "불투명도"
 L.Settings.OpacityTooltip = nil
@@ -154,12 +153,6 @@ L.Settings.BackgroundBarColorTooltip = nil
 L.Settings.IconZoomLabel = "Icon Zoom"
 L.Settings.IconZoomTooltip = nil
 
-L.Settings.FrameOffsetXLabel = "X 위치 조정"
-L.Settings.FrameOffsetXTooltip = nil
-
-L.Settings.FrameOffsetYLabel = "Y 위치 조정"
-L.Settings.FrameOffsetYTooltip = nil
-
 L.Settings.ClickToOpenSettingsLabel = "클릭 설정 열기"
 
 L.Settings.Import = "가져오기"
@@ -181,7 +174,6 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowSwipe] = L.Settings.ShowSwipeLabel,
 	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
 	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,
-	[Private.Enum.FeatureFlag.IncludeSelfInParty] = L.Settings.IncludeSelfInPartyLabel,
 	[Private.Enum.FeatureFlag.ShowIcon] = "아이콘 표시",
 	[Private.Enum.FeatureFlag.ShowTargetMarker] = "대상 마커 표시",
 	[Private.Enum.FeatureFlag.ShowSpellName] = "주문 이름 표시",
@@ -192,5 +184,4 @@ L.Settings.FeatureFlagLabels = {
 L.Settings.FeatureFlagSettingTitles = {
 	[Private.Enum.FeatureFlag.GlowImportant] = "Display",
 	[Private.Enum.FeatureFlag.IndicateInterrupts] = "Interrupt Settings",
-	[Private.Enum.FeatureFlag.IncludeSelfInParty] = "Party Settings",
 }

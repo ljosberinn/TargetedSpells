@@ -126,7 +126,6 @@ L.Settings.ShowSwipeTooltip = nil
 
 L.Settings.BorderStyleLabel = "Border Style"
 L.Settings.BorderStyleTooltip = nil
-L.Settings.BorderStyleSolid = "Solid"
 
 L.Settings.OpacityLabel = "不透明度"
 L.Settings.OpacityTooltip = nil
@@ -152,12 +151,6 @@ L.Settings.BackgroundBarColorTooltip = nil
 L.Settings.IconZoomLabel = "Icon Zoom"
 L.Settings.IconZoomTooltip = nil
 
-L.Settings.FrameOffsetXLabel = "X轴偏移"
-L.Settings.FrameOffsetXTooltip = nil
-
-L.Settings.FrameOffsetYLabel = "Y轴偏移"
-L.Settings.FrameOffsetYTooltip = nil
-
 L.Settings.ClickToOpenSettingsLabel = "点击打开设置"
 
 L.Settings.Import = "导入"
@@ -178,7 +171,6 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowSwipe] = L.Settings.ShowSwipeLabel,
 	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
 	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,
-	[Private.Enum.FeatureFlag.IncludeSelfInParty] = L.Settings.IncludeSelfInPartyLabel,
 	[Private.Enum.FeatureFlag.ShowIcon] = "显示图标",
 	[Private.Enum.FeatureFlag.ShowTargetMarker] = "显示目标标记",
 	[Private.Enum.FeatureFlag.ShowSpellName] = "显示法术名称",
@@ -189,5 +181,4 @@ L.Settings.FeatureFlagLabels = {
 L.Settings.FeatureFlagSettingTitles = {
 	[Private.Enum.FeatureFlag.GlowImportant] = "Display",
 	[Private.Enum.FeatureFlag.IndicateInterrupts] = "Interrupt Settings",
-	[Private.Enum.FeatureFlag.IncludeSelfInParty] = "Party Settings",
 }

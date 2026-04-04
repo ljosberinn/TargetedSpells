@@ -126,7 +126,6 @@ L.Settings.ShowSwipeTooltip = nil
 
 L.Settings.BorderStyleLabel = "Border Style"
 L.Settings.BorderStyleTooltip = nil
-L.Settings.BorderStyleSolid = "Solid"
 
 L.Settings.OpacityLabel = "Opacité"
 L.Settings.OpacityTooltip = nil
@@ -152,12 +151,6 @@ L.Settings.BackgroundBarColorTooltip = nil
 L.Settings.IconZoomLabel = "Icon Zoom"
 L.Settings.IconZoomTooltip = nil
 
-L.Settings.FrameOffsetXLabel = "Offset X"
-L.Settings.FrameOffsetXTooltip = nil
-
-L.Settings.FrameOffsetYLabel = "Offset Y"
-L.Settings.FrameOffsetYTooltip = nil
-
 L.Settings.ClickToOpenSettingsLabel = "Cliquer pour ouvrir les paramètres"
 
 L.Settings.Import = "Importer"
@@ -178,7 +171,6 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowSwipe] = L.Settings.ShowSwipeLabel,
 	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
 	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,
-	[Private.Enum.FeatureFlag.IncludeSelfInParty] = L.Settings.IncludeSelfInPartyLabel,
 	[Private.Enum.FeatureFlag.ShowIcon] = "Afficher l'icône",
 	[Private.Enum.FeatureFlag.ShowTargetMarker] = "Afficher le marqueur de cible",
 	[Private.Enum.FeatureFlag.ShowSpellName] = "Afficher le nom du sort",
@@ -189,5 +181,4 @@ L.Settings.FeatureFlagLabels = {
 L.Settings.FeatureFlagSettingTitles = {
 	[Private.Enum.FeatureFlag.GlowImportant] = "Affichage",
 	[Private.Enum.FeatureFlag.IndicateInterrupts] = "Paramètres d'interruption",
-	[Private.Enum.FeatureFlag.IncludeSelfInParty] = "Paramètres de groupe",
 }

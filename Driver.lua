@@ -148,18 +148,9 @@ do
 			local partyMemberCount = GetNumGroupMembers()
 
 			for i = 1, partyMemberCount do
-				local unit = i == partyMemberCount and "player" or "party" .. i
-
-				if
-					(
-						unit == "player"
-						and TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.IncludeSelfInParty]
-					) or unit ~= "player"
-				then
-					local frame = Private.Utils.Pools.Bar:Acquire()
-					frame:PostCreate(castingUnit)
-					table.insert(frames, frame)
-				end
+				local frame = Private.Utils.Pools.Bar:Acquire()
+				frame:PostCreate(castingUnit)
+				table.insert(frames, frame)
 			end
 		end
 
