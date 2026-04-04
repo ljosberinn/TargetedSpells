@@ -6,6 +6,7 @@ local LibEditMode = LibStub("LibEditMode")
 local TargetedSpellsEditModeMixin = {}
 
 function TargetedSpellsEditModeMixin:Init(displayName, frameKind)
+	self.displayName = displayName
 	self.frameKind = frameKind
 	self.demoPlaying = false
 	self.frames = {}
@@ -1107,12 +1108,15 @@ function TargetedSpellsEditModeMixin:CreateSetting(key, defaults)
 		}
 	end
 
-	if key == Private.Settings.Keys.Party.Grow then
+	if key == Private.Settings.Keys.Self.Grow or key == Private.Settings.Keys.Party.Grow then
+		local tableRef = key == Private.Settings.Keys.Self.Grow and TargetedSpellsSaved.Settings.Self
+			or TargetedSpellsSaved.Settings.Party
+
 		---@param layoutName string
 		---@param value number
 		local function Set(layoutName, value)
-			if TargetedSpellsSaved.Settings.Party.Grow ~= value then
-				TargetedSpellsSaved.Settings.Party.Grow = value
+			if tableRef.Grow ~= value then
+				tableRef.Grow = value
 				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 			end
 		end
@@ -1120,53 +1124,14 @@ function TargetedSpellsEditModeMixin:CreateSetting(key, defaults)
 		local function Generator(owner, rootDescription, data)
 			for label, id in pairs(Private.Enum.Grow) do
 				local function IsEnabled()
-					return TargetedSpellsSaved.Settings.Party.Grow == id
+					return tableRef.Grow == id
 				end
 
 				local function SetProxy()
 					Set(LibEditMode:GetActiveLayoutName(), id)
 				end
 
-				local translated = L.Settings.FrameGrowLabels[id]
-
-				rootDescription:CreateRadio(translated, IsEnabled, SetProxy)
-			end
-		end
-
-		---@type LibEditModeDropdown
-		return {
-			name = L.Settings.FrameGrowLabel,
-			kind = Enum.EditModeSettingDisplayType.Dropdown,
-			default = defaults.Grow,
-			desc = L.Settings.FrameGrowTooltip,
-			generator = Generator,
-			set = Set,
-		}
-	end
-
-	if key == Private.Settings.Keys.Self.Grow then
-		---@param layoutName string
-		---@param value number
-		local function Set(layoutName, value)
-			if TargetedSpellsSaved.Settings.Self.Grow ~= value then
-				TargetedSpellsSaved.Settings.Self.Grow = value
-				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-			end
-		end
-
-		local function Generator(owner, rootDescription, data)
-			for label, id in pairs(Private.Enum.Grow) do
-				local function IsEnabled()
-					return TargetedSpellsSaved.Settings.Self.Grow == id
-				end
-
-				local function SetProxy()
-					Set(LibEditMode:GetActiveLayoutName(), id)
-				end
-
-				local translated = L.Settings.FrameGrowLabels[id]
-
-				rootDescription:CreateRadio(translated, IsEnabled, SetProxy)
+				rootDescription:CreateRadio(L.Settings.FrameGrowLabels[id], IsEnabled, SetProxy)
 			end
 		end
 
@@ -1224,24 +1189,156 @@ function TargetedSpellsEditModeMixin:CreateSetting(key, defaults)
 	)
 end
 
-function TargetedSpellsEditModeMixin:OnLayoutSettingChanged(key, value)
-	-- Implement in your derived mixin.
+function TargetedSpellsEditModeMixin:ResizeEditModeFrame()
+	local tableRef = self.frameKind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
+		or TargetedSpellsSaved.Settings.Party
+
+	if tableRef.Direction == Private.Enum.Direction.Horizontal then
+		local totalWidth = (self.maxFrames * tableRef.Width) + (self.maxFrames - 1) * tableRef.Gap
+		PixelUtil.SetSize(self.editModeFrame, totalWidth, tableRef.Height)
+	else
+		local totalHeight = (self.maxFrames * tableRef.Height) + (self.maxFrames - 1) * tableRef.Gap
+		PixelUtil.SetSize(self.editModeFrame, tableRef.Width, totalHeight)
+	end
+end
+
+function TargetedSpellsEditModeMixin:RestoreEditModePosition()
+	local tableRef = self.frameKind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
+		or TargetedSpellsSaved.Settings.Party
+
+	self.editModeFrame:ClearAllPoints()
+	PixelUtil.SetPoint(
+		self.editModeFrame,
+		"CENTER",
+		UIParent,
+		tableRef.Position.point,
+		tableRef.Position.x,
+		tableRef.Position.y
+	)
+end
+
+function TargetedSpellsEditModeMixin:OnEditModePositionChanged(_, _, point, x, y)
+	local tableRef = self.frameKind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
+		or TargetedSpellsSaved.Settings.Party
+
+	tableRef.Position.point = point
+	tableRef.Position.x = x
+	tableRef.Position.y = y
+
+	Private.EventRegistry:TriggerEvent(
+		self.frameKind == Private.Enum.FrameKind.Self and Private.Enum.Events.EDIT_MODE_SELF_POSITION_CHANGED
+			or Private.Enum.Events.EDIT_MODE_PARTY_POSITION_CHANGED,
+		point,
+		x,
+		y
+	)
 end
 
 function TargetedSpellsEditModeMixin:AppendSettings()
-	-- Implement in your derived mixin.
+	local defaults = self.frameKind == Private.Enum.FrameKind.Self and Private.Settings.GetSelfDefaultSettings()
+		or Private.Settings.GetPartyDefaultSettings()
+
+	LibEditMode:AddFrame(
+		self.editModeFrame,
+		GenerateClosure(self.OnEditModePositionChanged, self),
+		Private.Settings.GetDefaultEditModeFramePosition(self.frameKind),
+		self.displayName
+	)
+
+	LibEditMode:RegisterCallback("layout", GenerateClosure(self.RestoreEditModePosition, self))
+
+	local settingsOrder = Private.Settings.GetSettingsDisplayOrder(self.frameKind)
+	local settings = {}
+
+	for _, key in ipairs(settingsOrder) do
+		table.insert(settings, self:CreateSetting(key, defaults))
+	end
+
+	LibEditMode:AddFrameSettings(self.editModeFrame, settings)
+	LibEditMode:AddFrameSettingsButtons(self.editModeFrame, self:CreateImportExportButtons())
+end
+
+function TargetedSpellsEditModeMixin:OnLayoutSettingChanged(key, value)
+	local Keys = self.frameKind == Private.Enum.FrameKind.Self and Private.Settings.Keys.Self
+		or Private.Settings.Keys.Party
+
+	if
+		key == Keys.Gap
+		or key == Keys.Direction
+		or key == Keys.Width
+		or key == Keys.Height
+		or key == Keys.SortOrder
+		or key == Keys.Grow
+	then
+		if key == Keys.Width or key == Keys.Height or key == Keys.Gap or key == Keys.Direction then
+			self:ResizeEditModeFrame()
+		end
+
+		self:RepositionPreviewFrames()
+	end
 end
 
 function TargetedSpellsEditModeMixin:AcquireFrame()
 	-- Implement in your derived mixin.
 end
 
-function TargetedSpellsEditModeMixin:OnEditModePositionChanged(frame, layoutName, point, x, y)
-	-- Implement in your derived mixin.
-end
-
 function TargetedSpellsEditModeMixin:RepositionPreviewFrames()
-	-- Implement in your derived mixin.
+	if not self.demoPlaying then
+		return
+	end
+
+	---@type (TargetedSpellsIconMixin|TargetedSpellsBarMixin)[]
+	local activeFrames = {}
+
+	for index = 1, self.maxFrames do
+		local frame = self.frames[index]
+
+		if frame == nil then
+			frame = self:AcquireFrame()
+			self.frames[index] = frame
+
+			table.insert(
+				self.demoTimers.tickers,
+				C_Timer.NewTicker(5 + index, GenerateClosure(self.LoopFrame, self, frame, index))
+			)
+
+			self:LoopFrame(frame, index)
+		end
+
+		if frame:ShouldBeShown() then
+			table.insert(activeFrames, frame)
+		end
+	end
+
+	if #activeFrames == 0 then
+		return
+	end
+
+	local tableRef = self.frameKind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
+		or TargetedSpellsSaved.Settings.Party
+
+	Private.Utils.SortFrames(activeFrames, tableRef.SortOrder)
+
+	local layouting = Private.Utils.CollectLayoutingArguments(
+		tableRef.Direction,
+		tableRef.Grow,
+		tableRef.Width,
+		tableRef.Height,
+		tableRef.Gap
+	)
+
+	local parentDimension = layouting.isHorizontal and self.editModeFrame:GetWidth() or self.editModeFrame:GetHeight()
+	local offset = layouting.isGrowEnd and (parentDimension / 2 - tableRef.Gap) or (-parentDimension / 2)
+
+	Private.Utils.AdjustLayout(
+		activeFrames,
+		layouting,
+		self.editModeFrame,
+		"CENTER",
+		layouting.isHorizontal and offset or 0,
+		(not layouting.isHorizontal) and offset or 0,
+		true
+	)
 end
 
 function TargetedSpellsEditModeMixin:LoopFrame(frame, index)
@@ -1284,11 +1381,27 @@ function TargetedSpellsEditModeMixin:LoopFrame(frame, index)
 end
 
 function TargetedSpellsEditModeMixin:StartDemo()
-	-- Implement in your derived mixin.
+	local tableRef = self.frameKind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
+		or TargetedSpellsSaved.Settings.Party
+
+	if self.demoPlaying or not tableRef.Enabled or not self:IsPastLoadingScreen() then
+		return
+	end
+
+	self.demoPlaying = true
+
+	self:RepositionPreviewFrames()
 end
 
 function TargetedSpellsEditModeMixin:ReleaseAllFrames()
-	-- Implement in your derived mixin.
+	for index = 1, self.maxFrames do
+		local frame = self.frames[index]
+
+		if frame ~= nil then
+			self.pool:Release(frame)
+			self.frames[index] = nil
+		end
+	end
 end
 
 function TargetedSpellsEditModeMixin:EndDemo()
@@ -1318,172 +1431,22 @@ local SelfEditModeMixin = CreateFromMixins(TargetedSpellsEditModeMixin)
 function SelfEditModeMixin:Init()
 	TargetedSpellsEditModeMixin.Init(self, Private.L.EditMode.TargetedSpellsSelfLabel, Private.Enum.FrameKind.Self)
 	self.maxFrames = 5
+	self.pool = Private.Utils.Pools.Self
 
 	PixelUtil.SetPoint(self.editModeFrame, "CENTER", UIParent, "CENTER", 0, 0)
 	self:ResizeEditModeFrame()
 end
 
-function SelfEditModeMixin:ResizeEditModeFrame()
-	local width, gap, height, direction =
-		TargetedSpellsSaved.Settings.Self.Width,
-		TargetedSpellsSaved.Settings.Self.Gap,
-		TargetedSpellsSaved.Settings.Self.Height,
-		TargetedSpellsSaved.Settings.Self.Direction
-
-	if direction == Private.Enum.Direction.Horizontal then
-		local totalWidth = (self.maxFrames * width) + (self.maxFrames - 1) * gap
-		PixelUtil.SetSize(self.editModeFrame, totalWidth, height)
-	else
-		local totalHeight = (self.maxFrames * height) + (self.maxFrames - 1) * gap
-		PixelUtil.SetSize(self.editModeFrame, width, totalHeight)
-	end
-end
-
 function SelfEditModeMixin:AcquireFrame()
 	local frame = Private.Utils.Pools.Self:Acquire()
-
 	frame:PostCreate("preview")
-
 	return frame
 end
 
-function SelfEditModeMixin:ReleaseAllFrames()
-	for index, frame in ipairs(self.frames) do
-		Private.Utils.Pools.Self:Release(frame)
-	end
-
-	table.wipe(self.frames)
-end
-
-function SelfEditModeMixin:AppendSettings()
-	LibEditMode:AddFrame(
-		self.editModeFrame,
-		GenerateClosure(self.OnEditModePositionChanged, self),
-		Private.Settings.GetDefaultSelfEditModeFramePosition(),
-		Private.L.EditMode.TargetedSpellsSelfLabel
-	)
-
-	LibEditMode:RegisterCallback("layout", GenerateClosure(self.RestoreEditModePosition, self))
-
-	local settingsOrder = Private.Settings.GetSettingsDisplayOrder(Private.Enum.FrameKind.Self)
-	local settings = {}
-	local defaults = Private.Settings.GetSelfDefaultSettings()
-
-	for i, key in ipairs(settingsOrder) do
-		table.insert(settings, self:CreateSetting(key, defaults))
-	end
-
-	LibEditMode:AddFrameSettings(self.editModeFrame, settings)
-	LibEditMode:AddFrameSettingsButtons(self.editModeFrame, self:CreateImportExportButtons())
-end
-
-function SelfEditModeMixin:RestoreEditModePosition()
-	self.editModeFrame:ClearAllPoints()
-	PixelUtil.SetPoint(
-		self.editModeFrame,
-		"CENTER",
-		UIParent,
-		TargetedSpellsSaved.Settings.Self.Position.point,
-		TargetedSpellsSaved.Settings.Self.Position.x,
-		TargetedSpellsSaved.Settings.Self.Position.y
-	)
-end
-
-function SelfEditModeMixin:OnEditModePositionChanged(frame, layoutName, point, x, y)
-	TargetedSpellsSaved.Settings.Self.Position.point = point
-	TargetedSpellsSaved.Settings.Self.Position.x = x
-	TargetedSpellsSaved.Settings.Self.Position.y = y
-
-	Private.EventRegistry:TriggerEvent(Private.Enum.Events.EDIT_MODE_SELF_POSITION_CHANGED, point, x, y)
-end
-
-function SelfEditModeMixin:RepositionPreviewFrames()
-	if not self.demoPlaying then
-		return
-	end
-
-	---@type TargetedSpellsIconMixin[]
-	local activeFrames = {}
-
-	for index = 1, self.maxFrames do
-		local frame = self.frames[index]
-
-		if frame == nil then
-			frame = self:AcquireFrame()
-			self.frames[index] = frame
-
-			table.insert(
-				self.demoTimers.tickers,
-				C_Timer.NewTicker(5 + index, GenerateClosure(self.LoopFrame, self, frame, index))
-			)
-
-			self:LoopFrame(frame, index)
-		end
-
-		if frame:ShouldBeShown() then
-			table.insert(activeFrames, frame)
-		end
-	end
-
-	if #activeFrames == 0 then
-		return
-	end
-
-	Private.Utils.SortFrames(activeFrames, TargetedSpellsSaved.Settings.Self.SortOrder)
-
-	local layouting = Private.Utils.CollectLayoutingArguments(
-		TargetedSpellsSaved.Settings.Self.Direction,
-		TargetedSpellsSaved.Settings.Self.Grow,
-		TargetedSpellsSaved.Settings.Self.Width,
-		TargetedSpellsSaved.Settings.Self.Height,
-		TargetedSpellsSaved.Settings.Self.Gap
-	)
-
-	local parentDimension = layouting.isHorizontal and self.editModeFrame:GetWidth() or self.editModeFrame:GetHeight()
-	local offset = layouting.isGrowEnd and (parentDimension / 2 - TargetedSpellsSaved.Settings.Self.Gap)
-		or (-parentDimension / 2)
-
-	Private.Utils.AdjustLayout(
-		activeFrames,
-		layouting,
-		self.editModeFrame,
-		"CENTER",
-		layouting.isHorizontal and offset or 0,
-		(not layouting.isHorizontal) and offset or 0,
-		true
-	)
-end
-
-function SelfEditModeMixin:StartDemo()
-	if self.demoPlaying or not TargetedSpellsSaved.Settings.Self.Enabled or not self:IsPastLoadingScreen() then
-		return
-	end
-
-	self.demoPlaying = true
-
-	self:RepositionPreviewFrames()
-end
-
 function SelfEditModeMixin:OnLayoutSettingChanged(key, value)
-	if
-		key == Private.Settings.Keys.Self.Gap
-		or key == Private.Settings.Keys.Self.Direction
-		or key == Private.Settings.Keys.Self.Width
-		or key == Private.Settings.Keys.Self.Height
-		or key == Private.Settings.Keys.Self.SortOrder
-		or key == Private.Settings.Keys.Self.Grow
-	then
-		if
-			key == Private.Settings.Keys.Self.Width
-			or key == Private.Settings.Keys.Self.Height
-			or key == Private.Settings.Keys.Self.Gap
-			or key == Private.Settings.Keys.Self.Direction
-		then
-			self:ResizeEditModeFrame()
-		end
+	TargetedSpellsEditModeMixin.OnLayoutSettingChanged(self, key, value)
 
-		self:RepositionPreviewFrames()
-	elseif key == Private.Settings.Keys.Self.GlowImportant then
+	if key == Private.Settings.Keys.Self.GlowImportant then
 		local glowEnabled = value
 
 		for _, frame in pairs(self.frames) do
@@ -1516,70 +1479,15 @@ local PartyEditModeMixin = CreateFromMixins(TargetedSpellsEditModeMixin)
 function PartyEditModeMixin:Init()
 	TargetedSpellsEditModeMixin.Init(self, Private.L.EditMode.TargetedSpellsPartyLabel, Private.Enum.FrameKind.Party)
 	self.maxFrames = 5
+	self.pool = Private.Utils.Pools.Bar
 
 	self:RestoreEditModePosition()
 	self:ResizeEditModeFrame()
 end
 
-function PartyEditModeMixin:ResizeEditModeFrame()
-	if TargetedSpellsSaved.Settings.Party.Direction == Private.Enum.Direction.Horizontal then
-		local totalWidth = (self.maxFrames * TargetedSpellsSaved.Settings.Party.Width)
-			+ (self.maxFrames - 1) * TargetedSpellsSaved.Settings.Party.Gap
-		PixelUtil.SetSize(self.editModeFrame, totalWidth, TargetedSpellsSaved.Settings.Party.Height)
-	else
-		local totalHeight = (self.maxFrames * TargetedSpellsSaved.Settings.Party.Height)
-			+ (self.maxFrames - 1) * TargetedSpellsSaved.Settings.Party.Gap
-		PixelUtil.SetSize(self.editModeFrame, TargetedSpellsSaved.Settings.Party.Width, totalHeight)
-	end
-end
-
-function PartyEditModeMixin:RestoreEditModePosition()
-	self.editModeFrame:ClearAllPoints()
-	PixelUtil.SetPoint(
-		self.editModeFrame,
-		"CENTER",
-		UIParent,
-		TargetedSpellsSaved.Settings.Party.Position.point,
-		TargetedSpellsSaved.Settings.Party.Position.x,
-		TargetedSpellsSaved.Settings.Party.Position.y
-	)
-end
-
-function PartyEditModeMixin:AppendSettings()
-	LibEditMode:AddFrame(
-		self.editModeFrame,
-		GenerateClosure(self.OnEditModePositionChanged, self),
-		Private.Settings.GetDefaultBarsEditModeFramePosition(),
-		Private.L.EditMode.TargetedSpellsPartyLabel
-	)
-
-	LibEditMode:RegisterCallback("layout", GenerateClosure(self.RestoreEditModePosition, self))
-
-	local settingsOrder = Private.Settings.GetSettingsDisplayOrder(Private.Enum.FrameKind.Party)
-	local settings = {}
-	local defaults = Private.Settings.GetPartyDefaultSettings()
-
-	for i, key in ipairs(settingsOrder) do
-		table.insert(settings, self:CreateSetting(key, defaults))
-	end
-
-	LibEditMode:AddFrameSettings(self.editModeFrame, settings)
-	LibEditMode:AddFrameSettingsButtons(self.editModeFrame, self:CreateImportExportButtons())
-end
-
-function PartyEditModeMixin:OnEditModePositionChanged(frame, layoutName, point, x, y)
-	TargetedSpellsSaved.Settings.Party.Position.point = point
-	TargetedSpellsSaved.Settings.Party.Position.x = x
-	TargetedSpellsSaved.Settings.Party.Position.y = y
-
-	Private.EventRegistry:TriggerEvent(Private.Enum.Events.EDIT_MODE_PARTY_POSITION_CHANGED, point, x, y)
-end
-
 function PartyEditModeMixin:AcquireFrame()
 	local frame = Private.Utils.Pools.Bar:Acquire()
-
 	frame:PostCreate("preview")
-
 	return frame
 end
 
@@ -1615,106 +1523,6 @@ function PartyEditModeMixin:LoopFrame(frame, index)
 			self:RepositionPreviewFrames()
 		end)
 	)
-end
-
-function PartyEditModeMixin:OnLayoutSettingChanged(key, value)
-	if
-		key == Private.Settings.Keys.Party.Gap
-		or key == Private.Settings.Keys.Party.Direction
-		or key == Private.Settings.Keys.Party.Width
-		or key == Private.Settings.Keys.Party.Height
-		or key == Private.Settings.Keys.Party.SortOrder
-		or key == Private.Settings.Keys.Party.Grow
-	then
-		if
-			key == Private.Settings.Keys.Party.Width
-			or key == Private.Settings.Keys.Party.Height
-			or key == Private.Settings.Keys.Party.Gap
-			or key == Private.Settings.Keys.Party.Direction
-		then
-			self:ResizeEditModeFrame()
-		end
-
-		self:RepositionPreviewFrames()
-	end
-end
-
-function PartyEditModeMixin:RepositionPreviewFrames()
-	if not self.demoPlaying then
-		return
-	end
-
-	---@type TargetedSpellsBarMixin[]
-	local activeFrames = {}
-
-	for index = 1, self.maxFrames do
-		local frame = self.frames[index]
-
-		if frame == nil then
-			frame = self:AcquireFrame()
-			self.frames[index] = frame
-
-			table.insert(
-				self.demoTimers.tickers,
-				C_Timer.NewTicker(5 + index, GenerateClosure(self.LoopFrame, self, frame, index))
-			)
-
-			self:LoopFrame(frame, index)
-		end
-
-		if frame:ShouldBeShown() then
-			table.insert(activeFrames, frame)
-		end
-	end
-
-	if #activeFrames == 0 then
-		return
-	end
-
-	Private.Utils.SortFrames(activeFrames, TargetedSpellsSaved.Settings.Party.SortOrder)
-
-	local layouting = Private.Utils.CollectLayoutingArguments(
-		TargetedSpellsSaved.Settings.Party.Direction,
-		TargetedSpellsSaved.Settings.Party.Grow,
-		TargetedSpellsSaved.Settings.Party.Width,
-		TargetedSpellsSaved.Settings.Party.Height,
-		TargetedSpellsSaved.Settings.Party.Gap
-	)
-
-	local parentDimension = layouting.isHorizontal and self.editModeFrame:GetWidth() or self.editModeFrame:GetHeight()
-	local offset = layouting.isGrowEnd and (parentDimension / 2 - TargetedSpellsSaved.Settings.Party.Gap)
-		or (-parentDimension / 2)
-
-	Private.Utils.AdjustLayout(
-		activeFrames,
-		layouting,
-		self.editModeFrame,
-		"CENTER",
-		layouting.isHorizontal and offset or 0,
-		(not layouting.isHorizontal) and offset or 0,
-		true
-	)
-end
-
-function PartyEditModeMixin:StartDemo()
-	if self.demoPlaying or not TargetedSpellsSaved.Settings.Party.Enabled or not self:IsPastLoadingScreen() then
-		return
-	end
-
-	self.demoPlaying = true
-
-	self:RepositionPreviewFrames()
-end
-
-function PartyEditModeMixin:ReleaseAllFrames()
-	for index = 1, self.maxFrames do
-		local frame = self.frames[index]
-
-		if frame ~= nil then
-			Private.Utils.Pools.Bar:Release(frame)
-			self.frames[index] = nil
-		end
-	end
 end
 
 table.insert(Private.LoginFnQueue, GenerateClosure(PartyEditModeMixin.Init, PartyEditModeMixin))

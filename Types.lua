@@ -87,8 +87,7 @@
 ---@class TargetedSpellsSettings
 ---@field Keys table<'Self' | 'Party', table<string, string>>
 ---@field GetSettingsDisplayOrder fun(kind: FrameKind): string[]
----@field GetDefaultSelfEditModeFramePosition fun(): FramePosition
----@field GetDefaultBarsEditModeFramePosition fun(): FramePosition
+---@field GetDefaultEditModeFramePosition fun(kind: FrameKind): FramePosition
 ---@field GetSliderSettingsForOption fun(key: string): SliderSettings
 ---@field GetSelfDefaultSettings fun(): SavedVariablesSettingsSelf
 ---@field GetPartyDefaultSettings fun(): SavedVariablesSettingsParty
@@ -266,16 +265,21 @@
 ---@class TargetedSpellsEditModeMixin : Frame
 ---@field protected editModeFrame EditModeFrame
 ---@field protected frameKind FrameKind
+---@field protected displayName string
+---@field protected maxFrames number
+---@field protected pool FramePool<TargetedSpellsIconMixin>|FramePool<TargetedSpellsBarMixin>
 ---@field private demoPlaying boolean
 ---@field private frames TargetedSpellsIconMixin[] | TargetedSpellsBarMixin[]
 ---@field protected demoTimers { tickers: table<number, FunctionContainer>, timers: table<number, FunctionContainer> }
 ---@field Init fun(self: TargetedSpellsEditModeMixin, displayName: string, frameKind: FrameKind)
 ---@field OnSettingsChanged fun(self: TargetedSpellsEditModeMixin, key: string, flagIdOrValue: number|string|boolean|table, newBool: boolean?)
 ---@field CreateSetting fun(self: TargetedSpellsEditModeMixin, key: string, defaults: SavedVariablesSettingsParty|SavedVariablesSettingsSelf): LibEditModeButton|LibEditModeCheckbox|LibEditModeDropdown|LibEditModeSlider|LibEditModeColorPicker
----@field OnLayoutSettingChanged fun(self: TargetedSpellsEditModeMixin, key: string, value: number|string, newBool: boolean?)
----@field AppendSettings fun(self: TargetedSpellsEditModeMixin)
----@field AcquireFrame fun(self: TargetedSpellsEditModeMixin): TargetedSpellsIconMixin|TargetedSpellsBarMixin
+---@field ResizeEditModeFrame fun(self: TargetedSpellsEditModeMixin)
+---@field RestoreEditModePosition fun(self: TargetedSpellsEditModeMixin)
 ---@field OnEditModePositionChanged fun(self: TargetedSpellsEditModeMixin, frame: Frame, layoutName: string, point: FramePoint, x: number, y: number)
+---@field AppendSettings fun(self: TargetedSpellsEditModeMixin)
+---@field OnLayoutSettingChanged fun(self: TargetedSpellsEditModeMixin, key: string, value: number|string, newBool: boolean?)
+---@field AcquireFrame fun(self: TargetedSpellsEditModeMixin): TargetedSpellsIconMixin|TargetedSpellsBarMixin
 ---@field RepositionPreviewFrames fun(self: TargetedSpellsEditModeMixin)
 ---@field LoopFrame fun(self: TargetedSpellsEditModeMixin, frame: TargetedSpellsIconMixin|TargetedSpellsBarMixin, index: number)
 ---@field StartDemo fun(self: TargetedSpellsEditModeMixin)
@@ -288,32 +292,18 @@
 ---@field IsPastLoadingScreen fun(self: TargetedSpellsEditModeMixin): boolean
 
 ---@class TargetedSpellsSelfEditMode : TargetedSpellsEditModeMixin
----@field private maxFrames number
 ---@field private frames TargetedSpellsIconMixin[]
+---@field pool FramePool<TargetedSpellsIconMixin>
 ---@field Init fun(self: TargetedSpellsSelfEditMode)
----@field ResizeEditModeFrame fun(self: TargetedSpellsSelfEditMode)
----@field ReleaseAllFrames fun(self: TargetedSpellsEditModeMixin)
----@field AppendSettings fun(self: TargetedSpellsEditModeMixin)
----@field RestoreEditModePosition fun(self: TargetedSpellsSelfEditMode)
----@field OnEditModePositionChanged fun(self: TargetedSpellsEditModeMixin, frame: Frame, layoutName: string, point: FramePoint, x: number, y: number)
----@field RepositionPreviewFrames fun(self: TargetedSpellsEditModeMixin)
----@field StartDemo fun(self: TargetedSpellsSelfEditMode)
----@field OnLayoutSettingChanged fun(self: TargetedSpellsEditModeMixin, key: string, value: number|string, newBool: boolean?)
+---@field AcquireFrame fun(self: TargetedSpellsSelfEditMode): TargetedSpellsIconMixin
+---@field OnLayoutSettingChanged fun(self: TargetedSpellsSelfEditMode, key: string, value: number|string, newBool: boolean?)
 
 ---@class TargetedSpellsPartyEditMode : TargetedSpellsEditModeMixin
----@field private maxFrames number
 ---@field private frames TargetedSpellsBarMixin[]
+---@field pool FramePool<TargetedSpellsBarMixin>
 ---@field Init fun(self: TargetedSpellsPartyEditMode)
----@field ResizeEditModeFrame fun(self: TargetedSpellsPartyEditMode)
----@field RestoreEditModePosition fun(self: TargetedSpellsPartyEditMode)
----@field AppendSettings fun(self: TargetedSpellsPartyEditMode)
 ---@field AcquireFrame fun(self: TargetedSpellsPartyEditMode): TargetedSpellsBarMixin
 ---@field LoopFrame fun(self: TargetedSpellsPartyEditMode, frame: TargetedSpellsBarMixin, index: number)
----@field RepositionPreviewFrames fun(self: TargetedSpellsPartyEditMode)
----@field OnEditModePositionChanged fun(self: TargetedSpellsPartyEditMode, frame: Frame, layoutName: string, point: FramePoint, x: number, y: number)
----@field OnLayoutSettingChanged fun(self: TargetedSpellsPartyEditMode, key: string, value: number|string, newBool: boolean?)
----@field StartDemo fun(self: TargetedSpellsPartyEditMode)
----@field ReleaseAllFrames fun(self: TargetedSpellsPartyEditMode)
 
 ---@class TargetedSpellsDriver
 ---@field private frame Frame

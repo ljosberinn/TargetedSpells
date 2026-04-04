@@ -14,15 +14,21 @@ function TargetedSpellsDriver:Init()
 	self:SetupFrame(true)
 end
 
-function TargetedSpellsDriver:PositionSelfFrame()
+-- the edit mode frame anchors via its own position.point, but the driver frame always anchors via CENTER,
+-- so the offset must compensate for the difference between those two anchor origins
+function TargetedSpellsDriver:PositionFrame(kind)
+	local tableRef = kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
+		or TargetedSpellsSaved.Settings.Party
+	local driverFrame = kind == Private.Enum.FrameKind.Self and self.frame or self.partyFrame
+
 	local offsetX = 0
 	local offsetY = 0
 
-	-- the edit mode frame anchors via its own position.point, but self.frame always anchors via CENTER,
-	-- so the offset must compensate for the difference between those two anchor origins
-	local editModeFrame = Private.Utils.GetEditModeFrame(Private.Enum.FrameKind.Self)
+	local editModeFrame = Private.Utils.GetEditModeFrame(kind)
 
 	if editModeFrame ~= nil then
+		local width, height = editModeFrame:GetSize()
+
 		local AnchorSign = {
 			[Private.Enum.Anchor.Center] = { x = 0, y = 0 },
 			[Private.Enum.Anchor.Top] = { x = 0, y = 1 },
@@ -46,87 +52,34 @@ function TargetedSpellsDriver:PositionSelfFrame()
 			},
 		}
 
-		local width, height = editModeFrame:GetSize()
-
-		local anchor = AnchorSign[TargetedSpellsSaved.Settings.Self.Position.point]
-		local target = GrowTarget[TargetedSpellsSaved.Settings.Self.Direction][TargetedSpellsSaved.Settings.Self.Grow]
+		local anchor = AnchorSign[tableRef.Position.point]
+		local target = GrowTarget[tableRef.Direction][tableRef.Grow]
 
 		offsetX = (target.x - anchor.x) * (width / 2)
 		offsetY = (target.y - anchor.y) * (height / 2)
 	end
 
-	self.frame:ClearAllPoints()
+	driverFrame:ClearAllPoints()
 	PixelUtil.SetPoint(
-		self.frame,
+		driverFrame,
 		"CENTER",
 		UIParent,
-		TargetedSpellsSaved.Settings.Self.Position.point,
-		TargetedSpellsSaved.Settings.Self.Position.x + offsetX,
-		TargetedSpellsSaved.Settings.Self.Position.y + offsetY
+		tableRef.Position.point,
+		tableRef.Position.x + offsetX,
+		tableRef.Position.y + offsetY
 	)
-	self.frame:Show()
-end
-
-function TargetedSpellsDriver:PositionPartyFrame()
-	local offsetX = 0
-	local offsetY = 0
-
-	local editModeFrame = Private.Utils.GetEditModeFrame(Private.Enum.FrameKind.Party)
-
-	if editModeFrame ~= nil then
-		local AnchorSign = {
-			[Private.Enum.Anchor.Center] = { x = 0, y = 0 },
-			[Private.Enum.Anchor.Top] = { x = 0, y = 1 },
-			[Private.Enum.Anchor.Bottom] = { x = 0, y = -1 },
-			[Private.Enum.Anchor.Left] = { x = -1, y = 0 },
-			[Private.Enum.Anchor.Right] = { x = 1, y = 0 },
-			[Private.Enum.Anchor.TopLeft] = { x = -1, y = 1 },
-			[Private.Enum.Anchor.TopRight] = { x = 1, y = 1 },
-			[Private.Enum.Anchor.BottomLeft] = { x = -1, y = -1 },
-			[Private.Enum.Anchor.BottomRight] = { x = 1, y = -1 },
-		}
-
-		local GrowTarget = {
-			[Private.Enum.Direction.Horizontal] = {
-				[Private.Enum.Grow.Start] = { x = -1, y = 0 },
-				[Private.Enum.Grow.End] = { x = 1, y = 0 },
-			},
-			[Private.Enum.Direction.Vertical] = {
-				[Private.Enum.Grow.Start] = { x = 0, y = -1 },
-				[Private.Enum.Grow.End] = { x = 0, y = 1 },
-			},
-		}
-
-		local width, height = editModeFrame:GetSize()
-
-		local anchor = AnchorSign[TargetedSpellsSaved.Settings.Party.Position.point]
-		local target = GrowTarget[TargetedSpellsSaved.Settings.Party.Direction][TargetedSpellsSaved.Settings.Party.Grow]
-
-		offsetX = (target.x - anchor.x) * (width / 2)
-		offsetY = (target.y - anchor.y) * (height / 2)
-	end
-
-	self.partyFrame:ClearAllPoints()
-	PixelUtil.SetPoint(
-		self.partyFrame,
-		"CENTER",
-		UIParent,
-		TargetedSpellsSaved.Settings.Party.Position.point,
-		TargetedSpellsSaved.Settings.Party.Position.x + offsetX,
-		TargetedSpellsSaved.Settings.Party.Position.y + offsetY
-	)
-	self.partyFrame:Show()
+	driverFrame:Show()
 end
 
 function TargetedSpellsDriver:SetupFrame(isBoot)
 	if isBoot then
 		self.frame = CreateFrame("Frame", "TargetedSpellsDriverFrame", UIParent)
 		self.frame:SetSize(1, 1)
-		self:PositionSelfFrame()
+		self:PositionFrame(Private.Enum.FrameKind.Self)
 
 		self.partyFrame = CreateFrame("Frame", "TargetedSpellsPartyDriverFrame", UIParent)
 		self.partyFrame:SetSize(1, 1)
-		self:PositionPartyFrame()
+		self:PositionFrame(Private.Enum.FrameKind.Party)
 
 		Private.EventRegistry:RegisterCallback(
 			Private.Enum.Events.EDIT_MODE_SELF_POSITION_CHANGED,
@@ -257,6 +210,29 @@ function TargetedSpellsDriver:RepositionFrames()
 	end
 end
 
+function TargetedSpellsDriver:ReleaseFrame(frame)
+	if frame:GetKind() == Private.Enum.FrameKind.Self then
+		Private.Utils.Pools.Self:Release(frame)
+	else
+		Private.Utils.Pools.Bar:Release(frame)
+	end
+end
+
+function TargetedSpellsDriver:SetupAcquiredFrames(info, frames, duration)
+	local OnCooldownDone = GenerateClosure(self.OnCooldownDone, self, info)
+
+	for _, frame in ipairs(frames) do
+		table.insert(self.frames[info.unit], frame)
+		frame:SetSpellId(info.spellId)
+		frame:SetStartTime(info.startTime)
+		frame:SetId(info.id)
+		frame:SetDuration(duration)
+		frame:SetOnCooldownDone(OnCooldownDone)
+	end
+
+	self:RepositionFrames()
+end
+
 function TargetedSpellsDriver:ReleaseFrameForUnit(unit, removeUnit, id)
 	local frames = self.frames[unit]
 
@@ -272,11 +248,7 @@ function TargetedSpellsDriver:ReleaseFrameForUnit(unit, removeUnit, id)
 
 		if frame then
 			if frame:CanBeHidden(id) then
-				if frame:GetKind() == Private.Enum.FrameKind.Self then
-					Private.Utils.Pools.Self:Release(frame)
-				else
-					Private.Utils.Pools.Bar:Release(frame)
-				end
+				self:ReleaseFrame(frame)
 				table.remove(frames, i)
 				cleanedSomethingUp = true
 			else
@@ -448,24 +420,8 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 			self:ReleaseFrameForUnit(unit, false)
 		end
 
-		local startTime = GetTime() -- todo: this is wrong, but we can't do better yet
-		local OnCooldownDone = GenerateClosure(self.OnCooldownDone, self, {
-			unit = unit,
-			spellId = spellId,
-			startTime = startTime,
-			id = id,
-		})
-
-		for i, frame in ipairs(frames) do
-			table.insert(self.frames[unit], frame)
-			frame:SetSpellId(spellId)
-			frame:SetStartTime(startTime)
-			frame:SetId(id)
-			frame:SetDuration(duration)
-			frame:SetOnCooldownDone(OnCooldownDone)
-		end
-
-		self:RepositionFrames()
+		-- todo: startTime is wrong, but we can't do better yet
+		self:SetupAcquiredFrames({ unit = unit, spellId = spellId, startTime = GetTime(), id = id }, frames, duration)
 	elseif event == "CVAR_UPDATE" then
 		local name, value = ...
 
@@ -578,18 +534,7 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 			return
 		end
 
-		local OnCooldownDone = GenerateClosure(self.OnCooldownDone, self, info)
-
-		for i, frame in ipairs(frames) do
-			table.insert(self.frames[info.unit], frame)
-			frame:SetSpellId(info.spellId)
-			frame:SetStartTime(info.startTime)
-			frame:SetId(info.id)
-			frame:SetDuration(duration)
-			frame:SetOnCooldownDone(OnCooldownDone)
-		end
-
-		self:RepositionFrames()
+		self:SetupAcquiredFrames(info, frames, duration)
 	elseif event == Private.Enum.Events.DELAYED_FRAME_CLEANUP then
 		---@type DelayInfo
 		local delayInfo = ...
@@ -606,11 +551,7 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 			local kind = frame:GetKind()
 
 			if delayInfo.kinds[kind] and frame:GetId() == delayInfo.id then
-				if kind == Private.Enum.FrameKind.Self then
-					Private.Utils.Pools.Self:Release(frame)
-				else
-					Private.Utils.Pools.Bar:Release(frame)
-				end
+				self:ReleaseFrame(frame)
 				frames[i] = nil
 				cleanedSomethingUp = true
 			end
@@ -683,9 +624,9 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 			self.role = Private.Enum.Role.Damager
 		end
 	elseif event == Private.Enum.Events.EDIT_MODE_SELF_POSITION_CHANGED then
-		self:PositionSelfFrame()
+		self:PositionFrame(Private.Enum.FrameKind.Self)
 	elseif event == Private.Enum.Events.EDIT_MODE_PARTY_POSITION_CHANGED then
-		self:PositionPartyFrame()
+		self:PositionFrame(Private.Enum.FrameKind.Party)
 	end
 end
 
@@ -721,7 +662,7 @@ function TargetedSpellsDriver:OnSettingsChanged(key, value)
 		or key == Private.Settings.Keys.Self.Height
 		or key == Private.Settings.Keys.Self.Gap
 	then
-		self:PositionSelfFrame()
+		self:PositionFrame(Private.Enum.FrameKind.Self)
 	elseif
 		key == Private.Settings.Keys.Party.Grow
 		or key == Private.Settings.Keys.Party.Direction
@@ -729,7 +670,7 @@ function TargetedSpellsDriver:OnSettingsChanged(key, value)
 		or key == Private.Settings.Keys.Party.Height
 		or key == Private.Settings.Keys.Party.Gap
 	then
-		self:PositionPartyFrame()
+		self:PositionFrame(Private.Enum.FrameKind.Party)
 	end
 end
 

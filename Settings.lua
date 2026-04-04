@@ -128,11 +128,10 @@ function Private.Settings.GetFeatureFlagsForKind(kind)
 	}
 end
 
-function Private.Settings.GetDefaultSelfEditModeFramePosition()
-	return { point = "CENTER", x = 0, y = 100 }
-end
-
-function Private.Settings.GetDefaultBarsEditModeFramePosition()
+function Private.Settings.GetDefaultEditModeFramePosition(kind)
+	if kind == Private.Enum.FrameKind.Self then
+		return { point = "CENTER", x = 0, y = 100 }
+	end
 	return { point = "CENTER", x = 0, y = 250 }
 end
 
@@ -233,7 +232,7 @@ function Private.Settings.GetSelfDefaultSettings()
 		SortOrder = Private.Enum.SortOrder.Ascending,
 		Grow = Private.Enum.Grow.Start,
 		FontSize = 20,
-		Position = Private.Settings.GetDefaultSelfEditModeFramePosition(),
+		Position = Private.Settings.GetDefaultEditModeFramePosition(Private.Enum.FrameKind.Self),
 		IconZoom = 1,
 		GlowType = Private.Enum.GlowType.PixelGlow,
 		Font = "Fonts\\FRIZQT__.TTF",
@@ -301,7 +300,7 @@ function Private.Settings.GetPartyDefaultSettings()
 		ForegroundBarTexture = "Blizzard Raid Bar",
 		BackgroundBarTexture = "Solid",
 		BackgroundBarColor = "FF1A1A1A",
-		Position = Private.Settings.GetDefaultBarsEditModeFramePosition(),
+		Position = Private.Settings.GetDefaultEditModeFramePosition(Private.Enum.FrameKind.Party),
 	}
 end
 
