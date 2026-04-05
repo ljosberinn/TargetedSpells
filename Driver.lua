@@ -120,6 +120,17 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 		self.frame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
 		self.frame:RegisterEvent("CVAR_UPDATE")
 
+		if TargetedSpellsSaved.Settings.Party.Enabled then
+			if TargetedSpellsSaved.Settings.Party.UseInterruptabilityColors then
+				self.frame:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTIBLE")
+				self.frame:RegisterUnitEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE")
+			end
+
+			if TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowTargetMarker] then
+				self.frame:RegisterEvent("RAID_TARGET_UPDATE")
+			end
+		end
+
 		self.frame:SetScript("OnEvent", GenerateClosure(self.OnFrameEvent, self))
 	end
 end
@@ -145,13 +156,9 @@ do
 			and IsInGroup()
 			and not self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Party)
 		then
-			local partyMemberCount = GetNumGroupMembers()
-
-			for i = 1, partyMemberCount do
-				local frame = Private.Utils.Pools.Bar:Acquire()
-				frame:PostCreate(castingUnit)
-				table.insert(frames, frame)
-			end
+			local frame = Private.Utils.Pools.Bar:Acquire()
+			frame:PostCreate(castingUnit)
+			table.insert(frames, frame)
 		end
 
 		return frames
@@ -315,7 +322,7 @@ function TargetedSpellsDriver:UnitIsIrrelevant(unit, skipTargetCheck)
 end
 
 ---@param _ Frame -- identical to self.frame
----@param event "DELAYED_FRAME_CLEANUP" | "UNIT_SPELLCAST_INTERRUPTED" | "UNIT_SPELLCAST_FAILED_QUIET" | "ZONE_CHANGED_NEW_AREA" | "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" | "UNIT_SPELLCAST_SUCCEEDED" |"EDIT_MODE_SELF_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "DELAYED_UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED"
+---@param event "DELAYED_FRAME_CLEANUP" | "UNIT_SPELLCAST_INTERRUPTED" | "UNIT_SPELLCAST_FAILED_QUIET" | "ZONE_CHANGED_NEW_AREA" | "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" | "UNIT_SPELLCAST_SUCCEEDED" |"EDIT_MODE_SELF_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "DELAYED_UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED" | "UNIT_SPELLCAST_INTERRUPTIBLE" | "UNIT_SPELLCAST_NOT_INTERRUPTIBLE" | "RAID_TARGET_UPDATE"
 function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 	if
 		event == "UNIT_SPELLCAST_START"
@@ -455,8 +462,8 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		or event == "UNIT_SPELLCAST_INTERRUPTED"
 		or event == "UNIT_SPELLCAST_FAILED_QUIET"
 	then
-		---@type string, string
-		local unit, castGuid = ...
+		---@type string
+		local unit = ...
 
 		if self:UnitIsIrrelevant(unit, true) then
 			return
@@ -465,6 +472,12 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		local frames = self.frames[unit]
 
 		if frames == nil or #frames == 0 then
+			return
+		end
+
+		-- in some rare channel cases, enemies send periodic spellcast succeeded events per second, apparently when each channel
+		-- tick leaves behind a zone on the ground
+		if event == "UNIT_SPELLCAST_SUCCEEDED" and UnitChannelInfo(unit) ~= nil then
 			return
 		end
 
@@ -614,6 +627,42 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		else
 			self.role = Private.Enum.Role.Damager
 		end
+	elseif event == "UNIT_SPELLCAST_INTERRUPTIBLE" or event == "UNIT_SPELLCAST_NOT_INTERRUPTIBLE" then
+		if self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Party) then
+			return
+		end
+
+		local unit = ...
+
+		if self:UnitIsIrrelevant(unit) then
+			return
+		end
+
+		local frames = self.frames[unit]
+
+		if frames == nil or #frames == 0 then
+			return
+		end
+
+		local isInterruptible = event == "UNIT_SPELLCAST_INTERRUPTIBLE"
+
+		for _, frame in ipairs(frames) do
+			if frame.AdjustInterruptibleColor then
+				frame:AdjustInterruptibleColor(isInterruptible)
+			end
+		end
+	elseif event == "RAID_TARGET_UPDATE" then
+		if self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Party) then
+			return
+		end
+
+		for _, frames in pairs(self.frames) do
+			for _, frame in ipairs(frames) do
+				if frame.SetTargetMarker then
+					frame:SetTargetMarker()
+				end
+			end
+		end
 	elseif event == Private.Enum.Events.EDIT_MODE_SELF_POSITION_CHANGED then
 		self:PositionFrame(Private.Enum.FrameKind.Self)
 	elseif event == Private.Enum.Events.EDIT_MODE_PARTY_POSITION_CHANGED then
@@ -662,6 +711,27 @@ function TargetedSpellsDriver:OnSettingsChanged(key, value)
 		or key == Private.Settings.Keys.Party.Gap
 	then
 		self:PositionFrame(Private.Enum.FrameKind.Party)
+	elseif key == Private.Settings.Keys.Party.UseInterruptabilityColors then
+		if value and TargetedSpellsSaved.Settings.Party.Enabled then
+			self.frame:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTIBLE")
+			self.frame:RegisterUnitEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE")
+		else
+			self.frame:UnregisterEvent("UNIT_SPELLCAST_INTERRUPTIBLE")
+			self.frame:UnregisterEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE")
+		end
+	elseif key == Private.Settings.Keys.Party.FeatureFlags then
+		local flagId = value
+
+		if flagId == Private.Enum.FeatureFlag.ShowTargetMarker then
+			if
+				TargetedSpellsSaved.Settings.Party.Enabled
+				and TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowTargetMarker]
+			then
+				self.frame:RegisterEvent("RAID_TARGET_UPDATE")
+			else
+				self.frame:UnregisterEvent("RAID_TARGET_UPDATE")
+			end
+		end
 	end
 end
 

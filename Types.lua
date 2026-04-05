@@ -91,7 +91,8 @@
 ---@field GetSliderSettingsForOption fun(key: string): SliderSettings
 ---@field GetSelfDefaultSettings fun(): SavedVariablesSettingsSelf
 ---@field GetPartyDefaultSettings fun(): SavedVariablesSettingsParty
----@field IsContentTypeAvailableForKind fun(kind: FrameKind, contentTypeId: ContentType): boolean
+---@field GetContentTypesForKind fun(kind: FrameKind): table<string, ContentType>
+---@field GetGlowTypesForKind fun(kind: FrameKind): GlowType[]
 ---@field GetFontOptions fun(): FontInfo
 ---@field GetFeatureFlagsForKind fun(kind: FrameKind): FeatureFlag[]
 
@@ -148,6 +149,10 @@
 ---@field ForegroundBarTexture string
 ---@field BackgroundBarTexture string
 ---@field BackgroundBarColor string
+---@field ProgressBarColor string
+---@field UseInterruptabilityColors boolean
+---@field UninterruptibleColor string
+---@field InterruptibleColor string
 ---@field Position FramePosition
 
 ---@class TargetedSpellsSelfPreviewFrame: Frame
@@ -240,6 +245,7 @@
 ---@field TargetMarker Texture
 
 ---@class TargetedSpellsBarMixin : TargetedSpellsMixin
+---@field unit string?
 ---@field ProgressBar TargetedSpellsBarProgressBar
 ---@field CustomElementsFrame TargetedSpellsBarCustomElementsFrame
 ---@field OnLoad fun(self: TargetedSpellsBarMixin)
@@ -254,6 +260,9 @@
 ---@field SetForegroundBarTexture fun(self: TargetedSpellsBarMixin)
 ---@field SetBackgroundBarTexture fun(self: TargetedSpellsBarMixin)
 ---@field SetBackgroundBarColor fun(self: TargetedSpellsBarMixin)
+---@field SetProgressBarColor fun(self: TargetedSpellsBarMixin)
+---@field AdjustInterruptibleColor fun(self: TargetedSpellsBarMixin, isInterruptible: boolean)
+---@field SetTargetMarker fun(self: TargetedSpellsBarMixin, raidTargetIndex: number?)
 
 ---@class EditModeFrame : Frame
 ---@field firstFrameTimestamp number
@@ -275,7 +284,7 @@
 ---@field OnEditModePositionChanged fun(self: TargetedSpellsEditModeMixin, frame: Frame, layoutName: string, point: FramePoint, x: number, y: number)
 ---@field AppendSettings fun(self: TargetedSpellsEditModeMixin)
 ---@field OnLayoutSettingChanged fun(self: TargetedSpellsEditModeMixin, key: string, value: number|string, newBool: boolean?)
----@field AcquireFrame fun(self: TargetedSpellsEditModeMixin): TargetedSpellsIconMixin|TargetedSpellsBarMixin
+---@field AcquireFrame fun(self: TargetedSpellsEditModeMixin)
 ---@field RepositionPreviewFrames fun(self: TargetedSpellsEditModeMixin)
 ---@field LoopFrame fun(self: TargetedSpellsEditModeMixin, frame: TargetedSpellsIconMixin|TargetedSpellsBarMixin, index: number)
 ---@field StartDemo fun(self: TargetedSpellsEditModeMixin)
@@ -292,13 +301,14 @@
 ---@field pool FramePool<TargetedSpellsIconMixin>
 ---@field Init fun(self: TargetedSpellsSelfEditMode)
 ---@field AcquireFrame fun(self: TargetedSpellsSelfEditMode): TargetedSpellsIconMixin
----@field OnLayoutSettingChanged fun(self: TargetedSpellsSelfEditMode, key: string, value: number|string, newBool: boolean?)
+---@field OnLayoutSettingChanged fun(self: TargetedSpellsSelfEditMode, key: string, value: number|string, newBool: boolean?): nil
 
 ---@class TargetedSpellsPartyEditMode : TargetedSpellsEditModeMixin
 ---@field private frames TargetedSpellsBarMixin[]
 ---@field pool FramePool<TargetedSpellsBarMixin>
 ---@field Init fun(self: TargetedSpellsPartyEditMode)
 ---@field AcquireFrame fun(self: TargetedSpellsPartyEditMode): TargetedSpellsBarMixin
+---@field OnLayoutSettingChanged fun(self: TargetedSpellsPartyEditMode, key: string, value: number|string, newBool: boolean?)
 ---@field LoopFrame fun(self: TargetedSpellsPartyEditMode, frame: TargetedSpellsBarMixin, index: number)
 
 ---@class TargetedSpellsDriver

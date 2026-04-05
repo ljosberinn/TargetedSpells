@@ -139,9 +139,7 @@ function TargetedSpellsMixin:ShowGlow(isImportant)
 	local tableRef = self.kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
 		or TargetedSpellsSaved.Settings.Party
 
-	local glowType = tableRef.GlowType
-
-	if glowType == Private.Enum.GlowType.Star4 then
+	if tableRef.GlowType == Private.Enum.GlowType.Star4 then
 		if self._Star4 == nil then
 			self._Star4 = CreateStar4Glow(self, tableRef.Width, tableRef.Height)
 		end
@@ -152,15 +150,15 @@ function TargetedSpellsMixin:ShowGlow(isImportant)
 		self._Star4.Animation:Play()
 
 		self._Star4:SetAlphaFromBoolean(isImportant)
-	elseif glowType == Private.Enum.GlowType.PixelGlow then
+	elseif tableRef.GlowType == Private.Enum.GlowType.PixelGlow then
 		Private.Glows.PixelGlow_Start(self, tableRef.Width, tableRef.Height)
 
 		self._PixelGlow:SetAlphaFromBoolean(isImportant)
-	elseif glowType == Private.Enum.GlowType.AutoCastGlow then
+	elseif tableRef.GlowType == Private.Enum.GlowType.AutoCastGlow then
 		Private.Glows.AutoCastGlow_Start(self, tableRef.Width, tableRef.Height)
 
 		self._AutoCastGlow:SetAlphaFromBoolean(isImportant)
-	elseif glowType == Private.Enum.GlowType.ProcGlow then
+	elseif tableRef.GlowType == Private.Enum.GlowType.ProcGlow then
 		Private.Glows.ProcGlow_Start(self, tableRef.Width, tableRef.Height)
 
 		self._ProcGlow:SetAlphaFromBoolean(isImportant)

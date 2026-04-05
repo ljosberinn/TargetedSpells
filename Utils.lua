@@ -222,16 +222,16 @@ end
 do
 	function Private.Utils.MaybeApplyElvUISkin(frame) end
 
-	if ElvUI then
-		local E = unpack(ElvUI)
-		local S = E:GetModule("Skins")
+	-- if ElvUI then
+	-- 	local E = unpack(ElvUI)
+	-- 	local S = E:GetModule("Skins")
 
-		S:AddCallbackForAddon(addonName, addonName, function()
-			function Private.Utils.MaybeApplyElvUISkin(frame)
-				S:HandleButton(frame)
-			end
-		end)
-	end
+	-- 	S:AddCallbackForAddon(addonName, addonName, function()
+	-- 		function Private.Utils.MaybeApplyElvUISkin(frame)
+	-- 			S:HandleButton(frame)
+	-- 		end
+	-- 	end)
+	-- end
 end
 
 function Private.Utils.CreateEditablePopup(title, text, button1)

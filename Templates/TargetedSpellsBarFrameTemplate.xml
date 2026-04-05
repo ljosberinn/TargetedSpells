@@ -73,7 +73,7 @@
             <Frame parentKey="CustomElementsFrame" setAllPoints="true" enableMouse="false" propagateMouseInput="Both">
                 <Layers>
                     <Layer level="OVERLAY">
-                        <Texture parentKey="TargetMarker" />
+                        <Texture parentKey="TargetMarker" file="Interface/TargetingFrame/UI-RaidTargetingIcons" />
                     </Layer>
                 </Layers>
             </Frame>

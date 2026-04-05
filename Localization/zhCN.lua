@@ -99,8 +99,8 @@ L.Settings.FrameGrowLabels = {
 L.Settings.GlowImportantLabel = "高亮重要法术"
 L.Settings.GlowImportantTooltip = "重要与否完全由游戏本身决定。"
 
-L.Settings.OnlyImportantLabel = "Only Show Important Spells"
-L.Settings.OnlyImportantTooltip = "Note that you're relying on what the game considers important, use at your own risk."
+L.Settings.OnlyImportantLabel = "仅显示重要法术"
+L.Settings.OnlyImportantTooltip = "注意，您依赖的是游戏对'重要'的判断，请自行承担风险。"
 
 L.Settings.GlowTypeLabel = "高亮类型"
 L.Settings.GlowTypeTooltip = nil
@@ -118,13 +118,13 @@ L.Settings.IndicateInterruptsLabel = "标记可打断法术"
 L.Settings.IndicateInterruptsTooltip =
 	"使图标去色，在图标上显示标记，并延迟1秒隐藏图标。对引导类法术无效。"
 
-L.Settings.RenderInterruptSourceNameLabel = "Render Interrupt Source Name"
+L.Settings.RenderInterruptSourceNameLabel = "显示打断来源名称"
 L.Settings.RenderInterruptSourceNameTooltip = nil
 
 L.Settings.ShowSwipeLabel = "显示滑动"
 L.Settings.ShowSwipeTooltip = nil
 
-L.Settings.BorderStyleLabel = "Border Style"
+L.Settings.BorderStyleLabel = "边框样式"
 L.Settings.BorderStyleTooltip = nil
 
 L.Settings.OpacityLabel = "不透明度"
@@ -148,7 +148,19 @@ L.Settings.BackgroundBarTextureTooltip = nil
 L.Settings.BackgroundBarColorLabel = "背景条颜色"
 L.Settings.BackgroundBarColorTooltip = nil
 
-L.Settings.IconZoomLabel = "Icon Zoom"
+L.Settings.ProgressBarColorLabel = "进度条颜色"
+L.Settings.ProgressBarColorTooltip = nil
+
+L.Settings.UseInterruptabilityColorsLabel = "使用打断颜色"
+L.Settings.UseInterruptabilityColorsTooltip = nil
+
+L.Settings.UninterruptibleColorLabel = "不可打断颜色"
+L.Settings.UninterruptibleColorTooltip = nil
+
+L.Settings.InterruptibleColorLabel = "可打断颜色"
+L.Settings.InterruptibleColorTooltip = nil
+
+L.Settings.IconZoomLabel = "图标缩放"
 L.Settings.IconZoomTooltip = nil
 
 L.Settings.ClickToOpenSettingsLabel = "点击打开设置"
@@ -161,7 +173,7 @@ L.Settings.FontTooltip = nil
 
 L.Settings.TargetNamePreviewText = "目标名称"
 
-L.Settings.FeatureFlagsLabel = "Features"
+L.Settings.FeatureFlagsLabel = "功能"
 L.Settings.FeatureFlagsTooltip = nil
 
 L.Settings.FeatureFlagLabels = {
@@ -179,6 +191,6 @@ L.Settings.FeatureFlagLabels = {
 }
 
 L.Settings.FeatureFlagSettingTitles = {
-	[Private.Enum.FeatureFlag.GlowImportant] = "Display",
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = "Interrupt Settings",
+	[Private.Enum.FeatureFlag.GlowImportant] = "显示",
+	[Private.Enum.FeatureFlag.IndicateInterrupts] = "打断设置",
 }

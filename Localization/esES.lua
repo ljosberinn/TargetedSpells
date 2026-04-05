@@ -69,11 +69,11 @@ L.Settings.FrameHeightTooltip = nil
 L.Settings.FontSizeLabel = "Tamaño de fuente"
 L.Settings.FontSizeTooltip = nil
 
-L.Settings.FontFlagsLabel = "Font Options"
+L.Settings.FontFlagsLabel = "Opciones de fuente"
 L.Settings.FontFlagsTooltip = nil
 L.Settings.FontFlagsLabels = {
-	[Private.Enum.FontFlags.OUTLINE] = "Outline",
-	[Private.Enum.FontFlags.SHADOW] = "Shadow",
+	[Private.Enum.FontFlags.OUTLINE] = "Contorno",
+	[Private.Enum.FontFlags.SHADOW] = "Sombra",
 }
 
 L.Settings.FrameGapLabel = "Espaciado"
@@ -99,8 +99,8 @@ L.Settings.FrameGrowLabels = {
 L.Settings.GlowImportantLabel = "Resaltar hechizos importantes"
 L.Settings.GlowImportantTooltip = "Lo que es importante y lo que no lo es lo declara el juego."
 
-L.Settings.OnlyImportantLabel = "Only Show Important Spells"
-L.Settings.OnlyImportantTooltip = "Note that you're relying on what the game considers important, use at your own risk."
+L.Settings.OnlyImportantLabel = "Mostrar solo hechizos importantes"
+L.Settings.OnlyImportantTooltip = "Ten en cuenta que dependes de lo que el juego considera importante, úsalo bajo tu propia responsabilidad."
 
 L.Settings.GlowTypeLabel = "Tipo de resplandor"
 L.Settings.GlowTypeTooltip = nil
@@ -118,13 +118,13 @@ L.Settings.IndicateInterruptsLabel = "Indicar interrupciones"
 L.Settings.IndicateInterruptsTooltip =
 	"Desatura el icono, muestra un indicador encima del icono y retrasa ocultar el icono 1 segundo. No funciona con hechizos canalizados."
 
-L.Settings.RenderInterruptSourceNameLabel = "Render Interrupt Source Name"
+L.Settings.RenderInterruptSourceNameLabel = "Mostrar nombre de fuente de interrupción"
 L.Settings.RenderInterruptSourceNameTooltip = nil
 
 L.Settings.ShowSwipeLabel = "Mostrar barrido"
 L.Settings.ShowSwipeTooltip = nil
 
-L.Settings.BorderStyleLabel = "Border Style"
+L.Settings.BorderStyleLabel = "Estilo de borde"
 L.Settings.BorderStyleTooltip = nil
 
 L.Settings.OpacityLabel = "Opacidad"
@@ -148,7 +148,19 @@ L.Settings.BackgroundBarTextureTooltip = nil
 L.Settings.BackgroundBarColorLabel = "Color de fondo de la barra"
 L.Settings.BackgroundBarColorTooltip = nil
 
-L.Settings.IconZoomLabel = "Icon Zoom"
+L.Settings.ProgressBarColorLabel = "Color de barra"
+L.Settings.ProgressBarColorTooltip = nil
+
+L.Settings.UseInterruptabilityColorsLabel = "Usar colores de interrupción"
+L.Settings.UseInterruptabilityColorsTooltip = nil
+
+L.Settings.UninterruptibleColorLabel = "Color ininterrumpible"
+L.Settings.UninterruptibleColorTooltip = nil
+
+L.Settings.InterruptibleColorLabel = "Color interrumpible"
+L.Settings.InterruptibleColorTooltip = nil
+
+L.Settings.IconZoomLabel = "Zoom del icono"
 L.Settings.IconZoomTooltip = nil
 
 L.Settings.ClickToOpenSettingsLabel = "Haz clic para abrir la configuración"
@@ -161,7 +173,7 @@ L.Settings.FontTooltip = nil
 
 L.Settings.TargetNamePreviewText = "Nombre del objetivo"
 
-L.Settings.FeatureFlagsLabel = "Features"
+L.Settings.FeatureFlagsLabel = "Características"
 L.Settings.FeatureFlagsTooltip = nil
 
 L.Settings.FeatureFlagLabels = {
@@ -179,6 +191,6 @@ L.Settings.FeatureFlagLabels = {
 }
 
 L.Settings.FeatureFlagSettingTitles = {
-	[Private.Enum.FeatureFlag.GlowImportant] = "Display",
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = "Interrupt Settings",
+	[Private.Enum.FeatureFlag.GlowImportant] = "Visualización",
+	[Private.Enum.FeatureFlag.IndicateInterrupts] = "Configuración de interrupción",
 }

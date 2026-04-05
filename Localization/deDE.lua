@@ -146,6 +146,18 @@ L.Settings.BackgroundBarTextureTooltip = nil
 L.Settings.BackgroundBarColorLabel = "Hintergrundbalken-Farbe"
 L.Settings.BackgroundBarColorTooltip = nil
 
+L.Settings.ProgressBarColorLabel = "Statusbalkenfarbe"
+L.Settings.ProgressBarColorTooltip = nil
+
+L.Settings.UseInterruptabilityColorsLabel = "Farbkodierung für Unterbrechungsstatus nutzen"
+L.Settings.UseInterruptabilityColorsTooltip = nil
+
+L.Settings.UninterruptibleColorLabel = "Farbe Ununterbrechbar"
+L.Settings.UninterruptibleColorTooltip = nil
+
+L.Settings.InterruptibleColorLabel = "Farbe Unterbrechbar"
+L.Settings.InterruptibleColorTooltip = nil
+
 L.Settings.IconZoomLabel = "Icon Zoom"
 L.Settings.IconZoomTooltip = nil
 

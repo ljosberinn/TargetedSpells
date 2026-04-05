@@ -44,15 +44,15 @@ Private.Settings.Keys = {
 		ForegroundBarTexture = "FOREGROUND_BAR_TEXTURE_PARTY",
 		BackgroundBarTexture = "BACKGROUND_BAR_TEXTURE_PARTY",
 		BackgroundBarColor = "BACKGROUND_BAR_COLOR_PARTY",
+		ProgressBarColor = "PROGRESS_BAR_COLOR_PARTY",
+		UseInterruptabilityColors = "USE_INTERRUPTABILITY_COLORS_PARTY",
+		UninterruptibleColor = "UNINTERRUPTIBLE_COLOR_PARTY",
+		InterruptibleColor = "INTERRUPTIBLE_COLOR_PARTY",
 		Import = "IMPORT_PARTY",
 		Export = "EXPORT_PARTY",
 		Font = "FONT_PARTY",
 		FontFlags = "FONT_FLAGS_PARTY",
 		FeatureFlags = "FEATURE_FLAGS_PARTY",
-		-- todo: implement these
-		-- TankColor = "TANK_COLOR_PARTY",
-		-- HealerColor = "HEALER_COLOR_PARTY",
-		-- DamageColor = "DAMAGE_COLOR_PARTY",
 	},
 }
 
@@ -99,6 +99,10 @@ function Private.Settings.GetSettingsDisplayOrder(kind)
 		Private.Settings.Keys.Party.ForegroundBarTexture,
 		Private.Settings.Keys.Party.BackgroundBarTexture,
 		Private.Settings.Keys.Party.BackgroundBarColor,
+		Private.Settings.Keys.Party.ProgressBarColor,
+		Private.Settings.Keys.Party.UseInterruptabilityColors,
+		Private.Settings.Keys.Party.UninterruptibleColor,
+		Private.Settings.Keys.Party.InterruptibleColor,
 	}
 end
 
@@ -300,6 +304,10 @@ function Private.Settings.GetPartyDefaultSettings()
 		ForegroundBarTexture = "Blizzard Raid Bar",
 		BackgroundBarTexture = "Solid",
 		BackgroundBarColor = "FF1A1A1A",
+		ProgressBarColor = "FFFFFF00",
+		UseInterruptabilityColors = false,
+		UninterruptibleColor = "FFFF4444",
+		InterruptibleColor = "FF44FF44",
 		Position = Private.Settings.GetDefaultEditModeFramePosition(Private.Enum.FrameKind.Party),
 	}
 end
@@ -343,16 +351,29 @@ function Private.Settings.GetBorderOptions()
 	return borders
 end
 
-function Private.Settings.IsContentTypeAvailableForKind(kind, contentTypeId)
+function Private.Settings.GetContentTypesForKind(kind)
 	if kind == Private.Enum.FrameKind.Self then
-		return true
+		return Private.Enum.ContentType
 	end
 
-	if kind == Private.Enum.FrameKind.Party then
-		return contentTypeId ~= Private.Enum.ContentType.Raid
+	return {
+		OpenWorld = Private.Enum.ContentType.OpenWorld,
+		Delve = Private.Enum.ContentType.Delve,
+		Dungeon = Private.Enum.ContentType.Dungeon,
+		Arena = Private.Enum.ContentType.Arena,
+		Battleground = Private.Enum.ContentType.Battleground,
+	}
+end
+
+function Private.Settings.GetGlowTypesForKind(kind)
+	if kind == Private.Enum.FrameKind.Self then
+		return Private.Enum.GlowType
 	end
 
-	return true
+	return {
+		Private.Enum.GlowType.PixelGlow,
+		Private.Enum.GlowType.Star4,
+	}
 end
 
 table.insert(Private.LoginFnQueue, function()
@@ -861,6 +882,132 @@ table.insert(Private.LoginFnQueue, function()
 			}
 		end
 
+		if key == Private.Settings.Keys.Party.ProgressBarColor then
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Party.ProgressBarColor
+			end
+
+			local function SetValue(value)
+				if value ~= TargetedSpellsSaved.Settings.Party.ProgressBarColor then
+					TargetedSpellsSaved.Settings.Party.ProgressBarColor = value
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.String,
+				L.Settings.ProgressBarColorLabel,
+				defaults.ProgressBarColor,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateColorSwatch(category, setting, L.Settings.ProgressBarColorTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if key == Private.Settings.Keys.Party.UseInterruptabilityColors then
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Party.UseInterruptabilityColors
+			end
+
+			local function SetValue(value)
+				if value ~= TargetedSpellsSaved.Settings.Party.UseInterruptabilityColors then
+					TargetedSpellsSaved.Settings.Party.UseInterruptabilityColors = value
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Boolean,
+				L.Settings.UseInterruptabilityColorsLabel,
+				defaults.UseInterruptabilityColors,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.UseInterruptabilityColorsTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if key == Private.Settings.Keys.Party.UninterruptibleColor then
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Party.UninterruptibleColor
+			end
+
+			local function SetValue(value)
+				if value ~= TargetedSpellsSaved.Settings.Party.UninterruptibleColor then
+					TargetedSpellsSaved.Settings.Party.UninterruptibleColor = value
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.String,
+				L.Settings.UninterruptibleColorLabel,
+				defaults.UninterruptibleColor,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateColorSwatch(category, setting, L.Settings.UninterruptibleColorTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = function()
+					return TargetedSpellsSaved.Settings.Party.Enabled
+						and TargetedSpellsSaved.Settings.Party.UseInterruptabilityColors
+				end,
+			}
+		end
+
+		if key == Private.Settings.Keys.Party.InterruptibleColor then
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Party.InterruptibleColor
+			end
+
+			local function SetValue(value)
+				if value ~= TargetedSpellsSaved.Settings.Party.InterruptibleColor then
+					TargetedSpellsSaved.Settings.Party.InterruptibleColor = value
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.String,
+				L.Settings.InterruptibleColorLabel,
+				defaults.InterruptibleColor,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateColorSwatch(category, setting, L.Settings.InterruptibleColorTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = function()
+					return TargetedSpellsSaved.Settings.Party.Enabled
+						and TargetedSpellsSaved.Settings.Party.UseInterruptabilityColors
+				end,
+			}
+		end
+
 		if key == Private.Settings.Keys.Self.IconZoom then
 			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
 
@@ -915,10 +1062,11 @@ table.insert(Private.LoginFnQueue, function()
 			local function GetOptions()
 				local container = Settings.CreateControlTextContainer()
 
-				for label, id in pairs(Private.Enum.GlowType) do
-					local translated = L.Settings.GlowTypeLabels[id]
+				local kind = key == Private.Settings.Keys.Self.GlowType and Private.Enum.FrameKind.Self
+					or Private.Enum.FrameKind.Party
 
-					container:Add(id, translated)
+				for _, id in ipairs(Private.Settings.GetGlowTypesForKind(kind)) do
+					container:Add(id, L.Settings.GlowTypeLabels[id])
 				end
 
 				return container:GetData()

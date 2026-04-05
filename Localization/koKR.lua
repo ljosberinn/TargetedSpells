@@ -99,8 +99,8 @@ L.Settings.FrameGrowLabels = {
 L.Settings.GlowImportantLabel = "중요 주문 강조"
 L.Settings.GlowImportantTooltip = "중요 여부는 게임에 의해 결정됩니다."
 
-L.Settings.OnlyImportantLabel = "Only Show Important Spells"
-L.Settings.OnlyImportantTooltip = "Note that you're relying on what the game considers important, use at your own risk."
+L.Settings.OnlyImportantLabel = "중요 주문만 표시"
+L.Settings.OnlyImportantTooltip = "게임이 중요하다고 판단하는 것에 의존하므로, 사용에 주의하세요."
 
 L.Settings.GlowTypeLabel = "반짝임 유형"
 L.Settings.GlowTypeTooltip = nil
@@ -124,7 +124,7 @@ L.Settings.RenderInterruptSourceNameTooltip = nil
 L.Settings.ShowSwipeLabel = "회전 표시"
 L.Settings.ShowSwipeTooltip = nil
 
-L.Settings.BorderStyleLabel = "Border Style"
+L.Settings.BorderStyleLabel = "테두리 스타일"
 L.Settings.BorderStyleTooltip = nil
 
 L.Settings.OpacityLabel = "불투명도"
@@ -150,7 +150,19 @@ L.Settings.BackgroundBarTextureTooltip = nil
 L.Settings.BackgroundBarColorLabel = "배경 바 색상"
 L.Settings.BackgroundBarColorTooltip = nil
 
-L.Settings.IconZoomLabel = "Icon Zoom"
+L.Settings.ProgressBarColorLabel = "바 색상"
+L.Settings.ProgressBarColorTooltip = nil
+
+L.Settings.UseInterruptabilityColorsLabel = "방해 색상 사용"
+L.Settings.UseInterruptabilityColorsTooltip = nil
+
+L.Settings.UninterruptibleColorLabel = "방해 불가 색상"
+L.Settings.UninterruptibleColorTooltip = nil
+
+L.Settings.InterruptibleColorLabel = "방해 가능 색상"
+L.Settings.InterruptibleColorTooltip = nil
+
+L.Settings.IconZoomLabel = "아이콘 확대"
 L.Settings.IconZoomTooltip = nil
 
 L.Settings.ClickToOpenSettingsLabel = "클릭 설정 열기"
@@ -164,7 +176,7 @@ L.Settings.FontTooltip = nil
 
 L.Settings.TargetNamePreviewText = "대상 이름"
 
-L.Settings.FeatureFlagsLabel = "Features"
+L.Settings.FeatureFlagsLabel = "기능"
 L.Settings.FeatureFlagsTooltip = nil
 
 L.Settings.FeatureFlagLabels = {
@@ -182,6 +194,6 @@ L.Settings.FeatureFlagLabels = {
 }
 
 L.Settings.FeatureFlagSettingTitles = {
-	[Private.Enum.FeatureFlag.GlowImportant] = "Display",
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = "Interrupt Settings",
+	[Private.Enum.FeatureFlag.GlowImportant] = "표시",
+	[Private.Enum.FeatureFlag.IndicateInterrupts] = "차단 설정",
 }

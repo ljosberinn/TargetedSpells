@@ -150,6 +150,19 @@ L.Settings.BackgroundBarColorLabel = "Background Bar Color"
 L.Settings.BackgroundBarColorTooltip =
 	"Opacity is only available in Edit Mode due to the default settings UI not exposing it."
 
+L.Settings.ProgressBarColorLabel = "Bar Color"
+L.Settings.ProgressBarColorTooltip =
+	"Opacity is only available in Edit Mode due to the default settings UI not exposing it."
+
+L.Settings.UseInterruptabilityColorsLabel = "Use Interrupt Colors"
+L.Settings.UseInterruptabilityColorsTooltip = nil
+
+L.Settings.UninterruptibleColorLabel = "Uninterruptible Color"
+L.Settings.UninterruptibleColorTooltip = nil
+
+L.Settings.InterruptibleColorLabel = "Interruptible Color"
+L.Settings.InterruptibleColorTooltip = nil
+
 L.Settings.IconZoomLabel = "Icon Zoom"
 L.Settings.IconZoomTooltip = nil
 
