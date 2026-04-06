@@ -136,8 +136,6 @@ function Private.Utils.MigratePartySettingsToV3(existing)
 		"Enabled",
 		"LoadConditionContentType",
 		"LoadConditionRole",
-		"Width",
-		"Height",
 		"Font",
 		"GlowType",
 		"FontFlags",
