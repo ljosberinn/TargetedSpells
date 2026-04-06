@@ -292,6 +292,8 @@ function Private.Utils.ShowStaticPopup(args)
 	StaticPopup_Show(addonName)
 end
 
+---@param string string
+---@return table
 local function DecodeProfileString(string)
 	return C_EncodingUtil.DeserializeCBOR(C_EncodingUtil.DecodeBase64(string))
 end
@@ -329,153 +331,119 @@ do
 
 		local hasAnyChange = false
 
-		for kind, kindString in pairs(Private.Enum.FrameKind) do
-			local tableRef = TargetedSpellsSaved.Settings[kind]
+		---@param tableRef SavedVariablesSettingsParty|SavedVariablesSettingsSelf
+		---@param kindString string
+		---@param sourceData table
+		---@param defaults table
+		---@param eventKeys table
+		local function ImportKindSettings(tableRef, kindString, sourceData, defaults, eventKeys)
+			local anyPrimaryLoadConditionIsDisabled = false
 
-			if kindString == Private.Enum.FrameKind.Party then
-				local migratedParty = Private.Utils.MigratePartySettingsToV3(result[kind] or {})
+			local enumByKey = {
+				LoadConditionContentType = Private.Enum.ContentType,
+				LoadConditionRole = Private.Enum.Role,
+				FontFlags = Private.Enum.FontFlags,
+				FeatureFlags = Private.Enum.FeatureFlag,
+			}
 
-				for key, newValue in pairs(migratedParty) do
-					local eventKey = Private.Settings.Keys.Party[key]
+			for key, defaultValue in pairs(defaults) do
+				local newValue = sourceData[key]
+				local expectedType = type(defaultValue)
 
-					if type(newValue) == "table" or newValue ~= tableRef[key] then
+				if newValue ~= nil and type(newValue) == expectedType then
+					local eventKey = eventKeys[key]
+					local hasChanges = false
+
+					if expectedType == "table" then
+						local enumToCompareAgainst = enumByKey[key]
+
+						if enumToCompareAgainst then
+							local newTable = {}
+							local allDisabled = true
+
+							for _, id in pairs(enumToCompareAgainst) do
+								if newValue[id] == nil then
+									newTable[id] = tableRef[key][id]
+								else
+									newTable[id] = newValue[id]
+
+									if newValue[id] ~= tableRef[key][id] then
+										hasChanges = true
+									end
+
+									if newValue[id] then
+										allDisabled = false
+									end
+								end
+							end
+
+							if allDisabled then
+								anyPrimaryLoadConditionIsDisabled = true
+							end
+
+							if hasChanges then
+								tableRef[key] = newTable
+								Private.Utils.ApplyMigration(key, kindString, defaults)
+								Private.EventRegistry:TriggerEvent(
+									Private.Enum.Events.SETTING_CHANGED,
+									eventKey,
+									newTable
+								)
+							end
+						end
+					elseif newValue ~= tableRef[key] then
 						tableRef[key] = newValue
-						hasAnyChange = true
+						Private.Utils.ApplyMigration(key, kindString, defaults)
+						hasChanges = true
+
 						if eventKey then
 							Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, eventKey, newValue)
 						end
 					end
+
+					if hasChanges then
+						hasAnyChange = true
+					end
 				end
+			end
 
-				local frame = editModeFrameByKind[kindString]
-				-- needs nil check since the import could be from before v3
-				local importedPosition = result[kind] and result[kind].Position
+			if anyPrimaryLoadConditionIsDisabled then
+				tableRef.Enabled = false
+				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, eventKeys.Enabled, false)
+			end
+		end
 
-				if importedPosition ~= nil then
-					local point, x, y = importedPosition.point, importedPosition.x, importedPosition.y
+		for kind, kindString in pairs(Private.Enum.FrameKind) do
+			local sourceData = result[kind]
+
+			if sourceData ~= nil then
+				local tableRef = TargetedSpellsSaved.Settings[kind]
+				local defaults = kind == Private.Enum.FrameKind.Self and Private.Settings.GetSelfDefaultSettings()
+					or Private.Settings.GetPartyDefaultSettings()
+				local eventKeys = kind == Private.Enum.FrameKind.Self and Private.Settings.Keys.Self
+					or Private.Settings.Keys.Party
+
+				ImportKindSettings(tableRef, kindString, sourceData, defaults, eventKeys)
+
+				if sourceData.Position ~= nil then
+					local point, x, y = sourceData.Position.point, sourceData.Position.x, sourceData.Position.y
+					local frame = editModeFrameByKind[kindString]
 
 					if
 						frame ~= nil
 						and (point ~= tableRef.Position.point or x ~= tableRef.Position.x or y ~= tableRef.Position.y)
 					then
 						frame:ClearAllPoints()
-						PixelUtil.SetPoint(frame, point, UIParent, "CENTER", x, y)
+						PixelUtil.SetPoint(frame, "CENTER", UIParent, point, x, y)
+
 						tableRef.Position.point = point
 						tableRef.Position.x = x
 						tableRef.Position.y = y
-						Private.EventRegistry:TriggerEvent(
-							Private.Enum.Events.EDIT_MODE_PARTY_POSITION_CHANGED,
-							point,
-							x,
-							y
-						)
+
+						local event = kind == Private.Enum.FrameKind.Self and Private.Enum.Events.SETTING_CHANGED
+							or Private.Enum.Events.SETTING_CHANGED
+						Private.EventRegistry:TriggerEvent(event, point, x, y)
 					end
-				end
-			else
-				local frame = editModeFrameByKind[kindString]
-
-				local point, x, y = result[kind].Position.point, result[kind].Position.x, result[kind].Position.y
-
-				if
-					frame ~= nil
-					and (point ~= tableRef.Position.point or x ~= tableRef.Position.x or y ~= tableRef.Position.y)
-				then
-					frame:ClearAllPoints()
-					PixelUtil.SetPoint(frame, point, UIParent, "CENTER", x, y)
-					tableRef.Position.point = point
-					tableRef.Position.x = x
-					tableRef.Position.y = y
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.EDIT_MODE_SELF_POSITION_CHANGED, point, x, y)
-				end
-
-				local anyPrimaryLoadConditionIsDisabled = false
-
-				local defaults = Private.Settings.GetSelfDefaultSettings()
-				local eventKeys = Private.Settings.Keys.Self
-
-				for key, defaultValue in pairs(defaults) do
-					local newValue = result[kind][key]
-					local expectedType = type(defaultValue)
-
-					if newValue ~= nil and type(newValue) == expectedType then
-						local eventKey = eventKeys[key]
-						local hasChanges = false
-
-						if expectedType == "table" then
-							local enumToCompareAgainst = nil
-							if key == "LoadConditionContentType" then
-								enumToCompareAgainst = Private.Enum.ContentType
-							elseif key == "LoadConditionRole" then
-								enumToCompareAgainst = Private.Enum.Role
-							elseif key == "FontFlags" then
-								enumToCompareAgainst = Private.Enum.FontFlags
-							elseif key == "FeatureFlags" then
-								enumToCompareAgainst = Private.Enum.FeatureFlag
-							end
-
-							-- only other case is Position but that's taken care of above
-
-							if enumToCompareAgainst then
-								local newTable = {}
-								local allDisabled = true
-
-								for _, id in pairs(enumToCompareAgainst) do
-									if newValue[id] == nil then
-										newTable[id] = tableRef[key][id]
-									else
-										newTable[id] = newValue[id]
-
-										if newValue[id] ~= tableRef[key][id] then
-											hasChanges = true
-										end
-
-										if newValue[id] then
-											allDisabled = false
-										end
-									end
-								end
-
-								if allDisabled then
-									anyPrimaryLoadConditionIsDisabled = true
-								end
-
-								if hasChanges then
-									tableRef[key] = newTable
-
-									Private.Utils.ApplyMigration(key, kindString, defaults)
-
-									Private.EventRegistry:TriggerEvent(
-										Private.Enum.Events.SETTING_CHANGED,
-										eventKey,
-										newTable
-									)
-								end
-							end
-						elseif newValue ~= tableRef[key] then
-							tableRef[key] = newValue
-
-							Private.Utils.ApplyMigration(key, kindString, defaults)
-
-							hasChanges = true
-
-							if eventKey and hasChanges then
-								Private.EventRegistry:TriggerEvent(
-									Private.Enum.Events.SETTING_CHANGED,
-									eventKey,
-									newValue
-								)
-							end
-						end
-
-						if hasChanges then
-							hasAnyChange = true
-						end
-					end
-				end
-
-				if anyPrimaryLoadConditionIsDisabled then
-					tableRef.Enabled = false
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, eventKeys.Enabled, false)
 				end
 			end
 		end

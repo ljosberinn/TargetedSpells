@@ -136,7 +136,8 @@ function Private.Settings.GetDefaultEditModeFramePosition(kind)
 	if kind == Private.Enum.FrameKind.Self then
 		return { point = "CENTER", x = 0, y = 100 }
 	end
-	return { point = "CENTER", x = 0, y = 250 }
+
+	return { point = "CENTER", x = 0, y = 325 }
 end
 
 function Private.Settings.GetSliderSettingsForOption(key)
