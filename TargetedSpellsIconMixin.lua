@@ -13,7 +13,9 @@ function TargetedSpellsIconMixin:OnLoad()
 	TargetedSpellsMixin.OnLoad(self)
 	PixelUtil.SetSize(self, TargetedSpellsSaved.Settings.Self.Width, TargetedSpellsSaved.Settings.Self.Height)
 	self.Bar:SetStatusBarTexture("")
-	self.Cooldown:SetCountdownFormatter(Private.Utils.Formatter)
+	if Private.Utils.Formatter ~= nil then
+		self.Cooldown:SetCountdownFormatter(Private.Utils.Formatter)
+	end
 	self.Cooldown:SetCountdownFont("GameFontHighlightHugeOutline")
 	self:SetFont()
 	self:HideGlow()
@@ -218,7 +220,13 @@ function TargetedSpellsIconMixin:SetInterrupted(name, color)
 end
 
 function TargetedSpellsIconMixin:SetShowDuration(showDuration)
-	self.Cooldown:SetHideCountdownNumbers(not showDuration)
+	if Private.Utils.Formatter == nil then
+		self.Cooldown:SetHideCountdownNumbers(true)
+		self.Cooldown.DurationText:SetShown(showDuration)
+		self:SetScript("OnUpdate", showDuration and self.OnUpdate or nil)
+	else
+		self.Cooldown:SetHideCountdownNumbers(not showDuration)
+	end
 end
 
 --- shamelessly ~~stolen~~ repurposed from WeakAuras2
@@ -377,4 +385,22 @@ end
 
 function TargetedSpellsIconMixin:SetOnCooldownDone(callback)
 	self.Cooldown:SetScript("OnCooldownDone", callback)
+end
+
+if Private.Utils.Formatter == nil then
+	function TargetedSpellsIconMixin:OnUpdate(elapsed)
+		self.elapsed = self.elapsed + elapsed
+
+		if self.elapsed < 0.1 then
+			return
+		end
+
+		self.elapsed = self.elapsed - 0.1
+
+		if self.duration == nil then
+			return
+		end
+
+		self.Cooldown.DurationText:SetFormattedText("%.1f", self.duration:GetRemainingDuration())
+	end
 end

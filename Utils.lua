@@ -4,58 +4,62 @@ local addonName, Private = ...
 ---@class TargetedSpellsUtils
 Private.Utils = {}
 
-Private.Utils.Formatter = C_StringUtil.CreateNumericRuleFormatter()
+if C_StringUtil.CreateNumericRuleFormatter == nil then
+	Private.Utils.Formatter = nil
+else
+	Private.Utils.Formatter = C_StringUtil.CreateNumericRuleFormatter()
 
--- thanks to m33shoq for this
-Private.Utils.Formatter:SetBreakpoints({
-	{
-		threshold = 0,
-		format = "%.1f",
-	},
-	{
-		threshold = 3.01,
-		format = "%d",
-	},
-	{
-		threshold = 60,
-		format = "%d:%02d",
-		components = {
-			{
-				div = 60,
-			},
-			{
-				mod = 60,
+	-- thanks to m33shoq for this
+	Private.Utils.Formatter:SetBreakpoints({
+		{
+			threshold = 0,
+			format = "%.1f",
+		},
+		{
+			threshold = 3.01,
+			format = "%d",
+		},
+		{
+			threshold = 60,
+			format = "%d:%02d",
+			components = {
+				{
+					div = 60,
+				},
+				{
+					mod = 60,
+				},
 			},
 		},
-	},
-	{
-		threshold = 600, -- 10 minutes
-		format = "%dm",
-		components = {
-			{
-				div = 60,
+		{
+			threshold = 600, -- 10 minutes
+			format = "%dm",
+			components = {
+				{
+					div = 60,
+				},
 			},
 		},
-	},
-	{
-		threshold = 3600, -- 1 hour
-		format = "%dh",
-		components = {
-			{
-				div = 3600,
+		{
+			threshold = 3600, -- 1 hour
+			format = "%dh",
+			components = {
+				{
+					div = 3600,
+				},
 			},
 		},
-	},
-	{
-		threshold = 86400, -- 1 day
-		format = "%dd",
-		components = {
-			{
-				div = 86400,
+		{
+			threshold = 86400, -- 1 day
+			format = "%dd",
+			components = {
+				{
+					div = 86400,
+				},
 			},
 		},
-	},
-})
+	})
+end
 
 Private.Utils.Pools = {
 	Self = CreateFramePool(

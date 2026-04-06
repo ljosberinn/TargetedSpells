@@ -105,7 +105,7 @@ function TargetedSpellsEditModeMixin:OnSettingsChanged(key, flagIdOrValue, newBo
 	elseif key == Private.Settings.Keys.Self.FeatureFlags or key == Private.Settings.Keys.Party.FeatureFlags then
 		local flagId = flagIdOrValue
 
-		if flagId == Private.Enum.FeatureFlag.GlowImportant then
+		if flagId == Private.Enum.FeatureFlag.GlowImportant or flagId == Private.Enum.FeatureFlag.ShowTargetMarker then
 			self:OnLayoutSettingChanged(key, flagId, newBool)
 		elseif
 			flagId == Private.Enum.FeatureFlag.OnlyImportant
@@ -1633,6 +1633,14 @@ function PartyEditModeMixin:OnLayoutSettingChanged(key, value, newBool)
 			else
 				frame:HideGlow()
 			end
+		end
+	elseif key == Private.Settings.Keys.Party.FeatureFlags and value == Private.Enum.FeatureFlag.ShowTargetMarker then
+		if not LibEditMode:IsInEditMode() then
+			return
+		end
+
+		for _, frame in pairs(self.frames) do
+			frame:SetTargetMarker(newBool and (Private.Utils.RollDice() and math.random(1, 8) or nil) or nil)
 		end
 	elseif key == Private.Settings.Keys.Party.GlowType then
 		if not TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.GlowImportant] then

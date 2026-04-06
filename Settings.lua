@@ -367,7 +367,12 @@ end
 
 function Private.Settings.GetGlowTypesForKind(kind)
 	if kind == Private.Enum.FrameKind.Self then
-		return Private.Enum.GlowType
+		return {
+			Private.Enum.GlowType.PixelGlow,
+			Private.Enum.GlowType.Star4,
+			Private.Enum.GlowType.AutoCastGlow,
+			Private.Enum.GlowType.ProcGlow,
+		}
 	end
 
 	return {

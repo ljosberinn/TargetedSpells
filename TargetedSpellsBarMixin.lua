@@ -443,5 +443,9 @@ function TargetedSpellsBarMixin:OnUpdate(elapsed)
 		return
 	end
 
-	self.ProgressBar.Duration:SetText(duration:FormatRemainingDuration(Private.Utils.Formatter))
+	if duration.FormatRemainingDuration == nil and Private.Utils.Formatter == nil then
+		self.ProgressBar.Duration:SetFormattedText("%.1f", duration:GetRemainingDuration())
+	else
+		self.ProgressBar.Duration:SetText(duration:FormatRemainingDuration(Private.Utils.Formatter))
+	end
 end
