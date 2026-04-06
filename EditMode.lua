@@ -597,6 +597,14 @@ do
 				if TargetedSpellsSaved.Settings.Party.UseInterruptabilityColors ~= value then
 					TargetedSpellsSaved.Settings.Party.UseInterruptabilityColors = value
 					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+
+					if value then
+						LibEditMode:EnableFrameSetting(self.editModeFrame, L.Settings.UninterruptibleColorLabel)
+						LibEditMode:EnableFrameSetting(self.editModeFrame, L.Settings.InterruptibleColorLabel)
+					else
+						LibEditMode:DisableFrameSetting(self.editModeFrame, L.Settings.UninterruptibleColorLabel)
+						LibEditMode:DisableFrameSetting(self.editModeFrame, L.Settings.InterruptibleColorLabel)
+					end
 				end
 			end
 
