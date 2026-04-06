@@ -62,6 +62,7 @@ EventUtil.ContinueOnAddOnLoaded(addonName, function()
 		TargetedSpellsSaved.V3MigrationWarningSeen = true
 		TargetedSpellsSaved.Settings.Party = Private.Utils.MigratePartySettingsToV3(TargetedSpellsSaved.Settings.Party)
 		Private.Utils.ShowMigrationPopup()
+		Private.EventRegistry:TriggerEvent(Private.Enum.Events.PARTY_SETTINGS_MIGRATED)
 	end
 
 	for i = 1, #Private.LoginFnQueue do

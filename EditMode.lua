@@ -1608,6 +1608,11 @@ function PartyEditModeMixin:Init()
 	self.maxFrames = 5
 	self.pool = Private.Utils.Pools.Bar
 
+	Private.EventRegistry:RegisterCallback(Private.Enum.Events.PARTY_SETTINGS_MIGRATED, function()
+		self:RestoreEditModePosition()
+		self:ResizeEditModeFrame()
+	end, self)
+
 	self:RestoreEditModePosition()
 	self:ResizeEditModeFrame()
 end
