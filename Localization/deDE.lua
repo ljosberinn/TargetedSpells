@@ -24,7 +24,10 @@ L.Functionality.CVarWarning = string.format(
 	ENABLE
 )
 
-L.Functionality.V3DeprecationWarning = "TODO"
+L.Functionality.V3MigrationWarning = string.format(
+	"%s\n\nAufgrund von API-Einschränkungen musste die Gruppen-Funktionalität von Targeted Spells vollständig überarbeitet werden. Bitte den Bearbeitungsmodus für eine Vorschau aufrufen.",
+	addonNameWithIcon
+)
 
 L.Settings.EnabledLabel = "Aktiviert"
 L.Settings.EnabledTooltip = nil

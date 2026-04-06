@@ -28,7 +28,10 @@ L.Functionality.CVarWarning = string.format(
 	ENABLE
 )
 
-L.Functionality.V3DeprecationWarning = "TODO"
+L.Functionality.V3MigrationWarning = string.format(
+	"%s\n\nAPI 제한 업데이트로 인해 Targeted Spells의 파티 기능이 완전히 개편되었습니다. 편집 모드에서 미리보기를 확인하세요.",
+	addonNameWithIcon
+)
 
 L.Settings.EnabledLabel = "활성화"
 L.Settings.EnabledTooltip = nil
@@ -100,7 +103,8 @@ L.Settings.GlowImportantLabel = "중요 주문 강조"
 L.Settings.GlowImportantTooltip = "중요 여부는 게임에 의해 결정됩니다."
 
 L.Settings.OnlyImportantLabel = "중요 주문만 표시"
-L.Settings.OnlyImportantTooltip = "게임이 중요하다고 판단하는 것에 의존하므로, 사용에 주의하세요."
+L.Settings.OnlyImportantTooltip =
+	"게임이 중요하다고 판단하는 것에 의존하므로, 사용에 주의하세요."
 
 L.Settings.GlowTypeLabel = "반짝임 유형"
 L.Settings.GlowTypeTooltip = nil

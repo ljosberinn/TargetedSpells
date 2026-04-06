@@ -123,7 +123,7 @@ function Private.Utils.ShowMigrationPopup()
 			Private.Utils.ShowStaticPopup({
 				whileDead = true,
 				button1 = OKAY,
-				text = Private.L.Functionality.V3DeprecationWarning,
+				text = Private.L.Functionality.V3MigrationWarning,
 			})
 		end)
 	end)

@@ -28,7 +28,10 @@ L.Functionality.CVarWarning = string.format(
 	ENABLE
 )
 
-L.Functionality.V3DeprecationWarning = "TODO"
+L.Functionality.V3MigrationWarning = string.format(
+	"%s\n\nDue to API restriction updates, the Party functionality for Targeted Spells had to be completely overhauled. Please check out Edit Mode for a preview.",
+	addonNameWithIcon
+)
 
 L.Settings.EnabledLabel = "Enabled"
 L.Settings.EnabledTooltip = nil

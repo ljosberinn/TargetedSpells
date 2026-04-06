@@ -58,8 +58,8 @@ EventUtil.ContinueOnAddOnLoaded(addonName, function()
 		end
 	end
 
-	if TargetedSpellsSaved.v3DeprecationWarningSeen == nil and not isFirstRun then
-		TargetedSpellsSaved.v3DeprecationWarningSeen = true
+	if TargetedSpellsSaved.V3MigrationWarningSeen == nil and not isFirstRun then
+		TargetedSpellsSaved.V3MigrationWarningSeen = true
 		TargetedSpellsSaved.Settings.Party = Private.Utils.MigratePartySettingsToV3(TargetedSpellsSaved.Settings.Party)
 		Private.Utils.ShowMigrationPopup()
 	end

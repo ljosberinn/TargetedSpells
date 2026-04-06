@@ -28,7 +28,10 @@ L.Functionality.CVarWarning = string.format(
 	ENABLE
 )
 
-L.Functionality.V3DeprecationWarning = "TODO"
+L.Functionality.V3MigrationWarning = string.format(
+	"%s\n\nDebido a actualizaciones en las restricciones de la API, la funcionalidad de Grupo de Targeted Spells tuvo que ser completamente revisada. Consulta el Modo de Edición para una vista previa.",
+	addonNameWithIcon
+)
 
 L.Settings.EnabledLabel = "Activado"
 L.Settings.EnabledTooltip = nil
@@ -100,7 +103,8 @@ L.Settings.GlowImportantLabel = "Resaltar hechizos importantes"
 L.Settings.GlowImportantTooltip = "Lo que es importante y lo que no lo es lo declara el juego."
 
 L.Settings.OnlyImportantLabel = "Mostrar solo hechizos importantes"
-L.Settings.OnlyImportantTooltip = "Ten en cuenta que dependes de lo que el juego considera importante, úsalo bajo tu propia responsabilidad."
+L.Settings.OnlyImportantTooltip =
+	"Ten en cuenta que dependes de lo que el juego considera importante, úsalo bajo tu propia responsabilidad."
 
 L.Settings.GlowTypeLabel = "Tipo de resplandor"
 L.Settings.GlowTypeTooltip = nil

@@ -28,7 +28,10 @@ L.Functionality.CVarWarning = string.format(
 	ENABLE
 )
 
-L.Functionality.V3DeprecationWarning = "TODO"
+L.Functionality.V3MigrationWarning = string.format(
+	"%s\n\n由于 API 限制更新，Targeted Spells 的小队功能已被完全重新设计。请查看编辑模式以预览效果。",
+	addonNameWithIcon
+)
 
 L.Settings.EnabledLabel = "启用"
 L.Settings.EnabledTooltip = nil

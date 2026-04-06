@@ -28,7 +28,10 @@ L.Functionality.CVarWarning = string.format(
 	ENABLE
 )
 
-L.Functionality.V3DeprecationWarning = "TODO"
+L.Functionality.V3MigrationWarning = string.format(
+	"%s\n\nEn raison de mises à jour des restrictions de l'API, la fonctionnalité Groupe de Targeted Spells a dû être entièrement revue. Consultez le Mode Édition pour un aperçu.",
+	addonNameWithIcon
+)
 
 L.Settings.EnabledLabel = "Activé"
 L.Settings.EnabledTooltip = nil
@@ -100,7 +103,8 @@ L.Settings.GlowImportantLabel = "Faire briller les sorts important"
 L.Settings.GlowImportantTooltip = "Ce qui est important ou non est déclaré par le jeu."
 
 L.Settings.OnlyImportantLabel = "Afficher uniquement les sorts importants"
-L.Settings.OnlyImportantTooltip = "Notez que vous vous basez sur ce que le jeu considère comme important, à utiliser à vos risques."
+L.Settings.OnlyImportantTooltip =
+	"Notez que vous vous basez sur ce que le jeu considère comme important, à utiliser à vos risques."
 
 L.Settings.GlowTypeLabel = "Type de lueur"
 L.Settings.GlowTypeTooltip = nil
