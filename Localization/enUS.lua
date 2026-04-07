@@ -160,6 +160,10 @@ L.Settings.ProgressBarColorTooltip =
 L.Settings.UseInterruptabilityColorsLabel = "Use Interrupt Colors"
 L.Settings.UseInterruptabilityColorsTooltip = nil
 
+L.Settings.UseTargetClassColorLabel = "Use Target Class Color"
+L.Settings.UseTargetClassColorTooltip =
+	"Colors the bar in the class color of the targeted unit at 75% alpha. Untargeted spells will use a brightened Background Bar Color"
+
 L.Settings.UninterruptibleColorLabel = "Uninterruptible Color"
 L.Settings.UninterruptibleColorTooltip = nil
 

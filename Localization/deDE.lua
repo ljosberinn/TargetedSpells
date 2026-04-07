@@ -155,6 +155,10 @@ L.Settings.ProgressBarColorTooltip = nil
 L.Settings.UseInterruptabilityColorsLabel = "Farbkodierung für Unterbrechungsstatus nutzen"
 L.Settings.UseInterruptabilityColorsTooltip = nil
 
+L.Settings.UseTargetClassColorLabel = "Zielklassenfarbe verwenden"
+L.Settings.UseTargetClassColorTooltip =
+	"Färbt den Balken in der Klassenfarbe der Zieleinheit mit 75 % Transparenz. Zauber ohne Ziel verwenden eine aufgehellte Hintergrundbalken-Farbe."
+
 L.Settings.UninterruptibleColorLabel = "Farbe Ununterbrechbar"
 L.Settings.UninterruptibleColorTooltip = nil
 

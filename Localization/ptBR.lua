@@ -159,6 +159,10 @@ L.Settings.ProgressBarColorTooltip = nil
 L.Settings.UseInterruptabilityColorsLabel = "Usar cores de interrupção"
 L.Settings.UseInterruptabilityColorsTooltip = nil
 
+L.Settings.UseTargetClassColorLabel = "Usar cor de classe do alvo"
+L.Settings.UseTargetClassColorTooltip =
+	"Colorize a barra com a cor de classe da unidade alvo com 75% de opacidade. Feitiços sem alvo usarão uma Cor de Barra de Fundo mais clara."
+
 L.Settings.UninterruptibleColorLabel = "Cor ininterruptível"
 L.Settings.UninterruptibleColorTooltip = nil
 

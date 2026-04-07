@@ -159,6 +159,10 @@ L.Settings.ProgressBarColorTooltip = nil
 L.Settings.UseInterruptabilityColorsLabel = "Usa colori interruzione"
 L.Settings.UseInterruptabilityColorsTooltip = nil
 
+L.Settings.UseTargetClassColorLabel = "Usa colore classe del bersaglio"
+L.Settings.UseTargetClassColorTooltip =
+	"Colora la barra con il colore di classe dell'unità bersaglio al 75% di opacità. Gli incantesimi senza bersaglio utilizzeranno un Colore Barra di Sfondo più luminoso."
+
 L.Settings.UninterruptibleColorLabel = "Colore non interrompibile"
 L.Settings.UninterruptibleColorTooltip = nil
 

@@ -158,6 +158,10 @@ L.Settings.ProgressBarColorTooltip = nil
 L.Settings.UseInterruptabilityColorsLabel = "Usar colores de interrupción"
 L.Settings.UseInterruptabilityColorsTooltip = nil
 
+L.Settings.UseTargetClassColorLabel = "Usar color de clase del objetivo"
+L.Settings.UseTargetClassColorTooltip =
+	"Colorea la barra con el color de clase de la unidad objetivo al 75 % de opacidad. Los hechizos sin objetivo usarán un Color de Barra de Fondo más brillante."
+
 L.Settings.UninterruptibleColorLabel = "Color ininterrumpible"
 L.Settings.UninterruptibleColorTooltip = nil
 

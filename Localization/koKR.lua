@@ -160,6 +160,10 @@ L.Settings.ProgressBarColorTooltip = nil
 L.Settings.UseInterruptabilityColorsLabel = "방해 색상 사용"
 L.Settings.UseInterruptabilityColorsTooltip = nil
 
+L.Settings.UseTargetClassColorLabel = "대상 직업 색상 사용"
+L.Settings.UseTargetClassColorTooltip =
+	"대상 유닛의 직업 색상을 75% 불투명도로 바에 적용합니다. 대상이 없는 주문은 밝기가 높아진 배경 바 색상을 사용합니다."
+
 L.Settings.UninterruptibleColorLabel = "방해 불가 색상"
 L.Settings.UninterruptibleColorTooltip = nil
 

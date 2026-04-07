@@ -287,6 +287,7 @@ do
 		local name = ""
 		---@type colorRGB?
 		local color = nil
+		local isClassColor = false
 
 		if castingUnit == "preview" then
 			name = Private.L.Settings.TargetNamePreviewText
@@ -305,6 +306,7 @@ do
 
 				if targetClass ~= nil then
 					color = C_ClassColor.GetClassColor(targetClass)
+					isClassColor = color ~= nil
 				end
 			end
 
@@ -334,7 +336,12 @@ do
 		end
 
 		if color == nil then
-			color = whiteDefaultColor
+			if TargetedSpellsSaved.Settings.Party.UseTargetClassColor then
+				local bg = CreateColorFromHexString(TargetedSpellsSaved.Settings.Party.BackgroundBarColor)
+				color = CreateColor(bg.r + (1 - bg.r) * 0.6, bg.g + (1 - bg.g) * 0.6, bg.b + (1 - bg.b) * 0.6, 0.5)
+			else
+				color = whiteDefaultColor
+			end
 		end
 
 		local isChannel = false
@@ -352,7 +359,19 @@ do
 		self.ProgressBar:SetReverseFill(isChannel)
 
 		self.ProgressBar.TargetName:SetText(name)
-		self.ProgressBar.TargetName:SetTextColor(color.r, color.g, color.b, color.a)
+
+		if TargetedSpellsSaved.Settings.Party.UseTargetClassColor then
+			self.ProgressBar.TargetName:SetTextColor(
+				whiteDefaultColor.r,
+				whiteDefaultColor.g,
+				whiteDefaultColor.b,
+				whiteDefaultColor.a
+			)
+			self.ProgressBar:SetStatusBarColor(color.r, color.g, color.b, isClassColor and 0.75 or color.a)
+		else
+			self.ProgressBar.TargetName:SetTextColor(color.r, color.g, color.b, color.a)
+		end
+
 		self.ProgressBar.TargetName:Show()
 	end
 end

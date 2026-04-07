@@ -150,6 +150,7 @@
 ---@field BackgroundBarColor string
 ---@field ProgressBarColor string
 ---@field UseInterruptabilityColors boolean
+---@field UseTargetClassColor boolean
 ---@field UninterruptibleColor string
 ---@field InterruptibleColor string
 ---@field Position FramePosition

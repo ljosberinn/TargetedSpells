@@ -29,14 +29,7 @@ function TargetedSpellsEditModeMixin:Init(displayName, frameKind)
 
 	Private.Utils.RegisterEditModeFrame(frameKind, self.editModeFrame)
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingsChanged, self)
-
-	do
-		local cb = GenerateClosure(self.StartDemo, self)
-
-		LibEditMode:RegisterCallback("enter", QUI == nil and cb or function()
-			C_Timer.After(0.25, cb)
-		end)
-	end
+	LibEditMode:RegisterCallback("enter", GenerateClosure(self.StartDemo, self))
 
 	LibEditMode:RegisterCallback("exit", GenerateClosure(self.EndDemo, self))
 
@@ -601,6 +594,17 @@ do
 					if value then
 						LibEditMode:EnableFrameSetting(self.editModeFrame, L.Settings.UninterruptibleColorLabel)
 						LibEditMode:EnableFrameSetting(self.editModeFrame, L.Settings.InterruptibleColorLabel)
+
+						if TargetedSpellsSaved.Settings.Party.UseTargetClassColor then
+							TargetedSpellsSaved.Settings.Party.UseTargetClassColor = false
+							Private.EventRegistry:TriggerEvent(
+								Private.Enum.Events.SETTING_CHANGED,
+								Private.Settings.Keys.Party.UseTargetClassColor,
+								false
+							)
+
+							LibEditMode:RefreshFrameSettings(self.editModeFrame)
+						end
 					else
 						LibEditMode:DisableFrameSetting(self.editModeFrame, L.Settings.UninterruptibleColorLabel)
 						LibEditMode:DisableFrameSetting(self.editModeFrame, L.Settings.InterruptibleColorLabel)
@@ -619,6 +623,46 @@ do
 				kind = LibEditMode.SettingType.Checkbox,
 				desc = L.Settings.UseInterruptabilityColorsTooltip,
 				default = defaults.UseInterruptabilityColors,
+				get = Get,
+				set = Set,
+			}
+		end
+
+		if key == Private.Settings.Keys.Party.UseTargetClassColor then
+			---@param layoutName string
+			---@param value boolean
+			local function Set(layoutName, value)
+				if TargetedSpellsSaved.Settings.Party.UseTargetClassColor ~= value then
+					TargetedSpellsSaved.Settings.Party.UseTargetClassColor = value
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+
+					if value and TargetedSpellsSaved.Settings.Party.UseInterruptabilityColors then
+						TargetedSpellsSaved.Settings.Party.UseInterruptabilityColors = false
+						Private.EventRegistry:TriggerEvent(
+							Private.Enum.Events.SETTING_CHANGED,
+							Private.Settings.Keys.Party.UseInterruptabilityColors,
+							false
+						)
+
+						LibEditMode:DisableFrameSetting(self.editModeFrame, L.Settings.UninterruptibleColorLabel)
+						LibEditMode:DisableFrameSetting(self.editModeFrame, L.Settings.InterruptibleColorLabel)
+
+						LibEditMode:RefreshFrameSettings(self.editModeFrame)
+					end
+				end
+			end
+
+			---@param layoutName string
+			local function Get(layoutName)
+				return TargetedSpellsSaved.Settings.Party.UseTargetClassColor
+			end
+
+			---@type LibEditModeCheckbox
+			return {
+				name = L.Settings.UseTargetClassColorLabel,
+				kind = LibEditMode.SettingType.Checkbox,
+				desc = L.Settings.UseTargetClassColorTooltip,
+				default = defaults.UseTargetClassColor,
 				get = Get,
 				set = Set,
 			}

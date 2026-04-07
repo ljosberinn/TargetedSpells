@@ -164,6 +164,10 @@ L.Settings.ProgressBarColorTooltip =
 L.Settings.UseInterruptabilityColorsLabel = "Использовать цвета прерывания"
 L.Settings.UseInterruptabilityColorsTooltip = nil
 
+L.Settings.UseTargetClassColorLabel = "Использовать цвет класса цели"
+L.Settings.UseTargetClassColorTooltip =
+	"Окрашивает полосу в цвет класса целевого юнита с прозрачностью 75 %. Заклинания без цели будут использовать осветлённый Цвет Фоновой Полосы."
+
 L.Settings.UninterruptibleColorLabel = "Цвет непрерываемого"
 L.Settings.UninterruptibleColorTooltip = nil
 

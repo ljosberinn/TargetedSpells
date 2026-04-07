@@ -158,6 +158,10 @@ L.Settings.ProgressBarColorTooltip = nil
 L.Settings.UseInterruptabilityColorsLabel = "Utiliser les couleurs d'interruption"
 L.Settings.UseInterruptabilityColorsTooltip = nil
 
+L.Settings.UseTargetClassColorLabel = "Utiliser la couleur de classe de la cible"
+L.Settings.UseTargetClassColorTooltip =
+	"Colore la barre avec la couleur de classe de l'unité ciblée à 75 % d'opacité. Les sorts sans cible utiliseront une Couleur de Barre de Fond éclaircie."
+
 L.Settings.UninterruptibleColorLabel = "Couleur ininterruptible"
 L.Settings.UninterruptibleColorTooltip = nil
 

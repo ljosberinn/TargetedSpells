@@ -1,5 +1,11 @@
 ## Version 3.0.1
 
+NEW setting for Party: Use Target Class Color
+
+Colors the bar in the class color of the targeted unit at 75% opacity. Untargeted spells will use a brightened Background Bar Color. Disables the Uninterruptible Color setting and vice versa.
+
+### Bug Fixes
+
 - fixed a bug where frames weren't properly cleaned up when hiding nameplates
 - fixed a bug where Party frames would linger until the next cast of the same unit if the unit started channeling directly after finishing a cast
 - ElvUI skinning support has been removed due to bugs

@@ -46,6 +46,7 @@ Private.Settings.Keys = {
 		BackgroundBarColor = "BACKGROUND_BAR_COLOR_PARTY",
 		ProgressBarColor = "PROGRESS_BAR_COLOR_PARTY",
 		UseInterruptabilityColors = "USE_INTERRUPTABILITY_COLORS_PARTY",
+		UseTargetClassColor = "USE_TARGET_CLASS_COLOR_PARTY",
 		UninterruptibleColor = "UNINTERRUPTIBLE_COLOR_PARTY",
 		InterruptibleColor = "INTERRUPTIBLE_COLOR_PARTY",
 		Import = "IMPORT_PARTY",
@@ -103,6 +104,7 @@ function Private.Settings.GetSettingsDisplayOrder(kind)
 		Private.Settings.Keys.Party.UseInterruptabilityColors,
 		Private.Settings.Keys.Party.UninterruptibleColor,
 		Private.Settings.Keys.Party.InterruptibleColor,
+		Private.Settings.Keys.Party.UseTargetClassColor,
 	}
 end
 
@@ -307,6 +309,7 @@ function Private.Settings.GetPartyDefaultSettings()
 		BackgroundBarColor = "FF1A1A1A",
 		ProgressBarColor = "FFFFFF00",
 		UseInterruptabilityColors = false,
+		UseTargetClassColor = false,
 		UninterruptibleColor = "FFFF4444",
 		InterruptibleColor = "FF44FF44",
 		Position = Private.Settings.GetDefaultEditModeFramePosition(Private.Enum.FrameKind.Party),
@@ -927,6 +930,15 @@ table.insert(Private.LoginFnQueue, function()
 				if value ~= TargetedSpellsSaved.Settings.Party.UseInterruptabilityColors then
 					TargetedSpellsSaved.Settings.Party.UseInterruptabilityColors = value
 					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+
+					if value and TargetedSpellsSaved.Settings.Party.UseTargetClassColor then
+						TargetedSpellsSaved.Settings.Party.UseTargetClassColor = false
+						Private.EventRegistry:TriggerEvent(
+							Private.Enum.Events.SETTING_CHANGED,
+							Private.Settings.Keys.Party.UseTargetClassColor,
+							false
+						)
+					end
 				end
 			end
 
@@ -940,6 +952,45 @@ table.insert(Private.LoginFnQueue, function()
 				SetValue
 			)
 			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.UseInterruptabilityColorsTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if key == Private.Settings.Keys.Party.UseTargetClassColor then
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Party.UseTargetClassColor
+			end
+
+			local function SetValue(value)
+				if value ~= TargetedSpellsSaved.Settings.Party.UseTargetClassColor then
+					TargetedSpellsSaved.Settings.Party.UseTargetClassColor = value
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+
+					if value and TargetedSpellsSaved.Settings.Party.UseInterruptabilityColors then
+						TargetedSpellsSaved.Settings.Party.UseInterruptabilityColors = false
+						Private.EventRegistry:TriggerEvent(
+							Private.Enum.Events.SETTING_CHANGED,
+							Private.Settings.Keys.Party.UseInterruptabilityColors,
+							false
+						)
+					end
+				end
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Boolean,
+				L.Settings.UseTargetClassColorLabel,
+				defaults.UseTargetClassColor,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.UseTargetClassColorTooltip)
 
 			return {
 				initializer = initializer,

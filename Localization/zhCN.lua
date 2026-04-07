@@ -157,6 +157,10 @@ L.Settings.ProgressBarColorTooltip = nil
 L.Settings.UseInterruptabilityColorsLabel = "使用打断颜色"
 L.Settings.UseInterruptabilityColorsTooltip = nil
 
+L.Settings.UseTargetClassColorLabel = "使用目标职业颜色"
+L.Settings.UseTargetClassColorTooltip =
+	"以75%不透明度将条形颜色设为目标单位的职业颜色。未选中目标的法术将使用加亮后的背景条颜色。"
+
 L.Settings.UninterruptibleColorLabel = "不可打断颜色"
 L.Settings.UninterruptibleColorTooltip = nil
 
