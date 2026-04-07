@@ -315,6 +315,8 @@ do
 			end
 
 			local function Generator(owner, rootDescription, data)
+				rootDescription:SetScrollMode(20 * 10)
+
 				local fontInfo = Private.Settings.GetFontOptions()
 
 				for index, label in pairs(fontInfo.fonts) do
@@ -462,6 +464,8 @@ do
 			end
 
 			local function Generator(owner, rootDescription, data)
+				rootDescription:SetScrollMode(20 * 10)
+
 				for _, label in ipairs(Private.Settings.GetStatusBarOptions()) do
 					local function IsEnabled()
 						return TargetedSpellsSaved.Settings.Party.ForegroundBarTexture == label
@@ -498,6 +502,8 @@ do
 			end
 
 			local function Generator(owner, rootDescription, data)
+				rootDescription:SetScrollMode(20 * 10)
+
 				for _, label in ipairs(Private.Settings.GetBackgroundOptions()) do
 					local function IsEnabled()
 						return TargetedSpellsSaved.Settings.Party.BackgroundBarTexture == label
@@ -578,6 +584,32 @@ do
 				desc = L.Settings.ProgressBarColorTooltip,
 				default = CreateColorFromHexString(defaults.ProgressBarColor),
 				hasOpacity = true,
+				get = Get,
+				set = Set,
+			}
+		end
+
+		if key == Private.Settings.Keys.Party.MirrorLayout then
+			---@param layoutName string
+			---@param value boolean
+			local function Set(layoutName, value)
+				if TargetedSpellsSaved.Settings.Party.MirrorLayout ~= value then
+					TargetedSpellsSaved.Settings.Party.MirrorLayout = value
+					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
+				end
+			end
+
+			---@param layoutName string
+			local function Get(layoutName)
+				return TargetedSpellsSaved.Settings.Party.MirrorLayout
+			end
+
+			---@type LibEditModeCheckbox
+			return {
+				name = L.Settings.MirrorLayoutLabel,
+				kind = LibEditMode.SettingType.Checkbox,
+				desc = L.Settings.MirrorLayoutTooltip,
+				default = defaults.MirrorLayout,
 				get = Get,
 				set = Set,
 			}
@@ -1390,7 +1422,7 @@ function TargetedSpellsEditModeMixin:RestoreEditModePosition()
 	self.editModeFrame:ClearAllPoints()
 	PixelUtil.SetPoint(
 		self.editModeFrame,
-		"CENTER",
+		tableRef.Position.point,
 		UIParent,
 		tableRef.Position.point,
 		tableRef.Position.x,

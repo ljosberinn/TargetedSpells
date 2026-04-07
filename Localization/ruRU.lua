@@ -161,6 +161,9 @@ L.Settings.ProgressBarColorLabel = "Цвет полосы"
 L.Settings.ProgressBarColorTooltip =
 	"Прозрачность доступна только в Режиме редактирования, так как стандартный интерфейс настроек её не предоставляет."
 
+L.Settings.MirrorLayoutLabel = "Зеркальный макет"
+L.Settings.MirrorLayoutTooltip = nil
+
 L.Settings.UseInterruptabilityColorsLabel = "Использовать цвета прерывания"
 L.Settings.UseInterruptabilityColorsTooltip = nil
 

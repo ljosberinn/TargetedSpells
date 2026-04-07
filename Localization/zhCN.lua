@@ -154,6 +154,9 @@ L.Settings.BackgroundBarColorTooltip = nil
 L.Settings.ProgressBarColorLabel = "进度条颜色"
 L.Settings.ProgressBarColorTooltip = nil
 
+L.Settings.MirrorLayoutLabel = "镜像布局"
+L.Settings.MirrorLayoutTooltip = nil
+
 L.Settings.UseInterruptabilityColorsLabel = "使用打断颜色"
 L.Settings.UseInterruptabilityColorsTooltip = nil
 

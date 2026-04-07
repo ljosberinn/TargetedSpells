@@ -152,6 +152,9 @@ L.Settings.BackgroundBarColorTooltip = nil
 L.Settings.ProgressBarColorLabel = "Statusbalkenfarbe"
 L.Settings.ProgressBarColorTooltip = nil
 
+L.Settings.MirrorLayoutLabel = "Layout spiegeln"
+L.Settings.MirrorLayoutTooltip = nil
+
 L.Settings.UseInterruptabilityColorsLabel = "Farbkodierung für Unterbrechungsstatus nutzen"
 L.Settings.UseInterruptabilityColorsTooltip = nil
 

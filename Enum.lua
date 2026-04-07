@@ -90,6 +90,8 @@ Private.Enum.NameDivider = {
 	None = "",
 	Arrow = ">",
 	Arrows = ">>",
+	LeftArrow = "<",
+	LeftArrows = "<<",
 	Pipe = "|",
 	Colon = ":",
 }

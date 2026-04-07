@@ -21,6 +21,7 @@ end
 function TargetedSpellsBarMixin:OnSizeChanged()
 	local showIcon = TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowIcon]
 	local showTargetMarker = TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowTargetMarker]
+	local mirrored = TargetedSpellsSaved.Settings.Party.MirrorLayout
 
 	self.CustomElementsFrame.TargetMarker:SetSize(
 		TargetedSpellsSaved.Settings.Party.Height,
@@ -35,68 +36,121 @@ function TargetedSpellsBarMixin:OnSizeChanged()
 	self.ProgressBar.SpellName:ClearAllPoints()
 	self.ProgressBar.Divider:ClearAllPoints()
 	self.ProgressBar.TargetName:ClearAllPoints()
+	self.ProgressBar.Duration:ClearAllPoints()
 
 	local slotFrame = nil
 
-	if showTargetMarker and showIcon then
-		PixelUtil.SetPoint(self.CustomElementsFrame.TargetMarker, "TOPLEFT", self, "TOPLEFT", 0, 0)
-		PixelUtil.SetPoint(self.CustomElementsFrame.TargetMarker, "BOTTOMLEFT", self, "BOTTOMLEFT", 0, 0)
-		PixelUtil.SetPoint(self.Icon, "TOPLEFT", self.CustomElementsFrame.TargetMarker, "TOPRIGHT", 0, 0)
-		PixelUtil.SetPoint(self.Icon, "BOTTOMLEFT", self.CustomElementsFrame.TargetMarker, "BOTTOMRIGHT", 0, 0)
+	if mirrored then
+		if showTargetMarker and showIcon then
+			PixelUtil.SetPoint(self.CustomElementsFrame.TargetMarker, "TOPRIGHT", self, "TOPRIGHT", 0, 0)
+			PixelUtil.SetPoint(self.CustomElementsFrame.TargetMarker, "BOTTOMRIGHT", self, "BOTTOMRIGHT", 0, 0)
+			PixelUtil.SetPoint(self.Icon, "TOPRIGHT", self.CustomElementsFrame.TargetMarker, "TOPLEFT", 0, 0)
+			PixelUtil.SetPoint(self.Icon, "BOTTOMRIGHT", self.CustomElementsFrame.TargetMarker, "BOTTOMLEFT", 0, 0)
 
-		slotFrame = self.Icon
-	elseif showTargetMarker then
-		PixelUtil.SetPoint(self.CustomElementsFrame.TargetMarker, "TOPLEFT", self, "TOPLEFT", 0, 0)
-		PixelUtil.SetPoint(self.CustomElementsFrame.TargetMarker, "BOTTOMLEFT", self, "BOTTOMLEFT", 0, 0)
+			slotFrame = self.Icon
+		elseif showTargetMarker then
+			PixelUtil.SetPoint(self.CustomElementsFrame.TargetMarker, "TOPRIGHT", self, "TOPRIGHT", 0, 0)
+			PixelUtil.SetPoint(self.CustomElementsFrame.TargetMarker, "BOTTOMRIGHT", self, "BOTTOMRIGHT", 0, 0)
 
-		slotFrame = self.CustomElementsFrame.TargetMarker
-	elseif showIcon then
-		PixelUtil.SetPoint(self.Icon, "TOPLEFT", self, "TOPLEFT", 0, 0)
-		PixelUtil.SetPoint(self.Icon, "BOTTOMLEFT", self, "BOTTOMLEFT", 0, 0)
+			slotFrame = self.CustomElementsFrame.TargetMarker
+		elseif showIcon then
+			PixelUtil.SetPoint(self.Icon, "TOPRIGHT", self, "TOPRIGHT", 0, 0)
+			PixelUtil.SetPoint(self.Icon, "BOTTOMRIGHT", self, "BOTTOMRIGHT", 0, 0)
 
-		slotFrame = self.Icon
+			slotFrame = self.Icon
+		end
+	else
+		if showTargetMarker and showIcon then
+			PixelUtil.SetPoint(self.CustomElementsFrame.TargetMarker, "TOPLEFT", self, "TOPLEFT", 0, 0)
+			PixelUtil.SetPoint(self.CustomElementsFrame.TargetMarker, "BOTTOMLEFT", self, "BOTTOMLEFT", 0, 0)
+			PixelUtil.SetPoint(self.Icon, "TOPLEFT", self.CustomElementsFrame.TargetMarker, "TOPRIGHT", 0, 0)
+			PixelUtil.SetPoint(self.Icon, "BOTTOMLEFT", self.CustomElementsFrame.TargetMarker, "BOTTOMRIGHT", 0, 0)
+
+			slotFrame = self.Icon
+		elseif showTargetMarker then
+			PixelUtil.SetPoint(self.CustomElementsFrame.TargetMarker, "TOPLEFT", self, "TOPLEFT", 0, 0)
+			PixelUtil.SetPoint(self.CustomElementsFrame.TargetMarker, "BOTTOMLEFT", self, "BOTTOMLEFT", 0, 0)
+
+			slotFrame = self.CustomElementsFrame.TargetMarker
+		elseif showIcon then
+			PixelUtil.SetPoint(self.Icon, "TOPLEFT", self, "TOPLEFT", 0, 0)
+			PixelUtil.SetPoint(self.Icon, "BOTTOMLEFT", self, "BOTTOMLEFT", 0, 0)
+
+			slotFrame = self.Icon
+		end
 	end
 
-	local showSpellName = TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowSpellName]
-
 	if slotFrame then
-		PixelUtil.SetPoint(self.ProgressBar, "TOPLEFT", slotFrame, "TOPRIGHT", 0, 0)
-		PixelUtil.SetPoint(self.ProgressBar, "BOTTOMRIGHT", self, "BOTTOMRIGHT", 0, 0)
-		PixelUtil.SetPoint(self.ProgressBar.SpellName, "LEFT", slotFrame, "RIGHT", 4, 0)
-
-		if not showSpellName then
-			PixelUtil.SetPoint(self.ProgressBar.TargetName, "LEFT", slotFrame, "RIGHT", 4, 0)
+		if mirrored then
+			PixelUtil.SetPoint(self.ProgressBar, "TOPLEFT", self, "TOPLEFT", 0, 0)
+			PixelUtil.SetPoint(self.ProgressBar, "BOTTOMRIGHT", slotFrame, "BOTTOMLEFT", 0, 0)
+		else
+			PixelUtil.SetPoint(self.ProgressBar, "TOPLEFT", slotFrame, "TOPRIGHT", 0, 0)
+			PixelUtil.SetPoint(self.ProgressBar, "BOTTOMRIGHT", self, "BOTTOMRIGHT", 0, 0)
 		end
 	else
 		self.ProgressBar:SetAllPoints(self)
-		PixelUtil.SetPoint(self.ProgressBar.SpellName, "LEFT", self, "LEFT", 4, 0)
-		if not showSpellName then
-			PixelUtil.SetPoint(self.ProgressBar.TargetName, "LEFT", self.ProgressBar, "LEFT", 4, 0)
-		end
 	end
 
-	if showSpellName then
-		local hasDivider = TargetedSpellsSaved.Settings.Party.NameDivider ~= Private.Enum.NameDivider.None
-
-		if hasDivider then
-			PixelUtil.SetPoint(self.ProgressBar.Divider, "LEFT", self.ProgressBar.SpellName, "RIGHT", 0, 0)
-			PixelUtil.SetPoint(self.ProgressBar.TargetName, "LEFT", self.ProgressBar.Divider, "RIGHT", 0, 0)
-		else
-			PixelUtil.SetPoint(self.ProgressBar.TargetName, "LEFT", self.ProgressBar.SpellName, "RIGHT", 0, 0)
-		end
-	end
+	local showSpellName = TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowSpellName]
+	local showTargetName = TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowTargetName]
+	local showDuration = TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration]
+	local hasDivider = TargetedSpellsSaved.Settings.Party.NameDivider ~= Private.Enum.NameDivider.None
 
 	self.ProgressBar.SpellName:SetWidth(TargetedSpellsSaved.Settings.Party.SpellNameWidth)
 	self.ProgressBar.TargetName:SetWidth(TargetedSpellsSaved.Settings.Party.TargetNameWidth)
 
-	local showTargetName = TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowTargetName]
-	local rightText = showTargetName and self.ProgressBar.TargetName or showSpellName and self.ProgressBar.SpellName
+	if mirrored then
+		self.ProgressBar.Duration:SetJustifyH("LEFT")
+		PixelUtil.SetPoint(self.ProgressBar.Duration, "LEFT", self.ProgressBar, "LEFT", 4, 0)
 
-	if rightText then
-		if TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration] then
-			PixelUtil.SetPoint(rightText, "RIGHT", self.ProgressBar.Duration, "LEFT", -4, 0)
-		else
-			PixelUtil.SetPoint(rightText, "RIGHT", self.ProgressBar, "RIGHT", -4, 0)
+		local chainAnchor = showDuration and self.ProgressBar.Duration or self.ProgressBar
+		local chainPoint = showDuration and "RIGHT" or "LEFT"
+
+		if showTargetName and showSpellName then
+			PixelUtil.SetPoint(self.ProgressBar.TargetName, "LEFT", chainAnchor, chainPoint, 4, 0)
+			if hasDivider then
+				PixelUtil.SetPoint(self.ProgressBar.Divider, "LEFT", self.ProgressBar.TargetName, "RIGHT", 0, 0)
+				PixelUtil.SetPoint(self.ProgressBar.SpellName, "LEFT", self.ProgressBar.Divider, "RIGHT", 0, 0)
+			else
+				PixelUtil.SetPoint(self.ProgressBar.SpellName, "LEFT", self.ProgressBar.TargetName, "RIGHT", 0, 0)
+			end
+			PixelUtil.SetPoint(self.ProgressBar.SpellName, "RIGHT", self.ProgressBar, "RIGHT", -4, 0)
+		elseif showSpellName then
+			PixelUtil.SetPoint(self.ProgressBar.SpellName, "LEFT", chainAnchor, chainPoint, 4, 0)
+			PixelUtil.SetPoint(self.ProgressBar.SpellName, "RIGHT", self.ProgressBar, "RIGHT", -4, 0)
+		elseif showTargetName then
+			PixelUtil.SetPoint(self.ProgressBar.TargetName, "LEFT", chainAnchor, chainPoint, 4, 0)
+			PixelUtil.SetPoint(self.ProgressBar.TargetName, "RIGHT", self.ProgressBar, "RIGHT", -4, 0)
+		end
+	else
+		self.ProgressBar.Duration:SetJustifyH("RIGHT")
+		PixelUtil.SetPoint(self.ProgressBar.Duration, "RIGHT", self.ProgressBar, "RIGHT", -4, 0)
+
+		local textAnchor = slotFrame or self.ProgressBar
+		local textPoint = slotFrame and "RIGHT" or "LEFT"
+
+		if showSpellName then
+			PixelUtil.SetPoint(self.ProgressBar.SpellName, "LEFT", textAnchor, textPoint, 4, 0)
+			if showTargetName then
+				if hasDivider then
+					PixelUtil.SetPoint(self.ProgressBar.Divider, "LEFT", self.ProgressBar.SpellName, "RIGHT", 0, 0)
+					PixelUtil.SetPoint(self.ProgressBar.TargetName, "LEFT", self.ProgressBar.Divider, "RIGHT", 0, 0)
+				else
+					PixelUtil.SetPoint(self.ProgressBar.TargetName, "LEFT", self.ProgressBar.SpellName, "RIGHT", 0, 0)
+				end
+			end
+		elseif showTargetName then
+			PixelUtil.SetPoint(self.ProgressBar.TargetName, "LEFT", textAnchor, textPoint, 4, 0)
+		end
+
+		local rightText = showTargetName and self.ProgressBar.TargetName or showSpellName and self.ProgressBar.SpellName
+		if rightText then
+			if showDuration then
+				PixelUtil.SetPoint(rightText, "RIGHT", self.ProgressBar.Duration, "LEFT", -4, 0)
+			else
+				PixelUtil.SetPoint(rightText, "RIGHT", self.ProgressBar, "RIGHT", -4, 0)
+			end
 		end
 	end
 
@@ -156,6 +210,8 @@ function TargetedSpellsBarMixin:OnSettingChanged(key, flagIdOrValue, newBool)
 		if TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.GlowImportant] then
 			self:ShowGlow(self:IsSpellImportant(LibEditMode:IsInEditMode() and Private.Utils.RollDice()))
 		end
+	elseif key == Private.Settings.Keys.Party.MirrorLayout then
+		self:OnSizeChanged()
 	elseif key == Private.Settings.Keys.Party.SpellNameWidth then
 		self.ProgressBar.SpellName:SetWidth(flagIdOrValue)
 	elseif key == Private.Settings.Keys.Party.TargetNameWidth then
@@ -179,9 +235,23 @@ function TargetedSpellsBarMixin:SetDivider()
 		return
 	end
 
+	if TargetedSpellsSaved.Settings.Party.MirrorLayout then
+		if nameDivider == Private.Enum.NameDivider.Arrow then
+			nameDivider = Private.Enum.NameDivider.LeftArrow
+		elseif nameDivider == Private.Enum.NameDivider.LeftArrow then
+			nameDivider = Private.Enum.NameDivider.Arrow
+		elseif nameDivider == Private.Enum.NameDivider.Arrows then
+			nameDivider = Private.Enum.NameDivider.LeftArrows
+		elseif nameDivider == Private.Enum.NameDivider.LeftArrows then
+			nameDivider = Private.Enum.NameDivider.Arrows
+		end
+	end
+
 	if
 		nameDivider == Private.Enum.NameDivider.Arrow
+		or nameDivider == Private.Enum.NameDivider.LeftArrow
 		or nameDivider == Private.Enum.NameDivider.Arrows
+		or nameDivider == Private.Enum.NameDivider.LeftArrows
 		or nameDivider == Private.Enum.NameDivider.Pipe
 	then
 		self.ProgressBar.Divider:SetText(" " .. nameDivider .. " ")

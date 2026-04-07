@@ -157,6 +157,9 @@ L.Settings.ProgressBarColorLabel = "Bar Color"
 L.Settings.ProgressBarColorTooltip =
 	"Opacity is only available in Edit Mode due to the default settings UI not exposing it."
 
+L.Settings.MirrorLayoutLabel = "Mirror Layout"
+L.Settings.MirrorLayoutTooltip = nil
+
 L.Settings.UseInterruptabilityColorsLabel = "Use Interrupt Colors"
 L.Settings.UseInterruptabilityColorsTooltip = nil
 

@@ -4,6 +4,10 @@ NEW setting for Party: Use Target Class Color
 
 Colors the bar in the class color of the targeted unit at 75% opacity. Untargeted spells will use a brightened Background Bar Color. Disables the Uninterruptible Color setting and vice versa.
 
+NEW setting for Party: Mirror Layout
+
+Self explanatory.
+
 ### Bug Fixes
 
 - fixed a bug where frames weren't properly cleaned up when hiding nameplates
@@ -12,3 +16,4 @@ Colors the bar in the class color of the targeted unit at 75% opacity. Untargete
 - fixed a bug in unit filtering which led to improper Party frame creation and as a result, improper cleanup
   - looking at you, Lothraxion
   - this has the unfortunate side effect of seeing all RP channels again, if you have a nameplate for the unit
+- added scrollbars to settings prone to have many options available

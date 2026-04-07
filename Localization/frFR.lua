@@ -155,6 +155,9 @@ L.Settings.BackgroundBarColorTooltip = nil
 L.Settings.ProgressBarColorLabel = "Couleur de la barre"
 L.Settings.ProgressBarColorTooltip = nil
 
+L.Settings.MirrorLayoutLabel = "Disposition en miroir"
+L.Settings.MirrorLayoutTooltip = nil
+
 L.Settings.UseInterruptabilityColorsLabel = "Utiliser les couleurs d'interruption"
 L.Settings.UseInterruptabilityColorsTooltip = nil
 

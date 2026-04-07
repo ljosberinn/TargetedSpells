@@ -149,6 +149,7 @@
 ---@field BackgroundBarTexture string
 ---@field BackgroundBarColor string
 ---@field ProgressBarColor string
+---@field MirrorLayout boolean
 ---@field UseInterruptabilityColors boolean
 ---@field UseTargetClassColor boolean
 ---@field UninterruptibleColor string
