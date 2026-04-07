@@ -179,8 +179,6 @@ L.Settings.Export = "Exportieren"
 L.Settings.FontLabel = "Schriftart"
 L.Settings.FontTooltip = nil
 
-L.Settings.TargetNamePreviewText = "Zielname"
-
 L.Settings.FeatureFlagsLabel = "Features"
 L.Settings.FeatureFlagsTooltip = nil
 

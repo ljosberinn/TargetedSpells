@@ -182,8 +182,6 @@ L.Settings.Export = "Exporter"
 L.Settings.FontLabel = "Police"
 L.Settings.FontTooltip = nil
 
-L.Settings.TargetNamePreviewText = "Nom de la cible"
-
 L.Settings.FeatureFlagsLabel = "Fonctionnalités"
 L.Settings.FeatureFlagsTooltip = nil
 

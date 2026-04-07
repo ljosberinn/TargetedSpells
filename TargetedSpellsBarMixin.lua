@@ -296,6 +296,27 @@ function TargetedSpellsBarMixin:SetProgressBarColor()
 	self.ProgressBar:SetStatusBarColor(color.r, color.g, color.b, color.a)
 end
 
+function TargetedSpellsBarMixin:SetPreviewBarColor()
+	if TargetedSpellsSaved.Settings.Party.UseInterruptabilityColors then
+		local hex = Private.Utils.RollDice() and TargetedSpellsSaved.Settings.Party.InterruptibleColor
+			or TargetedSpellsSaved.Settings.Party.UninterruptibleColor
+
+		local color = CreateColorFromHexString(hex)
+
+		self.ProgressBar:SetStatusBarColor(color.r, color.g, color.b, color.a)
+	elseif TargetedSpellsSaved.Settings.Party.UseTargetClassColor then
+		local color = C_ClassColor.GetClassColor(select(2, UnitClass("player")))
+
+		if color then
+			self.ProgressBar:SetStatusBarColor(color.r, color.g, color.b, 0.75)
+		else
+			self:SetProgressBarColor()
+		end
+	else
+		self:SetProgressBarColor()
+	end
+end
+
 function TargetedSpellsBarMixin:AdjustInterruptibleColor(isInterruptible)
 	local hex = isInterruptible and TargetedSpellsSaved.Settings.Party.InterruptibleColor
 		or TargetedSpellsSaved.Settings.Party.UninterruptibleColor
@@ -362,7 +383,7 @@ do
 		local isClassColor = false
 
 		if castingUnit == "preview" then
-			name = Private.L.Settings.TargetNamePreviewText
+			name = UnitName("player")
 
 			if TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowTargetClassColor] then
 				color = C_ClassColor.GetClassColor(select(2, UnitClass("player")))
@@ -417,8 +438,10 @@ do
 		end
 
 		local isChannel = false
+
 		do
 			local castingDuration = UnitCastingDuration(castingUnit)
+
 			if castingDuration == nil then
 				local channelDuration = UnitChannelDuration(castingUnit)
 
@@ -445,6 +468,10 @@ do
 		end
 
 		self.ProgressBar.TargetName:Show()
+
+		if castingUnit == "preview" then
+			self:SetPreviewBarColor()
+		end
 	end
 end
 

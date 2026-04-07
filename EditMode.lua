@@ -85,14 +85,22 @@ function TargetedSpellsEditModeMixin:OnSettingsChanged(key, flagIdOrValue, newBo
 				frame:SetBackgroundBarColor()
 			end
 		end
-	elseif key == Private.Settings.Keys.Party.ProgressBarColor then
+	elseif
+		key == Private.Settings.Keys.Party.ProgressBarColor
+		or key == Private.Settings.Keys.Party.UseInterruptabilityColors
+		or key == Private.Settings.Keys.Party.UseTargetClassColor
+		or key == Private.Settings.Keys.Party.UninterruptibleColor
+		or key == Private.Settings.Keys.Party.InterruptibleColor
+	then
 		if not LibEditMode:IsInEditMode() then
 			return
 		end
 
-		for _, frame in pairs(self.frames) do
-			if frame.SetProgressBarColor then
-				frame:SetProgressBarColor()
+		if self.frameKind == Private.Enum.FrameKind.Party then
+			for _, frame in pairs(self.frames) do
+				if frame.SetPreviewBarColor then
+					frame:SetPreviewBarColor()
+				end
 			end
 		end
 	elseif key == Private.Settings.Keys.Self.FeatureFlags or key == Private.Settings.Keys.Party.FeatureFlags then

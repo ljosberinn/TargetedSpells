@@ -185,8 +185,6 @@ L.Settings.FontLabel = "글꼴"
 
 L.Settings.FontTooltip = nil
 
-L.Settings.TargetNamePreviewText = "대상 이름"
-
 L.Settings.FeatureFlagsLabel = "기능"
 L.Settings.FeatureFlagsTooltip = nil
 

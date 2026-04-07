@@ -261,6 +261,7 @@
 ---@field SetBackgroundBarTexture fun(self: TargetedSpellsBarMixin)
 ---@field SetBackgroundBarColor fun(self: TargetedSpellsBarMixin)
 ---@field SetProgressBarColor fun(self: TargetedSpellsBarMixin)
+---@field SetPreviewBarColor fun(self: TargetedSpellsBarMixin)
 ---@field AdjustInterruptibleColor fun(self: TargetedSpellsBarMixin, isInterruptible: boolean)
 ---@field SetTargetMarker fun(self: TargetedSpellsBarMixin, raidTargetIndex: number?)
 

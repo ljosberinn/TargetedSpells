@@ -188,8 +188,6 @@ L.Settings.Export = "Экспорт"
 L.Settings.FontLabel = "Шрифт"
 L.Settings.FontTooltip = nil
 
-L.Settings.TargetNamePreviewText = "Имя цели"
-
 L.Settings.FeatureFlagsLabel = "Функции"
 L.Settings.FeatureFlagsTooltip = nil
 

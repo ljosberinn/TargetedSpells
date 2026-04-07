@@ -183,8 +183,6 @@ L.Settings.Export = "Esporta"
 L.Settings.FontLabel = "Carattere"
 L.Settings.FontTooltip = nil
 
-L.Settings.TargetNamePreviewText = "Nome bersaglio"
-
 L.Settings.FeatureFlagsLabel = "Funzionalità"
 L.Settings.FeatureFlagsTooltip = nil
 

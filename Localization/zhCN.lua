@@ -181,8 +181,6 @@ L.Settings.Export = "导出"
 L.Settings.FontLabel = "字体"
 L.Settings.FontTooltip = nil
 
-L.Settings.TargetNamePreviewText = "目标名称"
-
 L.Settings.FeatureFlagsLabel = "功能"
 L.Settings.FeatureFlagsTooltip = nil
 
