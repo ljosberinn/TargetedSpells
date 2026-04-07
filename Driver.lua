@@ -7,6 +7,8 @@ local TargetedSpellsDriver = {}
 function TargetedSpellsDriver:Init()
 	self.delay = 0.2
 	self.frames = {}
+	self.selfFrameCount = 0
+	self.partyFrameCount = 0
 	self.role = Private.Enum.Role.Damager
 	self.contentType = Private.Enum.ContentType.OpenWorld
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingsChanged, self)
@@ -145,7 +147,9 @@ do
 		if
 			TargetedSpellsSaved.Settings.Self.Enabled
 			and not self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Self)
+			and self.selfFrameCount < 10
 		then
+			self.selfFrameCount = self.selfFrameCount + 1
 			local selfTargetingFrame = Private.Utils.Pools.Self:Acquire()
 			selfTargetingFrame:PostCreate("player", castingUnit)
 			table.insert(frames, selfTargetingFrame)
@@ -155,7 +159,9 @@ do
 			TargetedSpellsSaved.Settings.Party.Enabled
 			and IsInGroup()
 			and not self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Party)
+			and self.partyFrameCount < 10
 		then
+			self.partyFrameCount = self.partyFrameCount + 1
 			local frame = Private.Utils.Pools.Bar:Acquire()
 			frame:PostCreate(castingUnit)
 			table.insert(frames, frame)
@@ -210,8 +216,10 @@ end
 
 function TargetedSpellsDriver:ReleaseFrame(frame)
 	if frame:GetKind() == Private.Enum.FrameKind.Self then
+		self.selfFrameCount = self.selfFrameCount - 1
 		Private.Utils.Pools.Self:Release(frame)
 	else
+		self.partyFrameCount = self.partyFrameCount - 1
 		Private.Utils.Pools.Bar:Release(frame)
 	end
 end
@@ -422,6 +430,8 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 				Private.Utils.Pools.Bar:ReleaseAll()
 				Private.Utils.Pools.Self:ReleaseAll()
 				table.wipe(self.frames)
+				self.selfFrameCount = 0
+				self.partyFrameCount = 0
 			end
 		elseif name == "nameplateShowOffscreen" then
 			if value == "1" or value == 1 then

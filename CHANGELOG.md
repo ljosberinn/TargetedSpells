@@ -18,3 +18,8 @@ Self explanatory.
   - this has the unfortunate side effect of seeing all RP channels again, if you have a nameplate for the unit
 - added scrollbars to settings prone to have many options available
 - fixed a positioning bug with the Edit Mode frame
+
+### Other
+
+- default Party frame height has been reduced to 30
+- each kind of frame will now only render up to 10 frames at a time

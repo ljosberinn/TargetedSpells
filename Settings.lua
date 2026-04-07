@@ -265,7 +265,7 @@ function Private.Settings.GetPartyDefaultSettings()
 	return {
 		Enabled = true,
 		Width = 300,
-		Height = 40,
+		Height = 30,
 		FontSize = 14,
 		Gap = 2,
 		Direction = Private.Enum.Direction.Vertical,
