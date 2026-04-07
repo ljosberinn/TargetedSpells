@@ -292,30 +292,24 @@ function TargetedSpellsDriver:UnitIsIrrelevant(unit, skipTargetCheck)
 		return true
 	end
 
-	if not UnitExists(unit) then
-		return true
-	end
-
-	if not UnitCanAttack("player", unit) then
-		return true
-	end
-
 	if skipTargetCheck then
 		return false
 	end
 
 	local target = string.format("%starget", unit)
 
-	if not UnitExists(target) then
-		return true
-	end
+	if UnitExists(target) then
+		if not UnitIsVisible(target) then
+			return true
+		end
 
-	if UnitCanAttack("player", target) then
-		return true
-	end
+		if UnitCanAttack("player", target) then
+			return true
+		end
 
-	if IsInGroup() and not UnitInParty(target) then
-		return true
+		if IsInGroup() and not UnitInParty(target) then
+			return true
+		end
 	end
 
 	return false
@@ -424,20 +418,10 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		local name, value = ...
 
 		if name == "nameplateShowEnemies" then
-			if value ~= 0 then
-				return
-			end
-
-			local cleanedSomethingUp = false
-
-			for unit in pairs(self.frames) do
-				if self:ReleaseFrameForUnit(unit, true) then
-					cleanedSomethingUp = true
-				end
-			end
-
-			if cleanedSomethingUp then
-				self:RepositionFrames()
+			if value == 0 then
+				Private.Utils.Pools.Bar:ReleaseAll()
+				Private.Utils.Pools.Self:ReleaseAll()
+				table.wipe(self.frames)
 			end
 		elseif name == "nameplateShowOffscreen" then
 			if value == "1" or value == 1 then
@@ -477,8 +461,24 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 
 		-- in some rare channel cases, enemies send periodic spellcast succeeded events per second, apparently when each channel
 		-- tick leaves behind a zone on the ground
-		if event == "UNIT_SPELLCAST_SUCCEEDED" and UnitChannelInfo(unit) ~= nil then
-			return
+		if event == "UNIT_SPELLCAST_SUCCEEDED" then
+			local id = select(11, UnitChannelInfo(unit))
+
+			-- unit is channeling _something_
+			if id ~= nil then
+				for _, frame in ipairs(frames) do
+					-- id mismatch implies unit is casting something different. clean up what we have
+					if frame:GetId() ~= id then
+						if self:ReleaseFrameForUnit(unit, true, frame:GetId()) then
+							self:RepositionFrames()
+							return
+						end
+					end
+				end
+
+				-- no id mismatch, thus still casting the same spell as before
+				return
+			end
 		end
 
 		---@type number|nil
@@ -506,11 +506,11 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		local info = ...
 
 		-- cast vanished during the delay
-		if event == Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START and UnitCastingInfo(info.unit) == nil then
-			return
-		elseif
-			event == Private.Enum.Events.DELAYED_UNIT_SPELLCAST_CHANNEL_START and UnitChannelInfo(info.unit) == nil
-		then
+		local duration = UnitCastingDuration(info.unit) or UnitChannelDuration(info.unit)
+
+		-- without `nameplateShowOffscreen` active, castTime may stay nil
+
+		if duration == nil then
 			return
 		end
 
@@ -528,14 +528,6 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 			self.frames[info.unit] = {}
 		else
 			self:ReleaseFrameForUnit(info.unit, false, info.id)
-		end
-
-		local duration = UnitCastingDuration(info.unit) or UnitChannelDuration(info.unit)
-
-		-- without `nameplateShowOffscreen` active, castTime may stay nil
-
-		if duration == nil then
-			return
 		end
 
 		self:SetupAcquiredFrames(info, frames, duration)

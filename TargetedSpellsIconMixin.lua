@@ -22,7 +22,6 @@ function TargetedSpellsIconMixin:OnLoad()
 	self:ApplyBorderStyle(TargetedSpellsSaved.Settings.Self.BorderStyle)
 	self:SetShowDuration(TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration])
 	self.Cooldown:SetDrawSwipe(TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowSwipe])
-	Private.Utils.MaybeApplyElvUISkin(self)
 end
 
 do
