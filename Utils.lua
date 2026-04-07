@@ -4,16 +4,85 @@ local addonName, Private = ...
 ---@class TargetedSpellsUtils
 Private.Utils = {}
 
-Private.Utils.Pool = CreateFramePool(
-	"Frame",
-	UIParent,
-	"TargetedSpellsFrameTemplate",
-	---@param pool FramePool<TargetedSpellsMixin>
-	---@param frame TargetedSpellsMixin
-	function(pool, frame)
-		frame:Reset()
-	end
-)
+if C_StringUtil.CreateNumericRuleFormatter == nil then
+	Private.Utils.Formatter = nil
+else
+	Private.Utils.Formatter = C_StringUtil.CreateNumericRuleFormatter()
+
+	-- thanks to m33shoq for this
+	Private.Utils.Formatter:SetBreakpoints({
+		{
+			threshold = 0,
+			format = "%.1f",
+		},
+		{
+			threshold = 3.01,
+			format = "%d",
+		},
+		{
+			threshold = 60,
+			format = "%d:%02d",
+			components = {
+				{
+					div = 60,
+				},
+				{
+					mod = 60,
+				},
+			},
+		},
+		{
+			threshold = 600, -- 10 minutes
+			format = "%dm",
+			components = {
+				{
+					div = 60,
+				},
+			},
+		},
+		{
+			threshold = 3600, -- 1 hour
+			format = "%dh",
+			components = {
+				{
+					div = 3600,
+				},
+			},
+		},
+		{
+			threshold = 86400, -- 1 day
+			format = "%dd",
+			components = {
+				{
+					div = 86400,
+				},
+			},
+		},
+	})
+end
+
+Private.Utils.Pools = {
+	Self = CreateFramePool(
+		"Frame",
+		UIParent,
+		"TargetedSpellsFrameTemplate",
+		---@param pool FramePool<TargetedSpellsIconMixin>
+		---@param frame TargetedSpellsIconMixin
+		function(pool, frame)
+			frame:Reset()
+		end
+	),
+	Bar = CreateFramePool(
+		"Frame",
+		UIParent,
+		"TargetedSpellsBarFrameTemplate",
+		---@param pool FramePool<TargetedSpellsBarMixin>
+		---@param frame TargetedSpellsBarMixin
+		function(pool, frame)
+			frame:Reset()
+		end
+	),
+}
 
 do
 	local function sortAsc(a, b)
@@ -50,50 +119,60 @@ function Private.Utils.CollectLayoutingArguments(direction, grow, width, height,
 	}
 end
 
-function Private.Utils.ShowMigrationPopup(resetKeys, kind)
-	local text = string.format(Private.L.Functionality.V2DeprecationWarning, table.concat(resetKeys, "\n"))
-	if kind == "import" then
-		-- cannot show StaticPopup while in Edit Mode apparently
-		print(text)
-	elseif kind == "login" then
-		EventRegistry:RegisterFrameEventAndCallback("FIRST_FRAME_RENDERED", function(ownerId)
-			EventRegistry:UnregisterFrameEventAndCallback("FIRST_FRAME_RENDERED", ownerId)
+function Private.Utils.ShowMigrationPopup()
+	EventRegistry:RegisterFrameEventAndCallback("FIRST_FRAME_RENDERED", function(ownerId)
+		EventRegistry:UnregisterFrameEventAndCallback("FIRST_FRAME_RENDERED", ownerId)
 
-			C_Timer.After(3, function()
-				Private.Utils.ShowStaticPopup({
-					whileDead = true,
-					button1 = OKAY,
-					text = text,
-				})
-			end)
+		C_Timer.After(3, function()
+			Private.Utils.ShowStaticPopup({
+				whileDead = true,
+				button1 = OKAY,
+				text = Private.L.Functionality.V3MigrationWarning,
+			})
 		end)
+	end)
+end
+
+function Private.Utils.MigratePartySettingsToV3(existing)
+	local defaults = Private.Settings.GetPartyDefaultSettings()
+
+	local compatibleKeys = {
+		"Enabled",
+		"LoadConditionContentType",
+		"LoadConditionRole",
+		"Font",
+		"GlowType",
+		"FontFlags",
+	}
+
+	for _, key in ipairs(compatibleKeys) do
+		local value = existing[key]
+
+		if value ~= nil and type(value) == type(defaults[key]) then
+			defaults[key] = value
+		end
 	end
+
+	return defaults
 end
 
 function Private.Utils.ApplyMigration(key, kind, defaults)
 	local tableRef = kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
 		or TargetedSpellsSaved.Settings.Party
-	local prefix = kind == Private.Enum.FrameKind.Self and Private.L.EditMode.TargetedSpellsSelfLabel
-		or Private.L.EditMode.TargetedSpellsPartyLabel
 
 	if key == "Grow" and tableRef[key] == 1 then
 		tableRef[key] = Private.Enum.Grow.Start
-		return prefix .. ": " .. Private.L.Settings.FrameGrowLabel
 	end
 
 	if key == "GlowType" and tableRef[key] == 3 then
 		tableRef[key] = Private.Enum.GlowType.PixelGlow
-		return prefix .. ": " .. Private.L.Settings.GlowTypeLabel
 	end
 
 	if key == "ShowBorder" then
 		local shown = tableRef[key]
 		tableRef[key] = nil
 		tableRef.BorderStyle = shown and defaults.BorderStyle or "None"
-		return prefix .. ": " .. Private.L.Settings.BorderStyleLabel
 	end
-
-	return nil
 end
 
 function Private.Utils.AdjustLayout(
@@ -145,177 +224,16 @@ end
 do
 	function Private.Utils.MaybeApplyElvUISkin(frame) end
 
-	if ElvUI then
-		local E = unpack(ElvUI)
-		local S = E:GetModule("Skins")
+	-- if ElvUI then
+	-- 	local E = unpack(ElvUI)
+	-- 	local S = E:GetModule("Skins")
 
-		S:AddCallbackForAddon(addonName, addonName, function()
-			function Private.Utils.MaybeApplyElvUISkin(frame)
-				S:HandleButton(frame)
-			end
-		end)
-	end
-end
-
-do
-	---@type table<string, true>
-	local thirdPartyFrameNames = {}
-	local registerdFrames = 0
-	local hasManualThirdPartyRegistrations = false
-
-	function Private.Utils.RegisterFrameByName(frameName)
-		thirdPartyFrameNames[frameName] = true
-		hasManualThirdPartyRegistrations = true
-		registerdFrames = registerdFrames + 1
-
-		return true
-	end
-
-	function Private.Utils.UnregisterFrameByName(frameName)
-		if thirdPartyFrameNames[frameName] == nil then
-			return false
-		end
-
-		thirdPartyFrameNames[frameName] = nil
-		registerdFrames = registerdFrames - 1
-		hasManualThirdPartyRegistrations = registerdFrames > 0
-
-		if not hasManualThirdPartyRegistrations then
-			table.wipe(thirdPartyFrameNames)
-		end
-
-		return true
-	end
-
-	function Private.Utils.HasThirdPartyCandidates()
-		return hasManualThirdPartyRegistrations
-	end
-
-	for index = 1, C_AddOns.GetNumAddOns() do
-		local meta = C_AddOns.GetAddOnMetadata(index, "X-oUF")
-
-		if meta and _G[meta] then
-			hooksecurefunc(_G[meta], "SpawnHeader", function(ref)
-				for _, header in next, ref.headers do
-					local headerName = header:GetName()
-
-					if headerName and string.find(headerName, "Party") ~= nil then
-						for unitIndex = 1, 5 do
-							Private.Utils.RegisterFrameByName(string.format("%sUnitButton%d", headerName, unitIndex))
-						end
-					end
-				end
-			end)
-		end
-	end
-
-	function Private.Utils.FindThirdPartyGroupFrameForUnit(unit)
-		if Grid2 then
-			return (next(Grid2:GetUnitFrames(unit)))
-		end
-
-		if VUHDO_getUnitButtons then
-			local frames = VUHDO_getUnitButtons(unit)
-
-			if frames ~= nil then
-				for _, frame in pairs(frames) do
-					if frame.raidid == unit and frame:IsVisible() then
-						return frame
-					end
-				end
-			end
-		end
-
-		if ShadowUF and SUFHeaderparty then
-			for i = 1, 5 do
-				local frame = _G["SUFHeaderpartyUnitButton" .. i]
-
-				if frame and frame.unit == unit then
-					return frame
-				end
-			end
-		end
-
-		if EnhanceQoL and EQOLUFPartyHeader then
-			for i = 1, 5 do
-				local frame = _G["EQOLUFPartyHeaderUnitButton" .. i]
-
-				if frame and frame.unit == unit then
-					return frame
-				end
-			end
-		end
-
-		if DandersFrames and DandersFrames.Api and DandersFrames.Api.GetFrameForUnit then
-			local frame = DandersFrames.Api.GetFrameForUnit(unit, Private.Enum.FrameKind.Party)
-
-			if frame then
-				return frame
-			end
-		end
-
-		if QUI then
-			for i = 1, 5 do
-				local frame = _G["QUI_PartyHeaderUnitButton" .. i]
-
-				if frame and frame.unit == unit then
-					return frame
-				end
-			end
-
-			-- of course this vibecoded mess doesn't adhere to any standards so its using completely different
-			-- frames in edit mode that also don't communicate the unit they intend to resemble. 🤡
-			local id = (unit == "player" and 5 or string.gsub(unit, "party", ""))
-			-- even worse, it uses two frames with the same name so you can't globally access them as needed.
-			-- only occurs after opening edit mode the second time tho
-			local frameName = "QUI_TestFrame" .. id
-			local frame = _G[frameName]
-
-			if frame and frame:IsShown() then
-				return frame
-			end
-
-			if QUI_GroupFramesMover and QUI_GroupFramesMover:IsShown() then
-				local relevantParent = select(7, QUI_GroupFramesMover:GetChildren())
-
-				if relevantParent then
-					local children = { relevantParent:GetChildren() }
-
-					for i = 1, #children do
-						local child = children[i]
-
-						if child and child:GetName() == frameName then
-							return child
-						end
-					end
-				end
-			end
-		end
-
-		if Cell then
-			for i = 1, 5 do
-				local frame = _G["CellPartyFrameHeaderUnitButton" .. i]
-
-				if frame and frame.unit == unit then
-					return frame
-				end
-			end
-		end
-
-		-- use these last, including e.g. ElvUI. people using multiple unit frame addons (god knows for what reason)
-		-- _likely_ prefer using the other one over oUF derivates because what else would be the point of having them.
-		if hasManualThirdPartyRegistrations then
-			for frameName, bool in pairs(thirdPartyFrameNames) do
-				local frame = _G[frameName]
-
-				if frame and frame.unit == unit then
-					return frame
-				end
-			end
-		end
-
-		return nil
-	end
+	-- 	S:AddCallbackForAddon(addonName, addonName, function()
+	-- 		function Private.Utils.MaybeApplyElvUISkin(frame)
+	-- 			S:HandleButton(frame)
+	-- 		end
+	-- 	end)
+	-- end
 end
 
 function Private.Utils.CreateEditablePopup(title, text, button1)
@@ -374,6 +292,8 @@ function Private.Utils.ShowStaticPopup(args)
 	StaticPopup_Show(addonName)
 end
 
+---@param string string
+---@return table
 local function DecodeProfileString(string)
 	return C_EncodingUtil.DeserializeCBOR(C_EncodingUtil.DecodeBase64(string))
 end
@@ -410,38 +330,24 @@ do
 		end
 
 		local hasAnyChange = false
-		local resetKeys = {}
 
-		for kind, kindString in pairs(Private.Enum.FrameKind) do
-			local tableRef = TargetedSpellsSaved.Settings[kind]
-
-			if kindString == Private.Enum.FrameKind.Self then
-				local frame = editModeFrameByKind[kindString]
-
-				local point, x, y = result[kind].Position.point, result[kind].Position.x, result[kind].Position.y
-
-				if
-					frame ~= nil
-					and (point ~= tableRef.Position.point or x ~= tableRef.Position.x or y ~= tableRef.Position.y)
-				then
-					frame:ClearAllPoints()
-					PixelUtil.SetPoint(frame, point, UIParent, "CENTER", x, y)
-					tableRef.Position.point = point
-					tableRef.Position.x = x
-					tableRef.Position.y = y
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.EDIT_MODE_POSITION_CHANGED, point, x, y)
-				end
-			end
-
+		---@param tableRef SavedVariablesSettingsParty|SavedVariablesSettingsSelf
+		---@param kindString string
+		---@param sourceData table
+		---@param defaults table
+		---@param eventKeys table
+		local function ImportKindSettings(tableRef, kindString, sourceData, defaults, eventKeys)
 			local anyPrimaryLoadConditionIsDisabled = false
 
-			local defaults = kindString == Private.Enum.FrameKind.Self and Private.Settings.GetSelfDefaultSettings()
-				or Private.Settings.GetPartyDefaultSettings()
-			local eventKeys = kindString == Private.Enum.FrameKind.Self and Private.Settings.Keys.Self
-				or Private.Settings.Keys.Party
+			local enumByKey = {
+				LoadConditionContentType = Private.Enum.ContentType,
+				LoadConditionRole = Private.Enum.Role,
+				FontFlags = Private.Enum.FontFlags,
+				FeatureFlags = Private.Enum.FeatureFlag,
+			}
 
 			for key, defaultValue in pairs(defaults) do
-				local newValue = result[kind][key]
+				local newValue = sourceData[key]
 				local expectedType = type(defaultValue)
 
 				if newValue ~= nil and type(newValue) == expectedType then
@@ -449,18 +355,7 @@ do
 					local hasChanges = false
 
 					if expectedType == "table" then
-						local enumToCompareAgainst = nil
-						if key == "LoadConditionContentType" then
-							enumToCompareAgainst = Private.Enum.ContentType
-						elseif key == "LoadConditionRole" or key == "RoleFilter" then
-							enumToCompareAgainst = Private.Enum.Role
-						elseif key == "FontFlags" then
-							enumToCompareAgainst = Private.Enum.FontFlags
-						elseif key == "FeatureFlags" then
-							enumToCompareAgainst = Private.Enum.FeatureFlag
-						end
-
-						-- only other case is Position but that's taken care of above
+						local enumToCompareAgainst = enumByKey[key]
 
 						if enumToCompareAgainst then
 							local newTable = {}
@@ -488,13 +383,7 @@ do
 
 							if hasChanges then
 								tableRef[key] = newTable
-
-								local resetKey = Private.Utils.ApplyMigration(key, kindString, defaults)
-
-								if resetKey then
-									table.insert(resetKeys, resetKey)
-								end
-
+								Private.Utils.ApplyMigration(key, kindString, defaults)
 								Private.EventRegistry:TriggerEvent(
 									Private.Enum.Events.SETTING_CHANGED,
 									eventKey,
@@ -504,16 +393,10 @@ do
 						end
 					elseif newValue ~= tableRef[key] then
 						tableRef[key] = newValue
-
-						local resetKey = Private.Utils.ApplyMigration(key, kindString, defaults)
-
-						if resetKey then
-							table.insert(resetKeys, resetKey)
-						end
-
+						Private.Utils.ApplyMigration(key, kindString, defaults)
 						hasChanges = true
 
-						if eventKey and hasChanges then
+						if eventKey then
 							Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, eventKey, newValue)
 						end
 					end
@@ -530,8 +413,39 @@ do
 			end
 		end
 
-		if #resetKeys > 0 then
-			Private.Utils.ShowMigrationPopup(resetKeys, "import")
+		for kind, kindString in pairs(Private.Enum.FrameKind) do
+			local sourceData = result[kind]
+
+			if sourceData ~= nil then
+				local tableRef = TargetedSpellsSaved.Settings[kind]
+				local defaults = kind == Private.Enum.FrameKind.Self and Private.Settings.GetSelfDefaultSettings()
+					or Private.Settings.GetPartyDefaultSettings()
+				local eventKeys = kind == Private.Enum.FrameKind.Self and Private.Settings.Keys.Self
+					or Private.Settings.Keys.Party
+
+				ImportKindSettings(tableRef, kindString, sourceData, defaults, eventKeys)
+
+				if sourceData.Position ~= nil then
+					local point, x, y = sourceData.Position.point, sourceData.Position.x, sourceData.Position.y
+					local frame = editModeFrameByKind[kindString]
+
+					if
+						frame ~= nil
+						and (point ~= tableRef.Position.point or x ~= tableRef.Position.x or y ~= tableRef.Position.y)
+					then
+						frame:ClearAllPoints()
+						PixelUtil.SetPoint(frame, "CENTER", UIParent, point, x, y)
+
+						tableRef.Position.point = point
+						tableRef.Position.x = x
+						tableRef.Position.y = y
+
+						local event = kind == Private.Enum.FrameKind.Self and Private.Enum.Events.SETTING_CHANGED
+							or Private.Enum.Events.SETTING_CHANGED
+						Private.EventRegistry:TriggerEvent(event, point, x, y)
+					end
+				end
+			end
 		end
 
 		return hasAnyChange
@@ -549,8 +463,8 @@ do
 		Import = Private.Utils.Import,
 		Export = Private.Utils.Export,
 		DecodeProfileString = DecodeProfileString,
-		RegisterFrameByName = Private.Utils.RegisterFrameByName,
-		UnregisterFrameByName = Private.Utils.UnregisterFrameByName,
+		RegisterFrameByName = noop,
+		UnregisterFrameByName = noop,
 		SetProfile = noop,
 		GetProfileKeys = function()
 			return { "Global" }

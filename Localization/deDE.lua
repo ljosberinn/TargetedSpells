@@ -24,10 +24,9 @@ L.Functionality.CVarWarning = string.format(
 	ENABLE
 )
 
-L.Functionality.V2DeprecationWarning = string.format(
-	"%s\n\nAufgrund der Änderungeon von v2 wurden die folgenden Einstellungen zurückgesetzt:\n\n%s\n\nZusätzlich raten wir die Positionierung zu überprüfen da es auch dort ggf. zu Anpassungen gekommen sein kann.",
-	addonNameWithIcon,
-	"%s"
+L.Functionality.V3MigrationWarning = string.format(
+	"%s\n\nAufgrund von API-Einschränkungen musste die Gruppen-Funktionalität von Targeted Spells vollständig überarbeitet werden. Bitte den Bearbeitungsmodus für eine Vorschau aufrufen.",
+	addonNameWithIcon
 )
 
 L.Settings.EnabledLabel = "Aktiviert"
@@ -60,11 +59,6 @@ L.Settings.LoadConditionRoleLabels = {
 	[Private.Enum.Role.Tank] = "Panzer",
 	[Private.Enum.Role.Damager] = "Schadensverursacher",
 }
-
-L.Settings.RoleFilterLabel = "Rollenfilter"
-L.Settings.RoleFilterTooltip =
-	"Erlaubt Zauber die auf bestimmte Rollen zielen nicht anzuzeigen. Nutzung auf eigene Gefahr."
-L.Settings.RoleFilterLabels = L.Settings.LoadConditionRoleLabels
 
 L.Settings.FrameWidthLabel = "Breite"
 L.Settings.FrameWidthTooltip = nil
@@ -121,9 +115,6 @@ L.Settings.GlowTypeLabels = {
 L.Settings.ShowDurationLabel = "Dauer anzeigen"
 L.Settings.ShowDurationTooltip = nil
 
-L.Settings.ShowDurationFractionsLabel = "Sekundenbruchteile anzeigen"
-L.Settings.ShowDurationFractionsTooltip = nil
-
 L.Settings.IndicateInterruptsLabel = "Unterbrechungen anzeigen"
 L.Settings.IndicateInterruptsTooltip =
 	"Desaturiert das Icon, zeigt einen Indikator an und verzögert das Ausblenden des Icons um eine Sekunde. Funktioniert nicht bei kanalisierten Zaubern."
@@ -136,29 +127,42 @@ L.Settings.ShowSwipeTooltip = nil
 
 L.Settings.BorderStyleLabel = "Border Style"
 L.Settings.BorderStyleTooltip = nil
-L.Settings.BorderStyleSolid = "Solid"
 
 L.Settings.OpacityLabel = "Deckkraft"
 L.Settings.OpacityTooltip = nil
 
+L.Settings.SpellNameWidthLabel = "Zaubernamenlänge"
+L.Settings.SpellNameWidthTooltip = "Maximale Breite des Zaubernamentextes. Auf 0 setzen für keine Begrenzung."
+
+L.Settings.TargetNameWidthLabel = "Zielnamenlänge"
+L.Settings.TargetNameWidthTooltip = "Maximale Breite des Zielnamentextes. Auf 0 setzen für keine Begrenzung."
+
+L.Settings.NameDividerLabel = "Namens-Trennzeichen"
+L.Settings.NameDividerNone = "Keines"
+
+L.Settings.ForegroundBarTextureLabel = "Fortschrittsbalken-Textur"
+L.Settings.ForegroundBarTextureTooltip = nil
+
+L.Settings.BackgroundBarTextureLabel = "Hintergrundbalken-Textur"
+L.Settings.BackgroundBarTextureTooltip = nil
+
+L.Settings.BackgroundBarColorLabel = "Hintergrundbalken-Farbe"
+L.Settings.BackgroundBarColorTooltip = nil
+
+L.Settings.ProgressBarColorLabel = "Statusbalkenfarbe"
+L.Settings.ProgressBarColorTooltip = nil
+
+L.Settings.UseInterruptabilityColorsLabel = "Farbkodierung für Unterbrechungsstatus nutzen"
+L.Settings.UseInterruptabilityColorsTooltip = nil
+
+L.Settings.UninterruptibleColorLabel = "Farbe Ununterbrechbar"
+L.Settings.UninterruptibleColorTooltip = nil
+
+L.Settings.InterruptibleColorLabel = "Farbe Unterbrechbar"
+L.Settings.InterruptibleColorTooltip = nil
+
 L.Settings.IconZoomLabel = "Icon Zoom"
 L.Settings.IconZoomTooltip = nil
-
-L.Settings.FrameOffsetXLabel = "Versatz X-Achse"
-L.Settings.FrameOffsetXTooltip = nil
-
-L.Settings.FrameOffsetYLabel = "Versatz Y-Achse"
-L.Settings.FrameOffsetYTooltip = nil
-
-L.Settings.FrameSourceAnchorLabel = "Ursprungsanker"
-L.Settings.FrameSourceAnchorTooltip = nil
-
-L.Settings.FrameTargetAnchorLabel = "Zielanker"
-L.Settings.FrameTargetAnchorTooltip = nil
-
-L.Settings.IncludeSelfInPartyLabel = "Spieler auch in Gruppe anzeigen"
-L.Settings.IncludeSelfInPartyTooltip =
-	"Funktioniert nur wenn Gruppen im selben Stil wie Schlachtzüge angezeigt werden."
 
 L.Settings.ClickToOpenSettingsLabel = "Klicken um Einstellungen zu öffnen"
 
@@ -168,6 +172,8 @@ L.Settings.Export = "Exportieren"
 L.Settings.FontLabel = "Schriftart"
 L.Settings.FontTooltip = nil
 
+L.Settings.TargetNamePreviewText = "Zielname"
+
 L.Settings.FeatureFlagsLabel = "Features"
 L.Settings.FeatureFlagsTooltip = nil
 
@@ -175,15 +181,17 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.GlowImportant] = L.Settings.GlowImportantLabel,
 	[Private.Enum.FeatureFlag.OnlyImportant] = L.Settings.OnlyImportantLabel,
 	[Private.Enum.FeatureFlag.ShowDuration] = L.Settings.ShowDurationLabel,
-	[Private.Enum.FeatureFlag.ShowDurationFractions] = L.Settings.ShowDurationFractionsLabel,
 	[Private.Enum.FeatureFlag.ShowSwipe] = L.Settings.ShowSwipeLabel,
 	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
 	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,
-	[Private.Enum.FeatureFlag.IncludeSelfInParty] = L.Settings.IncludeSelfInPartyLabel,
+	[Private.Enum.FeatureFlag.ShowIcon] = "Symbol anzeigen",
+	[Private.Enum.FeatureFlag.ShowTargetMarker] = "Zielmarkierung anzeigen",
+	[Private.Enum.FeatureFlag.ShowSpellName] = "Zaubernamen anzeigen",
+	[Private.Enum.FeatureFlag.ShowTargetName] = "Zielnamen anzeigen",
+	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Zielklassenfarbe anzeigen",
 }
 
 L.Settings.FeatureFlagSettingTitles = {
 	[Private.Enum.FeatureFlag.GlowImportant] = "Anzeige",
 	[Private.Enum.FeatureFlag.IndicateInterrupts] = "Unterbrechungseinstellungen",
-	[Private.Enum.FeatureFlag.IncludeSelfInParty] = "Gruppeneinstellungen",
 }

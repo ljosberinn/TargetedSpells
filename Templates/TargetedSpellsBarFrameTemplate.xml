@@ -1,0 +1,87 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/ https://raw.githubusercontent.com/Gethe/wow-ui-source/live/Interface/AddOns/Blizzard_SharedXML/UI.xsd">
+    <Frame name="TargetedSpellsBarFrameTemplate" mixin="TargetedSpellsBarMixin" virtual="true" ignoreParentAlpha="true" enableMouse="false" propagateMouseInput="Both">
+        <KeyValues>
+            <KeyValue key="kind" value="party" type="string" />
+        </KeyValues>
+        <Layers>
+            <Layer level="ARTWORK">
+                <Texture parentKey="Icon">
+                    <Anchors>
+                        <Anchor point="TOPLEFT" relativePoint="TOPLEFT" />
+                        <Anchor point="BOTTOMLEFT" relativePoint="BOTTOMLEFT" />
+                    </Anchors>
+                </Texture>
+            </Layer>
+            <Layer level="OVERLAY">
+                <Texture parentKey="InterruptIcon" hidden="true" file="Interface\TARGETINGFRAME\UI-RaidTargetingIcon_7.blp">
+                    <Anchors>
+                        <Anchor point="TOPLEFT" relativeKey="$parent.Icon" relativePoint="TOPLEFT">
+                            <Offset>
+                                <AbsDimension x="4" y="-4" />
+                            </Offset>
+                        </Anchor>
+                        <Anchor point="BOTTOMRIGHT" relativeKey="$parent.Icon" relativePoint="BOTTOMRIGHT">
+                            <Offset>
+                                <AbsDimension x="-4" y="4" />
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </Texture>
+            </Layer>
+        </Layers>
+        <Frames>
+            <StatusBar parentKey="Bar" ignoreParentAlpha="true" minValue="0" maxValue="1" />
+            <StatusBar parentKey="ProgressBar">
+                <Layers>
+                    <Layer level="BACKGROUND">
+                        <Texture parentKey="Background" setAllPoints="true" file="Interface\Buttons\WHITE8X8" />
+                    </Layer>
+                    <Layer level="OVERLAY">
+                        <FontString parentKey="SpellName" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE" wordwrap="false" />
+                        <FontString parentKey="InterruptSource" hidden="true" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE" wordwrap="false" />
+                        <FontString parentKey="Divider" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE" wordwrap="false">
+                            <Anchors>
+                                <Anchor point="LEFT" relativeKey="$parent.SpellName" relativePoint="RIGHT" />
+                            </Anchors>
+                        </FontString>
+                        <FontString parentKey="TargetName" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE" wordwrap="false">
+                            <Anchors>
+                                <Anchor point="LEFT" relativeKey="$parent.Divider" relativePoint="RIGHT" />
+                            </Anchors>
+                        </FontString>
+                        <FontString parentKey="Duration" font="GameFontHighlightSmall" justifyH="RIGHT" justifyV="MIDDLE">
+                            <Anchors>
+                                <Anchor point="RIGHT" relativePoint="RIGHT">
+                                    <Offset>
+                                        <AbsDimension x="-4" y="0" />
+                                    </Offset>
+                                </Anchor>
+                            </Anchors>
+                        </FontString>
+                        <FontString parentKey="InterruptSource" hidden="true" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE" wordwrap="false">
+                            <Anchors>
+                                <Anchor point="LEFT" relativePoint="LEFT">
+                                    <Offset>
+                                        <AbsDimension x="4" y="0" />
+                                    </Offset>
+                                </Anchor>
+                            </Anchors>
+                        </FontString>
+                    </Layer>
+                </Layers>
+            </StatusBar>
+            <Frame parentKey="CustomElementsFrame" setAllPoints="true" enableMouse="false" propagateMouseInput="Both">
+                <Layers>
+                    <Layer level="OVERLAY">
+                        <Texture parentKey="TargetMarker" file="Interface/TargetingFrame/UI-RaidTargetingIcons" />
+                    </Layer>
+                </Layers>
+            </Frame>
+        </Frames>
+        <Scripts>
+            <OnLoad method="OnLoad" />
+            <OnSizeChanged method="OnSizeChanged" />
+            <OnUpdate method="OnUpdate" />
+        </Scripts>
+    </Frame>
+</Ui>

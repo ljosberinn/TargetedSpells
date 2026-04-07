@@ -1,5 +1,5 @@
 ---@type string, TargetedSpells
-local addonName, Private = ...
+local _, Private = ...
 
 ---@class TargetedSpellsEnums
 Private.Enum = {}
@@ -9,8 +9,10 @@ Private.Enum.Events = {
 	SETTING_CHANGED = "SETTING_CHANGED",
 	DELAYED_UNIT_SPELLCAST_START = "DELAYED_UNIT_SPELLCAST_START",
 	DELAYED_UNIT_SPELLCAST_CHANNEL_START = "DELAYED_UNIT_SPELLCAST_CHANNEL_START",
-	EDIT_MODE_POSITION_CHANGED = "EDIT_MODE_POSITION_CHANGED",
+	EDIT_MODE_SELF_POSITION_CHANGED = "EDIT_MODE_SELF_POSITION_CHANGED",
+	EDIT_MODE_PARTY_POSITION_CHANGED = "EDIT_MODE_PARTY_POSITION_CHANGED",
 	DELAYED_FRAME_CLEANUP = "DELAYED_FRAME_CLEANUP",
+	PARTY_SETTINGS_MIGRATED = "PARTY_SETTINGS_MIGRATED",
 }
 
 ---@enum Direction
@@ -83,15 +85,29 @@ Private.Enum.FontFlags = {
 	SHADOW = 2,
 }
 
+---@enum NameDivider
+Private.Enum.NameDivider = {
+	None = "",
+	Arrow = ">",
+	Arrows = ">>",
+	Pipe = "|",
+	Colon = ":",
+}
+
 ---@enum FeatureFlag
 Private.Enum.FeatureFlag = {
 	GlowImportant = 1,
 	OnlyImportant = 2,
 	ShowDuration = 3,
-	ShowDurationFractions = 4,
+	-- ShowDurationFractions = 4, -- deprecated
 	-- ShowBorder = 5, -- deprecated
 	ShowSwipe = 6,
 	IndicateInterrupts = 7,
 	RenderInterruptSourceName = 8,
-	IncludeSelfInParty = 9,
+	-- IncludeSelfInParty = 9, -- deprecated
+	ShowIcon = 10,
+	ShowTargetMarker = 11,
+	ShowSpellName = 12,
+	ShowTargetName = 13,
+	ShowTargetClassColor = 14,
 }

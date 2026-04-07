@@ -16,7 +16,7 @@ L.Functionality = {}
 L.Settings = {}
 
 L.Settings.EditModeReminder =
-	"Consider using the Edit Mode instead, it includes live preview of all settings.\nThese here are only present to allow editing in combat."
+	"Pensez à utiliser le Mode Édition, il inclut un aperçu en direct de tous les paramètres.\nCeux-ci sont uniquement présents pour permettre l'édition en combat."
 L.EditMode.TargetedSpellsSelfLabel = "Targeted Spells - Self"
 L.EditMode.TargetedSpellsPartyLabel = "Targeted Spells - Party"
 
@@ -28,10 +28,9 @@ L.Functionality.CVarWarning = string.format(
 	ENABLE
 )
 
-L.Functionality.V2DeprecationWarning = string.format(
-	"%s\n\nEn raison des changements dans la v2, les paramètres suivants ont été réinitialisés:\n\n%s\n\nDe plus, nous suggérons de vérifier votre configuration car elle pourrait aussi être impactée.",
-	addonNameWithIcon,
-	"%s"
+L.Functionality.V3MigrationWarning = string.format(
+	"%s\n\nEn raison de mises à jour des restrictions de l'API, la fonctionnalité Groupe de Targeted Spells a dû être entièrement revue. Consultez le Mode Édition pour un aperçu.",
+	addonNameWithIcon
 )
 
 L.Settings.EnabledLabel = "Activé"
@@ -39,9 +38,9 @@ L.Settings.EnabledTooltip = nil
 L.Settings.DisabledLabel = "Désactivé"
 
 L.Settings.AddonCompartmentTooltipLine1 =
-	string.format("%s is %s", WrapTextInColorCode(L.EditMode.TargetedSpellsSelfLabel, "ffeda55f"), "%s")
+	string.format("%s est %s", WrapTextInColorCode(L.EditMode.TargetedSpellsSelfLabel, "ffeda55f"), "%s")
 L.Settings.AddonCompartmentTooltipLine2 =
-	string.format("%s is %s", WrapTextInColorCode(L.EditMode.TargetedSpellsPartyLabel, "ffeda55f"), "%s")
+	string.format("%s est %s", WrapTextInColorCode(L.EditMode.TargetedSpellsPartyLabel, "ffeda55f"), "%s")
 
 L.Settings.LoadConditionContentTypeLabel = "Condition de chargement: Type de contenu"
 L.Settings.LoadConditionContentTypeLabelAbbreviated = "Charger dans le contenu"
@@ -64,10 +63,6 @@ L.Settings.LoadConditionRoleLabels = {
 	[Private.Enum.Role.Damager] = "DPS",
 }
 
-L.Settings.RoleFilterLabel = "Role Filter"
-L.Settings.RoleFilterTooltip = "Allows you to ignore certain roles from being shown. Use at your own risk."
-L.Settings.RoleFilterLabels = L.Settings.LoadConditionRoleLabels
-
 L.Settings.FrameWidthLabel = "Largeur"
 L.Settings.FrameWidthTooltip = nil
 
@@ -77,11 +72,11 @@ L.Settings.FrameHeightTooltip = nil
 L.Settings.FontSizeLabel = "Taille de la police"
 L.Settings.FontSizeTooltip = nil
 
-L.Settings.FontFlagsLabel = "Font Options"
+L.Settings.FontFlagsLabel = "Options de police"
 L.Settings.FontFlagsTooltip = nil
 L.Settings.FontFlagsLabels = {
-	[Private.Enum.FontFlags.OUTLINE] = "Outline",
-	[Private.Enum.FontFlags.SHADOW] = "Shadow",
+	[Private.Enum.FontFlags.OUTLINE] = "Contour",
+	[Private.Enum.FontFlags.SHADOW] = "Ombre",
 }
 
 L.Settings.FrameGapLabel = "Ecart"
@@ -92,25 +87,26 @@ L.Settings.FrameDirectionTooltip = nil
 L.Settings.FrameDirectionHorizontal = "Horizontal"
 L.Settings.FrameDirectionVertical = "Vertical"
 
-L.Settings.FrameSortOrderLabel = "Sort Order"
+L.Settings.FrameSortOrderLabel = "Ordre de tri"
 L.Settings.FrameSortOrderTooltip = nil
-L.Settings.FrameSortOrderAscending = "Ascending"
-L.Settings.FrameSortOrderDescending = "Descending"
+L.Settings.FrameSortOrderAscending = "Croissant"
+L.Settings.FrameSortOrderDescending = "Décroissant"
 
-L.Settings.FrameGrowLabel = "Grow"
+L.Settings.FrameGrowLabel = "Extension"
 L.Settings.FrameGrowTooltip = nil
 L.Settings.FrameGrowLabels = {
-	[Private.Enum.Grow.Start] = "Start",
-	[Private.Enum.Grow.End] = "End",
+	[Private.Enum.Grow.Start] = "Début",
+	[Private.Enum.Grow.End] = "Fin",
 }
 
 L.Settings.GlowImportantLabel = "Faire briller les sorts important"
 L.Settings.GlowImportantTooltip = "Ce qui est important ou non est déclaré par le jeu."
 
-L.Settings.OnlyImportantLabel = "Only Show Important Spells"
-L.Settings.OnlyImportantTooltip = "Note that you're relying on what the game considers important, use at your own risk."
+L.Settings.OnlyImportantLabel = "Afficher uniquement les sorts importants"
+L.Settings.OnlyImportantTooltip =
+	"Notez que vous vous basez sur ce que le jeu considère comme important, à utiliser à vos risques."
 
-L.Settings.GlowTypeLabel = "Glow Type"
+L.Settings.GlowTypeLabel = "Type de lueur"
 L.Settings.GlowTypeTooltip = nil
 L.Settings.GlowTypeLabels = {
 	[Private.Enum.GlowType.PixelGlow] = "Pixel Glow",
@@ -122,43 +118,54 @@ L.Settings.GlowTypeLabels = {
 L.Settings.ShowDurationLabel = "Montrer la durée"
 L.Settings.ShowDurationTooltip = nil
 
-L.Settings.ShowDurationFractionsLabel = "Montrer les nombres décimaux"
-L.Settings.ShowDurationFractionsTooltip = nil
-
 L.Settings.IndicateInterruptsLabel = "Montrer l'interruption"
 L.Settings.IndicateInterruptsTooltip =
 	"Désature l'icône, affiche un indicateur par-dessus et retarde sa disparition de 1 seconde. Ne marche pas avec les sorts canalisés."
 
-L.Settings.RenderInterruptSourceNameLabel = "Render Interrupt Source Name"
+L.Settings.RenderInterruptSourceNameLabel = "Afficher la source d'interruption"
 L.Settings.RenderInterruptSourceNameTooltip = nil
 
-L.Settings.ShowSwipeLabel = "Show Swipe"
+L.Settings.ShowSwipeLabel = "Afficher le balayage"
 L.Settings.ShowSwipeTooltip = nil
 
-L.Settings.BorderStyleLabel = "Border Style"
+L.Settings.BorderStyleLabel = "Style de bordure"
 L.Settings.BorderStyleTooltip = nil
-L.Settings.BorderStyleSolid = "Solid"
 
 L.Settings.OpacityLabel = "Opacité"
 L.Settings.OpacityTooltip = nil
 
-L.Settings.IconZoomLabel = "Icon Zoom"
+L.Settings.SpellNameWidthLabel = "Longueur du nom du sort"
+L.Settings.SpellNameWidthTooltip = "Largeur maximale du texte du nom du sort. Mettre à 0 pour aucune limite."
+
+L.Settings.TargetNameWidthLabel = "Longueur du nom de la cible"
+L.Settings.TargetNameWidthTooltip = "Largeur maximale du texte du nom de la cible. Mettre à 0 pour aucune limite."
+
+L.Settings.NameDividerLabel = "Séparateur de noms"
+L.Settings.NameDividerNone = "Aucun"
+
+L.Settings.ForegroundBarTextureLabel = "Texture de la barre de progression"
+L.Settings.ForegroundBarTextureTooltip = nil
+
+L.Settings.BackgroundBarTextureLabel = "Texture de fond de la barre"
+L.Settings.BackgroundBarTextureTooltip = nil
+
+L.Settings.BackgroundBarColorLabel = "Couleur de fond de la barre"
+L.Settings.BackgroundBarColorTooltip = nil
+
+L.Settings.ProgressBarColorLabel = "Couleur de la barre"
+L.Settings.ProgressBarColorTooltip = nil
+
+L.Settings.UseInterruptabilityColorsLabel = "Utiliser les couleurs d'interruption"
+L.Settings.UseInterruptabilityColorsTooltip = nil
+
+L.Settings.UninterruptibleColorLabel = "Couleur ininterruptible"
+L.Settings.UninterruptibleColorTooltip = nil
+
+L.Settings.InterruptibleColorLabel = "Couleur interruptible"
+L.Settings.InterruptibleColorTooltip = nil
+
+L.Settings.IconZoomLabel = "Zoom de l'icône"
 L.Settings.IconZoomTooltip = nil
-
-L.Settings.FrameOffsetXLabel = "Offset X"
-L.Settings.FrameOffsetXTooltip = nil
-
-L.Settings.FrameOffsetYLabel = "Offset Y"
-L.Settings.FrameOffsetYTooltip = nil
-
-L.Settings.FrameSourceAnchorLabel = "Source Anchor"
-L.Settings.FrameSourceAnchorTooltip = nil
-
-L.Settings.FrameTargetAnchorLabel = "Target Anchor"
-L.Settings.FrameTargetAnchorTooltip = nil
-
-L.Settings.IncludeSelfInPartyLabel = "S'inclure dans le groupe"
-L.Settings.IncludeSelfInPartyTooltip = "Fonctionne uniquement avec les cadres de groupe Raid-Style."
 
 L.Settings.ClickToOpenSettingsLabel = "Cliquer pour ouvrir les paramètres"
 
@@ -168,22 +175,26 @@ L.Settings.Export = "Exporter"
 L.Settings.FontLabel = "Police"
 L.Settings.FontTooltip = nil
 
-L.Settings.FeatureFlagsLabel = "Features"
+L.Settings.TargetNamePreviewText = "Nom de la cible"
+
+L.Settings.FeatureFlagsLabel = "Fonctionnalités"
 L.Settings.FeatureFlagsTooltip = nil
 
 L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.GlowImportant] = L.Settings.GlowImportantLabel,
 	[Private.Enum.FeatureFlag.OnlyImportant] = L.Settings.OnlyImportantLabel,
 	[Private.Enum.FeatureFlag.ShowDuration] = L.Settings.ShowDurationLabel,
-	[Private.Enum.FeatureFlag.ShowDurationFractions] = L.Settings.ShowDurationFractionsLabel,
 	[Private.Enum.FeatureFlag.ShowSwipe] = L.Settings.ShowSwipeLabel,
 	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
 	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,
-	[Private.Enum.FeatureFlag.IncludeSelfInParty] = L.Settings.IncludeSelfInPartyLabel,
+	[Private.Enum.FeatureFlag.ShowIcon] = "Afficher l'icône",
+	[Private.Enum.FeatureFlag.ShowTargetMarker] = "Afficher le marqueur de cible",
+	[Private.Enum.FeatureFlag.ShowSpellName] = "Afficher le nom du sort",
+	[Private.Enum.FeatureFlag.ShowTargetName] = "Afficher le nom de la cible",
+	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Afficher la couleur de classe de la cible",
 }
 
 L.Settings.FeatureFlagSettingTitles = {
 	[Private.Enum.FeatureFlag.GlowImportant] = "Affichage",
 	[Private.Enum.FeatureFlag.IndicateInterrupts] = "Paramètres d'interruption",
-	[Private.Enum.FeatureFlag.IncludeSelfInParty] = "Paramètres de groupe",
 }

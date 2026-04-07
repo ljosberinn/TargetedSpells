@@ -28,10 +28,9 @@ L.Functionality.CVarWarning = string.format(
 	ENABLE
 )
 
-L.Functionality.V2DeprecationWarning = string.format(
-	"%s\n\nDue to the changes in v2, the following settings were reset for you:\n\n%s\n\nAdditionally, we suggest verifying your layouting as it may also be impacted.",
-	addonNameWithIcon,
-	"%s"
+L.Functionality.V3MigrationWarning = string.format(
+	"%s\n\nAPI 제한 업데이트로 인해 Targeted Spells의 파티 기능이 완전히 개편되었습니다. 편집 모드에서 미리보기를 확인하세요.",
+	addonNameWithIcon
 )
 
 L.Settings.EnabledLabel = "활성화"
@@ -63,10 +62,6 @@ L.Settings.LoadConditionRoleLabels = {
 	[Private.Enum.Role.Tank] = "탱커",
 	[Private.Enum.Role.Damager] = "딜러",
 }
-
-L.Settings.RoleFilterLabel = "Role Filter"
-L.Settings.RoleFilterTooltip = "Allows you to ignore certain roles from being shown. Use at your own risk."
-L.Settings.RoleFilterLabels = L.Settings.LoadConditionRoleLabels
 
 L.Settings.FrameWidthLabel = "너비"
 L.Settings.FrameWidthTooltip = nil
@@ -107,8 +102,9 @@ L.Settings.FrameGrowLabels = {
 L.Settings.GlowImportantLabel = "중요 주문 강조"
 L.Settings.GlowImportantTooltip = "중요 여부는 게임에 의해 결정됩니다."
 
-L.Settings.OnlyImportantLabel = "Only Show Important Spells"
-L.Settings.OnlyImportantTooltip = "Note that you're relying on what the game considers important, use at your own risk."
+L.Settings.OnlyImportantLabel = "중요 주문만 표시"
+L.Settings.OnlyImportantTooltip =
+	"게임이 중요하다고 판단하는 것에 의존하므로, 사용에 주의하세요."
 
 L.Settings.GlowTypeLabel = "반짝임 유형"
 L.Settings.GlowTypeTooltip = nil
@@ -122,9 +118,6 @@ L.Settings.GlowTypeLabels = {
 L.Settings.ShowDurationLabel = "지속시간 표시"
 L.Settings.ShowDurationTooltip = nil
 
-L.Settings.ShowDurationFractionsLabel = "소수점 표시"
-L.Settings.ShowDurationFractionsTooltip = nil
-
 L.Settings.IndicateInterruptsLabel = "차단 표시"
 L.Settings.IndicateInterruptsTooltip =
 	"아이콘을 흑백으로 표시하고, 아이콘 위에 표시기를 보여주며, 아이콘 숨김을 1초 지연합니다. 정신 집중 주문에는 작동하지 않습니다."
@@ -135,30 +128,46 @@ L.Settings.RenderInterruptSourceNameTooltip = nil
 L.Settings.ShowSwipeLabel = "회전 표시"
 L.Settings.ShowSwipeTooltip = nil
 
-L.Settings.BorderStyleLabel = "Border Style"
+L.Settings.BorderStyleLabel = "테두리 스타일"
 L.Settings.BorderStyleTooltip = nil
-L.Settings.BorderStyleSolid = "Solid"
 
 L.Settings.OpacityLabel = "불투명도"
 L.Settings.OpacityTooltip = nil
 
-L.Settings.IconZoomLabel = "Icon Zoom"
+L.Settings.SpellNameWidthLabel = "주문 이름 길이"
+L.Settings.SpellNameWidthTooltip =
+	"주문 이름 텍스트의 최대 너비입니다. 제한 없음으로 설정하려면 0을 입력하세요."
+
+L.Settings.TargetNameWidthLabel = "대상 이름 길이"
+L.Settings.TargetNameWidthTooltip =
+	"대상 이름 텍스트의 최대 너비입니다. 제한 없음으로 설정하려면 0을 입력하세요."
+
+L.Settings.NameDividerLabel = "이름 구분자"
+L.Settings.NameDividerNone = "없음"
+
+L.Settings.ForegroundBarTextureLabel = "진행 바 텍스처"
+L.Settings.ForegroundBarTextureTooltip = nil
+
+L.Settings.BackgroundBarTextureLabel = "배경 바 텍스처"
+L.Settings.BackgroundBarTextureTooltip = nil
+
+L.Settings.BackgroundBarColorLabel = "배경 바 색상"
+L.Settings.BackgroundBarColorTooltip = nil
+
+L.Settings.ProgressBarColorLabel = "바 색상"
+L.Settings.ProgressBarColorTooltip = nil
+
+L.Settings.UseInterruptabilityColorsLabel = "방해 색상 사용"
+L.Settings.UseInterruptabilityColorsTooltip = nil
+
+L.Settings.UninterruptibleColorLabel = "방해 불가 색상"
+L.Settings.UninterruptibleColorTooltip = nil
+
+L.Settings.InterruptibleColorLabel = "방해 가능 색상"
+L.Settings.InterruptibleColorTooltip = nil
+
+L.Settings.IconZoomLabel = "아이콘 확대"
 L.Settings.IconZoomTooltip = nil
-
-L.Settings.FrameOffsetXLabel = "X 위치 조정"
-L.Settings.FrameOffsetXTooltip = nil
-
-L.Settings.FrameOffsetYLabel = "Y 위치 조정"
-L.Settings.FrameOffsetYTooltip = nil
-
-L.Settings.FrameSourceAnchorLabel = "기준 앵커"
-L.Settings.FrameSourceAnchorTooltip = nil
-
-L.Settings.FrameTargetAnchorLabel = "대상 앵커"
-L.Settings.FrameTargetAnchorTooltip = nil
-
-L.Settings.IncludeSelfInPartyLabel = "파티에 자신 포함"
-L.Settings.IncludeSelfInPartyTooltip = "공격대 스타일 파티 프레임을 사용할 때만 작동합니다."
 
 L.Settings.ClickToOpenSettingsLabel = "클릭 설정 열기"
 
@@ -169,22 +178,26 @@ L.Settings.FontLabel = "글꼴"
 
 L.Settings.FontTooltip = nil
 
-L.Settings.FeatureFlagsLabel = "Features"
+L.Settings.TargetNamePreviewText = "대상 이름"
+
+L.Settings.FeatureFlagsLabel = "기능"
 L.Settings.FeatureFlagsTooltip = nil
 
 L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.GlowImportant] = L.Settings.GlowImportantLabel,
 	[Private.Enum.FeatureFlag.OnlyImportant] = L.Settings.OnlyImportantLabel,
 	[Private.Enum.FeatureFlag.ShowDuration] = L.Settings.ShowDurationLabel,
-	[Private.Enum.FeatureFlag.ShowDurationFractions] = L.Settings.ShowDurationFractionsLabel,
 	[Private.Enum.FeatureFlag.ShowSwipe] = L.Settings.ShowSwipeLabel,
 	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
 	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,
-	[Private.Enum.FeatureFlag.IncludeSelfInParty] = L.Settings.IncludeSelfInPartyLabel,
+	[Private.Enum.FeatureFlag.ShowIcon] = "아이콘 표시",
+	[Private.Enum.FeatureFlag.ShowTargetMarker] = "대상 마커 표시",
+	[Private.Enum.FeatureFlag.ShowSpellName] = "주문 이름 표시",
+	[Private.Enum.FeatureFlag.ShowTargetName] = "대상 이름 표시",
+	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "대상 직업 색상 표시",
 }
 
 L.Settings.FeatureFlagSettingTitles = {
-	[Private.Enum.FeatureFlag.GlowImportant] = "Display",
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = "Interrupt Settings",
-	[Private.Enum.FeatureFlag.IncludeSelfInParty] = "Party Settings",
+	[Private.Enum.FeatureFlag.GlowImportant] = "표시",
+	[Private.Enum.FeatureFlag.IndicateInterrupts] = "차단 설정",
 }

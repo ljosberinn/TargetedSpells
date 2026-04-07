@@ -1,3 +1,25 @@
+## Version 3.0.0
+
+## Breaking Changes
+
+Due to the hotfixed restrictions, the Party functionality has been redesigned and now offers to render bars per ongoing cast. It is no longer possible to attach icons to frames.
+
+Settings not applying to the new Party functionality were dropped.
+
+Please make sure to look around in Edit Mode again.
+
+## Other
+
+- beginning with patch 12.0.5, the remaining duration, if shown, is now always showing fractions below 3 seconds and is properly formatted above
+  - the `Show Duration Fractions` has been removed
+  - until then, fractions will always be shown
+- Opacity was removed in general for technical reasons
+- temporarily disabled ElvUI skinning for self-targeting casts while investigating a possible bug
+- added machine translated internationalization for the following locales:
+  - italian
+  - russian
+  - brazilian
+
 ## Version 2.0.1
 
 - use a more future-proof approach of dealing with Layouting given the presumably upcoming restriction changes
