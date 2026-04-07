@@ -21,7 +21,7 @@ end
 function TargetedSpellsBarMixin:OnSizeChanged()
 	local showIcon = TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowIcon]
 	local showTargetMarker = TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowTargetMarker]
-	local mirrored = TargetedSpellsSaved.Settings.Party.MirrorLayout
+	local mirrored = TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.MirrorLayout]
 
 	self.CustomElementsFrame.TargetMarker:SetSize(
 		TargetedSpellsSaved.Settings.Party.Height,
@@ -171,6 +171,7 @@ function TargetedSpellsBarMixin:OnSettingChanged(key, flagIdOrValue, newBool)
 			or flagIdOrValue == Private.Enum.FeatureFlag.ShowSpellName
 			or flagIdOrValue == Private.Enum.FeatureFlag.ShowTargetName
 			or flagIdOrValue == Private.Enum.FeatureFlag.ShowDuration
+			or flagIdOrValue == Private.Enum.FeatureFlag.MirrorLayout
 		then
 			if flagIdOrValue == Private.Enum.FeatureFlag.ShowTargetMarker then
 				self.CustomElementsFrame.TargetMarker:SetShown(newBool)
@@ -188,6 +189,9 @@ function TargetedSpellsBarMixin:OnSettingChanged(key, flagIdOrValue, newBool)
 				self:OnSizeChanged()
 			elseif flagIdOrValue == Private.Enum.FeatureFlag.ShowDuration then
 				self:SetShowDuration(newBool)
+				self:OnSizeChanged()
+			elseif flagIdOrValue == Private.Enum.FeatureFlag.MirrorLayout then
+				self:SetDivider()
 				self:OnSizeChanged()
 			end
 		end
@@ -210,8 +214,6 @@ function TargetedSpellsBarMixin:OnSettingChanged(key, flagIdOrValue, newBool)
 		if TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.GlowImportant] then
 			self:ShowGlow(self:IsSpellImportant(LibEditMode:IsInEditMode() and Private.Utils.RollDice()))
 		end
-	elseif key == Private.Settings.Keys.Party.MirrorLayout then
-		self:OnSizeChanged()
 	elseif key == Private.Settings.Keys.Party.SpellNameWidth then
 		self.ProgressBar.SpellName:SetWidth(flagIdOrValue)
 	elseif key == Private.Settings.Keys.Party.TargetNameWidth then
@@ -235,7 +237,7 @@ function TargetedSpellsBarMixin:SetDivider()
 		return
 	end
 
-	if TargetedSpellsSaved.Settings.Party.MirrorLayout then
+	if TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.MirrorLayout] then
 		if nameDivider == Private.Enum.NameDivider.Arrow then
 			nameDivider = Private.Enum.NameDivider.LeftArrow
 		elseif nameDivider == Private.Enum.NameDivider.LeftArrow then

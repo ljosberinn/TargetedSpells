@@ -201,6 +201,7 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowSpellName] = "Show Spell Name",
 	[Private.Enum.FeatureFlag.ShowTargetName] = "Show Target Name",
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Show Target Class Color",
+	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
 }
 
 L.Settings.FeatureFlagSettingTitles = {

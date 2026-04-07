@@ -589,32 +589,6 @@ do
 			}
 		end
 
-		if key == Private.Settings.Keys.Party.MirrorLayout then
-			---@param layoutName string
-			---@param value boolean
-			local function Set(layoutName, value)
-				if TargetedSpellsSaved.Settings.Party.MirrorLayout ~= value then
-					TargetedSpellsSaved.Settings.Party.MirrorLayout = value
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-				end
-			end
-
-			---@param layoutName string
-			local function Get(layoutName)
-				return TargetedSpellsSaved.Settings.Party.MirrorLayout
-			end
-
-			---@type LibEditModeCheckbox
-			return {
-				name = L.Settings.MirrorLayoutLabel,
-				kind = LibEditMode.SettingType.Checkbox,
-				desc = L.Settings.MirrorLayoutTooltip,
-				default = defaults.MirrorLayout,
-				get = Get,
-				set = Set,
-			}
-		end
-
 		if key == Private.Settings.Keys.Party.UseInterruptabilityColors then
 			---@param layoutName string
 			---@param value boolean

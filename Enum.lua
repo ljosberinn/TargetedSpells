@@ -112,4 +112,5 @@ Private.Enum.FeatureFlag = {
 	ShowSpellName = 12,
 	ShowTargetName = 13,
 	ShowTargetClassColor = 14,
+	MirrorLayout = 15,
 }

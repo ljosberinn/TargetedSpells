@@ -45,7 +45,6 @@ Private.Settings.Keys = {
 		BackgroundBarTexture = "BACKGROUND_BAR_TEXTURE_PARTY",
 		BackgroundBarColor = "BACKGROUND_BAR_COLOR_PARTY",
 		ProgressBarColor = "PROGRESS_BAR_COLOR_PARTY",
-		MirrorLayout = "MIRROR_LAYOUT_PARTY",
 		UseInterruptabilityColors = "USE_INTERRUPTABILITY_COLORS_PARTY",
 		UseTargetClassColor = "USE_TARGET_CLASS_COLOR_PARTY",
 		UninterruptibleColor = "UNINTERRUPTIBLE_COLOR_PARTY",
@@ -92,7 +91,6 @@ function Private.Settings.GetSettingsDisplayOrder(kind)
 		Private.Settings.Keys.Party.Grow,
 		Private.Settings.Keys.Party.GlowType,
 		Private.Settings.Keys.Party.FeatureFlags,
-		Private.Settings.Keys.Party.MirrorLayout,
 		Private.Settings.Keys.Party.Font,
 		Private.Settings.Keys.Party.FontSize,
 		Private.Settings.Keys.Party.FontFlags,
@@ -131,6 +129,7 @@ function Private.Settings.GetFeatureFlagsForKind(kind)
 		Private.Enum.FeatureFlag.ShowSpellName,
 		Private.Enum.FeatureFlag.ShowTargetName,
 		Private.Enum.FeatureFlag.ShowTargetClassColor,
+		Private.Enum.FeatureFlag.MirrorLayout,
 		Private.Enum.FeatureFlag.IndicateInterrupts,
 		Private.Enum.FeatureFlag.RenderInterruptSourceName,
 	}
@@ -302,6 +301,7 @@ function Private.Settings.GetPartyDefaultSettings()
 			[Private.Enum.FeatureFlag.ShowSpellName] = true,
 			[Private.Enum.FeatureFlag.ShowTargetName] = true,
 			[Private.Enum.FeatureFlag.ShowTargetClassColor] = true,
+			[Private.Enum.FeatureFlag.MirrorLayout] = false,
 		},
 		SpellNameWidth = 110,
 		TargetNameWidth = 0,
@@ -310,7 +310,6 @@ function Private.Settings.GetPartyDefaultSettings()
 		BackgroundBarTexture = "Solid",
 		BackgroundBarColor = "FF1A1A1A",
 		ProgressBarColor = "FFFFFF00",
-		MirrorLayout = false,
 		UseInterruptabilityColors = false,
 		UseTargetClassColor = false,
 		UninterruptibleColor = "FFFF4444",
@@ -916,36 +915,6 @@ table.insert(Private.LoginFnQueue, function()
 				SetValue
 			)
 			local initializer = Settings.CreateColorSwatch(category, setting, L.Settings.ProgressBarColorTooltip)
-
-			return {
-				initializer = initializer,
-				hideSteppers = false,
-				IsSectionEnabled = nil,
-			}
-		end
-
-		if key == Private.Settings.Keys.Party.MirrorLayout then
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Party.MirrorLayout
-			end
-
-			local function SetValue(value)
-				if value ~= TargetedSpellsSaved.Settings.Party.MirrorLayout then
-					TargetedSpellsSaved.Settings.Party.MirrorLayout = value
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-				end
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Boolean,
-				L.Settings.MirrorLayoutLabel,
-				defaults.MirrorLayout,
-				GetValue,
-				SetValue
-			)
-			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.MirrorLayoutTooltip)
 
 			return {
 				initializer = initializer,
