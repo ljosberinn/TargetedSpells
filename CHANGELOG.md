@@ -17,3 +17,4 @@ Self explanatory.
   - looking at you, Lothraxion
   - this has the unfortunate side effect of seeing all RP channels again, if you have a nameplate for the unit
 - added scrollbars to settings prone to have many options available
+- fixed a positioning bug with the Edit Mode frame
