@@ -27,6 +27,7 @@
                         </Anchor>
                     </Anchors>
                 </Texture>
+                <FontString parentKey="Duration" font="GameFontHighlightSmall" justifyV="MIDDLE" wordwrap="false" />
             </Layer>
         </Layers>
         <Frames>
@@ -38,26 +39,7 @@
                     </Layer>
                     <Layer level="OVERLAY">
                         <FontString parentKey="SpellName" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE" wordwrap="false" />
-                        <FontString parentKey="InterruptSource" hidden="true" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE" wordwrap="false" />
-                        <FontString parentKey="Divider" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE" wordwrap="false">
-                            <Anchors>
-                                <Anchor point="LEFT" relativeKey="$parent.SpellName" relativePoint="RIGHT" />
-                            </Anchors>
-                        </FontString>
-                        <FontString parentKey="TargetName" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE" wordwrap="false">
-                            <Anchors>
-                                <Anchor point="LEFT" relativeKey="$parent.Divider" relativePoint="RIGHT" />
-                            </Anchors>
-                        </FontString>
-                        <FontString parentKey="Duration" font="GameFontHighlightSmall" justifyH="RIGHT" justifyV="MIDDLE">
-                            <Anchors>
-                                <Anchor point="RIGHT" relativePoint="RIGHT">
-                                    <Offset>
-                                        <AbsDimension x="-4" y="0" />
-                                    </Offset>
-                                </Anchor>
-                            </Anchors>
-                        </FontString>
+                        <FontString parentKey="TargetName" font="GameFontHighlightSmall" justifyH="RIGHT" justifyV="MIDDLE" wordwrap="false" />
                         <FontString parentKey="InterruptSource" hidden="true" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE" wordwrap="false">
                             <Anchors>
                                 <Anchor point="LEFT" relativePoint="LEFT">

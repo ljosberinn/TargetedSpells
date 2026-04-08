@@ -132,7 +132,6 @@
 ---@field Width number
 ---@field Height number
 ---@field Gap number
----@field Direction Direction
 ---@field LoadConditionContentType table<number, boolean>
 ---@field LoadConditionRole table<number, boolean>
 ---@field SortOrder SortOrder
@@ -144,7 +143,6 @@
 ---@field FeatureFlags table<FeatureFlag, boolean>
 ---@field SpellNameWidth number
 ---@field TargetNameWidth number
----@field NameDivider NameDivider
 ---@field ForegroundBarTexture string
 ---@field BackgroundBarTexture string
 ---@field BackgroundBarColor string
@@ -236,9 +234,7 @@
 ---@class TargetedSpellsBarProgressBar : StatusBar
 ---@field Background Texture
 ---@field SpellName FontString
----@field Divider FontString
 ---@field TargetName FontString
----@field Duration FontString
 ---@field InterruptSource FontString
 
 ---@class TargetedSpellsBarCustomElementsFrame : Frame
@@ -247,6 +243,7 @@
 ---@class TargetedSpellsBarMixin : TargetedSpellsMixin
 ---@field unit string?
 ---@field ProgressBar TargetedSpellsBarProgressBar
+---@field Duration FontString
 ---@field CustomElementsFrame TargetedSpellsBarCustomElementsFrame
 ---@field OnLoad fun(self: TargetedSpellsBarMixin)
 ---@field OnSizeChanged fun(self: TargetedSpellsBarMixin)
@@ -256,7 +253,6 @@
 ---@field SetShowDuration fun(self: TargetedSpellsBarMixin, showDuration: boolean)
 ---@field SetFont fun(self: TargetedSpellsBarMixin)
 ---@field SetDuration fun(self: TargetedSpellsBarMixin, duration: DurationObject)
----@field SetDivider fun(self: TargetedSpellsBarMixin)
 ---@field SetForegroundBarTexture fun(self: TargetedSpellsBarMixin)
 ---@field SetBackgroundBarTexture fun(self: TargetedSpellsBarMixin)
 ---@field SetBackgroundBarColor fun(self: TargetedSpellsBarMixin)

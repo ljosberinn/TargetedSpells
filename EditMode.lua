@@ -52,7 +52,6 @@ function TargetedSpellsEditModeMixin:OnSettingsChanged(key, flagIdOrValue, newBo
 		or key == Private.Settings.Keys.Self.GlowType
 		-- party
 		or key == Private.Settings.Keys.Party.Gap
-		or key == Private.Settings.Keys.Party.Direction
 		or key == Private.Settings.Keys.Party.Width
 		or key == Private.Settings.Keys.Party.Height
 		or key == Private.Settings.Keys.Party.SortOrder
@@ -420,44 +419,6 @@ do
 				maxValue = sliderSettings.max,
 				valueStep = sliderSettings.step,
 				disabled = not TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowTargetName],
-			}
-		end
-
-		if key == Private.Settings.Keys.Party.NameDivider then
-			---@param layoutName string
-			---@param value NameDivider
-			local function Set(layoutName, value)
-				if TargetedSpellsSaved.Settings.Party.NameDivider ~= value then
-					TargetedSpellsSaved.Settings.Party.NameDivider = value
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-				end
-			end
-
-			local function Generator(owner, rootDescription, data)
-				for _, value in pairs(Private.Enum.NameDivider) do
-					local label = value == Private.Enum.NameDivider.None and L.Settings.NameDividerNone or value
-
-					local function IsEnabled()
-						return TargetedSpellsSaved.Settings.Party.NameDivider == value
-					end
-
-					local function SetProxy()
-						Set(LibEditMode:GetActiveLayoutName(), value)
-					end
-
-					rootDescription:CreateRadio(label, IsEnabled, SetProxy)
-				end
-			end
-
-			---@type LibEditModeDropdown
-			return {
-				name = L.Settings.NameDividerLabel,
-				kind = Enum.EditModeSettingDisplayType.Dropdown,
-				desc = L.Settings.NameDividerTooltip,
-				default = defaults.NameDivider,
-				multiple = false,
-				generator = Generator,
-				set = Set,
 			}
 		end
 
@@ -1220,15 +1181,12 @@ do
 			}
 		end
 
-		if key == Private.Settings.Keys.Self.Direction or key == Private.Settings.Keys.Party.Direction then
-			local tableRef = key == Private.Settings.Keys.Self.Direction and TargetedSpellsSaved.Settings.Self
-				or TargetedSpellsSaved.Settings.Party
-
+		if key == Private.Settings.Keys.Self.Direction then
 			---@param layoutName string
 			---@param value number
 			local function Set(layoutName, value)
-				if tableRef.Direction ~= value then
-					tableRef.Direction = value
+				if TargetedSpellsSaved.Settings.Self.Direction ~= value then
+					TargetedSpellsSaved.Settings.Self.Direction = value
 					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 				end
 			end
@@ -1236,7 +1194,7 @@ do
 			local function Generator(owner, rootDescription, data)
 				for label, id in pairs(Private.Enum.Direction) do
 					local function IsEnabled()
-						return tableRef.Direction == id
+						return TargetedSpellsSaved.Settings.Self.Direction == id
 					end
 
 					local function SetProxy()

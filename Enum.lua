@@ -84,17 +84,6 @@ Private.Enum.FontFlags = {
 	SHADOW = 2,
 }
 
----@enum NameDivider
-Private.Enum.NameDivider = {
-	None = "",
-	Arrow = ">",
-	Arrows = ">>",
-	LeftArrow = "<",
-	LeftArrows = "<<",
-	Pipe = "|",
-	Colon = ":",
-}
-
 ---@enum FeatureFlag
 Private.Enum.FeatureFlag = {
 	GlowImportant = 1,

@@ -55,7 +55,8 @@ function TargetedSpellsDriver:PositionFrame(kind)
 		}
 
 		local anchor = AnchorSign[tableRef.Position.point]
-		local target = GrowTarget[tableRef.Direction][tableRef.Grow]
+		local direction = kind == Private.Enum.FrameKind.Party and Private.Enum.Direction.Vertical or tableRef.Direction
+		local target = GrowTarget[direction][tableRef.Grow]
 
 		offsetX = (target.x - anchor.x) * (width / 2)
 		offsetY = (target.y - anchor.y) * (height / 2)
@@ -199,7 +200,7 @@ function TargetedSpellsDriver:RepositionFrames()
 		Private.Utils.AdjustLayout(
 			frames,
 			Private.Utils.CollectLayoutingArguments(
-				tableRef.Direction,
+				kind == Private.Enum.FrameKind.Party and Private.Enum.Direction.Vertical or tableRef.Direction,
 				tableRef.Grow,
 				tableRef.Width,
 				tableRef.Height,
@@ -698,7 +699,6 @@ function TargetedSpellsDriver:OnSettingsChanged(key, value)
 		self:PositionFrame(Private.Enum.FrameKind.Self)
 	elseif
 		key == Private.Settings.Keys.Party.Grow
-		or key == Private.Settings.Keys.Party.Direction
 		or key == Private.Settings.Keys.Party.Width
 		or key == Private.Settings.Keys.Party.Height
 		or key == Private.Settings.Keys.Party.Gap

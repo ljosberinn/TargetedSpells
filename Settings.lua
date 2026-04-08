@@ -34,13 +34,11 @@ Private.Settings.Keys = {
 		Height = "FRAME_HEIGHT_PARTY",
 		FontSize = "FONT_SIZE_PARTY",
 		Gap = "FRAME_GAP_PARTY",
-		Direction = "GROW_DIRECTION_PARTY",
 		SortOrder = "FRAME_SORT_ORDER_PARTY",
 		GlowType = "GLOW_TYPE_PARTY",
 		Grow = "FRAME_GROW_PARTY",
 		SpellNameWidth = "SPELL_NAME_WIDTH_PARTY",
 		TargetNameWidth = "TARGET_NAME_WIDTH_PARTY",
-		NameDivider = "NAME_DIVIDER_PARTY",
 		ForegroundBarTexture = "FOREGROUND_BAR_TEXTURE_PARTY",
 		BackgroundBarTexture = "BACKGROUND_BAR_TEXTURE_PARTY",
 		BackgroundBarColor = "BACKGROUND_BAR_COLOR_PARTY",
@@ -86,7 +84,6 @@ function Private.Settings.GetSettingsDisplayOrder(kind)
 		Private.Settings.Keys.Party.Width,
 		Private.Settings.Keys.Party.Height,
 		Private.Settings.Keys.Party.Gap,
-		Private.Settings.Keys.Party.Direction,
 		Private.Settings.Keys.Party.SortOrder,
 		Private.Settings.Keys.Party.Grow,
 		Private.Settings.Keys.Party.GlowType,
@@ -96,7 +93,6 @@ function Private.Settings.GetSettingsDisplayOrder(kind)
 		Private.Settings.Keys.Party.FontFlags,
 		Private.Settings.Keys.Party.SpellNameWidth,
 		Private.Settings.Keys.Party.TargetNameWidth,
-		Private.Settings.Keys.Party.NameDivider,
 		Private.Settings.Keys.Party.ForegroundBarTexture,
 		Private.Settings.Keys.Party.BackgroundBarTexture,
 		Private.Settings.Keys.Party.BackgroundBarColor,
@@ -268,7 +264,6 @@ function Private.Settings.GetPartyDefaultSettings()
 		Height = 30,
 		FontSize = 14,
 		Gap = 2,
-		Direction = Private.Enum.Direction.Vertical,
 		LoadConditionContentType = {
 			[Private.Enum.ContentType.OpenWorld] = false,
 			[Private.Enum.ContentType.Delve] = true,
@@ -303,14 +298,13 @@ function Private.Settings.GetPartyDefaultSettings()
 			[Private.Enum.FeatureFlag.ShowTargetClassColor] = true,
 			[Private.Enum.FeatureFlag.MirrorLayout] = false,
 		},
-		SpellNameWidth = 110,
-		TargetNameWidth = 0,
-		NameDivider = Private.Enum.NameDivider.Arrow,
+		SpellNameWidth = 150,
+		TargetNameWidth = 100,
 		ForegroundBarTexture = "Blizzard Raid Bar",
 		BackgroundBarTexture = "Solid",
 		BackgroundBarColor = "FF1A1A1A",
 		ProgressBarColor = "FFFFFF00",
-		UseInterruptabilityColors = false,
+		UseInterruptabilityColors = true,
 		UseTargetClassColor = false,
 		UninterruptibleColor = "FFFF4444",
 		InterruptibleColor = "FF44FF44",
@@ -731,47 +725,6 @@ table.insert(Private.LoginFnQueue, function()
 			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, FormatPercentage)
 
 			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.TargetNameWidthTooltip)
-
-			return {
-				initializer = initializer,
-				hideSteppers = false,
-				IsSectionEnabled = nil,
-			}
-		end
-
-		if key == Private.Settings.Keys.Party.NameDivider then
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Party.NameDivider
-			end
-
-			local function SetValue(value)
-				if value ~= TargetedSpellsSaved.Settings.Party.NameDivider then
-					TargetedSpellsSaved.Settings.Party.NameDivider = value
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-				end
-			end
-
-			local function GetOptions()
-				local container = Settings.CreateControlTextContainer()
-
-				for _, value in pairs(Private.Enum.NameDivider) do
-					local label = value == Private.Enum.NameDivider.None and L.Settings.NameDividerNone or value
-					container:Add(value, label)
-				end
-
-				return container:GetData()
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.String,
-				L.Settings.NameDividerLabel,
-				defaults.NameDivider,
-				GetValue,
-				SetValue
-			)
-			local initializer = Settings.CreateDropdown(category, setting, GetOptions, L.Settings.NameDividerTooltip)
 
 			return {
 				initializer = initializer,
@@ -1276,17 +1229,14 @@ table.insert(Private.LoginFnQueue, function()
 			}
 		end
 
-		if key == Private.Settings.Keys.Self.Direction or key == Private.Settings.Keys.Party.Direction then
-			local tableRef = key == Private.Settings.Keys.Self.Direction and TargetedSpellsSaved.Settings.Self
-				or TargetedSpellsSaved.Settings.Party
-
+		if key == Private.Settings.Keys.Self.Direction then
 			local function GetValue()
-				return tableRef.Direction
+				return TargetedSpellsSaved.Settings.Self.Direction
 			end
 
 			local function SetValue(value)
-				if value ~= tableRef.Direction then
-					tableRef.Direction = value
+				if value ~= TargetedSpellsSaved.Settings.Self.Direction then
+					TargetedSpellsSaved.Settings.Self.Direction = value
 					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
 				end
 			end
