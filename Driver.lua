@@ -324,7 +324,7 @@ function TargetedSpellsDriver:UnitIsIrrelevant(unit, skipTargetCheck)
 end
 
 ---@param _ Frame -- identical to self.frame
----@param event "DELAYED_FRAME_CLEANUP" | "UNIT_SPELLCAST_INTERRUPTED" | "UNIT_SPELLCAST_FAILED_QUIET" | "ZONE_CHANGED_NEW_AREA" | "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" | "UNIT_SPELLCAST_SUCCEEDED" |"EDIT_MODE_SELF_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "DELAYED_UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED" | "UNIT_SPELLCAST_INTERRUPTIBLE" | "UNIT_SPELLCAST_NOT_INTERRUPTIBLE" | "RAID_TARGET_UPDATE"
+---@param event "DELAYED_FRAME_CLEANUP" | "UNIT_SPELLCAST_INTERRUPTED" | "UNIT_SPELLCAST_FAILED_QUIET" | "ZONE_CHANGED_NEW_AREA" | "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" | "UNIT_SPELLCAST_SUCCEEDED" |"EDIT_MODE_SELF_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED" | "UNIT_SPELLCAST_INTERRUPTIBLE" | "UNIT_SPELLCAST_NOT_INTERRUPTIBLE" | "RAID_TARGET_UPDATE"
 function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 	if
 		event == "UNIT_SPELLCAST_START"
@@ -343,19 +343,12 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 
 		C_Timer.After(
 			self.delay,
-			GenerateClosure(
-				self.OnFrameEvent,
-				self,
-				self.frame,
-				event == "UNIT_SPELLCAST_START" and Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START
-					or Private.Enum.Events.DELAYED_UNIT_SPELLCAST_CHANNEL_START,
-				{
-					unit = unit,
-					spellId = spellId,
-					startTime = GetTime(),
-					id = id,
-				}
-			)
+			GenerateClosure(self.OnFrameEvent, self, self.frame, Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START, {
+				unit = unit,
+				spellId = spellId,
+				startTime = GetTime(),
+				id = id,
+			})
 		)
 	elseif event == "UNIT_TARGET" then
 		---@type string
@@ -365,18 +358,15 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 			return
 		end
 
-		local delayEvent = Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START
 		local startTime = GetTime()
 
 		local _, _, _, _, _, _, _, _, spellId, castId = UnitCastingInfo(unit)
 
 		if spellId == nil then
 			_, _, _, _, _, _, _, spellId, _, _, castId = UnitChannelInfo(unit)
-
-			delayEvent = Private.Enum.Events.DELAYED_UNIT_SPELLCAST_CHANNEL_START
 		end
 
-		self:OnFrameEvent(self.frame, delayEvent, {
+		self:OnFrameEvent(self.frame, Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START, {
 			unit = unit,
 			spellId = spellId,
 			startTime = startTime,
@@ -426,7 +416,7 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		local name, value = ...
 
 		if name == "nameplateShowEnemies" then
-			if value == 0 then
+			if value == 0 or value == "0" then
 				Private.Utils.Pools.Bar:ReleaseAll()
 				Private.Utils.Pools.Self:ReleaseAll()
 				table.wipe(self.frames)
@@ -509,10 +499,7 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		if self:ReleaseFrameForUnit(unit, true, id) then
 			self:RepositionFrames()
 		end
-	elseif
-		event == Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START
-		or event == Private.Enum.Events.DELAYED_UNIT_SPELLCAST_CHANNEL_START
-	then
+	elseif event == Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START then
 		local info = ...
 
 		-- cast vanished during the delay
@@ -553,13 +540,17 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 
 		local cleanedSomethingUp = false
 
-		for i, frame in pairs(frames) do
-			local kind = frame:GetKind()
+		for i = #frames, 1, -1 do
+			local frame = frames[i]
 
-			if delayInfo.kinds[kind] and frame:GetId() == delayInfo.id then
-				self:ReleaseFrame(frame)
-				frames[i] = nil
-				cleanedSomethingUp = true
+			if frame then
+				local kind = frame:GetKind()
+
+				if delayInfo.kinds[kind] and frame:GetId() == delayInfo.id then
+					self:ReleaseFrame(frame)
+					table.remove(frames, i)
+					cleanedSomethingUp = true
+				end
 			end
 		end
 
