@@ -134,14 +134,6 @@ L.Settings.BorderStyleTooltip = nil
 L.Settings.OpacityLabel = "불투명도"
 L.Settings.OpacityTooltip = nil
 
-L.Settings.SpellNameWidthLabel = "주문 이름 길이"
-L.Settings.SpellNameWidthTooltip =
-	"주문 이름 텍스트의 최대 너비입니다. 제한 없음으로 설정하려면 0을 입력하세요."
-
-L.Settings.TargetNameWidthLabel = "대상 이름 길이"
-L.Settings.TargetNameWidthTooltip =
-	"대상 이름 텍스트의 최대 너비입니다. 제한 없음으로 설정하려면 0을 입력하세요."
-
 L.Settings.NameDividerLabel = "이름 구분자"
 L.Settings.NameDividerNone = "없음"
 
@@ -200,6 +192,7 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowSpellName] = "주문 이름 표시",
 	[Private.Enum.FeatureFlag.ShowTargetName] = "대상 이름 표시",
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "대상 직업 색상 표시",
+	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
 }
 
 L.Settings.FeatureFlagSettingTitles = {

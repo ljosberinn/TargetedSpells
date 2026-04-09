@@ -134,12 +134,6 @@ L.Settings.BorderStyleTooltip = nil
 L.Settings.OpacityLabel = "Opacidad"
 L.Settings.OpacityTooltip = nil
 
-L.Settings.SpellNameWidthLabel = "Longitud del nombre del hechizo"
-L.Settings.SpellNameWidthTooltip = "Anchura máxima del texto del nombre del hechizo. Establece 0 para sin límite."
-
-L.Settings.TargetNameWidthLabel = "Longitud del nombre del objetivo"
-L.Settings.TargetNameWidthTooltip = "Anchura máxima del texto del nombre del objetivo. Establece 0 para sin límite."
-
 L.Settings.NameDividerLabel = "Separador de nombres"
 L.Settings.NameDividerNone = "Ninguno"
 
@@ -197,6 +191,7 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowSpellName] = "Mostrar nombre del hechizo",
 	[Private.Enum.FeatureFlag.ShowTargetName] = "Mostrar nombre del objetivo",
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Mostrar color de clase del objetivo",
+	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
 }
 
 L.Settings.FeatureFlagSettingTitles = {

@@ -122,46 +122,56 @@ function TargetedSpellsMixin:IsSpellImportant(boolOverride)
 	return C_Spell.IsSpellImportant(self.spellId)
 end
 
+function TargetedSpellsMixin:GetGlowTarget()
+	local tableRef = self.kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
+		or TargetedSpellsSaved.Settings.Party
+
+	return self, tableRef.Width, tableRef.Height
+end
+
 function TargetedSpellsMixin:HideGlow()
-	if self._Star4 ~= nil then
-		self._Star4:Hide()
-		self._Star4.Inner:Hide()
-		self._Star4.Outer:Hide()
-		self._Star4.Animation:Stop()
+	local glowFrame = self:GetGlowTarget()
+
+	if glowFrame._Star4 ~= nil then
+		glowFrame._Star4:Hide()
+		glowFrame._Star4.Inner:Hide()
+		glowFrame._Star4.Outer:Hide()
+		glowFrame._Star4.Animation:Stop()
 	end
 
-	Private.Glows.PixelGlow_Stop(self)
-	Private.Glows.AutoCastGlow_Stop(self)
-	Private.Glows.ProcGlow_Stop(self)
+	Private.Glows.PixelGlow_Stop(glowFrame)
+	Private.Glows.AutoCastGlow_Stop(glowFrame)
+	Private.Glows.ProcGlow_Stop(glowFrame)
 end
 
 function TargetedSpellsMixin:ShowGlow(isImportant)
 	local tableRef = self.kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
 		or TargetedSpellsSaved.Settings.Party
+	local glowFrame, glowWidth, glowHeight = self:GetGlowTarget()
 
 	if tableRef.GlowType == Private.Enum.GlowType.Star4 then
-		if self._Star4 == nil then
-			self._Star4 = CreateStar4Glow(self, tableRef.Width, tableRef.Height)
+		if glowFrame._Star4 == nil then
+			glowFrame._Star4 = CreateStar4Glow(glowFrame, glowWidth, glowHeight)
 		end
 
-		self._Star4:Show()
-		self._Star4.Inner:Show()
-		self._Star4.Outer:Show()
-		self._Star4.Animation:Play()
+		glowFrame._Star4:Show()
+		glowFrame._Star4.Inner:Show()
+		glowFrame._Star4.Outer:Show()
+		glowFrame._Star4.Animation:Play()
 
-		self._Star4:SetAlphaFromBoolean(isImportant)
+		glowFrame._Star4:SetAlphaFromBoolean(isImportant)
 	elseif tableRef.GlowType == Private.Enum.GlowType.PixelGlow then
-		Private.Glows.PixelGlow_Start(self, tableRef.Width, tableRef.Height)
+		Private.Glows.PixelGlow_Start(glowFrame, glowWidth, glowHeight)
 
-		self._PixelGlow:SetAlphaFromBoolean(isImportant)
+		glowFrame._PixelGlow:SetAlphaFromBoolean(isImportant)
 	elseif tableRef.GlowType == Private.Enum.GlowType.AutoCastGlow then
-		Private.Glows.AutoCastGlow_Start(self, tableRef.Width, tableRef.Height)
+		Private.Glows.AutoCastGlow_Start(glowFrame, glowWidth, glowHeight)
 
-		self._AutoCastGlow:SetAlphaFromBoolean(isImportant)
+		glowFrame._AutoCastGlow:SetAlphaFromBoolean(isImportant)
 	elseif tableRef.GlowType == Private.Enum.GlowType.ProcGlow then
-		Private.Glows.ProcGlow_Start(self, tableRef.Width, tableRef.Height)
+		Private.Glows.ProcGlow_Start(glowFrame, glowWidth, glowHeight)
 
-		self._ProcGlow:SetAlphaFromBoolean(isImportant)
+		glowFrame._ProcGlow:SetAlphaFromBoolean(isImportant)
 	end
 end
 

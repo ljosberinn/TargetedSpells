@@ -141,8 +141,6 @@
 ---@field Font string
 ---@field FontFlags table<FontFlags, boolean>
 ---@field FeatureFlags table<FeatureFlag, boolean>
----@field SpellNameWidth number
----@field TargetNameWidth number
 ---@field ForegroundBarTexture string
 ---@field BackgroundBarTexture string
 ---@field BackgroundBarColor string
@@ -155,6 +153,12 @@
 
 ---@class TargetedSpellsSelfPreviewFrame: Frame
 ---@field GetChildren fun(self: TargetedSpellsSelfPreviewFrame): TargetedSpellsIconMixin
+
+---@class GlowTargetFrame : Frame
+---@field _Star4 Star4Glow?
+---@field _PixelGlow Frame?
+---@field _AutoCastGlow Frame?
+---@field _ProcGlow ProcGlowFrame?
 
 ---@class Star4Glow : Frame
 ---@field Inner Texture
@@ -172,10 +176,6 @@
 ---@field private elapsed number
 ---@field private wasInterrupted boolean
 ---@field private doNotHideBefore number?
----@field private _AutoCastGlow Frame?
----@field private _PixelGlow Frame?
----@field private _ProcGlow Frame?
----@field private _Star4 Star4Glow?
 ---@field Bar StatusBar
 ---@field Icon Texture
 ---@field InterruptIcon Texture
@@ -189,6 +189,7 @@
 ---@field ClearStartTime fun(self: TargetedSpellsMixin)
 ---@field ShouldBeShown fun(self: TargetedSpellsMixin): boolean
 ---@field IsSpellImportant fun(self: TargetedSpellsMixin, boolOverride: boolean?): boolean
+---@field GetGlowTarget fun(self: TargetedSpellsMixin): GlowTargetFrame, number, number
 ---@field HideGlow fun(self: TargetedSpellsMixin)
 ---@field ShowGlow fun(self: TargetedSpellsMixin, isImportant: boolean)
 ---@field SetSpellId fun(self: TargetedSpellsMixin, spellId: number?)

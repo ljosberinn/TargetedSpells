@@ -37,8 +37,6 @@ Private.Settings.Keys = {
 		SortOrder = "FRAME_SORT_ORDER_PARTY",
 		GlowType = "GLOW_TYPE_PARTY",
 		Grow = "FRAME_GROW_PARTY",
-		SpellNameWidth = "SPELL_NAME_WIDTH_PARTY",
-		TargetNameWidth = "TARGET_NAME_WIDTH_PARTY",
 		ForegroundBarTexture = "FOREGROUND_BAR_TEXTURE_PARTY",
 		BackgroundBarTexture = "BACKGROUND_BAR_TEXTURE_PARTY",
 		BackgroundBarColor = "BACKGROUND_BAR_COLOR_PARTY",
@@ -91,8 +89,6 @@ function Private.Settings.GetSettingsDisplayOrder(kind)
 		Private.Settings.Keys.Party.Font,
 		Private.Settings.Keys.Party.FontSize,
 		Private.Settings.Keys.Party.FontFlags,
-		Private.Settings.Keys.Party.SpellNameWidth,
-		Private.Settings.Keys.Party.TargetNameWidth,
 		Private.Settings.Keys.Party.ForegroundBarTexture,
 		Private.Settings.Keys.Party.BackgroundBarTexture,
 		Private.Settings.Keys.Party.BackgroundBarColor,
@@ -125,6 +121,7 @@ function Private.Settings.GetFeatureFlagsForKind(kind)
 		Private.Enum.FeatureFlag.ShowSpellName,
 		Private.Enum.FeatureFlag.ShowTargetName,
 		Private.Enum.FeatureFlag.ShowTargetClassColor,
+		Private.Enum.FeatureFlag.HideUntargetedSpells,
 		Private.Enum.FeatureFlag.MirrorLayout,
 		Private.Enum.FeatureFlag.IndicateInterrupts,
 		Private.Enum.FeatureFlag.RenderInterruptSourceName,
@@ -192,14 +189,6 @@ function Private.Settings.GetSliderSettingsForOption(key)
 		return {
 			min = -10,
 			max = 60,
-			step = 1,
-		}
-	end
-
-	if key == Private.Settings.Keys.Party.SpellNameWidth or key == Private.Settings.Keys.Party.TargetNameWidth then
-		return {
-			min = 0,
-			max = 500,
 			step = 1,
 		}
 	end
@@ -297,9 +286,8 @@ function Private.Settings.GetPartyDefaultSettings()
 			[Private.Enum.FeatureFlag.ShowTargetName] = true,
 			[Private.Enum.FeatureFlag.ShowTargetClassColor] = true,
 			[Private.Enum.FeatureFlag.MirrorLayout] = false,
+			[Private.Enum.FeatureFlag.HideUntargetedSpells] = false,
 		},
-		SpellNameWidth = 150,
-		TargetNameWidth = 100,
 		ForegroundBarTexture = "Blizzard Raid Bar",
 		BackgroundBarTexture = "Solid",
 		BackgroundBarColor = "FF1A1A1A",
@@ -661,77 +649,6 @@ table.insert(Private.LoginFnQueue, function()
 			}
 		end
 
-		if key == Private.Settings.Keys.Party.SpellNameWidth then
-			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Party.SpellNameWidth
-			end
-
-			local function SetValue(value)
-				if value ~= TargetedSpellsSaved.Settings.Party.SpellNameWidth then
-					TargetedSpellsSaved.Settings.Party.SpellNameWidth = value
-
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-				end
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Number,
-				L.Settings.SpellNameWidthLabel,
-				defaults.SpellNameWidth,
-				GetValue,
-				SetValue
-			)
-			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
-			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, FormatPercentage)
-
-			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.SpellNameWidthTooltip)
-
-			return {
-				initializer = initializer,
-				hideSteppers = false,
-				IsSectionEnabled = nil,
-			}
-		end
-
-		if key == Private.Settings.Keys.Party.TargetNameWidth then
-			local sliderSettings = Private.Settings.GetSliderSettingsForOption(key)
-
-			local function GetValue()
-				return TargetedSpellsSaved.Settings.Party.TargetNameWidth
-			end
-
-			local function SetValue(value)
-				if value ~= TargetedSpellsSaved.Settings.Party.TargetNameWidth then
-					TargetedSpellsSaved.Settings.Party.TargetNameWidth = value
-
-					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
-				end
-			end
-
-			local setting = Settings.RegisterProxySetting(
-				category,
-				key,
-				Settings.VarType.Number,
-				L.Settings.TargetNameWidthLabel,
-				defaults.TargetNameWidth,
-				GetValue,
-				SetValue
-			)
-			local options = Settings.CreateSliderOptions(sliderSettings.min, sliderSettings.max, sliderSettings.step)
-			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, FormatPercentage)
-
-			local initializer = Settings.CreateSlider(category, setting, options, L.Settings.TargetNameWidthTooltip)
-
-			return {
-				initializer = initializer,
-				hideSteppers = false,
-				IsSectionEnabled = nil,
-			}
-		end
 
 		if key == Private.Settings.Keys.Party.ForegroundBarTexture then
 			local function GetValue()

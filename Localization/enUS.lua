@@ -133,12 +133,6 @@ L.Settings.BorderStyleTooltip = nil
 L.Settings.OpacityLabel = "Opacity"
 L.Settings.OpacityTooltip = nil
 
-L.Settings.SpellNameWidthLabel = "Spell Name Length"
-L.Settings.SpellNameWidthTooltip = "Maximum width of the spell name text. Set to 0 for no limit."
-
-L.Settings.TargetNameWidthLabel = "Target Name Length"
-L.Settings.TargetNameWidthTooltip = "Maximum width of the target name text. Set to 0 for no limit."
-
 L.Settings.NameDividerLabel = "Name Divider"
 L.Settings.NameDividerTooltip = nil
 L.Settings.NameDividerNone = "None"
@@ -159,6 +153,10 @@ L.Settings.ProgressBarColorTooltip =
 
 L.Settings.MirrorLayoutLabel = "Mirror Layout"
 L.Settings.MirrorLayoutTooltip = nil
+
+L.Settings.HideUntargetedSpellsLabel = "Hide Untargeted Spells"
+L.Settings.HideUntargetedSpellsTooltip =
+	"Omits rendering spells without targets, such as most AoE channels or frontals."
 
 L.Settings.UseInterruptabilityColorsLabel = "Use Interrupt Colors"
 L.Settings.UseInterruptabilityColorsTooltip = nil
@@ -201,6 +199,7 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowTargetName] = "Show Target Name",
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Show Target Class Color",
 	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
+	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
 }
 
 L.Settings.FeatureFlagSettingTitles = {

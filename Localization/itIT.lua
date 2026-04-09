@@ -134,12 +134,6 @@ L.Settings.BorderStyleTooltip = nil
 L.Settings.OpacityLabel = "Opacità"
 L.Settings.OpacityTooltip = nil
 
-L.Settings.SpellNameWidthLabel = "Lunghezza nome incantesimo"
-L.Settings.SpellNameWidthTooltip = "Larghezza massima del testo del nome dell'incantesimo. Imposta 0 per nessun limite."
-
-L.Settings.TargetNameWidthLabel = "Lunghezza nome bersaglio"
-L.Settings.TargetNameWidthTooltip = "Larghezza massima del testo del nome del bersaglio. Imposta 0 per nessun limite."
-
 L.Settings.NameDividerLabel = "Divisore nomi"
 L.Settings.NameDividerTooltip = nil
 L.Settings.NameDividerNone = "Nessuno"
@@ -198,6 +192,7 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowSpellName] = "Mostra nome incantesimo",
 	[Private.Enum.FeatureFlag.ShowTargetName] = "Mostra nome bersaglio",
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Mostra colore classe bersaglio",
+	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
 }
 
 L.Settings.FeatureFlagSettingTitles = {

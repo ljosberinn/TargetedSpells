@@ -133,12 +133,6 @@ L.Settings.BorderStyleTooltip = nil
 L.Settings.OpacityLabel = "不透明度"
 L.Settings.OpacityTooltip = nil
 
-L.Settings.SpellNameWidthLabel = "法术名称长度"
-L.Settings.SpellNameWidthTooltip = "法术名称文本的最大宽度。设置为0则无限制。"
-
-L.Settings.TargetNameWidthLabel = "目标名称长度"
-L.Settings.TargetNameWidthTooltip = "目标名称文本的最大宽度。设置为0则无限制。"
-
 L.Settings.NameDividerLabel = "名称分隔符"
 L.Settings.NameDividerNone = "无"
 
@@ -196,6 +190,7 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowSpellName] = "显示法术名称",
 	[Private.Enum.FeatureFlag.ShowTargetName] = "显示目标名称",
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "显示目标职业颜色",
+	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
 }
 
 L.Settings.FeatureFlagSettingTitles = {

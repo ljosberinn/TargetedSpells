@@ -6,6 +6,18 @@ local LibSharedMedia = LibStub("LibSharedMedia-3.0")
 ---@class TargetedSpellsBarMixin : TargetedSpellsMixin
 TargetedSpellsBarMixin = CreateFromMixins(TargetedSpellsMixin)
 
+function TargetedSpellsBarMixin:GetGlowTarget()
+	local settings = TargetedSpellsSaved.Settings.Party
+	local flags = settings.FeatureFlags
+
+	local width = settings.Width
+		- (flags[Private.Enum.FeatureFlag.ShowIcon] and settings.Height or 0)
+		- (flags[Private.Enum.FeatureFlag.ShowTargetMarker] and settings.Height or 0)
+		- (flags[Private.Enum.FeatureFlag.ShowDuration] and settings.FontSize * 2 or 0)
+
+	return self.ProgressBar, width, settings.Height
+end
+
 function TargetedSpellsBarMixin:OnLoad()
 	TargetedSpellsMixin.OnLoad(self)
 	self.Bar:SetStatusBarTexture("")
@@ -118,12 +130,16 @@ function TargetedSpellsBarMixin:OnSizeChanged()
 		end
 	end
 
-	-- SpellName anchors to its near edge of the ProgressBar; TargetName to the far edge.
 	local showSpellName = TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowSpellName]
 	local showTargetName = TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowTargetName]
 
-	self.ProgressBar.SpellName:SetWidth(TargetedSpellsSaved.Settings.Party.SpellNameWidth)
-	self.ProgressBar.TargetName:SetWidth(TargetedSpellsSaved.Settings.Party.TargetNameWidth)
+	local progressBarWidth = TargetedSpellsSaved.Settings.Party.Width
+		- (showIcon and TargetedSpellsSaved.Settings.Party.Height or 0)
+		- (showTargetMarker and TargetedSpellsSaved.Settings.Party.Height or 0)
+		- (showDuration and durationWidth or 0)
+
+	self.ProgressBar.SpellName:SetWidth(progressBarWidth * 0.5)
+	self.ProgressBar.TargetName:SetWidth(progressBarWidth * 0.5)
 
 	if mirrored then
 		if showSpellName then
@@ -142,6 +158,13 @@ function TargetedSpellsBarMixin:OnSizeChanged()
 			PixelUtil.SetPoint(self.ProgressBar.TargetName, "RIGHT", self.ProgressBar, "RIGHT", -4, 0)
 		end
 	end
+
+	if
+		TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.GlowImportant] and self:ShouldBeShown()
+	then
+		self:HideGlow()
+		self:ShowGlow(self:IsSpellImportant(LibEditMode:IsInEditMode() and Private.Utils.RollDice()))
+	end
 end
 
 function TargetedSpellsBarMixin:OnSettingChanged(key, flagIdOrValue, newBool)
@@ -149,8 +172,6 @@ function TargetedSpellsBarMixin:OnSettingChanged(key, flagIdOrValue, newBool)
 		PixelUtil.SetSize(self, flagIdOrValue, TargetedSpellsSaved.Settings.Party.Height)
 	elseif key == Private.Settings.Keys.Party.Height then
 		PixelUtil.SetSize(self, TargetedSpellsSaved.Settings.Party.Width, flagIdOrValue)
-	elseif key == Private.Settings.Keys.Party.ShowDuration then
-		self:SetShowDuration(flagIdOrValue)
 	elseif key == Private.Settings.Keys.Party.FeatureFlags then
 		if
 			flagIdOrValue == Private.Enum.FeatureFlag.ShowIcon
@@ -161,7 +182,7 @@ function TargetedSpellsBarMixin:OnSettingChanged(key, flagIdOrValue, newBool)
 			or flagIdOrValue == Private.Enum.FeatureFlag.MirrorLayout
 		then
 			if flagIdOrValue == Private.Enum.FeatureFlag.ShowTargetMarker then
-				self.CustomElementsFrame.TargetMarker:SetShown(newBool)
+				self:SetTargetMarker()
 				self:OnSizeChanged()
 			elseif flagIdOrValue == Private.Enum.FeatureFlag.ShowIcon then
 				self.Icon:SetShown(newBool)
@@ -185,6 +206,7 @@ function TargetedSpellsBarMixin:OnSettingChanged(key, flagIdOrValue, newBool)
 		or key == Private.Settings.Keys.Party.FontFlags
 	then
 		self:SetFont()
+		self:OnSizeChanged()
 	elseif key == Private.Settings.Keys.Party.ForegroundBarTexture then
 		self:SetForegroundBarTexture()
 	elseif key == Private.Settings.Keys.Party.BackgroundBarTexture then
@@ -195,10 +217,6 @@ function TargetedSpellsBarMixin:OnSettingChanged(key, flagIdOrValue, newBool)
 		if TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.GlowImportant] then
 			self:ShowGlow(self:IsSpellImportant(LibEditMode:IsInEditMode() and Private.Utils.RollDice()))
 		end
-	elseif key == Private.Settings.Keys.Party.SpellNameWidth then
-		self.ProgressBar.SpellName:SetWidth(flagIdOrValue)
-	elseif key == Private.Settings.Keys.Party.TargetNameWidth then
-		self.ProgressBar.TargetName:SetWidth(flagIdOrValue)
 	end
 end
 
@@ -267,6 +285,7 @@ end
 
 function TargetedSpellsBarMixin:Reset()
 	TargetedSpellsMixin.Reset(self)
+	self:SetAlpha(1)
 	self.unit = nil
 	self.ProgressBar:SetReverseFill(false)
 	self:SetProgressBarColor()
@@ -301,12 +320,8 @@ do
 		self.unit = castingUnit
 		self:SetTargetMarker()
 
-		if not TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowTargetName] then
-			self.ProgressBar.TargetName:Hide()
-			return
-		end
-
-		local name = ""
+		---@type string?
+		local name = nil
 		---@type colorRGB?
 		local color = nil
 		local isClassColor = false
@@ -321,22 +336,18 @@ do
 			name = UnitSpellTargetName(castingUnit)
 
 			if
-				name ~= nil
-				and TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowTargetClassColor]
+				name == nil
+				and TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.HideUntargetedSpells]
 			then
+				self:SetAlpha(0)
+				return
+			elseif TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowTargetClassColor] then
 				local targetClass = UnitSpellTargetClass(castingUnit)
 
 				if targetClass ~= nil then
 					color = C_ClassColor.GetClassColor(targetClass)
 					isClassColor = color ~= nil
 				end
-			end
-
-			if name == nil then
-				name = ""
-				self.ProgressBar.TargetName:Hide()
-			else
-				self.ProgressBar.TargetName:Show()
 			end
 
 			if TargetedSpellsSaved.Settings.Party.UseInterruptabilityColors then
@@ -365,23 +376,11 @@ do
 			end
 		end
 
-		local isChannel = false
-
-		do
-			local castingDuration = UnitCastingDuration(castingUnit)
-
-			if castingDuration == nil then
-				local channelDuration = UnitChannelDuration(castingUnit)
-
-				if channelDuration ~= nil then
-					isChannel = true
-				end
-			end
-		end
-
-		self.ProgressBar:SetReverseFill(isChannel)
-
+		self.ProgressBar:SetReverseFill(UnitChannelDuration(castingUnit) ~= nil)
 		self.ProgressBar.TargetName:SetText(name)
+		self.ProgressBar.TargetName:SetShown(
+			TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowTargetName] and name ~= nil
+		)
 
 		if TargetedSpellsSaved.Settings.Party.UseTargetClassColor then
 			self.ProgressBar.TargetName:SetTextColor(
@@ -394,8 +393,6 @@ do
 		else
 			self.ProgressBar.TargetName:SetTextColor(color.r, color.g, color.b, color.a)
 		end
-
-		self.ProgressBar.TargetName:Show()
 
 		if castingUnit == "preview" then
 			self:SetPreviewBarColor()

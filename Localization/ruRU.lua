@@ -135,14 +135,6 @@ L.Settings.BorderStyleTooltip = nil
 L.Settings.OpacityLabel = "Прозрачность"
 L.Settings.OpacityTooltip = nil
 
-L.Settings.SpellNameWidthLabel = "Длина названия заклинания"
-L.Settings.SpellNameWidthTooltip =
-	"Максимальная ширина текста названия заклинания. Установите 0 для снятия ограничения."
-
-L.Settings.TargetNameWidthLabel = "Длина названия цели"
-L.Settings.TargetNameWidthTooltip =
-	"Максимальная ширина текста названия цели. Установите 0 для снятия ограничения."
-
 L.Settings.NameDividerLabel = "Разделитель имён"
 L.Settings.NameDividerTooltip = nil
 L.Settings.NameDividerNone = "Нет"
@@ -203,6 +195,7 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowSpellName] = "Показывать название заклинания",
 	[Private.Enum.FeatureFlag.ShowTargetName] = "Показывать имя цели",
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Показывать цвет класса цели",
+	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
 }
 
 L.Settings.FeatureFlagSettingTitles = {

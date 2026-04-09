@@ -131,12 +131,6 @@ L.Settings.BorderStyleTooltip = nil
 L.Settings.OpacityLabel = "Deckkraft"
 L.Settings.OpacityTooltip = nil
 
-L.Settings.SpellNameWidthLabel = "Zaubernamenlänge"
-L.Settings.SpellNameWidthTooltip = "Maximale Breite des Zaubernamentextes. Auf 0 setzen für keine Begrenzung."
-
-L.Settings.TargetNameWidthLabel = "Zielnamenlänge"
-L.Settings.TargetNameWidthTooltip = "Maximale Breite des Zielnamentextes. Auf 0 setzen für keine Begrenzung."
-
 L.Settings.NameDividerLabel = "Namens-Trennzeichen"
 L.Settings.NameDividerNone = "Keines"
 
@@ -194,6 +188,7 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowSpellName] = "Zaubernamen anzeigen",
 	[Private.Enum.FeatureFlag.ShowTargetName] = "Zielnamen anzeigen",
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Zielklassenfarbe anzeigen",
+	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
 }
 
 L.Settings.FeatureFlagSettingTitles = {

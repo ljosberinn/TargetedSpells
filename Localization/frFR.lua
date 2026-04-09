@@ -134,12 +134,6 @@ L.Settings.BorderStyleTooltip = nil
 L.Settings.OpacityLabel = "Opacité"
 L.Settings.OpacityTooltip = nil
 
-L.Settings.SpellNameWidthLabel = "Longueur du nom du sort"
-L.Settings.SpellNameWidthTooltip = "Largeur maximale du texte du nom du sort. Mettre à 0 pour aucune limite."
-
-L.Settings.TargetNameWidthLabel = "Longueur du nom de la cible"
-L.Settings.TargetNameWidthTooltip = "Largeur maximale du texte du nom de la cible. Mettre à 0 pour aucune limite."
-
 L.Settings.NameDividerLabel = "Séparateur de noms"
 L.Settings.NameDividerNone = "Aucun"
 
@@ -197,6 +191,7 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowSpellName] = "Afficher le nom du sort",
 	[Private.Enum.FeatureFlag.ShowTargetName] = "Afficher le nom de la cible",
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Afficher la couleur de classe de la cible",
+	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
 }
 
 L.Settings.FeatureFlagSettingTitles = {
