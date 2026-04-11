@@ -152,6 +152,11 @@ L.Settings.ProgressBarColorTooltip = nil
 L.Settings.MirrorLayoutLabel = "Invertir diseño"
 L.Settings.MirrorLayoutTooltip = nil
 
+L.Settings.HideUntargetedSpellsLabel = "Ocultar hechizos sin objetivo"
+L.Settings.HideTargetedSpellsLabel = "Ocultar hechizos con objetivo"
+
+L.Settings.SelfOnlyLabel = "Mostrar solo hechizos dirigidos al jugador"
+
 L.Settings.UseInterruptabilityColorsLabel = "Usar colores de interrupción"
 L.Settings.UseInterruptabilityColorsTooltip = nil
 
@@ -192,6 +197,8 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowTargetName] = "Mostrar nombre del objetivo",
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Mostrar color de clase del objetivo",
 	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
+	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
+	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,
 }
 
 L.Settings.FeatureFlagSettingTitles = {

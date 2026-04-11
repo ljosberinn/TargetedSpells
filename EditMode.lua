@@ -358,7 +358,6 @@ do
 			}
 		end
 
-
 		if key == Private.Settings.Keys.Party.ForegroundBarTexture then
 			---@param layoutName string
 			---@param value string
@@ -700,6 +699,50 @@ do
 							id,
 							tableRef.FeatureFlags[id]
 						)
+
+						if tableRef.FeatureFlags[id] then
+							if id == Private.Enum.FeatureFlag.HideUntargetedSpells then
+								if tableRef.FeatureFlags[Private.Enum.FeatureFlag.HideTargetedSpells] then
+									tableRef.FeatureFlags[Private.Enum.FeatureFlag.HideTargetedSpells] = false
+									Private.EventRegistry:TriggerEvent(
+										Private.Enum.Events.SETTING_CHANGED,
+										key,
+										Private.Enum.FeatureFlag.HideTargetedSpells,
+										false
+									)
+								end
+							elseif id == Private.Enum.FeatureFlag.HideTargetedSpells then
+								if tableRef.FeatureFlags[Private.Enum.FeatureFlag.HideUntargetedSpells] then
+									tableRef.FeatureFlags[Private.Enum.FeatureFlag.HideUntargetedSpells] = false
+									Private.EventRegistry:TriggerEvent(
+										Private.Enum.Events.SETTING_CHANGED,
+										key,
+										Private.Enum.FeatureFlag.HideUntargetedSpells,
+										false
+									)
+								end
+
+								if tableRef.FeatureFlags[Private.Enum.FeatureFlag.SelfOnly] then
+									tableRef.FeatureFlags[Private.Enum.FeatureFlag.SelfOnly] = false
+									Private.EventRegistry:TriggerEvent(
+										Private.Enum.Events.SETTING_CHANGED,
+										key,
+										Private.Enum.FeatureFlag.SelfOnly,
+										false
+									)
+								end
+							elseif id == Private.Enum.FeatureFlag.SelfOnly then
+								if tableRef.FeatureFlags[Private.Enum.FeatureFlag.HideTargetedSpells] then
+									tableRef.FeatureFlags[Private.Enum.FeatureFlag.HideTargetedSpells] = false
+									Private.EventRegistry:TriggerEvent(
+										Private.Enum.Events.SETTING_CHANGED,
+										key,
+										Private.Enum.FeatureFlag.HideTargetedSpells,
+										false
+									)
+								end
+							end
+						end
 					end
 
 					rootDescription:CreateCheckbox(L.Settings.FeatureFlagLabels[id], IsEnabled, Toggle, {
@@ -1529,7 +1572,7 @@ end
 
 function SelfEditModeMixin:AcquireFrame()
 	local frame = Private.Utils.Pools.Self:Acquire()
-	frame:PostCreate("preview")
+	frame:PostCreate()
 	return frame
 end
 
@@ -1580,7 +1623,7 @@ end
 
 function PartyEditModeMixin:AcquireFrame()
 	local frame = Private.Utils.Pools.Bar:Acquire()
-	frame:PostCreate("preview")
+	frame:PostCreate()
 	return frame
 end
 

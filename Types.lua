@@ -79,6 +79,13 @@
 ---@field kinds table<FrameKind, boolean>
 ---@field id number|string|nil
 
+---@class SpellCastInfo
+---@field unit string
+---@field spellId number
+---@field startTime number
+---@field id number|string
+---@field duration DurationObject
+
 ---@class FontInfo
 ---@field fonts table<string, string>
 ---@field byLabel table<string, string>
@@ -176,6 +183,7 @@
 ---@field private elapsed number
 ---@field private wasInterrupted boolean
 ---@field private doNotHideBefore number?
+---@field info SpellCastInfo?
 ---@field Bar StatusBar
 ---@field Icon Texture
 ---@field InterruptIcon Texture
@@ -198,14 +206,15 @@
 ---@field SetFont fun(self: TargetedSpellsMixin)
 ---@field SetShowDuration fun(self: TargetedSpellsMixin, showDuration: boolean)
 ---@field SetDuration fun(self: TargetedSpellsMixin, duration: DurationObject)
----@field SetOnCooldownDone fun(self: TargetedSpellsMixin, callback: function?)
 
 ---@class TargetedSpellsIconMixin : TargetedSpellsMixin
 ---@field private Overlay Texture
----@field private Cooldown CustomCooldown
+---@field Cooldown CustomCooldown
 ---@field private unit string?
 ---@field private duration DurationObject|nil
 ---@field private InterruptSource FontString
+---@field OnCooldownDoneCallback fun(info: SpellCastInfo)
+---@field OnCooldownDoneClosure fun()
 ---@field private BorderSolidTop Texture
 ---@field private BorderSolidBottom Texture
 ---@field private BorderSolidLeft Texture
@@ -225,12 +234,10 @@
 ---@field OnSettingChanged fun(self: TargetedSpellsIconMixin, key: string, flagIdOrValue: number|string|boolean|table, newBool: boolean?)
 ---@field SetDuration fun(self: TargetedSpellsIconMixin, duration: DurationObject)
 ---@field GetDuration fun(self: TargetedSpellsIconMixin): DurationObject|nil
----@field SetUnit fun(self: TargetedSpellsIconMixin, unit: string)
 ---@field GetUnit fun(self: TargetedSpellsIconMixin): string
----@field PostCreate fun(self: TargetedSpellsIconMixin, unit: string, castingUnit: string?)
+---@field PostCreate fun(self: TargetedSpellsIconMixin, info: SpellCastInfo?, OnCooldownDoneCallback: fun(info: SpellCastInfo))
 ---@field Reset fun(self: TargetedSpellsIconMixin)
 ---@field SetFont fun(self: TargetedSpellsIconMixin)
----@field SetOnCooldownDone fun(self: TargetedSpellsIconMixin, callback: function)
 
 ---@class TargetedSpellsBarProgressBar : StatusBar
 ---@field Background Texture
@@ -250,10 +257,10 @@
 ---@field OnSizeChanged fun(self: TargetedSpellsBarMixin)
 ---@field OnUpdate fun(self: TargetedSpellsBarMixin, elapsed: number)
 ---@field Reset fun(self: TargetedSpellsBarMixin)
----@field PostCreate fun(self: TargetedSpellsBarMixin, castingUnit: string)
+---@field PostCreate fun(self: TargetedSpellsBarMixin, info: SpellCastInfo?)
 ---@field SetShowDuration fun(self: TargetedSpellsBarMixin, showDuration: boolean)
 ---@field SetFont fun(self: TargetedSpellsBarMixin)
----@field SetDuration fun(self: TargetedSpellsBarMixin, duration: DurationObject)
+---@field SetDuration fun(self: TargetedSpellsBarMixin, duration: DurationObject): number
 ---@field SetForegroundBarTexture fun(self: TargetedSpellsBarMixin)
 ---@field SetBackgroundBarTexture fun(self: TargetedSpellsBarMixin)
 ---@field SetBackgroundBarColor fun(self: TargetedSpellsBarMixin)
@@ -314,9 +321,10 @@
 ---@field private role Role
 ---@field private contentType ContentType
 ---@field private delay number
+---@field private OnCooldownDoneClosure fun(info: SpellCastInfo)
 ---@field frames table<string, (TargetedSpellsIconMixin|TargetedSpellsBarMixin)[]>
 ---@field SetupFrame fun(self: TargetedSpellsDriver, isBoot: boolean)
----@field AcquireFrames fun(self: TargetedSpellsDriver, castingUnit: string): (TargetedSpellsIconMixin|TargetedSpellsBarMixin)[]
+---@field ProcessInfo fun(self: TargetedSpellsDriver, info: SpellCastInfo)
 ---@field RepositionFrames fun(self: TargetedSpellsDriver)
 ---@field ReleaseFrameForUnit fun(self: TargetedSpellsDriver, unit: string, removeUnit: boolean, id?: number): boolean
 ---@field LoadConditionsProhibitExecution fun(self: TargetedSpellsDriver, kind: FrameKind): boolean

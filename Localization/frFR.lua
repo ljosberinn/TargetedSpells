@@ -152,6 +152,12 @@ L.Settings.ProgressBarColorTooltip = nil
 L.Settings.MirrorLayoutLabel = "Disposition en miroir"
 L.Settings.MirrorLayoutTooltip = nil
 
+L.Settings.HideUntargetedSpellsLabel = "Masquer les sorts sans cible"
+
+L.Settings.HideTargetedSpellsLabel = "Masquer les sorts avec cible"
+
+L.Settings.SelfOnlyLabel = "Afficher uniquement les sorts ciblant le joueur"
+
 L.Settings.UseInterruptabilityColorsLabel = "Utiliser les couleurs d'interruption"
 L.Settings.UseInterruptabilityColorsTooltip = nil
 
@@ -192,6 +198,8 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowTargetName] = "Afficher le nom de la cible",
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Afficher la couleur de classe de la cible",
 	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
+	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
+	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,
 }
 
 L.Settings.FeatureFlagSettingTitles = {

@@ -11,6 +11,7 @@ function TargetedSpellsDriver:Init()
 	self.partyFrameCount = 0
 	self.role = Private.Enum.Role.Damager
 	self.contentType = Private.Enum.ContentType.OpenWorld
+	self.OnCooldownDoneClosure = GenerateClosure(self.OnCooldownDone, self)
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingsChanged, self)
 
 	self:SetupFrame(true)
@@ -138,40 +139,6 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 	end
 end
 
-do
-	---@type table<string, (TargetedSpellsIconMixin|TargetedSpellsBarMixin)[]>
-	local frames = {}
-
-	function TargetedSpellsDriver:AcquireFrames(castingUnit)
-		table.wipe(frames)
-
-		if
-			TargetedSpellsSaved.Settings.Self.Enabled
-			and not self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Self)
-			and self.selfFrameCount < 10
-		then
-			self.selfFrameCount = self.selfFrameCount + 1
-			local selfTargetingFrame = Private.Utils.Pools.Self:Acquire()
-			selfTargetingFrame:PostCreate("player", castingUnit)
-			table.insert(frames, selfTargetingFrame)
-		end
-
-		if
-			TargetedSpellsSaved.Settings.Party.Enabled
-			and IsInGroup()
-			and not self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Party)
-			and self.partyFrameCount < 10
-		then
-			self.partyFrameCount = self.partyFrameCount + 1
-			local frame = Private.Utils.Pools.Bar:Acquire()
-			frame:PostCreate(castingUnit)
-			table.insert(frames, frame)
-		end
-
-		return frames
-	end
-end
-
 function TargetedSpellsDriver:RepositionFrames()
 	---@type table<string, (TargetedSpellsIconMixin|TargetedSpellsBarMixin)[]>
 	local activeFrames = {}
@@ -225,16 +192,42 @@ function TargetedSpellsDriver:ReleaseFrame(frame)
 	end
 end
 
-function TargetedSpellsDriver:SetupAcquiredFrames(info, frames, duration)
-	local OnCooldownDone = GenerateClosure(self.OnCooldownDone, self, info)
+function TargetedSpellsDriver:ProcessInfo(info)
+	if self.frames[info.unit] == nil then
+		self.frames[info.unit] = {}
+	else
+		self:ReleaseFrameForUnit(info.unit, false, info.id)
+	end
 
-	for _, frame in ipairs(frames) do
-		table.insert(self.frames[info.unit], frame)
-		frame:SetSpellId(info.spellId)
-		frame:SetStartTime(info.startTime)
-		frame:SetId(info.id)
-		frame:SetDuration(duration)
-		frame:SetOnCooldownDone(OnCooldownDone)
+	local count = 0
+
+	if
+		TargetedSpellsSaved.Settings.Self.Enabled
+		and not self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Self)
+		and self.selfFrameCount < 10
+	then
+		self.selfFrameCount = self.selfFrameCount + 1
+		local selfFrame = Private.Utils.Pools.Self:Acquire()
+		selfFrame:PostCreate(info, self.OnCooldownDoneClosure)
+		table.insert(self.frames[info.unit], selfFrame)
+		count = count + 1
+	end
+
+	if
+		TargetedSpellsSaved.Settings.Party.Enabled
+		and (IsInGroup() or TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.SelfOnly])
+		and not self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Party)
+		and self.partyFrameCount < 10
+	then
+		self.partyFrameCount = self.partyFrameCount + 1
+		local barFrame = Private.Utils.Pools.Bar:Acquire()
+		barFrame:PostCreate(info)
+		table.insert(self.frames[info.unit], barFrame)
+		count = count + 1
+	end
+
+	if count == 0 then
+		self:ReleaseFrameForUnit(info.unit, true)
 	end
 
 	self:RepositionFrames()
@@ -293,11 +286,7 @@ function TargetedSpellsDriver:LoadConditionsProhibitExecution(kind)
 end
 
 function TargetedSpellsDriver:UnitIsIrrelevant(unit, skipTargetCheck)
-	if string.sub(unit, 1, 9) ~= "nameplate" then
-		return true
-	end
-
-	if UnitInParty(unit) then
+	if string.sub(unit, 1, 9) ~= "nameplate" or UnitInParty(unit) then
 		return true
 	end
 
@@ -307,18 +296,11 @@ function TargetedSpellsDriver:UnitIsIrrelevant(unit, skipTargetCheck)
 
 	local target = string.format("%starget", unit)
 
-	if UnitExists(target) then
-		if not UnitIsVisible(target) then
-			return true
-		end
-
-		if UnitCanAttack("player", target) then
-			return true
-		end
-
-		if IsInGroup() and not UnitInParty(target) then
-			return true
-		end
+	if
+		UnitExists(target)
+		and (not UnitIsVisible(target) or UnitCanAttack("player", target) or IsInGroup() and not UnitInParty(target))
+	then
+		return true
 	end
 
 	return false
@@ -399,20 +381,8 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 			return
 		end
 
-		local frames = self:AcquireFrames(unit)
-
-		if #frames == 0 then
-			return
-		end
-
-		if self.frames[unit] == nil then
-			self.frames[unit] = {}
-		else
-			self:ReleaseFrameForUnit(unit, false)
-		end
-
 		-- todo: startTime is wrong, but we can't do better yet
-		self:SetupAcquiredFrames({ unit = unit, spellId = spellId, startTime = GetTime(), id = id }, frames, duration)
+		self:ProcessInfo({ unit = unit, spellId = spellId, startTime = GetTime(), id = id, duration = duration })
 	elseif event == "CVAR_UPDATE" then
 		local name, value = ...
 
@@ -504,31 +474,14 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		local info = ...
 
 		-- cast vanished during the delay
-		local duration = UnitCastingDuration(info.unit) or UnitChannelDuration(info.unit)
+		info.duration = UnitCastingDuration(info.unit) or UnitChannelDuration(info.unit)
 
 		-- without `nameplateShowOffscreen` active, castTime may stay nil
-
-		if duration == nil then
+		if info.duration == nil then
 			return
 		end
 
-		local frames = self:AcquireFrames(info.unit)
-
-		if #frames == 0 then
-			if self:ReleaseFrameForUnit(info.unit, true) then
-				self:RepositionFrames()
-			end
-
-			return
-		end
-
-		if self.frames[info.unit] == nil then
-			self.frames[info.unit] = {}
-		else
-			self:ReleaseFrameForUnit(info.unit, false, info.id)
-		end
-
-		self:SetupAcquiredFrames(info, frames, duration)
+		self:ProcessInfo(info)
 	elseif event == Private.Enum.Events.DELAYED_FRAME_CLEANUP then
 		---@type DelayInfo
 		local delayInfo = ...

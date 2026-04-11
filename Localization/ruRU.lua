@@ -156,6 +156,13 @@ L.Settings.ProgressBarColorTooltip =
 L.Settings.MirrorLayoutLabel = "Зеркальный макет"
 L.Settings.MirrorLayoutTooltip = nil
 
+L.Settings.HideUntargetedSpellsLabel = "Скрыть заклинания без цели"
+
+L.Settings.HideTargetedSpellsLabel = "Скрыть заклинания с целью"
+
+L.Settings.SelfOnlyLabel =
+	"Показывать только заклинания, нацеленные на игрока"
+
 L.Settings.UseInterruptabilityColorsLabel = "Использовать цвета прерывания"
 L.Settings.UseInterruptabilityColorsTooltip = nil
 
@@ -196,6 +203,8 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowTargetName] = "Показывать имя цели",
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Показывать цвет класса цели",
 	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
+	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
+	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,
 }
 
 L.Settings.FeatureFlagSettingTitles = {

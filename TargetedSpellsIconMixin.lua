@@ -13,15 +13,18 @@ function TargetedSpellsIconMixin:OnLoad()
 	TargetedSpellsMixin.OnLoad(self)
 	PixelUtil.SetSize(self, TargetedSpellsSaved.Settings.Self.Width, TargetedSpellsSaved.Settings.Self.Height)
 	self.Bar:SetStatusBarTexture("")
+
 	if Private.Utils.Formatter ~= nil then
 		self.Cooldown:SetCountdownFormatter(Private.Utils.Formatter)
 	end
+
 	self.Cooldown:SetCountdownFont("GameFontHighlightHugeOutline")
 	self:SetFont()
 	self:HideGlow()
 	self:ApplyBorderStyle(TargetedSpellsSaved.Settings.Self.BorderStyle)
 	self:SetShowDuration(TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration])
 	self.Cooldown:SetDrawSwipe(TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowSwipe])
+	self.OnCooldownDoneClosure = GenerateClosure(self.OnCooldownDoneCallback, self.info)
 end
 
 do
@@ -313,28 +316,33 @@ function TargetedSpellsIconMixin:GetDuration()
 	return self.duration
 end
 
-function TargetedSpellsIconMixin:SetUnit(unit)
-	self.unit = unit
-end
-
 function TargetedSpellsIconMixin:GetUnit()
 	return self.unit
 end
 
-function TargetedSpellsIconMixin:PostCreate(unit, castingUnit)
-	self:SetUnit(unit)
-
-	if castingUnit ~= nil then
-		local targetsThatUnit = PlayerIsSpellTarget(castingUnit, unit)
-		self:SetAlphaFromBoolean(targetsThatUnit)
-		self.Bar:SetValue(C_CurveUtil.EvaluateColorValueFromBoolean(targetsThatUnit, 1, 0))
+function TargetedSpellsIconMixin:PostCreate(info, OnCooldownDoneCallback)
+	if info == nil then
+		return
 	end
+
+	local targetsPlayer = PlayerIsSpellTarget(info.unit, "player")
+	self:SetAlphaFromBoolean(targetsPlayer)
+	self.Bar:SetValue(C_CurveUtil.EvaluateColorValueFromBoolean(targetsPlayer, 1, 0))
+
+	self.info = info
+	self.OnCooldownDoneCallback = OnCooldownDoneCallback
+	self:SetSpellId(info.spellId)
+	self:SetStartTime(info.startTime)
+	self:SetId(info.id)
+	self:SetDuration(info.duration)
+	self:SetOnCooldownDone(self.OnCooldownDoneClosure)
 end
 
 function TargetedSpellsIconMixin:Reset()
 	self.spellId = nil
 	self.Cooldown:Clear()
 	self.duration = nil
+	self.info = nil
 	self.Cooldown:SetScript("OnCooldownDone", nil)
 	self.InterruptSource:SetText()
 	self.InterruptSource:Hide()

@@ -102,4 +102,6 @@ Private.Enum.FeatureFlag = {
 	ShowTargetClassColor = 14,
 	MirrorLayout = 15,
 	HideUntargetedSpells = 16,
+	HideTargetedSpells = 17,
+	SelfOnly = 18,
 }

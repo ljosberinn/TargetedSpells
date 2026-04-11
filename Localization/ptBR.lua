@@ -153,6 +153,12 @@ L.Settings.ProgressBarColorTooltip = nil
 L.Settings.MirrorLayoutLabel = "Layout espelhado"
 L.Settings.MirrorLayoutTooltip = nil
 
+L.Settings.HideUntargetedSpellsLabel = "Ocultar feitiços sem alvo"
+
+L.Settings.HideTargetedSpellsLabel = "Ocultar feitiços com alvo"
+
+L.Settings.SelfOnlyLabel = "Mostrar apenas feitiços direcionados ao jogador"
+
 L.Settings.UseInterruptabilityColorsLabel = "Usar cores de interrupção"
 L.Settings.UseInterruptabilityColorsTooltip = nil
 
@@ -193,6 +199,8 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowTargetName] = "Mostrar nome do alvo",
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Mostrar cor de classe do alvo",
 	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
+	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
+	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,
 }
 
 L.Settings.FeatureFlagSettingTitles = {

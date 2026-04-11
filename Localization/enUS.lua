@@ -155,8 +155,10 @@ L.Settings.MirrorLayoutLabel = "Mirror Layout"
 L.Settings.MirrorLayoutTooltip = nil
 
 L.Settings.HideUntargetedSpellsLabel = "Hide Untargeted Spells"
-L.Settings.HideUntargetedSpellsTooltip =
-	"Omits rendering spells without targets, such as most AoE channels or frontals."
+
+L.Settings.HideTargetedSpellsLabel = "Hide Targeted Spells"
+
+L.Settings.SelfOnlyLabel = "Only Show Player-Targeting Spells"
 
 L.Settings.UseInterruptabilityColorsLabel = "Use Interrupt Colors"
 L.Settings.UseInterruptabilityColorsTooltip = nil
@@ -182,7 +184,6 @@ L.Settings.Export = "Export"
 L.Settings.FontLabel = "Font"
 L.Settings.FontTooltip = nil
 
-
 L.Settings.FeatureFlagsLabel = "Features"
 L.Settings.FeatureFlagsTooltip = nil
 
@@ -200,6 +201,8 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Show Target Class Color",
 	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
 	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
+	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
+	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,
 }
 
 L.Settings.FeatureFlagSettingTitles = {
