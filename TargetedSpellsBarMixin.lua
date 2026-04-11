@@ -462,8 +462,6 @@ do
 	end
 end
 
-function TargetedSpellsBarMixin:SetOnCooldownDone() end
-
 function TargetedSpellsBarMixin:SetInterrupted(name, color)
 	TargetedSpellsMixin.SetInterrupted(self, name, color)
 	local now = GetTime()

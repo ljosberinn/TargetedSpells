@@ -335,7 +335,7 @@ function TargetedSpellsIconMixin:PostCreate(info, OnCooldownDoneCallback)
 	self:SetStartTime(info.startTime)
 	self:SetId(info.id)
 	self:SetDuration(info.duration)
-	self:SetOnCooldownDone(self.OnCooldownDoneClosure)
+	self.Cooldown:SetScript("OnCooldownDone", self.OnCooldownDoneClosure)
 end
 
 function TargetedSpellsIconMixin:Reset()
@@ -388,10 +388,6 @@ function TargetedSpellsIconMixin:SetFont()
 	else
 		fontString:SetShadowOffset(0, 0)
 	end
-end
-
-function TargetedSpellsIconMixin:SetOnCooldownDone(callback)
-	self.Cooldown:SetScript("OnCooldownDone", callback)
 end
 
 if Private.Utils.Formatter == nil then

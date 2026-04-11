@@ -235,7 +235,3 @@ end
 function TargetedSpellsMixin:SetDuration(duration)
 	-- Implement in your derived mixin.
 end
-
-function TargetedSpellsMixin:SetOnCooldownDone(callback)
-	-- Implement in your derived mixin.
-end
