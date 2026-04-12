@@ -139,6 +139,10 @@ L.Settings.ProgressBarColorTooltip =
 
 L.Settings.MirrorLayoutLabel = "Disposition en miroir"
 
+L.Settings.AnnounceUntargetedSpellsLabel = "Annoncer les sorts sans cible"
+L.Settings.AnnounceUntargetedSpellsTooltip =
+	"Lit par synthèse vocale tous les sorts qui ne ciblent personne, comme les sorts de zone et certaines attaques frontales."
+
 L.Settings.HideUntargetedSpellsLabel = "Masquer les sorts sans cible"
 
 L.Settings.HideTargetedSpellsLabel = "Masquer les sorts avec cible"

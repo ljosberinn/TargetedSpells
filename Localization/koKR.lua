@@ -139,6 +139,10 @@ L.Settings.ProgressBarColorTooltip =
 
 L.Settings.MirrorLayoutLabel = "레이아웃 반전"
 
+L.Settings.AnnounceUntargetedSpellsLabel = "대상 없는 주문 알림"
+L.Settings.AnnounceUntargetedSpellsTooltip =
+	"AoE나 일부 전방 공격처럼 대상이 없는 주문을 텍스트 음성 변환(TTS)으로 재생합니다."
+
 L.Settings.HideUntargetedSpellsLabel = "대상 없는 주문 숨기기"
 
 L.Settings.HideTargetedSpellsLabel = "대상 있는 주문 숨기기"

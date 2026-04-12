@@ -85,6 +85,7 @@
 ---@field startTime number
 ---@field id number|string
 ---@field duration DurationObject
+---@field isRetarget boolean?
 
 ---@class FontInfo
 ---@field fonts table<string, string>
@@ -133,6 +134,7 @@
 ---@field FontFlags table<FontFlags, boolean>
 ---@field FeatureFlags table<FeatureFlag, boolean>
 ---@field BorderStyle string
+---@field AnnounceUntargetedSpells boolean
 
 ---@class SavedVariablesSettingsParty
 ---@field Enabled boolean
@@ -156,6 +158,7 @@
 ---@field UseTargetClassColor boolean
 ---@field UninterruptibleColor string
 ---@field InterruptibleColor string
+---@field AnnounceUntargetedSpells boolean
 ---@field Position FramePosition
 
 ---@class TargetedSpellsSelfPreviewFrame: Frame
@@ -334,6 +337,7 @@
 ---@field DetermineSpellDelayRequirement fun(self: TargetedSpellsDriver): boolean
 ---@field MaybeMarkAsInterruptedAndDelay fun(self: TargetedSpellsDriver, unit: string, id: number|string|nil, interruptedBy: string?)
 ---@field CleanupDanglingFrames fun(self: TargetedSpellsDriver)
+---@field MaybeAnnounceUntargetedSpell fun(self: TargetedSpellsDriver, info: SpellCastInfo)
 
 ---@class NumericFormatter
 ---@field SetBreakpoints fun(self: NumericFormatter, breakpoints: table)

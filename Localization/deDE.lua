@@ -140,6 +140,10 @@ L.Settings.ProgressBarColorTooltip =
 
 L.Settings.MirrorLayoutLabel = "Layout spiegeln"
 
+L.Settings.AnnounceUntargetedSpellsLabel = "Zauber ohne Ziel ankündigen"
+L.Settings.AnnounceUntargetedSpellsTooltip =
+	"Liest per Text-zu-Sprache alle Zauber vor, die kein Ziel haben, wie z. B. Flächenzauber oder manche Frontalangriffe."
+
 L.Settings.HideUntargetedSpellsLabel = "Zauber ohne Ziel ausblenden"
 
 L.Settings.HideTargetedSpellsLabel = "Zauber mit Ziel ausblenden"

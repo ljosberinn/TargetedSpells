@@ -139,6 +139,10 @@ L.Settings.ProgressBarColorTooltip =
 
 L.Settings.MirrorLayoutLabel = "Layout espelhado"
 
+L.Settings.AnnounceUntargetedSpellsLabel = "Anunciar feitiços sem alvo"
+L.Settings.AnnounceUntargetedSpellsTooltip =
+	"Reproduz voz sintetizada para qualquer feitiço sem alvo, como AoE e alguns ataques frontais."
+
 L.Settings.HideUntargetedSpellsLabel = "Ocultar feitiços sem alvo"
 
 L.Settings.HideTargetedSpellsLabel = "Ocultar feitiços com alvo"

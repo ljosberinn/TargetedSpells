@@ -25,6 +25,7 @@ Private.Settings.Keys = {
 		FontFlags = "FONT_FLAGS_SELF",
 		FeatureFlags = "FEATURE_FLAGS_SELF",
 		BorderStyle = "BORDER_STYLE_SELF",
+		AnnounceUntargetedSpells = "ANNOUNCE_UNTARGETED_SPELLS_SELF",
 	},
 	Party = {
 		Enabled = "ENABLED_PARTY",
@@ -50,6 +51,7 @@ Private.Settings.Keys = {
 		Font = "FONT_PARTY",
 		FontFlags = "FONT_FLAGS_PARTY",
 		FeatureFlags = "FEATURE_FLAGS_PARTY",
+		AnnounceUntargetedSpells = "ANNOUNCE_UNTARGETED_SPELLS_PARTY",
 	},
 }
 
@@ -72,6 +74,7 @@ function Private.Settings.GetSettingsDisplayOrder(kind)
 			Private.Settings.Keys.Self.FontSize,
 			Private.Settings.Keys.Self.FontFlags,
 			Private.Settings.Keys.Self.IconZoom,
+			Private.Settings.Keys.Self.AnnounceUntargetedSpells,
 		}
 	end
 
@@ -97,6 +100,7 @@ function Private.Settings.GetSettingsDisplayOrder(kind)
 		Private.Settings.Keys.Party.UninterruptibleColor,
 		Private.Settings.Keys.Party.InterruptibleColor,
 		Private.Settings.Keys.Party.UseTargetClassColor,
+		Private.Settings.Keys.Party.AnnounceUntargetedSpells,
 	}
 end
 
@@ -244,6 +248,7 @@ function Private.Settings.GetSelfDefaultSettings()
 			[Private.Enum.FeatureFlag.RenderInterruptSourceName] = false,
 		},
 		BorderStyle = "Blizzard Tooltip Border",
+		AnnounceUntargetedSpells = false,
 	}
 end
 
@@ -300,6 +305,7 @@ function Private.Settings.GetPartyDefaultSettings()
 		UseTargetClassColor = false,
 		UninterruptibleColor = "FFFF4444",
 		InterruptibleColor = "FF44FF44",
+		AnnounceUntargetedSpells = false,
 		Position = Private.Settings.GetDefaultEditModeFramePosition(Private.Enum.FrameKind.Party),
 	}
 end
@@ -652,7 +658,6 @@ table.insert(Private.LoginFnQueue, function()
 				IsSectionEnabled = nil,
 			}
 		end
-
 
 		if key == Private.Settings.Keys.Party.ForegroundBarTexture then
 			local function GetValue()
@@ -1516,6 +1521,50 @@ table.insert(Private.LoginFnQueue, function()
 			return {
 				initializer = initializer,
 				hideSteppers = true,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if
+			key == Private.Settings.Keys.Self.AnnounceUntargetedSpells
+			or key == Private.Settings.Keys.Party.AnnounceUntargetedSpells
+		then
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells
+			end
+
+			local function SetValue(value)
+				if value ~= TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells then
+					TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells = value
+					TargetedSpellsSaved.Settings.Party.AnnounceUntargetedSpells = value
+
+					Private.EventRegistry:TriggerEvent(
+						Private.Enum.Events.SETTING_CHANGED,
+						Private.Settings.Keys.Self.AnnounceUntargetedSpells,
+						value
+					)
+					Private.EventRegistry:TriggerEvent(
+						Private.Enum.Events.SETTING_CHANGED,
+						Private.Settings.Keys.Party.AnnounceUntargetedSpells,
+						value
+					)
+				end
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Boolean,
+				L.Settings.AnnounceUntargetedSpellsLabel,
+				defaults.AnnounceUntargetedSpells,
+				GetValue,
+				SetValue
+			)
+			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.AnnounceUntargetedSpellsTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
 				IsSectionEnabled = nil,
 			}
 		end

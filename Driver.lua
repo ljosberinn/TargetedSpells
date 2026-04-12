@@ -352,6 +352,7 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 			spellId = spellId,
 			startTime = startTime,
 			id = castId,
+			isRetarget = true,
 		})
 	elseif event == "NAME_PLATE_UNIT_ADDED" then
 		---@type string
@@ -457,6 +458,7 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		end
 
 		self:ProcessInfo(info)
+		self:MaybeAnnounceUntargetedSpell(info)
 	elseif event == Private.Enum.Events.DELAYED_FRAME_CLEANUP then
 		---@type DelayInfo
 		local delayInfo = ...
@@ -729,6 +731,59 @@ end
 function TargetedSpellsDriver:OnCooldownDone(info)
 	if self:ReleaseFrameForUnit(info.unit, true, info.id) then
 		self:RepositionFrames()
+	end
+end
+
+do
+	local voiceId = nil
+
+	do
+		local locale = GAME_LOCALE or GetLocale()
+
+		local ttsVoiceId = C_TTSSettings.GetVoiceOptionID(Enum.TtsVoiceType.Standard)
+		local patternToLookFor = nil
+
+		if locale == "deDE" then
+			patternToLookFor = "German"
+		elseif locale == "enUS" then
+			patternToLookFor = "English"
+		end
+
+		if patternToLookFor ~= nil then
+			for _, voice in pairs(C_VoiceChat.GetTtsVoices()) do
+				if string.find(voice.name, patternToLookFor) ~= nil then
+					voiceId = voice.voiceID
+					break
+				end
+			end
+		end
+
+		if voiceId == nil then
+			voiceId = ttsVoiceId
+		end
+	end
+
+	function TargetedSpellsDriver:MaybeAnnounceUntargetedSpell(info)
+		if
+			info.isRetarget
+			or not TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells
+			or not TargetedSpellsSaved.Settings.Party.AnnounceUntargetedSpells
+			or (self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Self) and self:LoadConditionsProhibitExecution(
+				Private.Enum.FrameKind.Party
+			))
+			or UnitSpellTargetName(info.unit) ~= nil
+			or voiceId == nil
+		then
+			return
+		end
+
+		local spellName = C_Spell.GetSpellName(info.spellId)
+
+		if spellName == nil then
+			return
+		end
+
+		C_VoiceChat.SpeakText(voiceId, spellName, 2, C_TTSSettings.GetSpeechVolume())
 	end
 end
 

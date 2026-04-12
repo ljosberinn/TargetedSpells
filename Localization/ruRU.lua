@@ -140,6 +140,10 @@ L.Settings.ProgressBarColorTooltip =
 L.Settings.MirrorLayoutLabel = "Зеркальный макет"
 L.Settings.MirrorLayoutTooltip = nil
 
+L.Settings.AnnounceUntargetedSpellsLabel = "Объявлять заклинания без цели"
+L.Settings.AnnounceUntargetedSpellsTooltip =
+	"Воспроизводит синтез речи для любого заклинания без цели, такого как AoE и некоторые фронтальные атаки."
+
 L.Settings.HideUntargetedSpellsLabel = "Скрыть заклинания без цели"
 
 L.Settings.HideTargetedSpellsLabel = "Скрыть заклинания с целью"

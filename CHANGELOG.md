@@ -2,6 +2,11 @@
 
 ### Features
 
+- new global setting: `Announce Untargeted Spells`
+  - default off
+  - if enabled, any spells that don't target anyone will be announced via text-to-speech
+  - it is not possible to announce spells targeting the player only
+  - whether Blizzard will like this remains to be seen
 - Party: added an option to `Hide Targeted Spells`
   - ironic for this addon, I know
   - default off, allows you to hide any spells targeting a player

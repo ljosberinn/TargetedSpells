@@ -139,6 +139,10 @@ L.Settings.ProgressBarColorTooltip =
 
 L.Settings.MirrorLayoutLabel = "Inverti layout"
 
+L.Settings.AnnounceUntargetedSpellsLabel = "Annuncia incantesimi senza bersaglio"
+L.Settings.AnnounceUntargetedSpellsTooltip =
+	"Riproduce la sintesi vocale per qualsiasi incantesimo senza bersaglio, come le AoE e alcune abilità frontali."
+
 L.Settings.HideUntargetedSpellsLabel = "Nascondi incantesimi senza bersaglio"
 
 L.Settings.HideTargetedSpellsLabel = "Nascondi incantesimi con bersaglio"

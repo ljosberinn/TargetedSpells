@@ -817,6 +817,46 @@ do
 			}
 		end
 
+		if
+			key == Private.Settings.Keys.Self.AnnounceUntargetedSpells
+			or key == Private.Settings.Keys.Party.AnnounceUntargetedSpells
+		then
+			---@param layoutName string
+			local function Get(layoutName)
+				return TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells
+			end
+
+			---@param layoutName string
+			---@param value boolean
+			local function Set(layoutName, value)
+				if value ~= TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells then
+					TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells = value
+					TargetedSpellsSaved.Settings.Party.AnnounceUntargetedSpells = value
+
+					Private.EventRegistry:TriggerEvent(
+						Private.Enum.Events.SETTING_CHANGED,
+						Private.Settings.Keys.Self.AnnounceUntargetedSpells,
+						value
+					)
+					Private.EventRegistry:TriggerEvent(
+						Private.Enum.Events.SETTING_CHANGED,
+						Private.Settings.Keys.Party.AnnounceUntargetedSpells,
+						value
+					)
+				end
+			end
+
+			---@type LibEditModeCheckbox
+			return {
+				name = L.Settings.AnnounceUntargetedSpellsLabel,
+				kind = LibEditMode.SettingType.Checkbox,
+				desc = L.Settings.AnnounceUntargetedSpellsTooltip,
+				default = defaults.AnnounceUntargetedSpells,
+				get = Get,
+				set = Set,
+			}
+		end
+
 		if key == Private.Settings.Keys.Self.Enabled or key == Private.Settings.Keys.Party.Enabled then
 			local tableRef = key == Private.Settings.Keys.Self.Enabled and TargetedSpellsSaved.Settings.Self
 				or TargetedSpellsSaved.Settings.Party

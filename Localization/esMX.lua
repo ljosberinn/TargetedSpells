@@ -139,6 +139,10 @@ L.Settings.ProgressBarColorTooltip =
 
 L.Settings.MirrorLayoutLabel = "Invertir diseño"
 
+L.Settings.AnnounceUntargetedSpellsLabel = "Anunciar hechizos sin objetivo"
+L.Settings.AnnounceUntargetedSpellsTooltip =
+	"Reproduce voz sintetizada para cualquier hechizo que no tiene objetivo, como los AoE y algunos ataques frontales."
+
 L.Settings.HideUntargetedSpellsLabel = "Ocultar hechizos sin objetivo"
 
 L.Settings.HideTargetedSpellsLabel = "Ocultar hechizos con objetivo"

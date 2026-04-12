@@ -139,6 +139,10 @@ L.Settings.ProgressBarColorTooltip =
 
 L.Settings.MirrorLayoutLabel = "镜像布局"
 
+L.Settings.AnnounceUntargetedSpellsLabel = "播报无目标法术"
+L.Settings.AnnounceUntargetedSpellsTooltip =
+	"对没有指定目标的法术（如AoE和部分正面技能）播放文字转语音。"
+
 L.Settings.HideUntargetedSpellsLabel = "隐藏无目标法术"
 
 L.Settings.HideTargetedSpellsLabel = "隐藏有目标法术"
