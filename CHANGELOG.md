@@ -17,7 +17,7 @@
 
 ### Other
 
-- Party: casts longer than 60 seconds will no longer show
+- casts longer than 60 seconds will no longer show
   - again, looking at you Lothraxion (but also a couple others)
 - casts originating from units that are not in combat will no longer show
   - this is experimental but seems to have worked fine in the couple dungeons I did
@@ -26,6 +26,5 @@
 - Party: when hiding the spell name, the target name will now take its position instead
 - "significant" performance improvements
   - the addon was already peaking around only 1% CPU on my machine, but hey, now its ~10x faster
-- Self: casts with a duration of longer than 60 seconds will no longer show
 - fixed a bug where on-death channels such as Reanimated Warriors in Maisara Caverns would create too many bars that also end up not getting removed
 - fixed a couple missing translations
