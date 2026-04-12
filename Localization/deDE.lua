@@ -11,6 +11,10 @@ end
 
 local L = Private.L
 
+L.EditMode = {}
+L.Functionality = {}
+L.Settings = {}
+
 L.Settings.EditModeReminder =
 	"Der Bearbeitungsmodus beinhaltet eine Echtzeitvorschau aller Einstellungen.\nDiese Einstellungen sind hier nur damit man sie auch im Kampf bearbeiten kann."
 L.EditMode.TargetedSpellsSelfLabel = "Targeted Spells - Spieler"
@@ -97,11 +101,8 @@ L.Settings.FrameGrowLabels = {
 }
 
 L.Settings.GlowImportantLabel = "Wichtige Zauber hervorheben"
-L.Settings.GlowImportantTooltip =
-	"Was wichtig und was nicht wichtig ist wird ausschließlich vom Spiel selbst kommuniziert."
 
 L.Settings.OnlyImportantLabel = "Nur wichtige Zauber anzeigen"
-L.Settings.OnlyImportantTooltip = "Beachte dass nur das Spiel festlegen kann was wichtig ist - mit Vorsicht genießen."
 
 L.Settings.GlowTypeLabel = "Hervorhebungsanimation"
 L.Settings.GlowTypeTooltip = nil
@@ -113,26 +114,15 @@ L.Settings.GlowTypeLabels = {
 }
 
 L.Settings.ShowDurationLabel = "Dauer anzeigen"
-L.Settings.ShowDurationTooltip = nil
 
 L.Settings.IndicateInterruptsLabel = "Unterbrechungen anzeigen"
-L.Settings.IndicateInterruptsTooltip =
-	"Desaturiert das Icon, zeigt einen Indikator an und verzögert das Ausblenden des Icons um eine Sekunde. Funktioniert nicht bei kanalisierten Zaubern."
 
 L.Settings.RenderInterruptSourceNameLabel = "Unterbrechungsquellnamen anzeigen"
-L.Settings.RenderInterruptSourceNameTooltip = nil
 
 L.Settings.ShowSwipeLabel = "Abklingzeitsanimation anzeigen"
-L.Settings.ShowSwipeTooltip = nil
 
 L.Settings.BorderStyleLabel = "Border Style"
 L.Settings.BorderStyleTooltip = nil
-
-L.Settings.OpacityLabel = "Deckkraft"
-L.Settings.OpacityTooltip = nil
-
-L.Settings.NameDividerLabel = "Namens-Trennzeichen"
-L.Settings.NameDividerNone = "Keines"
 
 L.Settings.ForegroundBarTextureLabel = "Fortschrittsbalken-Textur"
 L.Settings.ForegroundBarTextureTooltip = nil
@@ -141,13 +131,14 @@ L.Settings.BackgroundBarTextureLabel = "Hintergrundbalken-Textur"
 L.Settings.BackgroundBarTextureTooltip = nil
 
 L.Settings.BackgroundBarColorLabel = "Hintergrundbalken-Farbe"
-L.Settings.BackgroundBarColorTooltip = nil
+L.Settings.BackgroundBarColorTooltip =
+	"Deckkraft ist nur im Bearbeitungsmodus verfügbar, da die standardmäßige Einstellungsoberfläche sie nicht anzeigt."
 
 L.Settings.ProgressBarColorLabel = "Statusbalkenfarbe"
-L.Settings.ProgressBarColorTooltip = nil
+L.Settings.ProgressBarColorTooltip =
+	"Deckkraft ist nur im Bearbeitungsmodus verfügbar, da die standardmäßige Einstellungsoberfläche sie nicht anzeigt."
 
 L.Settings.MirrorLayoutLabel = "Layout spiegeln"
-L.Settings.MirrorLayoutTooltip = nil
 
 L.Settings.HideUntargetedSpellsLabel = "Zauber ohne Ziel ausblenden"
 
@@ -194,6 +185,7 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowSpellName] = "Zaubernamen anzeigen",
 	[Private.Enum.FeatureFlag.ShowTargetName] = "Zielnamen anzeigen",
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Zielklassenfarbe anzeigen",
+	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
 	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
 	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
 	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,

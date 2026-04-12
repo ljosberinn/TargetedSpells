@@ -100,10 +100,8 @@ L.Settings.FrameGrowLabels = {
 }
 
 L.Settings.GlowImportantLabel = "高亮重要法术"
-L.Settings.GlowImportantTooltip = "重要与否完全由游戏本身决定。"
 
 L.Settings.OnlyImportantLabel = "仅显示重要法术"
-L.Settings.OnlyImportantTooltip = "注意，您依赖的是游戏对'重要'的判断，请自行承担风险。"
 
 L.Settings.GlowTypeLabel = "高亮类型"
 L.Settings.GlowTypeTooltip = nil
@@ -115,26 +113,15 @@ L.Settings.GlowTypeLabels = {
 }
 
 L.Settings.ShowDurationLabel = "显示持续时间"
-L.Settings.ShowDurationTooltip = nil
 
 L.Settings.IndicateInterruptsLabel = "标记可打断法术"
-L.Settings.IndicateInterruptsTooltip =
-	"使图标去色，在图标上显示标记，并延迟1秒隐藏图标。对引导类法术无效。"
 
 L.Settings.RenderInterruptSourceNameLabel = "显示打断来源名称"
-L.Settings.RenderInterruptSourceNameTooltip = nil
 
 L.Settings.ShowSwipeLabel = "显示滑动"
-L.Settings.ShowSwipeTooltip = nil
 
 L.Settings.BorderStyleLabel = "边框样式"
 L.Settings.BorderStyleTooltip = nil
-
-L.Settings.OpacityLabel = "不透明度"
-L.Settings.OpacityTooltip = nil
-
-L.Settings.NameDividerLabel = "名称分隔符"
-L.Settings.NameDividerNone = "无"
 
 L.Settings.ForegroundBarTextureLabel = "进度条纹理"
 L.Settings.ForegroundBarTextureTooltip = nil
@@ -143,13 +130,14 @@ L.Settings.BackgroundBarTextureLabel = "背景条纹理"
 L.Settings.BackgroundBarTextureTooltip = nil
 
 L.Settings.BackgroundBarColorLabel = "背景条颜色"
-L.Settings.BackgroundBarColorTooltip = nil
+L.Settings.BackgroundBarColorTooltip =
+	"不透明度仅在编辑模式中可用，因为默认设置界面未公开此选项。"
 
 L.Settings.ProgressBarColorLabel = "进度条颜色"
-L.Settings.ProgressBarColorTooltip = nil
+L.Settings.ProgressBarColorTooltip =
+	"不透明度仅在编辑模式中可用，因为默认设置界面未公开此选项。"
 
 L.Settings.MirrorLayoutLabel = "镜像布局"
-L.Settings.MirrorLayoutTooltip = nil
 
 L.Settings.HideUntargetedSpellsLabel = "隐藏无目标法术"
 
@@ -196,6 +184,7 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowSpellName] = "显示法术名称",
 	[Private.Enum.FeatureFlag.ShowTargetName] = "显示目标名称",
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "显示目标职业颜色",
+	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
 	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
 	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
 	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,

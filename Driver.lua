@@ -112,9 +112,7 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 		self.frame:RegisterUnitEvent("UNIT_TARGET")
 		self.frame:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_START")
-		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED")
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTED")
-		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_FAILED_QUIET")
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_STOP")
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_START")
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_STOP")
@@ -196,7 +194,7 @@ function TargetedSpellsDriver:ProcessInfo(info)
 	if self.frames[info.unit] == nil then
 		self.frames[info.unit] = {}
 	else
-		self:ReleaseFrameForUnit(info.unit, false, info.id)
+		self:ReleaseFrameForUnit(info.unit, false)
 	end
 
 	local count = 0
@@ -307,7 +305,7 @@ function TargetedSpellsDriver:UnitIsIrrelevant(unit, skipTargetCheck)
 end
 
 ---@param _ Frame -- identical to self.frame
----@param event "DELAYED_FRAME_CLEANUP" | "UNIT_SPELLCAST_INTERRUPTED" | "UNIT_SPELLCAST_FAILED_QUIET" | "ZONE_CHANGED_NEW_AREA" | "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" | "UNIT_SPELLCAST_SUCCEEDED" |"EDIT_MODE_SELF_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED" | "UNIT_SPELLCAST_INTERRUPTIBLE" | "UNIT_SPELLCAST_NOT_INTERRUPTIBLE" | "RAID_TARGET_UPDATE"
+---@param event "DELAYED_FRAME_CLEANUP" | "UNIT_SPELLCAST_INTERRUPTED" | "ZONE_CHANGED_NEW_AREA" | "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" |"EDIT_MODE_SELF_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED" | "UNIT_SPELLCAST_INTERRUPTIBLE" | "UNIT_SPELLCAST_NOT_INTERRUPTIBLE" | "RAID_TARGET_UPDATE"
 function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 	if
 		event == "UNIT_SPELLCAST_START"
@@ -411,11 +409,9 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 	elseif
 		event == "UNIT_SPELLCAST_STOP"
 		or event == "UNIT_SPELLCAST_CHANNEL_STOP"
-		or event == "UNIT_SPELLCAST_SUCCEEDED"
 		or event == "UNIT_SPELLCAST_EMPOWER_STOP"
 		or event == "NAME_PLATE_UNIT_REMOVED"
 		or event == "UNIT_SPELLCAST_INTERRUPTED"
-		or event == "UNIT_SPELLCAST_FAILED_QUIET"
 	then
 		---@type string
 		local unit = ...
@@ -428,28 +424,6 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 
 		if frames == nil or #frames == 0 then
 			return
-		end
-
-		-- in some rare channel cases, enemies send periodic spellcast succeeded events per second, apparently when each channel
-		-- tick leaves behind a zone on the ground
-		if event == "UNIT_SPELLCAST_SUCCEEDED" then
-			local id = select(11, UnitChannelInfo(unit))
-
-			-- unit is channeling _something_
-			if id ~= nil then
-				for _, frame in ipairs(frames) do
-					-- id mismatch implies unit is casting something different. clean up what we have
-					if frame:GetId() ~= id then
-						if self:ReleaseFrameForUnit(unit, true, frame:GetId()) then
-							self:RepositionFrames()
-							return
-						end
-					end
-				end
-
-				-- no id mismatch, thus still casting the same spell as before
-				return
-			end
 		end
 
 		---@type number|nil
@@ -471,6 +445,7 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 			self:RepositionFrames()
 		end
 	elseif event == Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START then
+		---@type SpellCastInfo
 		local info = ...
 
 		-- cast vanished during the delay

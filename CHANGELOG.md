@@ -18,5 +18,9 @@
   - this is experimental but seems to have worked fine in the couple dungeons I did
 - Party: spell names will no longer get cut off if the spell has no target
 - Party: the Edit Mode preview will now sometimes simulate a channel
+- Party: when hiding the spell name, the target name will now take its position instead
 - "significant" performance improvements
-  - the addon was already peaking around only 1% CPU on my machine, but hey, now its 10x faster
+  - the addon was already peaking around only 1% CPU on my machine, but hey, now its ~10x faster
+- Self: casts with a duration of longer than 60 seconds will no longer show
+- fixed a bug where on-death channels such as Reanimated Warriors in Maisara Caverns would create too many bars that also end up not getting removed
+- fixed a couple missing translations

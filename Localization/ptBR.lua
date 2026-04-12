@@ -100,11 +100,8 @@ L.Settings.FrameGrowLabels = {
 }
 
 L.Settings.GlowImportantLabel = "Realçar feitiços importantes"
-L.Settings.GlowImportantTooltip = "O que é importante ou não é determinado pelo jogo."
 
 L.Settings.OnlyImportantLabel = "Mostrar apenas feitiços importantes"
-L.Settings.OnlyImportantTooltip =
-	"Observe que você está dependendo do que o jogo considera importante, use por sua própria conta e risco."
 
 L.Settings.GlowTypeLabel = "Tipo de brilho"
 L.Settings.GlowTypeTooltip = nil
@@ -116,27 +113,15 @@ L.Settings.GlowTypeLabels = {
 }
 
 L.Settings.ShowDurationLabel = "Mostrar duração"
-L.Settings.ShowDurationTooltip = nil
 
 L.Settings.IndicateInterruptsLabel = "Indicar interrupções"
-L.Settings.IndicateInterruptsTooltip =
-	"Dessatura o ícone, mostra um indicador sobre o ícone e atrasa a ocultação do ícone em 1 segundo. Não funciona com feitiços canalizados."
 
 L.Settings.RenderInterruptSourceNameLabel = "Mostrar nome da fonte de interrupção"
-L.Settings.RenderInterruptSourceNameTooltip = nil
 
 L.Settings.ShowSwipeLabel = "Mostrar animação de recarga"
-L.Settings.ShowSwipeTooltip = nil
 
 L.Settings.BorderStyleLabel = "Estilo de borda"
 L.Settings.BorderStyleTooltip = nil
-
-L.Settings.OpacityLabel = "Opacidade"
-L.Settings.OpacityTooltip = nil
-
-L.Settings.NameDividerLabel = "Divisor de nomes"
-L.Settings.NameDividerTooltip = nil
-L.Settings.NameDividerNone = "Nenhum"
 
 L.Settings.ForegroundBarTextureLabel = "Textura da barra de progresso"
 L.Settings.ForegroundBarTextureTooltip = nil
@@ -145,13 +130,14 @@ L.Settings.BackgroundBarTextureLabel = "Textura de fundo da barra"
 L.Settings.BackgroundBarTextureTooltip = nil
 
 L.Settings.BackgroundBarColorLabel = "Cor de fundo da barra"
-L.Settings.BackgroundBarColorTooltip = nil
+L.Settings.BackgroundBarColorTooltip =
+	"A opacidade só está disponível no Modo de Edição, pois a interface de configurações padrão não a expõe."
 
 L.Settings.ProgressBarColorLabel = "Cor da barra"
-L.Settings.ProgressBarColorTooltip = nil
+L.Settings.ProgressBarColorTooltip =
+	"A opacidade só está disponível no Modo de Edição, pois a interface de configurações padrão não a expõe."
 
 L.Settings.MirrorLayoutLabel = "Layout espelhado"
-L.Settings.MirrorLayoutTooltip = nil
 
 L.Settings.HideUntargetedSpellsLabel = "Ocultar feitiços sem alvo"
 
@@ -198,6 +184,7 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowSpellName] = "Mostrar nome do feitiço",
 	[Private.Enum.FeatureFlag.ShowTargetName] = "Mostrar nome do alvo",
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Mostrar cor de classe do alvo",
+	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
 	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
 	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
 	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,

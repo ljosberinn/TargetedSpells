@@ -100,11 +100,8 @@ L.Settings.FrameGrowLabels = {
 }
 
 L.Settings.GlowImportantLabel = "중요 주문 강조"
-L.Settings.GlowImportantTooltip = "중요 여부는 게임에 의해 결정됩니다."
 
 L.Settings.OnlyImportantLabel = "중요 주문만 표시"
-L.Settings.OnlyImportantTooltip =
-	"게임이 중요하다고 판단하는 것에 의존하므로, 사용에 주의하세요."
 
 L.Settings.GlowTypeLabel = "반짝임 유형"
 L.Settings.GlowTypeTooltip = nil
@@ -116,26 +113,15 @@ L.Settings.GlowTypeLabels = {
 }
 
 L.Settings.ShowDurationLabel = "지속시간 표시"
-L.Settings.ShowDurationTooltip = nil
 
 L.Settings.IndicateInterruptsLabel = "차단 표시"
-L.Settings.IndicateInterruptsTooltip =
-	"아이콘을 흑백으로 표시하고, 아이콘 위에 표시기를 보여주며, 아이콘 숨김을 1초 지연합니다. 정신 집중 주문에는 작동하지 않습니다."
 
 L.Settings.RenderInterruptSourceNameLabel = "차단자 이름 표시"
-L.Settings.RenderInterruptSourceNameTooltip = nil
 
 L.Settings.ShowSwipeLabel = "회전 표시"
-L.Settings.ShowSwipeTooltip = nil
 
 L.Settings.BorderStyleLabel = "테두리 스타일"
 L.Settings.BorderStyleTooltip = nil
-
-L.Settings.OpacityLabel = "불투명도"
-L.Settings.OpacityTooltip = nil
-
-L.Settings.NameDividerLabel = "이름 구분자"
-L.Settings.NameDividerNone = "없음"
 
 L.Settings.ForegroundBarTextureLabel = "진행 바 텍스처"
 L.Settings.ForegroundBarTextureTooltip = nil
@@ -144,13 +130,14 @@ L.Settings.BackgroundBarTextureLabel = "배경 바 텍스처"
 L.Settings.BackgroundBarTextureTooltip = nil
 
 L.Settings.BackgroundBarColorLabel = "배경 바 색상"
-L.Settings.BackgroundBarColorTooltip = nil
+L.Settings.BackgroundBarColorTooltip =
+	"불투명도는 기본 설정 UI에서 표시되지 않기 때문에 편집 모드에서만 사용할 수 있습니다."
 
 L.Settings.ProgressBarColorLabel = "바 색상"
-L.Settings.ProgressBarColorTooltip = nil
+L.Settings.ProgressBarColorTooltip =
+	"불투명도는 기본 설정 UI에서 표시되지 않기 때문에 편집 모드에서만 사용할 수 있습니다."
 
 L.Settings.MirrorLayoutLabel = "레이아웃 반전"
-L.Settings.MirrorLayoutTooltip = nil
 
 L.Settings.HideUntargetedSpellsLabel = "대상 없는 주문 숨기기"
 
@@ -198,6 +185,7 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowSpellName] = "주문 이름 표시",
 	[Private.Enum.FeatureFlag.ShowTargetName] = "대상 이름 표시",
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "대상 직업 색상 표시",
+	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
 	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
 	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
 	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,

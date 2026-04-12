@@ -200,12 +200,13 @@
 ---@field GetGlowTarget fun(self: TargetedSpellsMixin): GlowTargetFrame, number, number
 ---@field HideGlow fun(self: TargetedSpellsMixin)
 ---@field ShowGlow fun(self: TargetedSpellsMixin, isImportant: boolean)
+---@field GetSpellId fun(self: TargetedSpellsMixin): number?
 ---@field SetSpellId fun(self: TargetedSpellsMixin, spellId: number?)
 ---@field SetInterrupted fun(self: TargetedSpellsMixin, name: string?, color: colorRGB?)
 ---@field Reset fun(self: TargetedSpellsMixin)
 ---@field SetFont fun(self: TargetedSpellsMixin)
 ---@field SetShowDuration fun(self: TargetedSpellsMixin, showDuration: boolean)
----@field SetDuration fun(self: TargetedSpellsMixin, duration: DurationObject)
+---@field SetDuration fun(self: TargetedSpellsMixin, duration: DurationObject): number
 
 ---@class TargetedSpellsIconMixin : TargetedSpellsMixin
 ---@field private Overlay Texture
@@ -232,8 +233,7 @@
 ---@field ApplyBorderStyle fun(self: TargetedSpellsIconMixin, styleName: string)
 ---@field OnSizeChanged fun(self: TargetedSpellsIconMixin)
 ---@field OnSettingChanged fun(self: TargetedSpellsIconMixin, key: string, flagIdOrValue: number|string|boolean|table, newBool: boolean?)
----@field SetDuration fun(self: TargetedSpellsIconMixin, duration: DurationObject)
----@field GetDuration fun(self: TargetedSpellsIconMixin): DurationObject|nil
+---@field SetDuration fun(self: TargetedSpellsIconMixin, duration: DurationObject): number
 ---@field GetUnit fun(self: TargetedSpellsIconMixin): string
 ---@field PostCreate fun(self: TargetedSpellsIconMixin, info: SpellCastInfo?, OnCooldownDoneCallback: fun(info: SpellCastInfo))
 ---@field Reset fun(self: TargetedSpellsIconMixin)

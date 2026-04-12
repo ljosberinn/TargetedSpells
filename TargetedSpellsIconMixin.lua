@@ -24,7 +24,6 @@ function TargetedSpellsIconMixin:OnLoad()
 	self:ApplyBorderStyle(TargetedSpellsSaved.Settings.Self.BorderStyle)
 	self:SetShowDuration(TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration])
 	self.Cooldown:SetDrawSwipe(TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowSwipe])
-	self.OnCooldownDoneClosure = GenerateClosure(self.OnCooldownDoneCallback, self.info)
 end
 
 do
@@ -308,12 +307,8 @@ function TargetedSpellsIconMixin:OnSettingChanged(key, flagIdOrValue, newBool)
 end
 
 function TargetedSpellsIconMixin:SetDuration(duration)
-	self.duration = duration
 	self.Cooldown:SetCooldownFromDurationObject(duration)
-end
-
-function TargetedSpellsIconMixin:GetDuration()
-	return self.duration
+	return TargetedSpellsMixin.SetDuration(self, duration)
 end
 
 function TargetedSpellsIconMixin:GetUnit()
@@ -325,23 +320,24 @@ function TargetedSpellsIconMixin:PostCreate(info, OnCooldownDoneCallback)
 		return
 	end
 
-	local targetsPlayer = PlayerIsSpellTarget(info.unit, "player")
-	self:SetAlphaFromBoolean(targetsPlayer)
-	self.Bar:SetValue(C_CurveUtil.EvaluateColorValueFromBoolean(targetsPlayer, 1, 0))
-
 	self.info = info
+
+	local durationAlpha = self:SetDuration(info.duration)
+	local targetsPlayer = PlayerIsSpellTarget(info.unit, "player")
+	self:SetAlphaFromBoolean(targetsPlayer, durationAlpha, 0)
+	self.Bar:SetValue(self:GetAlpha())
+
 	self.OnCooldownDoneCallback = OnCooldownDoneCallback
+	self.OnCooldownDoneClosure = GenerateClosure(OnCooldownDoneCallback, info)
 	self:SetSpellId(info.spellId)
 	self:SetStartTime(info.startTime)
 	self:SetId(info.id)
-	self:SetDuration(info.duration)
 	self.Cooldown:SetScript("OnCooldownDone", self.OnCooldownDoneClosure)
 end
 
 function TargetedSpellsIconMixin:Reset()
 	self.spellId = nil
 	self.Cooldown:Clear()
-	self.duration = nil
 	self.info = nil
 	self.Cooldown:SetScript("OnCooldownDone", nil)
 	self.InterruptSource:SetText()
@@ -400,10 +396,10 @@ if Private.Utils.Formatter == nil then
 
 		self.elapsed = self.elapsed - 0.1
 
-		if self.duration == nil then
+		if self.info == nil then
 			return
 		end
 
-		self.Cooldown.DurationText:SetFormattedText("%.1f", self.duration:GetRemainingDuration())
+		self.Cooldown.DurationText:SetFormattedText("%.1f", self.info.duration:GetRemainingDuration())
 	end
 end

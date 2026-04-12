@@ -100,11 +100,8 @@ L.Settings.FrameGrowLabels = {
 }
 
 L.Settings.GlowImportantLabel = "Illumina incantesimi importanti"
-L.Settings.GlowImportantTooltip = "Ciò che è importante o meno viene dichiarato dal gioco."
 
 L.Settings.OnlyImportantLabel = "Mostra solo incantesimi importanti"
-L.Settings.OnlyImportantTooltip =
-	"Tieni presente che stai facendo affidamento su ciò che il gioco considera importante, usalo a tuo rischio."
 
 L.Settings.GlowTypeLabel = "Tipo di bagliore"
 L.Settings.GlowTypeTooltip = nil
@@ -116,27 +113,15 @@ L.Settings.GlowTypeLabels = {
 }
 
 L.Settings.ShowDurationLabel = "Mostra durata"
-L.Settings.ShowDurationTooltip = nil
 
 L.Settings.IndicateInterruptsLabel = "Indica interruzioni"
-L.Settings.IndicateInterruptsTooltip =
-	"Desatura l'icona, mostra un indicatore sopra l'icona e ritarda la scomparsa dell'icona di 1 secondo. Non funziona con gli incantesimi canalizzati."
 
 L.Settings.RenderInterruptSourceNameLabel = "Mostra nome della fonte di interruzione"
-L.Settings.RenderInterruptSourceNameTooltip = nil
 
 L.Settings.ShowSwipeLabel = "Mostra animazione cooldown"
-L.Settings.ShowSwipeTooltip = nil
 
 L.Settings.BorderStyleLabel = "Stile bordo"
 L.Settings.BorderStyleTooltip = nil
-
-L.Settings.OpacityLabel = "Opacità"
-L.Settings.OpacityTooltip = nil
-
-L.Settings.NameDividerLabel = "Divisore nomi"
-L.Settings.NameDividerTooltip = nil
-L.Settings.NameDividerNone = "Nessuno"
 
 L.Settings.ForegroundBarTextureLabel = "Texture barra progressione"
 L.Settings.ForegroundBarTextureTooltip = nil
@@ -145,13 +130,14 @@ L.Settings.BackgroundBarTextureLabel = "Texture sfondo barra"
 L.Settings.BackgroundBarTextureTooltip = nil
 
 L.Settings.BackgroundBarColorLabel = "Colore sfondo barra"
-L.Settings.BackgroundBarColorTooltip = nil
+L.Settings.BackgroundBarColorTooltip =
+	"L'opacità è disponibile solo in Modalità Modifica, poiché l'interfaccia delle impostazioni predefinita non la espone."
 
 L.Settings.ProgressBarColorLabel = "Colore barra"
-L.Settings.ProgressBarColorTooltip = nil
+L.Settings.ProgressBarColorTooltip =
+	"L'opacità è disponibile solo in Modalità Modifica, poiché l'interfaccia delle impostazioni predefinita non la espone."
 
 L.Settings.MirrorLayoutLabel = "Inverti layout"
-L.Settings.MirrorLayoutTooltip = nil
 
 L.Settings.HideUntargetedSpellsLabel = "Nascondi incantesimi senza bersaglio"
 
@@ -198,6 +184,7 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowSpellName] = "Mostra nome incantesimo",
 	[Private.Enum.FeatureFlag.ShowTargetName] = "Mostra nome bersaglio",
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Mostra colore classe bersaglio",
+	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
 	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
 	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
 	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,

@@ -175,6 +175,10 @@ function TargetedSpellsMixin:ShowGlow(isImportant)
 	end
 end
 
+function TargetedSpellsMixin:GetSpellId()
+	return self.spellId
+end
+
 function TargetedSpellsMixin:SetSpellId(spellId)
 	self.spellId = spellId
 	local texture = spellId and C_Spell.GetSpellTexture(spellId) or GetRandomIcon()
@@ -233,5 +237,9 @@ function TargetedSpellsMixin:SetShowDuration(showDuration)
 end
 
 function TargetedSpellsMixin:SetDuration(duration)
-	-- Implement in your derived mixin.
+	local alpha = duration:EvaluateRemainingDuration(Private.Utils.IsLongCastCurve)
+	self:SetAlpha(alpha)
+	self.Bar:SetValue(alpha)
+
+	return alpha
 end

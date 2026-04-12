@@ -100,10 +100,8 @@ L.Settings.FrameGrowLabels = {
 }
 
 L.Settings.GlowImportantLabel = "Glow Important Spells"
-L.Settings.GlowImportantTooltip = "What's important and what isn't is declared by the game."
 
 L.Settings.OnlyImportantLabel = "Only Show Important Spells"
-L.Settings.OnlyImportantTooltip = "Note that you're relying on what the game considers important, use at your own risk."
 
 L.Settings.GlowTypeLabel = "Glow Type"
 L.Settings.GlowTypeTooltip = nil
@@ -115,27 +113,15 @@ L.Settings.GlowTypeLabels = {
 }
 
 L.Settings.ShowDurationLabel = "Show Duration"
-L.Settings.ShowDurationTooltip = nil
 
 L.Settings.IndicateInterruptsLabel = "Indicate Interrupts"
-L.Settings.IndicateInterruptsTooltip =
-	"Desaturates the icon, shows an indicator on top of the icon and delays hiding the icon by 1 second. Does not work with channeled spells."
 
 L.Settings.RenderInterruptSourceNameLabel = "Render Interrupt Source Name"
-L.Settings.RenderInterruptSourceNameTooltip = nil
 
 L.Settings.ShowSwipeLabel = "Show Swipe"
-L.Settings.ShowSwipeTooltip = nil
 
 L.Settings.BorderStyleLabel = "Border Style"
 L.Settings.BorderStyleTooltip = nil
-
-L.Settings.OpacityLabel = "Opacity"
-L.Settings.OpacityTooltip = nil
-
-L.Settings.NameDividerLabel = "Name Divider"
-L.Settings.NameDividerTooltip = nil
-L.Settings.NameDividerNone = "None"
 
 L.Settings.ForegroundBarTextureLabel = "Progress Bar Texture"
 L.Settings.ForegroundBarTextureTooltip = nil
@@ -152,7 +138,6 @@ L.Settings.ProgressBarColorTooltip =
 	"Opacity is only available in Edit Mode due to the default settings UI not exposing it."
 
 L.Settings.MirrorLayoutLabel = "Mirror Layout"
-L.Settings.MirrorLayoutTooltip = nil
 
 L.Settings.HideUntargetedSpellsLabel = "Hide Untargeted Spells"
 

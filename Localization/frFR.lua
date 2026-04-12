@@ -21,7 +21,7 @@ L.EditMode.TargetedSpellsSelfLabel = "Targeted Spells - Self"
 L.EditMode.TargetedSpellsPartyLabel = "Targeted Spells - Party"
 
 L.Functionality.CVarWarning = string.format(
-	"%s\n\nThe Nameplate Setting '%s' was disabled.\n\nWithout it, %s will not work on off-screen enemies.\n\nClick '%s' to enable it again.",
+	"%s\n\nLe paramètre des plaques de nom '%s' a été désactivé.\n\nSans lui, %s ne fonctionnera pas sur les ennemis hors de l'écran.\n\nCliquez sur '%s' pour le réactiver.",
 	addonNameWithIcon,
 	UNIT_NAMEPLATES_SHOW_OFFSCREEN,
 	addonName,
@@ -100,11 +100,8 @@ L.Settings.FrameGrowLabels = {
 }
 
 L.Settings.GlowImportantLabel = "Faire briller les sorts important"
-L.Settings.GlowImportantTooltip = "Ce qui est important ou non est déclaré par le jeu."
 
 L.Settings.OnlyImportantLabel = "Afficher uniquement les sorts importants"
-L.Settings.OnlyImportantTooltip =
-	"Notez que vous vous basez sur ce que le jeu considère comme important, à utiliser à vos risques."
 
 L.Settings.GlowTypeLabel = "Type de lueur"
 L.Settings.GlowTypeTooltip = nil
@@ -116,26 +113,15 @@ L.Settings.GlowTypeLabels = {
 }
 
 L.Settings.ShowDurationLabel = "Montrer la durée"
-L.Settings.ShowDurationTooltip = nil
 
 L.Settings.IndicateInterruptsLabel = "Montrer l'interruption"
-L.Settings.IndicateInterruptsTooltip =
-	"Désature l'icône, affiche un indicateur par-dessus et retarde sa disparition de 1 seconde. Ne marche pas avec les sorts canalisés."
 
 L.Settings.RenderInterruptSourceNameLabel = "Afficher la source d'interruption"
-L.Settings.RenderInterruptSourceNameTooltip = nil
 
 L.Settings.ShowSwipeLabel = "Afficher le balayage"
-L.Settings.ShowSwipeTooltip = nil
 
 L.Settings.BorderStyleLabel = "Style de bordure"
 L.Settings.BorderStyleTooltip = nil
-
-L.Settings.OpacityLabel = "Opacité"
-L.Settings.OpacityTooltip = nil
-
-L.Settings.NameDividerLabel = "Séparateur de noms"
-L.Settings.NameDividerNone = "Aucun"
 
 L.Settings.ForegroundBarTextureLabel = "Texture de la barre de progression"
 L.Settings.ForegroundBarTextureTooltip = nil
@@ -144,13 +130,14 @@ L.Settings.BackgroundBarTextureLabel = "Texture de fond de la barre"
 L.Settings.BackgroundBarTextureTooltip = nil
 
 L.Settings.BackgroundBarColorLabel = "Couleur de fond de la barre"
-L.Settings.BackgroundBarColorTooltip = nil
+L.Settings.BackgroundBarColorTooltip =
+	"L'opacité n'est disponible qu'en Mode Édition, car l'interface des paramètres par défaut ne l'expose pas."
 
 L.Settings.ProgressBarColorLabel = "Couleur de la barre"
-L.Settings.ProgressBarColorTooltip = nil
+L.Settings.ProgressBarColorTooltip =
+	"L'opacité n'est disponible qu'en Mode Édition, car l'interface des paramètres par défaut ne l'expose pas."
 
 L.Settings.MirrorLayoutLabel = "Disposition en miroir"
-L.Settings.MirrorLayoutTooltip = nil
 
 L.Settings.HideUntargetedSpellsLabel = "Masquer les sorts sans cible"
 
@@ -197,6 +184,7 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowSpellName] = "Afficher le nom du sort",
 	[Private.Enum.FeatureFlag.ShowTargetName] = "Afficher le nom de la cible",
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Afficher la couleur de classe de la cible",
+	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
 	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
 	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
 	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,

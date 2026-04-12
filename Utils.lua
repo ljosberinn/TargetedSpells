@@ -4,6 +4,16 @@ local addonName, Private = ...
 ---@class TargetedSpellsUtils
 Private.Utils = {}
 
+do
+	local IsLongCastCurve = C_CurveUtil.CreateCurve()
+	IsLongCastCurve:SetType(Enum.LuaCurveType.Linear)
+	IsLongCastCurve:AddPoint(0, 1)
+	IsLongCastCurve:AddPoint(60, 1)
+	IsLongCastCurve:AddPoint(60.001, 0)
+
+	Private.Utils.IsLongCastCurve = IsLongCastCurve
+end
+
 if C_StringUtil.CreateNumericRuleFormatter == nil then
 	Private.Utils.Formatter = nil
 else

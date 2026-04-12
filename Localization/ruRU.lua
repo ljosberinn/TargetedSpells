@@ -100,12 +100,8 @@ L.Settings.FrameGrowLabels = {
 }
 
 L.Settings.GlowImportantLabel = "Подсвечивать важные заклинания"
-L.Settings.GlowImportantTooltip =
-	"Что считается важным, а что нет — определяет игра."
 
 L.Settings.OnlyImportantLabel = "Показывать только важные заклинания"
-L.Settings.OnlyImportantTooltip =
-	"Учтите, что вы полагаетесь на то, что игра считает важным. Используйте на свой страх и риск."
 
 L.Settings.GlowTypeLabel = "Тип подсветки"
 L.Settings.GlowTypeTooltip = nil
@@ -117,27 +113,15 @@ L.Settings.GlowTypeLabels = {
 }
 
 L.Settings.ShowDurationLabel = "Показывать длительность"
-L.Settings.ShowDurationTooltip = nil
 
 L.Settings.IndicateInterruptsLabel = "Показывать прерывания"
-L.Settings.IndicateInterruptsTooltip =
-	"Обесцвечивает иконку, показывает индикатор поверх иконки и задерживает её скрытие на 1 секунду. Не работает с канализируемыми заклинаниями."
 
 L.Settings.RenderInterruptSourceNameLabel = "Показывать имя источника прерывания"
-L.Settings.RenderInterruptSourceNameTooltip = nil
 
 L.Settings.ShowSwipeLabel = "Показывать анимацию перезарядки"
-L.Settings.ShowSwipeTooltip = nil
 
 L.Settings.BorderStyleLabel = "Стиль рамки"
 L.Settings.BorderStyleTooltip = nil
-
-L.Settings.OpacityLabel = "Прозрачность"
-L.Settings.OpacityTooltip = nil
-
-L.Settings.NameDividerLabel = "Разделитель имён"
-L.Settings.NameDividerTooltip = nil
-L.Settings.NameDividerNone = "Нет"
 
 L.Settings.ForegroundBarTextureLabel = "Текстура полосы прогресса"
 L.Settings.ForegroundBarTextureTooltip = nil
@@ -202,6 +186,7 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowSpellName] = "Показывать название заклинания",
 	[Private.Enum.FeatureFlag.ShowTargetName] = "Показывать имя цели",
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Показывать цвет класса цели",
+	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
 	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
 	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
 	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,
