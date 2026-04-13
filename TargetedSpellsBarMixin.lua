@@ -339,7 +339,6 @@ function TargetedSpellsBarMixin:Reset()
 	self:SetAlpha(1)
 	self.Bar:SetValue(1)
 	self.unit = nil
-	self.ProgressBar:SetReverseFill(false)
 	self:SetProgressBarColor()
 	self.ProgressBar.InterruptSource:SetText("")
 	self.ProgressBar.InterruptSource:Hide()
@@ -400,7 +399,6 @@ do
 		if info == nil then
 			UpdateTargetName(self.ProgressBar, GetPlayerName())
 			self:SetPreviewBarColor()
-			self.ProgressBar:SetReverseFill(Private.Utils.RollDice())
 
 			return
 		end
@@ -434,7 +432,7 @@ do
 			return
 		end
 
-		self.ProgressBar:SetReverseFill(UnitChannelDuration(info.unit) ~= nil)
+		self.ProgressBar:SetTimerDuration(info.duration, Enum.StatusBarInterpolation.None, info.isChannel and 1 or 0)
 		UpdateTargetName(self.ProgressBar, targetName)
 
 		---@type colorRGB?

@@ -85,6 +85,7 @@
 ---@field startTime number
 ---@field id number|string
 ---@field duration DurationObject
+---@field isChannel boolean
 ---@field isRetarget boolean?
 
 ---@class FontInfo
@@ -184,7 +185,7 @@
 ---@field private spellId number?
 ---@field private id number?
 ---@field private elapsed number
----@field private wasInterrupted boolean
+---@field protected wasInterrupted boolean
 ---@field private doNotHideBefore number?
 ---@field info SpellCastInfo?
 ---@field Bar StatusBar
@@ -344,6 +345,10 @@
 
 ---@class DurationObject
 ---@field FormatRemainingDuration fun(self: DurationObject, formatter: NumericFormatter, modifier?: string): string
+---@field GetRemainingDuration fun(self: DurationObject): number
+---@field GetTimeFraction fun(self: DurationObject): number
+---@field EvaluateRemainingDuration fun(self: DurationObject, curve: fun(remaining: number): number): number
+---@field SetTimeSpan fun(self: DurationObject, startTime: number, endTime: number)
 
 ----- type patching / completion
 
@@ -521,8 +526,8 @@ PixelUtil = {
 function StaticPopup_Hide(name) end
 function StaticPopup_Show(name) end
 
----@class UnitFrameButton : Button
----@field castBar StatusBar
-
----@class Nameplate
----@field UnitFrame UnitFrameButton
+---@enum Enum.StatusBarInterpolation
+Enum.StatusBarInterpolation = {
+	None = 0,
+	Linear = 1,
+}

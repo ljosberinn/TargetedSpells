@@ -318,8 +318,12 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 			return
 		end
 
+		local isChannel = false
+
 		if event == "UNIT_SPELLCAST_EMPOWER_START" then
 			spellId, id = select(3, ...)
+		elseif event == "UNIT_SPELLCAST_CHANNEL_START" then
+			isChannel = true
 		end
 
 		C_Timer.After(
@@ -329,6 +333,7 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 				spellId = spellId,
 				startTime = GetTime(),
 				id = id,
+				isChannel = isChannel,
 			})
 		)
 	elseif event == "UNIT_TARGET" then
@@ -341,10 +346,12 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 
 		local startTime = GetTime()
 
+		local isChannel = false
 		local _, _, _, _, _, _, _, _, spellId, castId = UnitCastingInfo(unit)
 
 		if spellId == nil then
 			_, _, _, _, _, _, _, spellId, _, _, castId = UnitChannelInfo(unit)
+			isChannel = true
 		end
 
 		self:OnFrameEvent(self.frame, Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START, {
@@ -352,6 +359,7 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 			spellId = spellId,
 			startTime = startTime,
 			id = castId,
+			isChannel = isChannel,
 			isRetarget = true,
 		})
 	elseif event == "NAME_PLATE_UNIT_ADDED" then
@@ -381,7 +389,14 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		end
 
 		-- todo: startTime is wrong, but we can't do better yet
-		self:ProcessInfo({ unit = unit, spellId = spellId, startTime = GetTime(), id = id, duration = duration })
+		self:ProcessInfo({
+			unit = unit,
+			spellId = spellId,
+			startTime = GetTime(),
+			id = id,
+			duration = duration,
+			isChannel = isChannel,
+		})
 	elseif event == "CVAR_UPDATE" then
 		local name, value = ...
 
@@ -450,7 +465,7 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		local info = ...
 
 		-- cast vanished during the delay
-		info.duration = UnitCastingDuration(info.unit) or UnitChannelDuration(info.unit)
+		info.duration = info.isChannel and UnitChannelDuration(info.unit) or UnitCastingDuration(info.unit)
 
 		-- without `nameplateShowOffscreen` active, castTime may stay nil
 		if info.duration == nil then
@@ -765,12 +780,16 @@ do
 
 	function TargetedSpellsDriver:MaybeAnnounceUntargetedSpell(info)
 		if
-			info.isRetarget
-			or not TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells
+			not TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells
 			or not TargetedSpellsSaved.Settings.Party.AnnounceUntargetedSpells
+			or info.isRetarget
 			or (self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Self) and self:LoadConditionsProhibitExecution(
 				Private.Enum.FrameKind.Party
 			))
+			-- don't execute in open world if outside of combat, otherwise there's stray TTS from people casting stuff in town
+			or (self.contentType == Private.Enum.ContentType.OpenWorld and (not InCombatLockdown() or not UnitAffectingCombat(
+				info.unit
+			)))
 			or UnitSpellTargetName(info.unit) ~= nil
 			or voiceId == nil
 		then

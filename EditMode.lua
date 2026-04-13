@@ -1704,6 +1704,10 @@ end
 function PartyEditModeMixin:LoopFrame(frame, index)
 	TargetedSpellsEditModeMixin.LoopFrame(self, frame, index)
 
+	if Private.Utils.RollDice() then
+		frame.ProgressBar:SetTimerDuration(frame.ProgressBar:GetTimerDuration(), Enum.StatusBarInterpolation.None, 1)
+	end
+
 	frame:SetTargetMarker(Private.Utils.RollDice() and math.random(1, 8) or nil)
 end
 
