@@ -744,15 +744,20 @@ do
 		local patternToLookFor = nil
 
 		if locale == "deDE" then
-			patternToLookFor = "German"
+			patternToLookFor = { "German" }
 		elseif locale == "enUS" then
-			patternToLookFor = "English"
+			patternToLookFor = { "English", "en_US female" }
 		end
 
 		if patternToLookFor ~= nil then
 			for _, voice in pairs(C_VoiceChat.GetTtsVoices()) do
-				if string.find(voice.name, patternToLookFor) ~= nil then
-					voiceId = voice.voiceID
+				for _, pattern in ipairs(patternToLookFor) do
+					if string.find(voice.name, pattern) ~= nil then
+						voiceId = voice.voiceID
+						break
+					end
+				end
+				if voiceId ~= nil then
 					break
 				end
 			end
