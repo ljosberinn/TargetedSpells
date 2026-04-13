@@ -746,7 +746,7 @@ do
 		if locale == "deDE" then
 			patternToLookFor = { "German" }
 		elseif locale == "enUS" then
-			patternToLookFor = { "English", "en_US" }
+			patternToLookFor = { "English", "en_US female", "en_US male" }
 		end
 
 		if patternToLookFor ~= nil then
