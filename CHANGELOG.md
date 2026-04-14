@@ -14,6 +14,9 @@
   - this is a bandaid fix until I invest the time to allow choosing which display to use for self/party
   - default off
   - disables the `Hide Targeted Spells` option if its active
+- Party: new setting: `Inline Duration Position`
+  - default on
+  - disabling it places the cast duration text to the right of the progress bar, shortening the bar in the process slightly
 
 ### Other
 

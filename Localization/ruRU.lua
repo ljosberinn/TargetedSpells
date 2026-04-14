@@ -151,6 +151,8 @@ L.Settings.HideTargetedSpellsLabel = "Скрыть заклинания с це�
 L.Settings.SelfOnlyLabel =
 	"Показывать только заклинания, нацеленные на игрока"
 
+L.Settings.InlineDurationLabel = "Встроенное отображение длительности"
+
 L.Settings.UseInterruptabilityColorsLabel = "Использовать цвета прерывания"
 L.Settings.UseInterruptabilityColorsTooltip = nil
 
@@ -191,6 +193,7 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowTargetName] = "Показывать имя цели",
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Показывать цвет класса цели",
 	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
+	[Private.Enum.FeatureFlag.InlineDuration] = L.Settings.InlineDurationLabel,
 	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
 	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
 	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,

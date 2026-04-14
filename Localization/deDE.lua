@@ -150,6 +150,8 @@ L.Settings.HideTargetedSpellsLabel = "Zauber mit Ziel ausblenden"
 
 L.Settings.SelfOnlyLabel = "Nur Zauber anzeigen, die auf den Spieler zielen"
 
+L.Settings.InlineDurationLabel = "Dauer inline anzeigen"
+
 L.Settings.UseInterruptabilityColorsLabel = "Farbkodierung für Unterbrechungsstatus nutzen"
 L.Settings.UseInterruptabilityColorsTooltip = nil
 
@@ -190,6 +192,7 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowTargetName] = "Zielnamen anzeigen",
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Zielklassenfarbe anzeigen",
 	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
+	[Private.Enum.FeatureFlag.InlineDuration] = L.Settings.InlineDurationLabel,
 	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
 	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
 	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,

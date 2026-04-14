@@ -149,6 +149,8 @@ L.Settings.HideTargetedSpellsLabel = "Masquer les sorts avec cible"
 
 L.Settings.SelfOnlyLabel = "Afficher uniquement les sorts ciblant le joueur"
 
+L.Settings.InlineDurationLabel = "Durée en position intégrée"
+
 L.Settings.UseInterruptabilityColorsLabel = "Utiliser les couleurs d'interruption"
 L.Settings.UseInterruptabilityColorsTooltip = nil
 
@@ -189,6 +191,7 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowTargetName] = "Afficher le nom de la cible",
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Afficher la couleur de classe de la cible",
 	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
+	[Private.Enum.FeatureFlag.InlineDuration] = L.Settings.InlineDurationLabel,
 	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
 	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
 	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,

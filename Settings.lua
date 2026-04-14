@@ -129,6 +129,7 @@ function Private.Settings.GetFeatureFlagsForKind(kind)
 		Private.Enum.FeatureFlag.HideTargetedSpells,
 		Private.Enum.FeatureFlag.SelfOnly,
 		Private.Enum.FeatureFlag.MirrorLayout,
+		Private.Enum.FeatureFlag.InlineDuration,
 		Private.Enum.FeatureFlag.IndicateInterrupts,
 		Private.Enum.FeatureFlag.RenderInterruptSourceName,
 	}
@@ -296,6 +297,7 @@ function Private.Settings.GetPartyDefaultSettings()
 			[Private.Enum.FeatureFlag.HideUntargetedSpells] = false,
 			[Private.Enum.FeatureFlag.HideTargetedSpells] = false,
 			[Private.Enum.FeatureFlag.SelfOnly] = false,
+			[Private.Enum.FeatureFlag.InlineDuration] = true,
 		},
 		ForegroundBarTexture = "Blizzard Raid Bar",
 		BackgroundBarTexture = "Solid",

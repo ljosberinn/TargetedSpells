@@ -149,6 +149,8 @@ L.Settings.HideTargetedSpellsLabel = "隐藏有目标法术"
 
 L.Settings.SelfOnlyLabel = "仅显示针对玩家的法术"
 
+L.Settings.InlineDurationLabel = "内嵌持续时间位置"
+
 L.Settings.UseInterruptabilityColorsLabel = "使用打断颜色"
 L.Settings.UseInterruptabilityColorsTooltip = nil
 
@@ -189,6 +191,7 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowTargetName] = "显示目标名称",
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "显示目标职业颜色",
 	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
+	[Private.Enum.FeatureFlag.InlineDuration] = L.Settings.InlineDurationLabel,
 	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
 	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
 	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,

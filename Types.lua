@@ -248,6 +248,7 @@
 ---@field SpellName FontString
 ---@field TargetName FontString
 ---@field InterruptSource FontString
+---@field Duration FontString
 
 ---@class TargetedSpellsBarCustomElementsFrame : Frame
 ---@field TargetMarker Texture
@@ -255,7 +256,6 @@
 ---@class TargetedSpellsBarMixin : TargetedSpellsMixin
 ---@field unit string?
 ---@field ProgressBar TargetedSpellsBarProgressBar
----@field Duration FontString
 ---@field CustomElementsFrame TargetedSpellsBarCustomElementsFrame
 ---@field OnLoad fun(self: TargetedSpellsBarMixin)
 ---@field OnSizeChanged fun(self: TargetedSpellsBarMixin)
