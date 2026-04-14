@@ -339,6 +339,8 @@
 ---@field MaybeMarkAsInterruptedAndDelay fun(self: TargetedSpellsDriver, unit: string, id: number|string|nil, interruptedBy: string?)
 ---@field CleanupDanglingFrames fun(self: TargetedSpellsDriver)
 ---@field MaybeAnnounceUntargetedSpell fun(self: TargetedSpellsDriver, info: SpellCastInfo)
+---@field GetCastInformation fun(self: TargetedSpellsDriver, unit: string): boolean, number, number
+---@field ClearAnnouncementCacheForUnit fun(self: TargetedSpellsDriver, unit: string)
 
 ---@class NumericFormatter
 ---@field SetBreakpoints fun(self: NumericFormatter, breakpoints: table)
