@@ -287,7 +287,7 @@ function TargetedSpellsDriver:LoadConditionsProhibitExecution(kind)
 end
 
 function TargetedSpellsDriver:UnitIsIrrelevant(unit, skipTargetCheck)
-	if string.sub(unit, 1, 9) ~= "nameplate" or UnitInParty(unit) then
+	if string.sub(unit, 1, 9) ~= "nameplate" or UnitInParty(unit) or UnitIsFriend(unit, "player") then
 		return true
 	end
 
@@ -320,7 +320,7 @@ function TargetedSpellsDriver:GetCastInformation(unit)
 end
 
 ---@param _ Frame -- identical to self.frame
----@param event "DELAYED_FRAME_CLEANUP" | "UNIT_SPELLCAST_INTERRUPTED" | "ZONE_CHANGED_NEW_AREA" | "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" |"EDIT_MODE_SELF_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED" | "UNIT_SPELLCAST_INTERRUPTIBLE" | "UNIT_SPELLCAST_NOT_INTERRUPTIBLE" | "RAID_TARGET_UPDATE"
+---@param event "DELAYED_FRAME_CLEANUP" | "UNIT_SPELLCAST_INTERRUPTED" | "ZONE_CHANGED_NEW_AREA" | "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" |"EDIT_MODE_SELF_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED" | "UNIT_SPELLCAST_INTERRUPTIBLE" | "UNIT_SPELLCAST_NOT_INTERRUPTIBLE" | "RAID_TARGET_UPDATE" | "VOICE_CHAT_TTS_VOICES_UPDATE"
 function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 	if
 		event == "UNIT_SPELLCAST_START"
@@ -603,6 +603,8 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		self:PositionFrame(Private.Enum.FrameKind.Self)
 	elseif event == Private.Enum.Events.EDIT_MODE_PARTY_POSITION_CHANGED then
 		self:PositionFrame(Private.Enum.FrameKind.Party)
+	elseif event == "VOICE_CHAT_TTS_VOICES_UPDATE" then
+		self:DetectMostReasonableVoiceId()
 	end
 end
 
@@ -777,6 +779,8 @@ function TargetedSpellsDriver:DetectMostReasonableVoiceId()
 				end
 			end
 		end
+
+		self.voiceId = self:GetDefaultVoiceId()
 	end
 end
 
@@ -800,7 +804,7 @@ function TargetedSpellsDriver:MaybeAnnounceUntargetedSpell(info)
 
 	local now = GetTime()
 
-	if self.ttsAnnouncementCache[info.unit] ~= nil and now - self.ttsAnnouncementCache[info.unit] < 2 then
+	if self.ttsAnnouncementCache[info.unit] ~= nil and now - self.ttsAnnouncementCache[info.unit] < 3 then
 		return
 	end
 
@@ -812,7 +816,7 @@ function TargetedSpellsDriver:MaybeAnnounceUntargetedSpell(info)
 
 	self.ttsAnnouncementCache[info.unit] = now
 
-	C_VoiceChat.SpeakText(self.voiceId, spellName, 2, C_TTSSettings.GetSpeechVolume())
+	C_VoiceChat.SpeakText(self.voiceId, spellName, 2, C_TTSSettings.GetSpeechVolume(), true)
 end
 
 table.insert(Private.LoginFnQueue, GenerateClosure(TargetedSpellsDriver.Init, TargetedSpellsDriver))
