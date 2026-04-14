@@ -193,9 +193,6 @@ function TargetedSpellsEditModeMixin:OnImportConfirmation(encodedString)
 	end
 end
 
-function TargetedSpellsEditModeMixin:OnImportCancellation()
-	-- Implement in your derived mixin.
-end
 
 do
 	---@param value number
@@ -1455,10 +1452,6 @@ function TargetedSpellsEditModeMixin:OnLayoutSettingChanged(key, value)
 	end
 end
 
-function TargetedSpellsEditModeMixin:AcquireFrame()
-	-- Implement in your derived mixin.
-end
-
 function TargetedSpellsEditModeMixin:RepositionPreviewFrames()
 	if not self.demoPlaying then
 		return
@@ -1468,21 +1461,18 @@ function TargetedSpellsEditModeMixin:RepositionPreviewFrames()
 	local activeFrames = {}
 
 	for index = 1, self.maxFrames do
-		local frame = self.frames[index]
-
-		if frame == nil then
-			frame = self:AcquireFrame()
-			self.frames[index] = frame
-
+		if self.frames[index] == nil then
 			table.insert(
 				self.demoTimers.tickers,
-				C_Timer.NewTicker(5 + index, GenerateClosure(self.LoopFrame, self, frame, index))
+				C_Timer.NewTicker(5 + index, GenerateClosure(self.LoopFrame, self, index))
 			)
 
-			self:LoopFrame(frame, index)
+			self:LoopFrame(index)
 		end
 
-		if frame:ShouldBeShown() then
+		local frame = self.frames[index]
+
+		if frame ~= nil and frame:ShouldBeShown() then
 			table.insert(activeFrames, frame)
 		end
 	end
@@ -1518,13 +1508,25 @@ function TargetedSpellsEditModeMixin:RepositionPreviewFrames()
 	)
 end
 
-function TargetedSpellsEditModeMixin:LoopFrame(frame, index)
-	frame:SetSpellId()
-	frame:SetStartTime()
+function TargetedSpellsEditModeMixin:LoopFrame(index)
+	if self.frames[index] == nil then
+		self.frames[index] = self.pool:Acquire()
+	end
+
+	local frame = self.frames[index]
 	local castTime = 4 + index / 2
 	local duration = C_DurationUtil.CreateDuration()
 	duration:SetTimeFromStart(GetTime(), castTime)
-	frame:SetDuration(duration)
+
+	frame:PostCreate({
+		unit = "player",
+		spellId = nil,
+		startTime = GetTime(),
+		id = index,
+		duration = duration,
+		isChannel = false,
+	})
+
 	frame:Show()
 	frame:SetAlpha(secretwrap(1))
 
@@ -1614,11 +1616,6 @@ function SelfEditModeMixin:Init()
 	self:ResizeEditModeFrame()
 end
 
-function SelfEditModeMixin:AcquireFrame()
-	local frame = Private.Utils.Pools.Self:Acquire()
-	frame:PostCreate()
-	return frame
-end
 
 function SelfEditModeMixin:OnLayoutSettingChanged(key, value, newBool)
 	TargetedSpellsEditModeMixin.OnLayoutSettingChanged(self, key, value)
@@ -1665,12 +1662,6 @@ function PartyEditModeMixin:Init()
 	self:ResizeEditModeFrame()
 end
 
-function PartyEditModeMixin:AcquireFrame()
-	local frame = Private.Utils.Pools.Bar:Acquire()
-	frame:PostCreate()
-	return frame
-end
-
 function PartyEditModeMixin:OnLayoutSettingChanged(key, value, newBool)
 	TargetedSpellsEditModeMixin.OnLayoutSettingChanged(self, key, value)
 
@@ -1705,8 +1696,12 @@ function PartyEditModeMixin:OnLayoutSettingChanged(key, value, newBool)
 	end
 end
 
-function PartyEditModeMixin:LoopFrame(frame, index)
-	TargetedSpellsEditModeMixin.LoopFrame(self, frame, index)
+function PartyEditModeMixin:LoopFrame(index)
+	TargetedSpellsEditModeMixin.LoopFrame(self, index)
+
+	local frame = self.frames[index]
+
+	frame:SetPreviewBarColor()
 
 	if Private.Utils.RollDice() then
 		frame.ProgressBar:SetTimerDuration(frame.ProgressBar:GetTimerDuration(), Enum.StatusBarInterpolation.None, 1)

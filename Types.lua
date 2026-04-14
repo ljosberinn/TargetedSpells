@@ -237,8 +237,6 @@
 ---@field ApplyBorderStyle fun(self: TargetedSpellsIconMixin, styleName: string)
 ---@field OnSizeChanged fun(self: TargetedSpellsIconMixin)
 ---@field OnSettingChanged fun(self: TargetedSpellsIconMixin, key: string, flagIdOrValue: number|string|boolean|table, newBool: boolean?)
----@field SetDuration fun(self: TargetedSpellsIconMixin, duration: DurationObject): number
----@field GetUnit fun(self: TargetedSpellsIconMixin): string
 ---@field PostCreate fun(self: TargetedSpellsIconMixin, info: SpellCastInfo?, OnCooldownDoneCallback: fun(info: SpellCastInfo))
 ---@field Reset fun(self: TargetedSpellsIconMixin)
 ---@field SetFont fun(self: TargetedSpellsIconMixin)
@@ -293,9 +291,8 @@
 ---@field OnEditModePositionChanged fun(self: TargetedSpellsEditModeMixin, frame: Frame, layoutName: string, point: FramePoint, x: number, y: number)
 ---@field AppendSettings fun(self: TargetedSpellsEditModeMixin)
 ---@field OnLayoutSettingChanged fun(self: TargetedSpellsEditModeMixin, key: string, value: number|string, newBool: boolean?)
----@field AcquireFrame fun(self: TargetedSpellsEditModeMixin)
 ---@field RepositionPreviewFrames fun(self: TargetedSpellsEditModeMixin)
----@field LoopFrame fun(self: TargetedSpellsEditModeMixin, frame: TargetedSpellsIconMixin|TargetedSpellsBarMixin, index: number)
+---@field LoopFrame fun(self: TargetedSpellsEditModeMixin, index: number)
 ---@field StartDemo fun(self: TargetedSpellsEditModeMixin)
 ---@field ReleaseAllFrames fun(self: TargetedSpellsEditModeMixin)
 ---@field EndDemo fun(self: TargetedSpellsEditModeMixin)
@@ -309,16 +306,14 @@
 ---@field private frames TargetedSpellsIconMixin[]
 ---@field pool FramePool<TargetedSpellsIconMixin>
 ---@field Init fun(self: TargetedSpellsSelfEditMode)
----@field AcquireFrame fun(self: TargetedSpellsSelfEditMode): TargetedSpellsIconMixin
 ---@field OnLayoutSettingChanged fun(self: TargetedSpellsSelfEditMode, key: string, value: number|string, newBool: boolean?): nil
 
 ---@class TargetedSpellsPartyEditMode : TargetedSpellsEditModeMixin
 ---@field private frames TargetedSpellsBarMixin[]
 ---@field pool FramePool<TargetedSpellsBarMixin>
 ---@field Init fun(self: TargetedSpellsPartyEditMode)
----@field AcquireFrame fun(self: TargetedSpellsPartyEditMode): TargetedSpellsBarMixin
 ---@field OnLayoutSettingChanged fun(self: TargetedSpellsPartyEditMode, key: string, value: number|string, newBool: boolean?)
----@field LoopFrame fun(self: TargetedSpellsPartyEditMode, frame: TargetedSpellsBarMixin, index: number)
+---@field LoopFrame fun(self: TargetedSpellsPartyEditMode, index: number)
 
 ---@class TargetedSpellsDriver
 ---@field private frame Frame

@@ -306,37 +306,33 @@ function TargetedSpellsIconMixin:OnSettingChanged(key, flagIdOrValue, newBool)
 	end
 end
 
-function TargetedSpellsIconMixin:SetDuration(duration)
-	self.Cooldown:SetCooldownFromDurationObject(duration)
-	return TargetedSpellsMixin.SetDuration(self, duration)
-end
-
-function TargetedSpellsIconMixin:GetUnit()
-	return self.unit
-end
-
 function TargetedSpellsIconMixin:PostCreate(info, OnCooldownDoneCallback)
 	if info == nil then
 		return
 	end
 
 	self.info = info
+	self.Cooldown:SetCooldownFromDurationObject(info.duration)
 
 	local durationAlpha = self:SetDuration(info.duration)
 	local targetsPlayer = PlayerIsSpellTarget(info.unit, "player")
 	self:SetAlphaFromBoolean(targetsPlayer, durationAlpha, 0)
 	self.Bar:SetValue(self:GetAlpha())
 
-	self.OnCooldownDoneCallback = OnCooldownDoneCallback
-	self.OnCooldownDoneClosure = GenerateClosure(OnCooldownDoneCallback, info)
 	self:SetSpellId(info.spellId)
 	self:SetStartTime(info.startTime)
 	self:SetId(info.id)
-	self.Cooldown:SetScript("OnCooldownDone", self.OnCooldownDoneClosure)
+
+	if OnCooldownDoneCallback ~= nil then
+		self.OnCooldownDoneCallback = OnCooldownDoneCallback
+		self.OnCooldownDoneClosure = GenerateClosure(OnCooldownDoneCallback, info)
+		self.Cooldown:SetScript("OnCooldownDone", self.OnCooldownDoneClosure)
+	end
 end
 
 function TargetedSpellsIconMixin:Reset()
 	self.spellId = nil
+	self.duration = nil
 	self.Cooldown:Clear()
 	self.info = nil
 	self.Cooldown:SetScript("OnCooldownDone", nil)
