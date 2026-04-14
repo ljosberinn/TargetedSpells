@@ -105,7 +105,11 @@ function TargetedSpellsEditModeMixin:OnSettingsChanged(key, flagIdOrValue, newBo
 	elseif key == Private.Settings.Keys.Self.FeatureFlags or key == Private.Settings.Keys.Party.FeatureFlags then
 		local flagId = flagIdOrValue
 
-		if flagId == Private.Enum.FeatureFlag.GlowImportant or flagId == Private.Enum.FeatureFlag.ShowTargetMarker then
+		if
+			flagId == Private.Enum.FeatureFlag.GlowImportant
+			or flagId == Private.Enum.FeatureFlag.ShowTargetMarker
+			or flagId == Private.Enum.FeatureFlag.InlineDuration
+		then
 			self:OnLayoutSettingChanged(key, flagId, newBool)
 		elseif
 			flagId == Private.Enum.FeatureFlag.OnlyImportant
@@ -1703,6 +1707,10 @@ end
 
 function PartyEditModeMixin:LoopFrame(frame, index)
 	TargetedSpellsEditModeMixin.LoopFrame(self, frame, index)
+
+	if Private.Utils.RollDice() then
+		frame.ProgressBar:SetTimerDuration(frame.ProgressBar:GetTimerDuration(), Enum.StatusBarInterpolation.None, 1)
+	end
 
 	frame:SetTargetMarker(Private.Utils.RollDice() and math.random(1, 8) or nil)
 end

@@ -9,11 +9,12 @@ TargetedSpellsBarMixin = CreateFromMixins(TargetedSpellsMixin)
 function TargetedSpellsBarMixin:GetGlowTarget()
 	local settings = TargetedSpellsSaved.Settings.Party
 	local flags = settings.FeatureFlags
+	local inlineDuration = flags[Private.Enum.FeatureFlag.InlineDuration]
 
 	local width = settings.Width
 		- (flags[Private.Enum.FeatureFlag.ShowIcon] and settings.Height or 0)
 		- (flags[Private.Enum.FeatureFlag.ShowTargetMarker] and settings.Height or 0)
-		- (flags[Private.Enum.FeatureFlag.ShowDuration] and settings.FontSize * 2 or 0)
+		- (flags[Private.Enum.FeatureFlag.ShowDuration] and not inlineDuration and settings.FontSize * 2 or 0)
 
 	return self.ProgressBar, width, settings.Height
 end
@@ -63,7 +64,12 @@ local function GetProgressBarWidth()
 	return tableRef.Width
 		- (tableRef.FeatureFlags[Private.Enum.FeatureFlag.ShowIcon] and tableRef.Height or 0)
 		- (tableRef.FeatureFlags[Private.Enum.FeatureFlag.ShowTargetMarker] and tableRef.Height or 0)
-		- (tableRef.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration] and GetDurationWidth() or 0)
+		- (
+			tableRef.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration]
+				and not tableRef.FeatureFlags[Private.Enum.FeatureFlag.InlineDuration]
+				and GetDurationWidth()
+			or 0
+		)
 end
 
 function TargetedSpellsBarMixin:OnSizeChanged()
@@ -73,6 +79,7 @@ function TargetedSpellsBarMixin:OnSizeChanged()
 	local showTargetMarker = tableRef.FeatureFlags[Private.Enum.FeatureFlag.ShowTargetMarker]
 	local mirrored = tableRef.FeatureFlags[Private.Enum.FeatureFlag.MirrorLayout]
 	local showDuration = tableRef.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration]
+	local inlineDuration = tableRef.FeatureFlags[Private.Enum.FeatureFlag.InlineDuration]
 	local showSpellName = tableRef.FeatureFlags[Private.Enum.FeatureFlag.ShowSpellName]
 	local showTargetName = tableRef.FeatureFlags[Private.Enum.FeatureFlag.ShowTargetName]
 
@@ -83,7 +90,7 @@ function TargetedSpellsBarMixin:OnSizeChanged()
 	self.CustomElementsFrame.TargetMarker:ClearAllPoints()
 	self.Icon:ClearAllPoints()
 	self.ProgressBar:ClearAllPoints()
-	self.Duration:ClearAllPoints()
+	self.ProgressBar.Duration:ClearAllPoints()
 	self.ProgressBar.SpellName:ClearAllPoints()
 	self.ProgressBar.TargetName:ClearAllPoints()
 
@@ -92,14 +99,15 @@ function TargetedSpellsBarMixin:OnSizeChanged()
 	local slotFrame = nil
 
 	local progressBarWidth = GetProgressBarWidth()
+	local textWidth = (showDuration and inlineDuration) and (progressBarWidth - durationWidth) or progressBarWidth
 
 	if showSpellName and showTargetName then
-		self.ProgressBar.SpellName:SetWidth(progressBarWidth * 0.5)
-		self.ProgressBar.TargetName:SetWidth(progressBarWidth * 0.5)
+		self.ProgressBar.SpellName:SetWidth(textWidth * 0.5)
+		self.ProgressBar.TargetName:SetWidth(textWidth * 0.5)
 	elseif showSpellName then
-		self.ProgressBar.SpellName:SetWidth(progressBarWidth)
+		self.ProgressBar.SpellName:SetWidth(textWidth)
 	elseif showTargetName then
-		self.ProgressBar.TargetName:SetWidth(progressBarWidth)
+		self.ProgressBar.TargetName:SetWidth(textWidth)
 	end
 
 	if
@@ -129,13 +137,20 @@ function TargetedSpellsBarMixin:OnSizeChanged()
 			slotFrame = self.Icon
 		end
 
-		self.Duration:SetJustifyH("LEFT")
+		self.ProgressBar.Duration:SetJustifyH("LEFT")
 
 		if showDuration then
-			PixelUtil.SetPoint(self.Duration, "TOPLEFT", self, "TOPLEFT", 0, 0)
-			PixelUtil.SetPoint(self.Duration, "BOTTOMLEFT", self, "BOTTOMLEFT", 0, 0)
-			self.Duration:SetWidth(durationWidth)
-			PixelUtil.SetPoint(self.ProgressBar, "TOPLEFT", self.Duration, "TOPRIGHT", 0, 0)
+			self.ProgressBar.Duration:SetWidth(durationWidth)
+
+			if inlineDuration then
+				PixelUtil.SetPoint(self.ProgressBar, "TOPLEFT", self, "TOPLEFT", 0, 0)
+				PixelUtil.SetPoint(self.ProgressBar.Duration, "TOPLEFT", self.ProgressBar, "TOPLEFT", 4, 0)
+				PixelUtil.SetPoint(self.ProgressBar.Duration, "BOTTOMLEFT", self.ProgressBar, "BOTTOMLEFT", 4, 0)
+			else
+				PixelUtil.SetPoint(self.ProgressBar.Duration, "TOPLEFT", self, "TOPLEFT", 0, 0)
+				PixelUtil.SetPoint(self.ProgressBar.Duration, "BOTTOMLEFT", self, "BOTTOMLEFT", 0, 0)
+				PixelUtil.SetPoint(self.ProgressBar, "TOPLEFT", self.ProgressBar.Duration, "TOPRIGHT", 0, 0)
+			end
 		else
 			PixelUtil.SetPoint(self.ProgressBar, "TOPLEFT", self, "TOPLEFT", 0, 0)
 		end
@@ -150,7 +165,11 @@ function TargetedSpellsBarMixin:OnSizeChanged()
 				PixelUtil.SetPoint(self.ProgressBar.TargetName, "RIGHT", self.ProgressBar, "RIGHT", -4, 0)
 				self.ProgressBar.TargetName:SetJustifyH("RIGHT")
 			else
-				PixelUtil.SetPoint(self.ProgressBar.TargetName, "LEFT", self.ProgressBar, "LEFT", 4, 0)
+				if showDuration and inlineDuration then
+					PixelUtil.SetPoint(self.ProgressBar.TargetName, "LEFT", self.ProgressBar.Duration, "RIGHT", 0, 0)
+				else
+					PixelUtil.SetPoint(self.ProgressBar.TargetName, "LEFT", self.ProgressBar, "LEFT", 4, 0)
+				end
 				self.ProgressBar.TargetName:SetJustifyH("LEFT")
 			end
 		end
@@ -180,7 +199,7 @@ function TargetedSpellsBarMixin:OnSizeChanged()
 			slotFrame = self.Icon
 		end
 
-		self.Duration:SetJustifyH("RIGHT")
+		self.ProgressBar.Duration:SetJustifyH("RIGHT")
 
 		if slotFrame then
 			PixelUtil.SetPoint(self.ProgressBar, "TOPLEFT", slotFrame, "TOPRIGHT", 0, 0)
@@ -189,10 +208,17 @@ function TargetedSpellsBarMixin:OnSizeChanged()
 		end
 
 		if showDuration then
-			PixelUtil.SetPoint(self.Duration, "TOPRIGHT", self, "TOPRIGHT", 0, 0)
-			PixelUtil.SetPoint(self.Duration, "BOTTOMRIGHT", self, "BOTTOMRIGHT", 0, 0)
-			self.Duration:SetWidth(durationWidth)
-			PixelUtil.SetPoint(self.ProgressBar, "BOTTOMRIGHT", self.Duration, "BOTTOMLEFT", 0, 0)
+			self.ProgressBar.Duration:SetWidth(durationWidth)
+
+			if inlineDuration then
+				PixelUtil.SetPoint(self.ProgressBar, "BOTTOMRIGHT", self, "BOTTOMRIGHT", 0, 0)
+				PixelUtil.SetPoint(self.ProgressBar.Duration, "TOPRIGHT", self.ProgressBar, "TOPRIGHT", -4, 0)
+				PixelUtil.SetPoint(self.ProgressBar.Duration, "BOTTOMRIGHT", self.ProgressBar, "BOTTOMRIGHT", -4, 0)
+			else
+				PixelUtil.SetPoint(self.ProgressBar.Duration, "TOPRIGHT", self, "TOPRIGHT", 0, 0)
+				PixelUtil.SetPoint(self.ProgressBar.Duration, "BOTTOMRIGHT", self, "BOTTOMRIGHT", 0, 0)
+				PixelUtil.SetPoint(self.ProgressBar, "BOTTOMRIGHT", self.ProgressBar.Duration, "BOTTOMLEFT", 0, 0)
+			end
 		else
 			PixelUtil.SetPoint(self.ProgressBar, "BOTTOMRIGHT", self, "BOTTOMRIGHT", 0, 0)
 		end
@@ -207,7 +233,11 @@ function TargetedSpellsBarMixin:OnSizeChanged()
 				PixelUtil.SetPoint(self.ProgressBar.TargetName, "LEFT", self.ProgressBar, "LEFT", 4, 0)
 				self.ProgressBar.TargetName:SetJustifyH("LEFT")
 			else
-				PixelUtil.SetPoint(self.ProgressBar.TargetName, "RIGHT", self.ProgressBar, "RIGHT", -4, 0)
+				if showDuration and inlineDuration then
+					PixelUtil.SetPoint(self.ProgressBar.TargetName, "RIGHT", self.ProgressBar.Duration, "LEFT", 0, 0)
+				else
+					PixelUtil.SetPoint(self.ProgressBar.TargetName, "RIGHT", self.ProgressBar, "RIGHT", -4, 0)
+				end
 				self.ProgressBar.TargetName:SetJustifyH("RIGHT")
 			end
 		end
@@ -227,6 +257,7 @@ function TargetedSpellsBarMixin:OnSettingChanged(key, flagIdOrValue, newBool)
 			or flagIdOrValue == Private.Enum.FeatureFlag.ShowTargetName
 			or flagIdOrValue == Private.Enum.FeatureFlag.ShowDuration
 			or flagIdOrValue == Private.Enum.FeatureFlag.MirrorLayout
+			or flagIdOrValue == Private.Enum.FeatureFlag.InlineDuration
 		then
 			if flagIdOrValue == Private.Enum.FeatureFlag.ShowTargetMarker then
 				self:SetTargetMarker()
@@ -249,6 +280,8 @@ function TargetedSpellsBarMixin:OnSettingChanged(key, flagIdOrValue, newBool)
 				self.ProgressBar.TargetName:SetText("")
 				self:SetSpellId(self:GetSpellId())
 				self.ProgressBar.TargetName:SetText(GetPlayerName())
+			elseif flagIdOrValue == Private.Enum.FeatureFlag.InlineDuration then
+				self:OnSizeChanged()
 			end
 		end
 	elseif
@@ -331,7 +364,7 @@ function TargetedSpellsBarMixin:SetBackgroundBarColor()
 end
 
 function TargetedSpellsBarMixin:SetShowDuration(showDuration)
-	self.Duration:SetShown(showDuration)
+	self.ProgressBar.Duration:SetShown(showDuration)
 end
 
 function TargetedSpellsBarMixin:Reset()
@@ -339,7 +372,6 @@ function TargetedSpellsBarMixin:Reset()
 	self:SetAlpha(1)
 	self.Bar:SetValue(1)
 	self.unit = nil
-	self.ProgressBar:SetReverseFill(false)
 	self:SetProgressBarColor()
 	self.ProgressBar.InterruptSource:SetText("")
 	self.ProgressBar.InterruptSource:Hide()
@@ -371,24 +403,30 @@ do
 	---@param ProgressBar TargetedSpellsBarProgressBar
 	---@param targetName string?
 	local function UpdateTargetName(ProgressBar, targetName)
-		local barWidth = GetProgressBarWidth()
 		local showSpellName = TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowSpellName]
+		local barWidth = GetProgressBarWidth()
+		local textWidth = (
+			TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration]
+			and TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.InlineDuration]
+		)
+				and (barWidth - GetDurationWidth())
+			or barWidth
 
 		if
 			targetName == nil
 			or not TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowTargetName]
 		then
 			ProgressBar.TargetName:Hide()
-			ProgressBar.SpellName:SetWidth(barWidth)
+			ProgressBar.SpellName:SetWidth(textWidth)
 		else
 			ProgressBar.TargetName:SetText(targetName)
 			ProgressBar.TargetName:Show()
 
 			if showSpellName then
-				ProgressBar.SpellName:SetWidth(barWidth * 0.5)
-				ProgressBar.TargetName:SetWidth(barWidth * 0.5)
+				ProgressBar.SpellName:SetWidth(textWidth * 0.5)
+				ProgressBar.TargetName:SetWidth(textWidth * 0.5)
 			else
-				ProgressBar.TargetName:SetWidth(barWidth)
+				ProgressBar.TargetName:SetWidth(textWidth)
 			end
 		end
 	end
@@ -400,7 +438,6 @@ do
 		if info == nil then
 			UpdateTargetName(self.ProgressBar, GetPlayerName())
 			self:SetPreviewBarColor()
-			self.ProgressBar:SetReverseFill(Private.Utils.RollDice())
 
 			return
 		end
@@ -434,7 +471,7 @@ do
 			return
 		end
 
-		self.ProgressBar:SetReverseFill(UnitChannelDuration(info.unit) ~= nil)
+		self.ProgressBar:SetTimerDuration(info.duration, Enum.StatusBarInterpolation.None, info.isChannel and 1 or 0)
 		UpdateTargetName(self.ProgressBar, targetName)
 
 		---@type colorRGB?
@@ -530,7 +567,7 @@ function TargetedSpellsBarMixin:SetSpellId(spellId)
 end
 
 function TargetedSpellsBarMixin:SetDuration(duration)
-	self.Duration:SetText("")
+	self.ProgressBar.Duration:SetText("")
 	self:SetShowDuration(TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration])
 	self.ProgressBar:SetTimerDuration(duration)
 
@@ -543,7 +580,7 @@ function TargetedSpellsBarMixin:SetFont()
 	for _, fontString in ipairs({
 		self.ProgressBar.SpellName,
 		self.ProgressBar.TargetName,
-		self.Duration,
+		self.ProgressBar.Duration,
 		self.ProgressBar.InterruptSource,
 	}) do
 		fontString:SetFont(
@@ -576,8 +613,8 @@ function TargetedSpellsBarMixin:OnUpdate(elapsed)
 	end
 
 	if duration.FormatRemainingDuration == nil and Private.Utils.Formatter == nil then
-		self.Duration:SetFormattedText("%.1f", duration:GetRemainingDuration())
+		self.ProgressBar.Duration:SetFormattedText("%.1f", duration:GetRemainingDuration())
 	else
-		self.Duration:SetText(duration:FormatRemainingDuration(Private.Utils.Formatter))
+		self.ProgressBar.Duration:SetText(duration:FormatRemainingDuration(Private.Utils.Formatter))
 	end
 end

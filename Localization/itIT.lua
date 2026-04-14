@@ -149,6 +149,8 @@ L.Settings.HideTargetedSpellsLabel = "Nascondi incantesimi con bersaglio"
 
 L.Settings.SelfOnlyLabel = "Mostra solo incantesimi che prendono di mira il giocatore"
 
+L.Settings.InlineDurationLabel = "Posizione durata integrata"
+
 L.Settings.UseInterruptabilityColorsLabel = "Usa colori interruzione"
 L.Settings.UseInterruptabilityColorsTooltip = nil
 
@@ -189,6 +191,7 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowTargetName] = "Mostra nome bersaglio",
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Mostra colore classe bersaglio",
 	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
+	[Private.Enum.FeatureFlag.InlineDuration] = L.Settings.InlineDurationLabel,
 	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
 	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
 	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,

@@ -149,6 +149,8 @@ L.Settings.HideTargetedSpellsLabel = "대상 있는 주문 숨기기"
 
 L.Settings.SelfOnlyLabel = "플레이어를 대상으로 하는 주문만 표시"
 
+L.Settings.InlineDurationLabel = "지속시간 인라인 위치"
+
 L.Settings.UseInterruptabilityColorsLabel = "방해 색상 사용"
 L.Settings.UseInterruptabilityColorsTooltip = nil
 
@@ -190,6 +192,7 @@ L.Settings.FeatureFlagLabels = {
 	[Private.Enum.FeatureFlag.ShowTargetName] = "대상 이름 표시",
 	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "대상 직업 색상 표시",
 	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
+	[Private.Enum.FeatureFlag.InlineDuration] = L.Settings.InlineDurationLabel,
 	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
 	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
 	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,

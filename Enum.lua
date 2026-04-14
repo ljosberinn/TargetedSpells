@@ -104,4 +104,5 @@ Private.Enum.FeatureFlag = {
 	HideUntargetedSpells = 16,
 	HideTargetedSpells = 17,
 	SelfOnly = 18,
+	InlineDuration = 19,
 }

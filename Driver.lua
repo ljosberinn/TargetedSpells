@@ -13,6 +13,7 @@ function TargetedSpellsDriver:Init()
 	self.contentType = Private.Enum.ContentType.OpenWorld
 	self.OnCooldownDoneClosure = GenerateClosure(self.OnCooldownDone, self)
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingsChanged, self)
+	self.ttsAnnouncementCache = {}
 
 	self:SetupFrame(true)
 end
@@ -304,6 +305,18 @@ function TargetedSpellsDriver:UnitIsIrrelevant(unit, skipTargetCheck)
 	return false
 end
 
+function TargetedSpellsDriver:GetCastInformation(unit)
+	local isChannel = false
+	local _, _, _, _, _, _, _, _, spellId, castId = UnitCastingInfo(unit)
+
+	if spellId == nil then
+		_, _, _, _, _, _, _, spellId, _, _, castId = UnitChannelInfo(unit)
+		isChannel = true
+	end
+
+	return isChannel, spellId, castId
+end
+
 ---@param _ Frame -- identical to self.frame
 ---@param event "DELAYED_FRAME_CLEANUP" | "UNIT_SPELLCAST_INTERRUPTED" | "ZONE_CHANGED_NEW_AREA" | "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" |"EDIT_MODE_SELF_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED" | "UNIT_SPELLCAST_INTERRUPTIBLE" | "UNIT_SPELLCAST_NOT_INTERRUPTIBLE" | "RAID_TARGET_UPDATE"
 function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
@@ -318,8 +331,12 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 			return
 		end
 
+		local isChannel = false
+
 		if event == "UNIT_SPELLCAST_EMPOWER_START" then
 			spellId, id = select(3, ...)
+		elseif event == "UNIT_SPELLCAST_CHANNEL_START" then
+			isChannel = true
 		end
 
 		C_Timer.After(
@@ -329,6 +346,7 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 				spellId = spellId,
 				startTime = GetTime(),
 				id = id,
+				isChannel = isChannel,
 			})
 		)
 	elseif event == "UNIT_TARGET" then
@@ -339,19 +357,14 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 			return
 		end
 
-		local startTime = GetTime()
-
-		local _, _, _, _, _, _, _, _, spellId, castId = UnitCastingInfo(unit)
-
-		if spellId == nil then
-			_, _, _, _, _, _, _, spellId, _, _, castId = UnitChannelInfo(unit)
-		end
+		local isChannel, spellId, castId = self:GetCastInformation(unit)
 
 		self:OnFrameEvent(self.frame, Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START, {
 			unit = unit,
 			spellId = spellId,
-			startTime = startTime,
+			startTime = GetTime(),
 			id = castId,
+			isChannel = isChannel,
 			isRetarget = true,
 		})
 	elseif event == "NAME_PLATE_UNIT_ADDED" then
@@ -362,18 +375,7 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 			return
 		end
 
-		local isChannel = false
-		local _, _, _, _, _, _, _, _, spellId, id = UnitCastingInfo(unit)
-
-		if spellId == nil then
-			_, _, _, _, _, _, _, spellId, _, _, id = UnitChannelInfo(unit)
-			isChannel = true
-		end
-
-		if spellId == nil then
-			return
-		end
-
+		local isChannel, spellId, castId = self:GetCastInformation(unit)
 		local duration = (isChannel and UnitChannelDuration(unit) or nil) or UnitCastingDuration(unit)
 
 		if duration == nil then
@@ -381,7 +383,14 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		end
 
 		-- todo: startTime is wrong, but we can't do better yet
-		self:ProcessInfo({ unit = unit, spellId = spellId, startTime = GetTime(), id = id, duration = duration })
+		self:ProcessInfo({
+			unit = unit,
+			spellId = spellId,
+			startTime = GetTime(),
+			id = castId,
+			duration = duration,
+			isChannel = isChannel,
+		})
 	elseif event == "CVAR_UPDATE" then
 		local name, value = ...
 
@@ -422,6 +431,7 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		end
 
 		local frames = self.frames[unit]
+		self:ClearAnnouncementCacheForUnit(unit)
 
 		if frames == nil or #frames == 0 then
 			return
@@ -450,7 +460,7 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		local info = ...
 
 		-- cast vanished during the delay
-		info.duration = UnitCastingDuration(info.unit) or UnitChannelDuration(info.unit)
+		info.duration = info.isChannel and UnitChannelDuration(info.unit) or UnitCastingDuration(info.unit)
 
 		-- without `nameplateShowOffscreen` active, castTime may stay nil
 		if info.duration == nil then
@@ -599,6 +609,7 @@ function TargetedSpellsDriver:CleanupDanglingFrames()
 
 	for unit in pairs(self.frames) do
 		local thisUnitWasCleanedUp = self:ReleaseFrameForUnit(unit, true)
+		self:ClearAnnouncementCacheForUnit(unit)
 
 		cleanedSomethingUp = cleanedSomethingUp or thisUnitWasCleanedUp
 	end
@@ -734,6 +745,10 @@ function TargetedSpellsDriver:OnCooldownDone(info)
 	end
 end
 
+function TargetedSpellsDriver:ClearAnnouncementCacheForUnit(unit)
+	self.ttsAnnouncementCache[unit] = nil
+end
+
 do
 	local voiceId = nil
 
@@ -775,15 +790,25 @@ do
 
 	function TargetedSpellsDriver:MaybeAnnounceUntargetedSpell(info)
 		if
-			info.isRetarget
-			or not TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells
+			not TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells
 			or not TargetedSpellsSaved.Settings.Party.AnnounceUntargetedSpells
+			or info.isRetarget
 			or (self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Self) and self:LoadConditionsProhibitExecution(
 				Private.Enum.FrameKind.Party
 			))
+			-- don't execute in open world if outside of combat, otherwise there's stray TTS from people casting stuff in town
+			or (self.contentType == Private.Enum.ContentType.OpenWorld and (not InCombatLockdown() or not UnitAffectingCombat(
+				info.unit
+			)))
 			or UnitSpellTargetName(info.unit) ~= nil
 			or voiceId == nil
 		then
+			return
+		end
+
+		local now = GetTime()
+
+		if self.ttsAnnouncementCache[info.unit] ~= nil and now - self.ttsAnnouncementCache[info.unit] < 2 then
 			return
 		end
 
@@ -794,6 +819,8 @@ do
 		end
 		
 		
+
+		self.ttsAnnouncementCache[info.unit] = now
 
 		C_VoiceChat.SpeakText(voiceId, spellName, 2, C_TTSSettings.GetSpeechVolume())
 	end

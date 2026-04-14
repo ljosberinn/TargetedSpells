@@ -85,6 +85,7 @@
 ---@field startTime number
 ---@field id number|string
 ---@field duration DurationObject
+---@field isChannel boolean
 ---@field isRetarget boolean?
 
 ---@class FontInfo
@@ -184,7 +185,7 @@
 ---@field private spellId number?
 ---@field private id number?
 ---@field private elapsed number
----@field private wasInterrupted boolean
+---@field protected wasInterrupted boolean
 ---@field private doNotHideBefore number?
 ---@field info SpellCastInfo?
 ---@field Bar StatusBar
@@ -247,6 +248,7 @@
 ---@field SpellName FontString
 ---@field TargetName FontString
 ---@field InterruptSource FontString
+---@field Duration FontString
 
 ---@class TargetedSpellsBarCustomElementsFrame : Frame
 ---@field TargetMarker Texture
@@ -254,7 +256,6 @@
 ---@class TargetedSpellsBarMixin : TargetedSpellsMixin
 ---@field unit string?
 ---@field ProgressBar TargetedSpellsBarProgressBar
----@field Duration FontString
 ---@field CustomElementsFrame TargetedSpellsBarCustomElementsFrame
 ---@field OnLoad fun(self: TargetedSpellsBarMixin)
 ---@field OnSizeChanged fun(self: TargetedSpellsBarMixin)
@@ -338,12 +339,18 @@
 ---@field MaybeMarkAsInterruptedAndDelay fun(self: TargetedSpellsDriver, unit: string, id: number|string|nil, interruptedBy: string?)
 ---@field CleanupDanglingFrames fun(self: TargetedSpellsDriver)
 ---@field MaybeAnnounceUntargetedSpell fun(self: TargetedSpellsDriver, info: SpellCastInfo)
+---@field GetCastInformation fun(self: TargetedSpellsDriver, unit: string): boolean, number, number
+---@field ClearAnnouncementCacheForUnit fun(self: TargetedSpellsDriver, unit: string)
 
 ---@class NumericFormatter
 ---@field SetBreakpoints fun(self: NumericFormatter, breakpoints: table)
 
 ---@class DurationObject
 ---@field FormatRemainingDuration fun(self: DurationObject, formatter: NumericFormatter, modifier?: string): string
+---@field GetRemainingDuration fun(self: DurationObject): number
+---@field GetTimeFraction fun(self: DurationObject): number
+---@field EvaluateRemainingDuration fun(self: DurationObject, curve: fun(remaining: number): number): number
+---@field SetTimeSpan fun(self: DurationObject, startTime: number, endTime: number)
 
 ----- type patching / completion
 
@@ -521,8 +528,8 @@ PixelUtil = {
 function StaticPopup_Hide(name) end
 function StaticPopup_Show(name) end
 
----@class UnitFrameButton : Button
----@field castBar StatusBar
-
----@class Nameplate
----@field UnitFrame UnitFrameButton
+---@enum Enum.StatusBarInterpolation
+Enum.StatusBarInterpolation = {
+	None = 0,
+	Linear = 1,
+}
