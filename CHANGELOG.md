@@ -22,8 +22,6 @@
 
 - casts longer than 60 seconds will no longer show
   - again, looking at you Lothraxion (but also a couple others)
-- casts originating from units that are not in combat will no longer show
-  - this is experimental but seems to have worked fine in the couple dungeons I did
 - Party: spell names will no longer get cut off if the spell has no target
 - Party: the Edit Mode preview will now sometimes simulate a channel
 - Party: when hiding the spell name, the target name will now take its position instead
