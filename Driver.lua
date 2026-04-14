@@ -742,30 +742,35 @@ do
 
 		local ttsVoiceId = C_TTSSettings.GetVoiceOptionID(Enum.TtsVoiceType.Standard)
 		local patternToLookFor = nil
+		local linux_patternToLookFor = nil
 
 		if locale == "deDE" then
-			patternToLookFor = { "German" }
+			patternToLookFor = "German"
 		elseif locale == "enUS" then
-			patternToLookFor = { "English", "en_US female", "en_US male" }
+			patternToLookFor = "English"
+			linux_patternToLookFor = "en_US"
 		end
 
-		if patternToLookFor ~= nil then
-			for _, voice in pairs(C_VoiceChat.GetTtsVoices()) do
-				for _, pattern in ipairs(patternToLookFor) do
-					if string.find(voice.name, pattern) ~= nil then
+		local function updateTts()
+			if patternToLookFor ~= nil then
+				for _, voice in pairs(C_VoiceChat.GetRemoteTtsVoices()) do
+					if string.find(voice.name, patternToLookFor) ~= nil or string.find(voice.name, linux_patternToLookFor) ~= nil then
 						voiceId = voice.voiceID
 						break
 					end
 				end
-				if voiceId ~= nil then
-					break
-				end
+			end
+
+			if voiceId == nil then
+				voiceId = ttsVoiceId
 			end
 		end
-
-		if voiceId == nil then
-			voiceId = ttsVoiceId
-		end
+		
+		updateTts()
+		
+		local TtsUpdateFrame = CreateFrame("FRAME")
+		TtsUpdateFrame:RegisterEvent("VOICE_CHAT_TTS_VOICES_UPDATE")
+		TtsUpdateFrame:SetScript("OnEvent", updateTts)
 	end
 
 	function TargetedSpellsDriver:MaybeAnnounceUntargetedSpell(info)
@@ -787,6 +792,8 @@ do
 		if spellName == nil then
 			return
 		end
+		
+		
 
 		C_VoiceChat.SpeakText(voiceId, spellName, 2, C_TTSSettings.GetSpeechVolume())
 	end
