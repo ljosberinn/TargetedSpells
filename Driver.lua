@@ -14,6 +14,7 @@ function TargetedSpellsDriver:Init()
 	self.OnCooldownDoneClosure = GenerateClosure(self.OnCooldownDone, self)
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingsChanged, self)
 	self.ttsAnnouncementCache = {}
+	self.voiceId = self:GetDefaultVoiceId()
 
 	self:SetupFrame(true)
 end
@@ -122,6 +123,7 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 		self.frame:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
 		self.frame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
 		self.frame:RegisterEvent("CVAR_UPDATE")
+		self.frame:RegisterEvent("VOICE_CHAT_TTS_VOICES_UPDATE")
 
 		if TargetedSpellsSaved.Settings.Party.Enabled then
 			if TargetedSpellsSaved.Settings.Party.UseInterruptabilityColors then
@@ -749,81 +751,68 @@ function TargetedSpellsDriver:ClearAnnouncementCacheForUnit(unit)
 	self.ttsAnnouncementCache[unit] = nil
 end
 
-do
-	local voiceId = nil
+function TargetedSpellsDriver:GetDefaultVoiceId()
+	return C_TTSSettings.GetVoiceOptionID(Enum.TtsVoiceType.Standard)
+end
 
-	do
-		local locale = GAME_LOCALE or GetLocale()
+function TargetedSpellsDriver:DetectMostReasonableVoiceId()
+	local locale = GAME_LOCALE or GetLocale()
+	local patterns = {}
 
-		local ttsVoiceId = C_TTSSettings.GetVoiceOptionID(Enum.TtsVoiceType.Standard)
-		local patternToLookFor = nil
-		local linux_patternToLookFor = nil
+	if locale == "deDE" then
+		table.insert(patterns, "German")
+	elseif locale == "enUS" then
+		table.insert(patterns, "English")
+		table.insert(patterns, "en_US") -- linux
+	end
 
-		if locale == "deDE" then
-			patternToLookFor = "German"
-		elseif locale == "enUS" then
-			patternToLookFor = "English"
-			linux_patternToLookFor = "en_US"
-		end
-
-		local function updateTts()
-			if patternToLookFor ~= nil then
-				for _, voice in pairs(C_VoiceChat.GetRemoteTtsVoices()) do
-					if string.find(voice.name, patternToLookFor) ~= nil or string.find(voice.name, linux_patternToLookFor) ~= nil then
-						voiceId = voice.voiceID
-						break
-					end
+	if #patterns == 0 then
+		self.voiceId = self:GetDefaultVoiceId()
+	else
+		for _, voice in pairs(C_VoiceChat.GetRemoteTtsVoices()) do
+			for _, pattern in pairs(patterns) do
+				if string.find(voice.name, pattern) ~= nil then
+					self.voiceId = voice.voiceID
+					return
 				end
 			end
-
-			if voiceId == nil then
-				voiceId = ttsVoiceId
-			end
 		end
-		
-		updateTts()
-		
-		local TtsUpdateFrame = CreateFrame("FRAME")
-		TtsUpdateFrame:RegisterEvent("VOICE_CHAT_TTS_VOICES_UPDATE")
-		TtsUpdateFrame:SetScript("OnEvent", updateTts)
+	end
+end
+
+function TargetedSpellsDriver:MaybeAnnounceUntargetedSpell(info)
+	if
+		not TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells
+		or not TargetedSpellsSaved.Settings.Party.AnnounceUntargetedSpells
+		or info.isRetarget
+		or (self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Self) and self:LoadConditionsProhibitExecution(
+			Private.Enum.FrameKind.Party
+		))
+		-- don't execute in open world if outside of combat, otherwise there's stray TTS from people casting stuff in town
+		or (self.contentType == Private.Enum.ContentType.OpenWorld and (not InCombatLockdown() or not UnitAffectingCombat(
+			info.unit
+		)))
+		or UnitSpellTargetName(info.unit) ~= nil
+		or self.voiceId == nil
+	then
+		return
 	end
 
-	function TargetedSpellsDriver:MaybeAnnounceUntargetedSpell(info)
-		if
-			not TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells
-			or not TargetedSpellsSaved.Settings.Party.AnnounceUntargetedSpells
-			or info.isRetarget
-			or (self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Self) and self:LoadConditionsProhibitExecution(
-				Private.Enum.FrameKind.Party
-			))
-			-- don't execute in open world if outside of combat, otherwise there's stray TTS from people casting stuff in town
-			or (self.contentType == Private.Enum.ContentType.OpenWorld and (not InCombatLockdown() or not UnitAffectingCombat(
-				info.unit
-			)))
-			or UnitSpellTargetName(info.unit) ~= nil
-			or voiceId == nil
-		then
-			return
-		end
+	local now = GetTime()
 
-		local now = GetTime()
-
-		if self.ttsAnnouncementCache[info.unit] ~= nil and now - self.ttsAnnouncementCache[info.unit] < 2 then
-			return
-		end
-
-		local spellName = C_Spell.GetSpellName(info.spellId)
-
-		if spellName == nil then
-			return
-		end
-		
-		
-
-		self.ttsAnnouncementCache[info.unit] = now
-
-		C_VoiceChat.SpeakText(voiceId, spellName, 2, C_TTSSettings.GetSpeechVolume())
+	if self.ttsAnnouncementCache[info.unit] ~= nil and now - self.ttsAnnouncementCache[info.unit] < 2 then
+		return
 	end
+
+	local spellName = C_Spell.GetSpellName(info.spellId)
+
+	if spellName == nil then
+		return
+	end
+
+	self.ttsAnnouncementCache[info.unit] = now
+
+	C_VoiceChat.SpeakText(self.voiceId, spellName, 2, C_TTSSettings.GetSpeechVolume())
 end
 
 table.insert(Private.LoginFnQueue, GenerateClosure(TargetedSpellsDriver.Init, TargetedSpellsDriver))

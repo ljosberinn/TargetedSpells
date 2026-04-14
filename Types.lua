@@ -326,6 +326,8 @@
 ---@field private contentType ContentType
 ---@field private delay number
 ---@field private OnCooldownDoneClosure fun(info: SpellCastInfo)
+---@field private ttsAnnouncementCache table<string, number>
+---@field private voiceId number
 ---@field frames table<string, (TargetedSpellsIconMixin|TargetedSpellsBarMixin)[]>
 ---@field SetupFrame fun(self: TargetedSpellsDriver, isBoot: boolean)
 ---@field ProcessInfo fun(self: TargetedSpellsDriver, info: SpellCastInfo)
@@ -341,6 +343,8 @@
 ---@field MaybeAnnounceUntargetedSpell fun(self: TargetedSpellsDriver, info: SpellCastInfo)
 ---@field GetCastInformation fun(self: TargetedSpellsDriver, unit: string): boolean, number, number
 ---@field ClearAnnouncementCacheForUnit fun(self: TargetedSpellsDriver, unit: string)
+---@field DetectMostReasonableVoiceId fun(self: TargetedSpellsDriver)
+---@field GetDefaultVoiceId fun(self: TargetedSpellsDriver): number
 
 ---@class NumericFormatter
 ---@field SetBreakpoints fun(self: NumericFormatter, breakpoints: table)
