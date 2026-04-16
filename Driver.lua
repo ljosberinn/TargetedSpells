@@ -508,6 +508,7 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 	then
 		if event == "LOADING_SCREEN_DISABLED" then
 			self:CleanupDanglingFrames()
+			self:DetectMostReasonableVoiceId()
 		end
 
 		local _, instanceType, difficultyId = GetInstanceInfo()
