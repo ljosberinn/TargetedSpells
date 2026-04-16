@@ -399,6 +399,8 @@ end
 
 do
 	local whiteDefaultColor = CreateColor(1, 1, 1, 1)
+	-- todo: remove later
+	local ambiguateAcceptsSecrets = select(4, GetBuildInfo()) >= 120005
 
 	---@param ProgressBar TargetedSpellsBarProgressBar
 	---@param targetName string?
@@ -419,6 +421,10 @@ do
 			ProgressBar.TargetName:Hide()
 			ProgressBar.SpellName:SetWidth(textWidth)
 		else
+			if ambiguateAcceptsSecrets then
+				targetName = Ambiguate(targetName, "short")
+			end
+
 			ProgressBar.TargetName:SetText(targetName)
 			ProgressBar.TargetName:Show()
 
