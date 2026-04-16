@@ -124,7 +124,6 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 		self.frame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
 		self.frame:RegisterEvent("CVAR_UPDATE")
 		self.frame:RegisterEvent("VOICE_CHAT_TTS_VOICES_UPDATE")
-		self.frame:RegisterEvent("PLAYER_LOGIN")
 
 		if TargetedSpellsSaved.Settings.Party.Enabled then
 			if TargetedSpellsSaved.Settings.Party.UseInterruptabilityColors then
@@ -509,6 +508,7 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 	then
 		if event == "LOADING_SCREEN_DISABLED" then
 			self:CleanupDanglingFrames()
+			self:DetectMostReasonableVoiceId()
 		end
 
 		local _, instanceType, difficultyId = GetInstanceInfo()
@@ -605,8 +605,6 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 	elseif event == Private.Enum.Events.EDIT_MODE_PARTY_POSITION_CHANGED then
 		self:PositionFrame(Private.Enum.FrameKind.Party)
 	elseif event == "VOICE_CHAT_TTS_VOICES_UPDATE" then
-		self:DetectMostReasonableVoiceId()
-	elseif event == "PLAYER_LOGIN" then
 		self:DetectMostReasonableVoiceId()
 	end
 end
