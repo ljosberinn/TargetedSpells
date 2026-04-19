@@ -139,9 +139,19 @@ L.Settings.ProgressBarColorTooltip =
 
 L.Settings.MirrorLayoutLabel = "镜像布局"
 
-L.Settings.AnnounceUntargetedSpellsLabel = "播报无目标法术"
-L.Settings.AnnounceUntargetedSpellsTooltip =
-	"对没有指定目标的法术（如AoE和部分正面技能）播放文字转语音。"
+L.Settings.AnnounceUntargetedSpellsLabel = "Untargeted TTS Settings"
+L.Settings.AnnounceUntargetedSpellsTooltip = "TTS for untargeted spells by NPC type."
+
+L.Settings.AnnounceTargetedSpellsLabel = "Targeted TTS Settings"
+L.Settings.AnnounceTargetedSpellsTooltip = "TTS for targeted spells by NPC type."
+
+L.Settings.NpcTypeLabels = {
+	[Private.Enum.NpcType.Boss] = "Bosses",
+	[Private.Enum.NpcType.Lieutenant] = "Lieutenants",
+	[Private.Enum.NpcType.Caster] = "Has Mana",
+	[Private.Enum.NpcType.Melee] = "Regular Melee",
+	[Private.Enum.NpcType.Minion] = "Minions",
+}
 
 L.Settings.HideUntargetedSpellsLabel = "隐藏无目标法术"
 

@@ -112,11 +112,11 @@ end
 
 function TargetedSpellsMixin:IsSpellImportant(boolOverride)
 	if boolOverride ~= nil then
-		return boolOverride
+		return secretwrap(boolOverride)
 	end
 
 	if self.spellId == nil then
-		return false
+		return secretwrap(false)
 	end
 
 	return C_Spell.IsSpellImportant(self.spellId)
@@ -183,25 +183,6 @@ function TargetedSpellsMixin:SetSpellId(spellId)
 	self.spellId = spellId
 	local texture = spellId and C_Spell.GetSpellTexture(spellId) or GetRandomIcon()
 	self.Icon:SetTexture(texture)
-
-	if spellId == nil then
-		return
-	end
-
-	local tableRef = self.kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
-		or TargetedSpellsSaved.Settings.Party
-
-	if not tableRef.FeatureFlags[Private.Enum.FeatureFlag.GlowImportant] then
-		return
-	end
-
-	local isImportant = self:IsSpellImportant()
-
-	self:ShowGlow(isImportant)
-
-	if tableRef.FeatureFlags[Private.Enum.FeatureFlag.OnlyImportant] then
-		self:SetAlphaFromBoolean(isImportant, 1, 0)
-	end
 end
 
 function TargetedSpellsMixin:SetInterrupted(name, color)

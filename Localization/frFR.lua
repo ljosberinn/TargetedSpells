@@ -139,9 +139,21 @@ L.Settings.ProgressBarColorTooltip =
 
 L.Settings.MirrorLayoutLabel = "Disposition en miroir"
 
-L.Settings.AnnounceUntargetedSpellsLabel = "Annoncer les sorts sans cible"
+L.Settings.AnnounceUntargetedSpellsLabel = "Paramètres TTS non ciblés"
 L.Settings.AnnounceUntargetedSpellsTooltip =
-	"Lit par synthèse vocale tous les sorts qui ne ciblent personne, comme les sorts de zone et certaines attaques frontales."
+	"Synthèse vocale pour les sorts sans cible (AoE, frontaux, etc.) par type de PNJ."
+
+L.Settings.AnnounceTargetedSpellsLabel = "Paramètres TTS ciblés"
+L.Settings.AnnounceTargetedSpellsTooltip =
+	"Synthèse vocale pour les sorts ciblant un joueur spécifique, par type de PNJ."
+
+L.Settings.NpcTypeLabels = {
+	[Private.Enum.NpcType.Boss] = "Boss",
+	[Private.Enum.NpcType.Lieutenant] = "Lieutenants",
+	[Private.Enum.NpcType.Caster] = "A du mana",
+	[Private.Enum.NpcType.Melee] = "Melee normal",
+	[Private.Enum.NpcType.Minion] = "Sbires",
+}
 
 L.Settings.HideUntargetedSpellsLabel = "Masquer les sorts sans cible"
 

@@ -38,6 +38,22 @@ EventUtil.ContinueOnAddOnLoaded(addonName, function()
 	local selfDefaults = Private.Settings.GetSelfDefaultSettings()
 	local partyDefaults = Private.Settings.GetPartyDefaultSettings()
 
+	do
+		local oldTTS = TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells
+
+		if type(oldTTS) == "boolean" then
+			local migrated = {
+				[Private.Enum.NpcType.Boss] = oldTTS,
+				[Private.Enum.NpcType.Lieutenant] = oldTTS,
+				[Private.Enum.NpcType.Caster] = oldTTS,
+				[Private.Enum.NpcType.Melee] = oldTTS,
+				[Private.Enum.NpcType.Minion] = false,
+			}
+			TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells = migrated
+			TargetedSpellsSaved.Settings.Party.AnnounceUntargetedSpells = migrated
+		end
+	end
+
 	for key, value in pairs(selfDefaults) do
 		if
 			TargetedSpellsSaved.Settings.Self[key] == nil

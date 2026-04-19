@@ -26,6 +26,7 @@ Private.Settings.Keys = {
 		FeatureFlags = "FEATURE_FLAGS_SELF",
 		BorderStyle = "BORDER_STYLE_SELF",
 		AnnounceUntargetedSpells = "ANNOUNCE_UNTARGETED_SPELLS_SELF",
+		AnnounceTargetedSpells = "ANNOUNCE_TARGETED_SPELLS_SELF",
 	},
 	Party = {
 		Enabled = "ENABLED_PARTY",
@@ -52,6 +53,7 @@ Private.Settings.Keys = {
 		FontFlags = "FONT_FLAGS_PARTY",
 		FeatureFlags = "FEATURE_FLAGS_PARTY",
 		AnnounceUntargetedSpells = "ANNOUNCE_UNTARGETED_SPELLS_PARTY",
+		AnnounceTargetedSpells = "ANNOUNCE_TARGETED_SPELLS_PARTY",
 	},
 }
 
@@ -75,6 +77,7 @@ function Private.Settings.GetSettingsDisplayOrder(kind)
 			Private.Settings.Keys.Self.FontFlags,
 			Private.Settings.Keys.Self.IconZoom,
 			Private.Settings.Keys.Self.AnnounceUntargetedSpells,
+			Private.Settings.Keys.Self.AnnounceTargetedSpells,
 		}
 	end
 
@@ -101,6 +104,7 @@ function Private.Settings.GetSettingsDisplayOrder(kind)
 		Private.Settings.Keys.Party.InterruptibleColor,
 		Private.Settings.Keys.Party.UseTargetClassColor,
 		Private.Settings.Keys.Party.AnnounceUntargetedSpells,
+		Private.Settings.Keys.Party.AnnounceTargetedSpells,
 	}
 end
 
@@ -249,7 +253,20 @@ function Private.Settings.GetSelfDefaultSettings()
 			[Private.Enum.FeatureFlag.RenderInterruptSourceName] = false,
 		},
 		BorderStyle = "Blizzard Tooltip Border",
-		AnnounceUntargetedSpells = false,
+		AnnounceUntargetedSpells = {
+			[Private.Enum.NpcType.Boss] = true,
+			[Private.Enum.NpcType.Lieutenant] = true,
+			[Private.Enum.NpcType.Caster] = true,
+			[Private.Enum.NpcType.Melee] = true,
+			[Private.Enum.NpcType.Minion] = false,
+		},
+		AnnounceTargetedSpells = {
+			[Private.Enum.NpcType.Boss] = false,
+			[Private.Enum.NpcType.Lieutenant] = false,
+			[Private.Enum.NpcType.Caster] = false,
+			[Private.Enum.NpcType.Melee] = false,
+			[Private.Enum.NpcType.Minion] = false,
+		},
 	}
 end
 
@@ -307,7 +324,20 @@ function Private.Settings.GetPartyDefaultSettings()
 		UseTargetClassColor = false,
 		UninterruptibleColor = "FFFF4444",
 		InterruptibleColor = "FF44FF44",
-		AnnounceUntargetedSpells = false,
+		AnnounceUntargetedSpells = {
+			[Private.Enum.NpcType.Boss] = true,
+			[Private.Enum.NpcType.Lieutenant] = true,
+			[Private.Enum.NpcType.Caster] = true,
+			[Private.Enum.NpcType.Melee] = true,
+			[Private.Enum.NpcType.Minion] = false,
+		},
+		AnnounceTargetedSpells = {
+			[Private.Enum.NpcType.Boss] = false,
+			[Private.Enum.NpcType.Lieutenant] = false,
+			[Private.Enum.NpcType.Caster] = false,
+			[Private.Enum.NpcType.Melee] = false,
+			[Private.Enum.NpcType.Minion] = false,
+		},
 		Position = Private.Settings.GetDefaultEditModeFramePosition(Private.Enum.FrameKind.Party),
 	}
 end
@@ -1531,42 +1561,176 @@ table.insert(Private.LoginFnQueue, function()
 			key == Private.Settings.Keys.Self.AnnounceUntargetedSpells
 			or key == Private.Settings.Keys.Party.AnnounceUntargetedSpells
 		then
+			local defaultValue = GetMask(Private.Enum.NpcType, function(id)
+				return defaults.AnnounceUntargetedSpells[id]
+			end)
+
 			local function GetValue()
-				return TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells
+				return GetMask(Private.Enum.NpcType, function(id)
+					return TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells[id]
+				end)
 			end
 
-			local function SetValue(value)
-				if value ~= TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells then
-					TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells = value
-					TargetedSpellsSaved.Settings.Party.AnnounceUntargetedSpells = value
+			local function SetValue(mask)
+				local hasChanges = false
 
-					Private.EventRegistry:TriggerEvent(
-						Private.Enum.Events.SETTING_CHANGED,
-						Private.Settings.Keys.Self.AnnounceUntargetedSpells,
-						value
-					)
-					Private.EventRegistry:TriggerEvent(
-						Private.Enum.Events.SETTING_CHANGED,
-						Private.Settings.Keys.Party.AnnounceUntargetedSpells,
-						value
-					)
+				for _, id in pairs(Private.Enum.NpcType) do
+					local enabled = DecodeBitToBool(mask, id)
+
+					if enabled ~= TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells[id] then
+						TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells[id] = enabled
+						TargetedSpellsSaved.Settings.Party.AnnounceUntargetedSpells[id] = enabled
+						hasChanges = true
+					end
 				end
+
+				if not hasChanges then
+					return
+				end
+
+				Private.EventRegistry:TriggerEvent(
+					Private.Enum.Events.SETTING_CHANGED,
+					Private.Settings.Keys.Self.AnnounceUntargetedSpells,
+					TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells
+				)
+				Private.EventRegistry:TriggerEvent(
+					Private.Enum.Events.SETTING_CHANGED,
+					Private.Settings.Keys.Party.AnnounceUntargetedSpells,
+					TargetedSpellsSaved.Settings.Party.AnnounceUntargetedSpells
+				)
 			end
 
 			local setting = Settings.RegisterProxySetting(
 				category,
 				key,
-				Settings.VarType.Boolean,
+				Settings.VarType.Number,
 				L.Settings.AnnounceUntargetedSpellsLabel,
-				defaults.AnnounceUntargetedSpells,
+				defaultValue,
 				GetValue,
 				SetValue
 			)
-			local initializer = Settings.CreateCheckbox(category, setting, L.Settings.AnnounceUntargetedSpellsTooltip)
+
+			local function GetOptions()
+				local container = Settings.CreateControlTextContainer()
+
+				for _, id in pairs(Private.Enum.NpcType) do
+					local function IsEnabled()
+						return TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells[id]
+					end
+
+					local function Toggle()
+						local bool = not TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells[id]
+						TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells[id] = bool
+						TargetedSpellsSaved.Settings.Party.AnnounceUntargetedSpells[id] = bool
+					end
+
+					container:AddCheckbox(
+						id,
+						L.Settings.NpcTypeLabels[id],
+						L.Settings.AnnounceUntargetedSpellsTooltip,
+						IsEnabled,
+						Toggle
+					)
+				end
+
+				return container:GetData()
+			end
+
+			local initializer =
+				Settings.CreateDropdown(category, setting, GetOptions, L.Settings.AnnounceUntargetedSpellsTooltip)
 
 			return {
 				initializer = initializer,
-				hideSteppers = false,
+				hideSteppers = true,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if
+			key == Private.Settings.Keys.Self.AnnounceTargetedSpells
+			or key == Private.Settings.Keys.Party.AnnounceTargetedSpells
+		then
+			local defaultValue = GetMask(Private.Enum.NpcType, function(id)
+				return defaults.AnnounceTargetedSpells[id]
+			end)
+
+			local function GetValue()
+				return GetMask(Private.Enum.NpcType, function(id)
+					return TargetedSpellsSaved.Settings.Self.AnnounceTargetedSpells[id]
+				end)
+			end
+
+			local function SetValue(mask)
+				local hasChanges = false
+
+				for _, id in pairs(Private.Enum.NpcType) do
+					local enabled = DecodeBitToBool(mask, id)
+
+					if enabled ~= TargetedSpellsSaved.Settings.Self.AnnounceTargetedSpells[id] then
+						TargetedSpellsSaved.Settings.Self.AnnounceTargetedSpells[id] = enabled
+						TargetedSpellsSaved.Settings.Party.AnnounceTargetedSpells[id] = enabled
+						hasChanges = true
+					end
+				end
+
+				if not hasChanges then
+					return
+				end
+
+				Private.EventRegistry:TriggerEvent(
+					Private.Enum.Events.SETTING_CHANGED,
+					Private.Settings.Keys.Self.AnnounceTargetedSpells,
+					TargetedSpellsSaved.Settings.Self.AnnounceTargetedSpells
+				)
+				Private.EventRegistry:TriggerEvent(
+					Private.Enum.Events.SETTING_CHANGED,
+					Private.Settings.Keys.Party.AnnounceTargetedSpells,
+					TargetedSpellsSaved.Settings.Party.AnnounceTargetedSpells
+				)
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				L.Settings.AnnounceTargetedSpellsLabel,
+				defaultValue,
+				GetValue,
+				SetValue
+			)
+
+			local function GetOptions()
+				local container = Settings.CreateControlTextContainer()
+
+				for _, id in pairs(Private.Enum.NpcType) do
+					local function IsEnabled()
+						return TargetedSpellsSaved.Settings.Self.AnnounceTargetedSpells[id]
+					end
+
+					local function Toggle()
+						local bool = not TargetedSpellsSaved.Settings.Self.AnnounceTargetedSpells[id]
+						TargetedSpellsSaved.Settings.Self.AnnounceTargetedSpells[id] = bool
+						TargetedSpellsSaved.Settings.Party.AnnounceTargetedSpells[id] = bool
+					end
+
+					container:AddCheckbox(
+						id,
+						L.Settings.NpcTypeLabels[id],
+						L.Settings.AnnounceTargetedSpellsTooltip,
+						IsEnabled,
+						Toggle
+					)
+				end
+
+				return container:GetData()
+			end
+
+			local initializer =
+				Settings.CreateDropdown(category, setting, GetOptions, L.Settings.AnnounceTargetedSpellsTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = true,
 				IsSectionEnabled = nil,
 			}
 		end

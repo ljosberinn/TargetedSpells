@@ -84,6 +84,15 @@ Private.Enum.FontFlags = {
 	SHADOW = 2,
 }
 
+---@enum NpcType
+Private.Enum.NpcType = {
+	Boss = 1,
+	Lieutenant = 2,
+	Caster = 3,
+	Melee = 4,
+	Minion = 5,
+}
+
 ---@enum FeatureFlag
 Private.Enum.FeatureFlag = {
 	GlowImportant = 1,

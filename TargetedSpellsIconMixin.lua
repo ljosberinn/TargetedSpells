@@ -314,12 +314,23 @@ function TargetedSpellsIconMixin:PostCreate(info, OnCooldownDoneCallback)
 	self.info = info
 	self.Cooldown:SetCooldownFromDurationObject(info.duration)
 
+	self:SetSpellId(info.spellId)
+
 	local durationAlpha = self:SetDuration(info.duration)
 	local targetsPlayer = PlayerIsSpellTarget(info.unit, "player")
-	self:SetAlphaFromBoolean(targetsPlayer, durationAlpha, 0)
+
+	if TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.OnlyImportant] then
+		self:SetAlphaFromBoolean(targetsPlayer, C_CurveUtil.EvaluateColorValueFromBoolean(self:IsSpellImportant(), 0, durationAlpha), 0)
+	else
+		self:SetAlphaFromBoolean(targetsPlayer, durationAlpha, 0)
+	end
+
 	self.Bar:SetValue(self:GetAlpha())
 
-	self:SetSpellId(info.spellId)
+	if TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.GlowImportant] then
+		self:ShowGlow(self:IsSpellImportant())
+	end
+
 	self:SetStartTime(info.startTime)
 	self:SetId(info.id)
 

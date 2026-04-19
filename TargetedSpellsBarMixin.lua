@@ -463,10 +463,16 @@ do
 			return
 		end
 
+		local fallbackAlpha = durationAlpha
+
+		if TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.OnlyImportant] then
+			fallbackAlpha = C_CurveUtil.EvaluateColorValueFromBoolean(self:IsSpellImportant(), 0, durationAlpha)
+		end
+
 		if TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.SelfOnly] then
 			local bool = PlayerIsSpellTarget(info.unit, "player")
 
-			self:SetAlphaFromBoolean(bool, durationAlpha, 0)
+			self:SetAlphaFromBoolean(bool, fallbackAlpha, 0)
 			self.Bar:SetValue(self:GetAlpha())
 		elseif
 			targetName ~= nil
@@ -475,6 +481,10 @@ do
 			self:SetAlpha(0)
 
 			return
+		end
+
+		if TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.GlowImportant] then
+			self:ShowGlow(self:IsSpellImportant())
 		end
 
 		self.ProgressBar:SetTimerDuration(info.duration, Enum.StatusBarInterpolation.None, info.isChannel and 1 or 0)

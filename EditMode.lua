@@ -193,7 +193,6 @@ function TargetedSpellsEditModeMixin:OnImportConfirmation(encodedString)
 	end
 end
 
-
 do
 	---@param value number
 	---@return string
@@ -822,38 +821,132 @@ do
 			key == Private.Settings.Keys.Self.AnnounceUntargetedSpells
 			or key == Private.Settings.Keys.Party.AnnounceUntargetedSpells
 		then
-			---@param layoutName string
-			local function Get(layoutName)
-				return TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells
-			end
+			local function Generator(owner, rootDescription, data)
+				for _, id in pairs(Private.Enum.NpcType) do
+					local function IsEnabled()
+						return TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells[id] == true
+					end
 
-			---@param layoutName string
-			---@param value boolean
-			local function Set(layoutName, value)
-				if value ~= TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells then
-					TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells = value
-					TargetedSpellsSaved.Settings.Party.AnnounceUntargetedSpells = value
+					local function Toggle()
+						local bool = not TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells[id]
+						TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells[id] = bool
+						TargetedSpellsSaved.Settings.Party.AnnounceUntargetedSpells[id] = bool
 
-					Private.EventRegistry:TriggerEvent(
-						Private.Enum.Events.SETTING_CHANGED,
-						Private.Settings.Keys.Self.AnnounceUntargetedSpells,
-						value
-					)
-					Private.EventRegistry:TriggerEvent(
-						Private.Enum.Events.SETTING_CHANGED,
-						Private.Settings.Keys.Party.AnnounceUntargetedSpells,
-						value
-					)
+						Private.EventRegistry:TriggerEvent(
+							Private.Enum.Events.SETTING_CHANGED,
+							Private.Settings.Keys.Self.AnnounceUntargetedSpells,
+							TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells
+						)
+						Private.EventRegistry:TriggerEvent(
+							Private.Enum.Events.SETTING_CHANGED,
+							Private.Settings.Keys.Party.AnnounceUntargetedSpells,
+							TargetedSpellsSaved.Settings.Party.AnnounceUntargetedSpells
+						)
+					end
+
+					rootDescription:CreateCheckbox(L.Settings.NpcTypeLabels[id], IsEnabled, Toggle, {
+						value = id,
+						multiple = true,
+					})
 				end
 			end
 
-			---@type LibEditModeCheckbox
+			---@param layoutName string
+			---@param values table<number, boolean>
+			local function Set(layoutName, values)
+				for id, bool in pairs(values) do
+					if TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells[id] ~= bool then
+						TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells[id] = bool
+						TargetedSpellsSaved.Settings.Party.AnnounceUntargetedSpells[id] = bool
+
+						Private.EventRegistry:TriggerEvent(
+							Private.Enum.Events.SETTING_CHANGED,
+							Private.Settings.Keys.Self.AnnounceUntargetedSpells,
+							TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells
+						)
+						Private.EventRegistry:TriggerEvent(
+							Private.Enum.Events.SETTING_CHANGED,
+							Private.Settings.Keys.Party.AnnounceUntargetedSpells,
+							TargetedSpellsSaved.Settings.Party.AnnounceUntargetedSpells
+						)
+					end
+				end
+			end
+
+			---@type LibEditModeDropdown
 			return {
 				name = L.Settings.AnnounceUntargetedSpellsLabel,
-				kind = LibEditMode.SettingType.Checkbox,
-				desc = L.Settings.AnnounceUntargetedSpellsTooltip,
+				kind = Enum.EditModeSettingDisplayType.Dropdown,
 				default = defaults.AnnounceUntargetedSpells,
-				get = Get,
+				desc = L.Settings.AnnounceUntargetedSpellsTooltip,
+				generator = Generator,
+				set = Set,
+			}
+		end
+
+		if
+			key == Private.Settings.Keys.Self.AnnounceTargetedSpells
+			or key == Private.Settings.Keys.Party.AnnounceTargetedSpells
+		then
+			local function Generator(owner, rootDescription, data)
+				for _, id in pairs(Private.Enum.NpcType) do
+					local function IsEnabled()
+						return TargetedSpellsSaved.Settings.Self.AnnounceTargetedSpells[id] == true
+					end
+
+					local function Toggle()
+						local bool = not TargetedSpellsSaved.Settings.Self.AnnounceTargetedSpells[id]
+						TargetedSpellsSaved.Settings.Self.AnnounceTargetedSpells[id] = bool
+						TargetedSpellsSaved.Settings.Party.AnnounceTargetedSpells[id] = bool
+
+						Private.EventRegistry:TriggerEvent(
+							Private.Enum.Events.SETTING_CHANGED,
+							Private.Settings.Keys.Self.AnnounceTargetedSpells,
+							TargetedSpellsSaved.Settings.Self.AnnounceTargetedSpells
+						)
+						Private.EventRegistry:TriggerEvent(
+							Private.Enum.Events.SETTING_CHANGED,
+							Private.Settings.Keys.Party.AnnounceTargetedSpells,
+							TargetedSpellsSaved.Settings.Party.AnnounceTargetedSpells
+						)
+					end
+
+					rootDescription:CreateCheckbox(L.Settings.NpcTypeLabels[id], IsEnabled, Toggle, {
+						value = id,
+						multiple = true,
+					})
+				end
+			end
+
+			---@param layoutName string
+			---@param values table<number, boolean>
+			local function Set(layoutName, values)
+				for id, bool in pairs(values) do
+					if TargetedSpellsSaved.Settings.Self.AnnounceTargetedSpells[id] ~= bool then
+						TargetedSpellsSaved.Settings.Self.AnnounceTargetedSpells[id] = bool
+						TargetedSpellsSaved.Settings.Party.AnnounceTargetedSpells[id] = bool
+
+						Private.EventRegistry:TriggerEvent(
+							Private.Enum.Events.SETTING_CHANGED,
+							Private.Settings.Keys.Self.AnnounceTargetedSpells,
+							TargetedSpellsSaved.Settings.Self.AnnounceTargetedSpells
+						)
+						Private.EventRegistry:TriggerEvent(
+							Private.Enum.Events.SETTING_CHANGED,
+							Private.Settings.Keys.Party.AnnounceTargetedSpells,
+							TargetedSpellsSaved.Settings.Party.AnnounceTargetedSpells
+						)
+					end
+				end
+			end
+
+			---@type LibEditModeDropdown
+			return {
+				name = L.Settings.AnnounceTargetedSpellsLabel,
+				kind = Enum.EditModeSettingDisplayType.Dropdown,
+				default = defaults.AnnounceTargetedSpells,
+				desc = L.Settings.AnnounceTargetedSpellsTooltip,
+				generator = Generator,
 				set = Set,
 			}
 		end
@@ -1615,7 +1708,6 @@ function SelfEditModeMixin:Init()
 	PixelUtil.SetPoint(self.editModeFrame, "CENTER", UIParent, "CENTER", 0, 0)
 	self:ResizeEditModeFrame()
 end
-
 
 function SelfEditModeMixin:OnLayoutSettingChanged(key, value, newBool)
 	TargetedSpellsEditModeMixin.OnLayoutSettingChanged(self, key, value)

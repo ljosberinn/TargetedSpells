@@ -139,9 +139,19 @@ L.Settings.ProgressBarColorTooltip =
 
 L.Settings.MirrorLayoutLabel = "레이아웃 반전"
 
-L.Settings.AnnounceUntargetedSpellsLabel = "대상 없는 주문 알림"
-L.Settings.AnnounceUntargetedSpellsTooltip =
-	"AoE나 일부 전방 공격처럼 대상이 없는 주문을 텍스트 음성 변환(TTS)으로 재생합니다."
+L.Settings.AnnounceUntargetedSpellsLabel = "Untargeted TTS Settings"
+L.Settings.AnnounceUntargetedSpellsTooltip = "TTS for untargeted spells by NPC type."
+
+L.Settings.AnnounceTargetedSpellsLabel = "Targeted TTS Settings"
+L.Settings.AnnounceTargetedSpellsTooltip = "TTS for targeted spells by NPC type."
+
+L.Settings.NpcTypeLabels = {
+	[Private.Enum.NpcType.Boss] = "Bosses",
+	[Private.Enum.NpcType.Lieutenant] = "Lieutenants",
+	[Private.Enum.NpcType.Caster] = "Has Mana",
+	[Private.Enum.NpcType.Melee] = "Regular Melee",
+	[Private.Enum.NpcType.Minion] = "Minions",
+}
 
 L.Settings.HideUntargetedSpellsLabel = "대상 없는 주문 숨기기"
 

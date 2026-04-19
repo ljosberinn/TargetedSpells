@@ -287,7 +287,12 @@ function TargetedSpellsDriver:LoadConditionsProhibitExecution(kind)
 end
 
 function TargetedSpellsDriver:UnitIsIrrelevant(unit, skipTargetCheck)
-	if string.sub(unit, 1, 9) ~= "nameplate" or UnitInParty(unit) or UnitIsFriend(unit, "player") then
+	if
+		string.sub(unit, 1, 9) ~= "nameplate"
+		or UnitInParty(unit)
+		or UnitIsFriend(unit, "player")
+		or not UnitAffectingCombat(unit)
+	then
 		return true
 	end
 
@@ -470,7 +475,7 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		end
 
 		self:ProcessInfo(info)
-		self:MaybeAnnounceUntargetedSpell(info)
+		self:MaybeAnnounceSpell(info)
 	elseif event == Private.Enum.Events.DELAYED_FRAME_CLEANUP then
 		---@type DelayInfo
 		local delayInfo = ...
@@ -759,37 +764,66 @@ function TargetedSpellsDriver:GetDefaultVoiceId()
 end
 
 function TargetedSpellsDriver:DetectMostReasonableVoiceId()
+	self.voiceId = self:GetDefaultVoiceId()
+
 	local locale = GAME_LOCALE or GetLocale()
 	local patterns = {}
 
-	if locale == "deDE" then
-		table.insert(patterns, "German")
-	elseif locale == "enUS" then
-		table.insert(patterns, "English")
+	if locale == "enUS" then
 		table.insert(patterns, "en_US") -- linux
 	end
 
 	if #patterns == 0 then
-		self.voiceId = self:GetDefaultVoiceId()
-	else
-		for _, voice in pairs(C_VoiceChat.GetRemoteTtsVoices()) do
-			for _, pattern in pairs(patterns) do
-				if string.find(voice.name, pattern) ~= nil then
-					self.voiceId = voice.voiceID
-					return
-				end
+		return
+	end
+
+	local defaultVoices = C_VoiceChat.GetTtsVoices()
+	local hasSystemSupport = #defaultVoices > 0
+
+	if hasSystemSupport then
+		return
+	end
+
+	-- linux
+	for _, voice in pairs(C_VoiceChat.GetRemoteTtsVoices()) do
+		for _, pattern in pairs(patterns) do
+			if string.find(voice.name, pattern) ~= nil then
+				self.voiceId = voice.voiceID
+				return
 			end
 		end
-
-		self.voiceId = self:GetDefaultVoiceId()
 	end
 end
 
-function TargetedSpellsDriver:MaybeAnnounceUntargetedSpell(info)
+function TargetedSpellsDriver:UnitMatchesTTSCriteria(unit)
+	local settings = UnitSpellTargetName(unit) == nil and TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells
+		or TargetedSpellsSaved.Settings.Self.AnnounceTargetedSpells
+	local classification = UnitClassification(unit)
+
+	if UnitIsMinion(unit) or classification == "normal" or classification == "trivial" or classification == "minus" then
+		return settings[Private.Enum.NpcType.Minion]
+	end
+
+	if UnitIsLieutenant(unit) or UnitLevel(unit) - 1 == UnitLevel("player") then
+		return settings[Private.Enum.NpcType.Lieutenant]
+	end
+
+	if UnitIsBossMob(unit) or UnitLevel(unit) - 2 == UnitLevel("player") then
+		return settings[Private.Enum.NpcType.Boss]
+	end
+
+	local class = UnitClassBase(unit)
+
+	if class == "PALADIN" or class == "MAGE" or class == "PRIEST" then
+		return settings[Private.Enum.NpcType.Caster]
+	end
+
+	return settings[Private.Enum.NpcType.Melee]
+end
+
+function TargetedSpellsDriver:MaybeAnnounceSpell(info)
 	if
-		not TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells
-		or not TargetedSpellsSaved.Settings.Party.AnnounceUntargetedSpells
-		or info.isRetarget
+		info.isRetarget
 		or (self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Self) and self:LoadConditionsProhibitExecution(
 			Private.Enum.FrameKind.Party
 		))
@@ -797,7 +831,6 @@ function TargetedSpellsDriver:MaybeAnnounceUntargetedSpell(info)
 		or (self.contentType == Private.Enum.ContentType.OpenWorld and (not InCombatLockdown() or not UnitAffectingCombat(
 			info.unit
 		)))
-		or UnitSpellTargetName(info.unit) ~= nil
 		or self.voiceId == nil
 	then
 		return
@@ -805,7 +838,10 @@ function TargetedSpellsDriver:MaybeAnnounceUntargetedSpell(info)
 
 	local now = GetTime()
 
-	if self.ttsAnnouncementCache[info.unit] ~= nil and now - self.ttsAnnouncementCache[info.unit] < 3 then
+	if
+		self.ttsAnnouncementCache[info.unit] ~= nil and now - self.ttsAnnouncementCache[info.unit] < 3
+		or not self:UnitMatchesTTSCriteria(info.unit)
+	then
 		return
 	end
 

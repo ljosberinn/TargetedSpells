@@ -140,9 +140,20 @@ L.Settings.ProgressBarColorTooltip =
 
 L.Settings.MirrorLayoutLabel = "Layout spiegeln"
 
-L.Settings.AnnounceUntargetedSpellsLabel = "Zauber ohne Ziel ankündigen"
-L.Settings.AnnounceUntargetedSpellsTooltip =
-	"Liest per Text-zu-Sprache alle Zauber vor, die kein Ziel haben, wie z. B. Flächenzauber oder manche Frontalangriffe."
+L.Settings.AnnounceUntargetedSpellsLabel = "Ungezielte TTS-Einstellungen"
+L.Settings.AnnounceUntargetedSpellsTooltip = "Text-zu-Sprache für ungezielte Zauber (AoE, Frontals usw.) nach NPC-Typ."
+
+L.Settings.AnnounceTargetedSpellsLabel = "Gezielte TTS-Einstellungen"
+L.Settings.AnnounceTargetedSpellsTooltip =
+	"Text-zu-Sprache für Zauber, die einen bestimmten Spieler anvisieren, nach NPC-Typ."
+
+L.Settings.NpcTypeLabels = {
+	[Private.Enum.NpcType.Boss] = "Bosse",
+	[Private.Enum.NpcType.Lieutenant] = "Leutnants",
+	[Private.Enum.NpcType.Caster] = "Hat Mana",
+	[Private.Enum.NpcType.Melee] = "Normale Gegner",
+	[Private.Enum.NpcType.Minion] = "Schergen",
+}
 
 L.Settings.HideUntargetedSpellsLabel = "Zauber ohne Ziel ausblenden"
 

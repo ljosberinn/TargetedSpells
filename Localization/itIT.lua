@@ -139,9 +139,21 @@ L.Settings.ProgressBarColorTooltip =
 
 L.Settings.MirrorLayoutLabel = "Inverti layout"
 
-L.Settings.AnnounceUntargetedSpellsLabel = "Annuncia incantesimi senza bersaglio"
+L.Settings.AnnounceUntargetedSpellsLabel = "Impostazioni TTS non mirati"
 L.Settings.AnnounceUntargetedSpellsTooltip =
-	"Riproduce la sintesi vocale per qualsiasi incantesimo senza bersaglio, come le AoE e alcune abilità frontali."
+	"Sintesi vocale per le magie senza bersaglio (AoE, frontali, ecc.) per tipo di PNG."
+
+L.Settings.AnnounceTargetedSpellsLabel = "Impostazioni TTS mirati"
+L.Settings.AnnounceTargetedSpellsTooltip =
+	"Sintesi vocale per le magie che colpiscono un giocatore specifico, per tipo di PNG."
+
+L.Settings.NpcTypeLabels = {
+	[Private.Enum.NpcType.Boss] = "Boss",
+	[Private.Enum.NpcType.Lieutenant] = "Luogotenenti",
+	[Private.Enum.NpcType.Caster] = "Ha Mana",
+	[Private.Enum.NpcType.Melee] = "Nemici normali",
+	[Private.Enum.NpcType.Minion] = "Scagnozzi",
+}
 
 L.Settings.HideUntargetedSpellsLabel = "Nascondi incantesimi senza bersaglio"
 

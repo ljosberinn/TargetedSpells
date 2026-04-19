@@ -139,9 +139,21 @@ L.Settings.ProgressBarColorTooltip =
 
 L.Settings.MirrorLayoutLabel = "Invertir diseño"
 
-L.Settings.AnnounceUntargetedSpellsLabel = "Anunciar hechizos sin objetivo"
+L.Settings.AnnounceUntargetedSpellsLabel = "Configuración TTS sin objetivo"
 L.Settings.AnnounceUntargetedSpellsTooltip =
-	"Reproduce voz sintetizada para cualquier hechizo que no tiene objetivo, como los AoE y algunos ataques frontales."
+	"Texto a voz para hechizos sin objetivo (AoE, frontales, etc.) por tipo de PNJ."
+
+L.Settings.AnnounceTargetedSpellsLabel = "Configuración TTS con objetivo"
+L.Settings.AnnounceTargetedSpellsTooltip =
+	"Texto a voz para hechizos que apuntan a un jugador específico, por tipo de PNJ."
+
+L.Settings.NpcTypeLabels = {
+	[Private.Enum.NpcType.Boss] = "Jefes",
+	[Private.Enum.NpcType.Lieutenant] = "Lugartenientes",
+	[Private.Enum.NpcType.Caster] = "Tiene maná",
+	[Private.Enum.NpcType.Melee] = "Enemigos normales",
+	[Private.Enum.NpcType.Minion] = "Secuaces",
+}
 
 L.Settings.HideUntargetedSpellsLabel = "Ocultar hechizos sin objetivo"
 L.Settings.HideTargetedSpellsLabel = "Ocultar hechizos con objetivo"

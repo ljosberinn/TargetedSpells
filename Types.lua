@@ -135,7 +135,8 @@
 ---@field FontFlags table<FontFlags, boolean>
 ---@field FeatureFlags table<FeatureFlag, boolean>
 ---@field BorderStyle string
----@field AnnounceUntargetedSpells boolean
+---@field AnnounceUntargetedSpells table<NpcType, boolean>
+---@field AnnounceTargetedSpells table<NpcType, boolean>
 
 ---@class SavedVariablesSettingsParty
 ---@field Enabled boolean
@@ -159,7 +160,8 @@
 ---@field UseTargetClassColor boolean
 ---@field UninterruptibleColor string
 ---@field InterruptibleColor string
----@field AnnounceUntargetedSpells boolean
+---@field AnnounceUntargetedSpells table<NpcType, boolean>
+---@field AnnounceTargetedSpells table<NpcType, boolean>
 ---@field Position FramePosition
 
 ---@class TargetedSpellsSelfPreviewFrame: Frame
@@ -335,11 +337,12 @@
 ---@field DetermineSpellDelayRequirement fun(self: TargetedSpellsDriver): boolean
 ---@field MaybeMarkAsInterruptedAndDelay fun(self: TargetedSpellsDriver, unit: string, id: number|string|nil, interruptedBy: string?)
 ---@field CleanupDanglingFrames fun(self: TargetedSpellsDriver)
----@field MaybeAnnounceUntargetedSpell fun(self: TargetedSpellsDriver, info: SpellCastInfo)
+---@field MaybeAnnounceSpell fun(self: TargetedSpellsDriver, info: SpellCastInfo)
 ---@field GetCastInformation fun(self: TargetedSpellsDriver, unit: string): boolean, number, number
 ---@field ClearAnnouncementCacheForUnit fun(self: TargetedSpellsDriver, unit: string)
 ---@field DetectMostReasonableVoiceId fun(self: TargetedSpellsDriver)
 ---@field GetDefaultVoiceId fun(self: TargetedSpellsDriver): number
+---@field UnitMatchesTTSCriteria fun(self: TargetedSpellsDriver, unit: string): boolean
 
 ---@class NumericFormatter
 ---@field SetBreakpoints fun(self: NumericFormatter, breakpoints: table)

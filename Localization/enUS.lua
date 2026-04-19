@@ -139,9 +139,19 @@ L.Settings.ProgressBarColorTooltip =
 
 L.Settings.MirrorLayoutLabel = "Mirror Layout"
 
-L.Settings.AnnounceUntargetedSpellsLabel = "Announce Untargeted Spells"
-L.Settings.AnnounceUntargetedSpellsTooltip =
-	"Plays Text-To-Speech for any spell that doesn't target anyone, such as AoE and some frontals."
+L.Settings.AnnounceUntargetedSpellsLabel = "Untargeted TTS Settings"
+L.Settings.AnnounceUntargetedSpellsTooltip = "Text-To-Speech for untargeted spells (AoE, frontals, etc.) by NPC type."
+
+L.Settings.AnnounceTargetedSpellsLabel = "Targeted TTS Settings"
+L.Settings.AnnounceTargetedSpellsTooltip = "Text-To-Speech for spells that target a specific player, by NPC type."
+
+L.Settings.NpcTypeLabels = {
+	[Private.Enum.NpcType.Boss] = "Bosses",
+	[Private.Enum.NpcType.Lieutenant] = "Lieutenants",
+	[Private.Enum.NpcType.Caster] = "Has Mana",
+	[Private.Enum.NpcType.Melee] = "Regular Melee",
+	[Private.Enum.NpcType.Minion] = "Minions",
+}
 
 L.Settings.HideUntargetedSpellsLabel = "Hide Untargeted Spells"
 

@@ -140,9 +140,21 @@ L.Settings.ProgressBarColorTooltip =
 L.Settings.MirrorLayoutLabel = "Зеркальный макет"
 L.Settings.MirrorLayoutTooltip = nil
 
-L.Settings.AnnounceUntargetedSpellsLabel = "Объявлять заклинания без цели"
+L.Settings.AnnounceUntargetedSpellsLabel = "Настройки TTS (без цели)"
 L.Settings.AnnounceUntargetedSpellsTooltip =
-	"Воспроизводит синтез речи для любого заклинания без цели, такого как AoE и некоторые фронтальные атаки."
+	"Озвучивание заклинаний без цели (AoE, лобовые атаки и т.п.) по типу моба."
+
+L.Settings.AnnounceTargetedSpellsLabel = "Настройки TTS (с целью)"
+L.Settings.AnnounceTargetedSpellsTooltip =
+	"Озвучивание заклинаний, нацеленных на конкретного игрока, по типу моба."
+
+L.Settings.NpcTypeLabels = {
+	[Private.Enum.NpcType.Boss] = "Боссы",
+	[Private.Enum.NpcType.Lieutenant] = "Лейтенанты",
+	[Private.Enum.NpcType.Caster] = "Есть мана",
+	[Private.Enum.NpcType.Melee] = "Обычные мобы",
+	[Private.Enum.NpcType.Minion] = "Миньоны",
+}
 
 L.Settings.HideUntargetedSpellsLabel = "Скрыть заклинания без цели"
 

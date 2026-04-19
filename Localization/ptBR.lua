@@ -139,9 +139,21 @@ L.Settings.ProgressBarColorTooltip =
 
 L.Settings.MirrorLayoutLabel = "Layout espelhado"
 
-L.Settings.AnnounceUntargetedSpellsLabel = "Anunciar feitiços sem alvo"
+L.Settings.AnnounceUntargetedSpellsLabel = "Configurações TTS sem alvo"
 L.Settings.AnnounceUntargetedSpellsTooltip =
-	"Reproduz voz sintetizada para qualquer feitiço sem alvo, como AoE e alguns ataques frontais."
+	"Voz sintetizada para feitiços sem alvo (AoE, frontais, etc.) por tipo de NPC."
+
+L.Settings.AnnounceTargetedSpellsLabel = "Configurações TTS com alvo"
+L.Settings.AnnounceTargetedSpellsTooltip =
+	"Voz sintetizada para feitiços que miram um jogador específico, por tipo de NPC."
+
+L.Settings.NpcTypeLabels = {
+	[Private.Enum.NpcType.Boss] = "Chefes",
+	[Private.Enum.NpcType.Lieutenant] = "Tenentes",
+	[Private.Enum.NpcType.Caster] = "Tem Mana",
+	[Private.Enum.NpcType.Melee] = "Inimigos normais",
+	[Private.Enum.NpcType.Minion] = "Capangas",
+}
 
 L.Settings.HideUntargetedSpellsLabel = "Ocultar feitiços sem alvo"
 
