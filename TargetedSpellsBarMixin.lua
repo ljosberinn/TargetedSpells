@@ -470,10 +470,13 @@ do
 		end
 
 		if TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.SelfOnly] then
-			local bool = PlayerIsSpellTarget(info.unit, "player")
+			-- allow untargeted spells to still get shown when showing player-targeting spells only
+			if targetName ~= nil then
+				local bool = PlayerIsSpellTarget(info.unit, "player")
 
-			self:SetAlphaFromBoolean(bool, fallbackAlpha, 0)
-			self.Bar:SetValue(self:GetAlpha())
+				self:SetAlphaFromBoolean(bool, fallbackAlpha, 0)
+				self.Bar:SetValue(self:GetAlpha())
+			end
 		elseif
 			targetName ~= nil
 			and TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.HideTargetedSpells]

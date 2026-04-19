@@ -969,9 +969,11 @@ do
 				end
 			end
 
+			local version = C_AddOns.GetAddOnMetadata(addonName, "Version")
+
 			---@type LibEditModeCheckbox
 			return {
-				name = L.Settings.EnabledLabel,
+				name = string.format("%s - %s", L.Settings.EnabledLabel, version),
 				kind = Enum.EditModeSettingDisplayType.Checkbox,
 				default = defaults.Enabled,
 				desc = L.Settings.EnabledTooltip,

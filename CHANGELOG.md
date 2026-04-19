@@ -20,3 +20,4 @@
 - fixed a bug where the TTS announcements would not use the user-preferred voice
   - this implicitly also fixes a bug where overlapping TTS wouldn't work using English locale
 - fixed a bug where units outside of combat weren't fully ignored
+- untargeted spells now still show for Bar/Party even when `Only Show Player-Targeted Spells` is enabled
