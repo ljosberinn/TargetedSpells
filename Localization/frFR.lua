@@ -139,6 +139,10 @@ L.Settings.ProgressBarColorTooltip =
 
 L.Settings.MirrorLayoutLabel = "Disposition en miroir"
 
+L.Settings.TextToSpeechVoiceLabel = "Voix TTS"
+L.Settings.TextToSpeechVoiceTooltip =
+	"Voix utilisée pour les annonces de synthèse vocale. Partagée entre les paramètres Self et Party."
+
 L.Settings.AnnounceUntargetedSpellsLabel = "Paramètres TTS non ciblés"
 L.Settings.AnnounceUntargetedSpellsTooltip =
 	"Synthèse vocale pour les sorts sans cible (AoE, frontaux, etc.) par type de PNJ."

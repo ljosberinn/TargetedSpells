@@ -1449,6 +1449,62 @@ do
 			}
 		end
 
+		if
+			key == Private.Settings.Keys.Self.TextToSpeechVoice
+			or key == Private.Settings.Keys.Party.TextToSpeechVoice
+		then
+			---@param layoutName string
+			---@param value integer
+			local function Set(layoutName, value)
+				if value ~= TargetedSpellsSaved.Settings.Self.TextToSpeechVoice then
+					TargetedSpellsSaved.Settings.Self.TextToSpeechVoice = value
+					TargetedSpellsSaved.Settings.Party.TextToSpeechVoice = value
+
+					Private.EventRegistry:TriggerEvent(
+						Private.Enum.Events.SETTING_CHANGED,
+						Private.Settings.Keys.Self.TextToSpeechVoice,
+						value
+					)
+					Private.EventRegistry:TriggerEvent(
+						Private.Enum.Events.SETTING_CHANGED,
+						Private.Settings.Keys.Party.TextToSpeechVoice,
+						value
+					)
+
+					local deafeningRoar = C_Spell.GetSpellName(1256047)
+
+					if deafeningRoar then
+						C_VoiceChat.SpeakText(value, deafeningRoar, 2, C_TTSSettings.GetSpeechVolume(), true)
+					end
+				end
+			end
+
+			local function Generator(owner, rootDescription, data)
+				for _, voice in ipairs(Private.Settings.GetTtsVoiceOptions()) do
+					local function IsEnabled()
+						return TargetedSpellsSaved.Settings.Self.TextToSpeechVoice == voice.voiceID
+					end
+
+					local function SetProxy()
+						Set(LibEditMode:GetActiveLayoutName(), voice.voiceID)
+					end
+
+					rootDescription:CreateRadio(voice.name, IsEnabled, SetProxy)
+				end
+			end
+
+			---@type LibEditModeDropdown
+			return {
+				name = L.Settings.TextToSpeechVoiceLabel,
+				kind = Enum.EditModeSettingDisplayType.Dropdown,
+				default = 0,
+				desc = L.Settings.TextToSpeechVoiceTooltip,
+				multiple = false,
+				generator = Generator,
+				set = Set,
+			}
+		end
+
 		error(
 			string.format(
 				"Edit Mode Settings for key '%s' are either not implemented or you're calling this with the wrong key.",

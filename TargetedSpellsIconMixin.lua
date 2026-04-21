@@ -320,7 +320,11 @@ function TargetedSpellsIconMixin:PostCreate(info, OnCooldownDoneCallback)
 	local targetsPlayer = PlayerIsSpellTarget(info.unit, "player")
 
 	if TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.OnlyImportant] then
-		self:SetAlphaFromBoolean(targetsPlayer, C_CurveUtil.EvaluateColorValueFromBoolean(self:IsSpellImportant(), 0, durationAlpha), 0)
+		self:SetAlphaFromBoolean(
+			targetsPlayer,
+			C_CurveUtil.EvaluateColorValueFromBoolean(self:IsSpellImportant(), 0, durationAlpha),
+			0
+		)
 	else
 		self:SetAlphaFromBoolean(targetsPlayer, durationAlpha, 0)
 	end
@@ -374,22 +378,29 @@ function TargetedSpellsIconMixin:Reset()
 	-- important to come last - the cooldown swipe ignores display status of its parent
 	self:SetShowDuration(TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration])
 	self.Cooldown:SetDrawSwipe(TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowSwipe])
+	-- Cooldown:Clear() re-inherits from SetCountdownFont, overwriting any previously applied font
+	self:SetFont()
 end
 
 function TargetedSpellsIconMixin:SetFont()
-	local fontString = self.Cooldown:GetCountdownFontString()
+	local fontStrings = { self.Cooldown:GetCountdownFontString() }
 
-	fontString:SetFont(
-		TargetedSpellsSaved.Settings.Self.Font,
-		TargetedSpellsSaved.Settings.Self.FontSize,
-		TargetedSpellsSaved.Settings.Self.FontFlags[Private.Enum.FontFlags.OUTLINE] and "OUTLINE" or ""
-	)
+	if Private.Utils.Formatter == nil then
+		table.insert(fontStrings, self.Cooldown.DurationText)
+	end
 
-	if TargetedSpellsSaved.Settings.Self.FontFlags[Private.Enum.FontFlags.SHADOW] then
-		fontString:SetShadowOffset(1, -1)
-		fontString:SetShadowColor(0, 0, 0, 1)
-	else
-		fontString:SetShadowOffset(0, 0)
+	local flags = TargetedSpellsSaved.Settings.Self.FontFlags[Private.Enum.FontFlags.OUTLINE] and "OUTLINE" or ""
+	local hasShadow = TargetedSpellsSaved.Settings.Self.FontFlags[Private.Enum.FontFlags.SHADOW]
+
+	for _, fontString in ipairs(fontStrings) do
+		fontString:SetFont(TargetedSpellsSaved.Settings.Self.Font, TargetedSpellsSaved.Settings.Self.FontSize, flags)
+
+		if hasShadow then
+			fontString:SetShadowOffset(1, -1)
+			fontString:SetShadowColor(0, 0, 0, 1)
+		else
+			fontString:SetShadowOffset(0, 0)
+		end
 	end
 end
 

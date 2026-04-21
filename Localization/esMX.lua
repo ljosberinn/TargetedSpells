@@ -139,6 +139,10 @@ L.Settings.ProgressBarColorTooltip =
 
 L.Settings.MirrorLayoutLabel = "Invertir diseño"
 
+L.Settings.TextToSpeechVoiceLabel = "Voz TTS"
+L.Settings.TextToSpeechVoiceTooltip =
+	"Voz usada para los anuncios de texto a voz. Compartida entre las configuraciones de Self y Party."
+
 L.Settings.AnnounceUntargetedSpellsLabel = "Configuración TTS sin objetivo"
 L.Settings.AnnounceUntargetedSpellsTooltip =
 	"Texto a voz para hechizos sin objetivo (AoE, frontales, etc.) por tipo de PNJ."

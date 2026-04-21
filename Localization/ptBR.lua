@@ -139,6 +139,10 @@ L.Settings.ProgressBarColorTooltip =
 
 L.Settings.MirrorLayoutLabel = "Layout espelhado"
 
+L.Settings.TextToSpeechVoiceLabel = "Voz TTS"
+L.Settings.TextToSpeechVoiceTooltip =
+	"Voz usada para os anúncios de texto para voz. Compartilhada entre as configurações Self e Party."
+
 L.Settings.AnnounceUntargetedSpellsLabel = "Configurações TTS sem alvo"
 L.Settings.AnnounceUntargetedSpellsTooltip =
 	"Voz sintetizada para feitiços sem alvo (AoE, frontais, etc.) por tipo de NPC."

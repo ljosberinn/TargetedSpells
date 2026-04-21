@@ -14,7 +14,6 @@ function TargetedSpellsDriver:Init()
 	self.OnCooldownDoneClosure = GenerateClosure(self.OnCooldownDone, self)
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingsChanged, self)
 	self.ttsAnnouncementCache = {}
-	self.voiceId = self:GetDefaultVoiceId()
 
 	self:SetupFrame(true)
 end
@@ -123,7 +122,6 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 		self.frame:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
 		self.frame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
 		self.frame:RegisterEvent("CVAR_UPDATE")
-		self.frame:RegisterEvent("VOICE_CHAT_TTS_VOICES_UPDATE")
 
 		if TargetedSpellsSaved.Settings.Party.Enabled then
 			if TargetedSpellsSaved.Settings.Party.UseInterruptabilityColors then
@@ -325,7 +323,7 @@ function TargetedSpellsDriver:GetCastInformation(unit)
 end
 
 ---@param _ Frame -- identical to self.frame
----@param event "DELAYED_FRAME_CLEANUP" | "UNIT_SPELLCAST_INTERRUPTED" | "ZONE_CHANGED_NEW_AREA" | "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" |"EDIT_MODE_SELF_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED" | "UNIT_SPELLCAST_INTERRUPTIBLE" | "UNIT_SPELLCAST_NOT_INTERRUPTIBLE" | "RAID_TARGET_UPDATE" | "VOICE_CHAT_TTS_VOICES_UPDATE"
+---@param event "DELAYED_FRAME_CLEANUP" | "UNIT_SPELLCAST_INTERRUPTED" | "ZONE_CHANGED_NEW_AREA" | "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" |"EDIT_MODE_SELF_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED" | "UNIT_SPELLCAST_INTERRUPTIBLE" | "UNIT_SPELLCAST_NOT_INTERRUPTIBLE" | "RAID_TARGET_UPDATE"
 function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 	if
 		event == "UNIT_SPELLCAST_START"
@@ -513,7 +511,6 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 	then
 		if event == "LOADING_SCREEN_DISABLED" then
 			self:CleanupDanglingFrames()
-			self:DetectMostReasonableVoiceId()
 		end
 
 		local _, instanceType, difficultyId = GetInstanceInfo()
@@ -609,8 +606,6 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		self:PositionFrame(Private.Enum.FrameKind.Self)
 	elseif event == Private.Enum.Events.EDIT_MODE_PARTY_POSITION_CHANGED then
 		self:PositionFrame(Private.Enum.FrameKind.Party)
-	elseif event == "VOICE_CHAT_TTS_VOICES_UPDATE" then
-		self:DetectMostReasonableVoiceId()
 	end
 end
 
@@ -763,38 +758,6 @@ function TargetedSpellsDriver:GetDefaultVoiceId()
 	return C_TTSSettings.GetVoiceOptionID(Enum.TtsVoiceType.Standard)
 end
 
-function TargetedSpellsDriver:DetectMostReasonableVoiceId()
-	self.voiceId = self:GetDefaultVoiceId()
-
-	local locale = GAME_LOCALE or GetLocale()
-	local patterns = {}
-
-	if locale == "enUS" then
-		table.insert(patterns, "en_US") -- linux
-	end
-
-	if #patterns == 0 then
-		return
-	end
-
-	local defaultVoices = C_VoiceChat.GetTtsVoices()
-	local hasSystemSupport = #defaultVoices > 0
-
-	if hasSystemSupport then
-		return
-	end
-
-	-- linux
-	for _, voice in pairs(C_VoiceChat.GetRemoteTtsVoices()) do
-		for _, pattern in pairs(patterns) do
-			if string.find(voice.name, pattern) ~= nil then
-				self.voiceId = voice.voiceID
-				return
-			end
-		end
-	end
-end
-
 function TargetedSpellsDriver:UnitMatchesTTSCriteria(unit)
 	local settings = UnitSpellTargetName(unit) == nil and TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells
 		or TargetedSpellsSaved.Settings.Self.AnnounceTargetedSpells
@@ -828,10 +791,10 @@ function TargetedSpellsDriver:MaybeAnnounceSpell(info)
 			Private.Enum.FrameKind.Party
 		))
 		-- don't execute in open world if outside of combat, otherwise there's stray TTS from people casting stuff in town
-		or (self.contentType == Private.Enum.ContentType.OpenWorld and (not InCombatLockdown() or not UnitAffectingCombat(
-			info.unit
-		)))
-		or self.voiceId == nil
+		or (
+			self.contentType == Private.Enum.ContentType.OpenWorld
+			and (not InCombatLockdown() or not UnitAffectingCombat(info.unit))
+		)
 	then
 		return
 	end
@@ -853,7 +816,9 @@ function TargetedSpellsDriver:MaybeAnnounceSpell(info)
 
 	self.ttsAnnouncementCache[info.unit] = now
 
-	C_VoiceChat.SpeakText(self.voiceId, spellName, 2, C_TTSSettings.GetSpeechVolume(), true)
+	local voiceId = TargetedSpellsSaved.Settings.Self.TextToSpeechVoice or C_VoiceChat.GetDefaultVoiceID()
+
+	C_VoiceChat.SpeakText(voiceId, spellName, 2, C_TTSSettings.GetSpeechVolume(), true)
 end
 
 table.insert(Private.LoginFnQueue, GenerateClosure(TargetedSpellsDriver.Init, TargetedSpellsDriver))

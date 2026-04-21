@@ -139,6 +139,10 @@ L.Settings.ProgressBarColorTooltip =
 
 L.Settings.MirrorLayoutLabel = "Inverti layout"
 
+L.Settings.TextToSpeechVoiceLabel = "Voce TTS"
+L.Settings.TextToSpeechVoiceTooltip =
+	"Voce utilizzata per gli annunci di sintesi vocale. Condivisa tra le impostazioni Self e Party."
+
 L.Settings.AnnounceUntargetedSpellsLabel = "Impostazioni TTS non mirati"
 L.Settings.AnnounceUntargetedSpellsTooltip =
 	"Sintesi vocale per le magie senza bersaglio (AoE, frontali, ecc.) per tipo di PNG."

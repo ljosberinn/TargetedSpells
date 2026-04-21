@@ -140,6 +140,10 @@ L.Settings.ProgressBarColorTooltip =
 
 L.Settings.MirrorLayoutLabel = "Layout spiegeln"
 
+L.Settings.TextToSpeechVoiceLabel = "TTS-Stimme"
+L.Settings.TextToSpeechVoiceTooltip =
+	"Stimme für Text-zu-Sprache-Ansagen. Gilt für Selbst- und Gruppen-Einstellungen."
+
 L.Settings.AnnounceUntargetedSpellsLabel = "Ungezielte TTS-Einstellungen"
 L.Settings.AnnounceUntargetedSpellsTooltip = "Text-zu-Sprache für ungezielte Zauber (AoE, Frontals usw.) nach NPC-Typ."
 

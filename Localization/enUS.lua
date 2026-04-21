@@ -139,6 +139,10 @@ L.Settings.ProgressBarColorTooltip =
 
 L.Settings.MirrorLayoutLabel = "Mirror Layout"
 
+L.Settings.TextToSpeechVoiceLabel = "TTS Voice"
+L.Settings.TextToSpeechVoiceTooltip =
+	"Voice used for Text-To-Speech announcements. Shared between Self and Party settings."
+
 L.Settings.AnnounceUntargetedSpellsLabel = "Untargeted TTS Settings"
 L.Settings.AnnounceUntargetedSpellsTooltip = "Text-To-Speech for untargeted spells (AoE, frontals, etc.) by NPC type."
 

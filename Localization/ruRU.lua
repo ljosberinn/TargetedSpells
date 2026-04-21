@@ -140,6 +140,10 @@ L.Settings.ProgressBarColorTooltip =
 L.Settings.MirrorLayoutLabel = "Зеркальный макет"
 L.Settings.MirrorLayoutTooltip = nil
 
+L.Settings.TextToSpeechVoiceLabel = "Голос TTS"
+L.Settings.TextToSpeechVoiceTooltip =
+	"Голос для Text-to-Speech оповещений. Общий для настроек Self и Party."
+
 L.Settings.AnnounceUntargetedSpellsLabel = "Настройки TTS (без цели)"
 L.Settings.AnnounceUntargetedSpellsTooltip =
 	"Озвучивание заклинаний без цели (AoE, лобовые атаки и т.п.) по типу моба."

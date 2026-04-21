@@ -27,6 +27,7 @@ Private.Settings.Keys = {
 		BorderStyle = "BORDER_STYLE_SELF",
 		AnnounceUntargetedSpells = "ANNOUNCE_UNTARGETED_SPELLS_SELF",
 		AnnounceTargetedSpells = "ANNOUNCE_TARGETED_SPELLS_SELF",
+		TextToSpeechVoice = "TTS_VOICE_SELF",
 	},
 	Party = {
 		Enabled = "ENABLED_PARTY",
@@ -54,6 +55,7 @@ Private.Settings.Keys = {
 		FeatureFlags = "FEATURE_FLAGS_PARTY",
 		AnnounceUntargetedSpells = "ANNOUNCE_UNTARGETED_SPELLS_PARTY",
 		AnnounceTargetedSpells = "ANNOUNCE_TARGETED_SPELLS_PARTY",
+		TextToSpeechVoice = "TTS_VOICE_PARTY",
 	},
 }
 
@@ -78,6 +80,7 @@ function Private.Settings.GetSettingsDisplayOrder(kind)
 			Private.Settings.Keys.Self.IconZoom,
 			Private.Settings.Keys.Self.AnnounceUntargetedSpells,
 			Private.Settings.Keys.Self.AnnounceTargetedSpells,
+			Private.Settings.Keys.Self.TextToSpeechVoice,
 		}
 	end
 
@@ -105,6 +108,7 @@ function Private.Settings.GetSettingsDisplayOrder(kind)
 		Private.Settings.Keys.Party.UseTargetClassColor,
 		Private.Settings.Keys.Party.AnnounceUntargetedSpells,
 		Private.Settings.Keys.Party.AnnounceTargetedSpells,
+		Private.Settings.Keys.Party.TextToSpeechVoice,
 	}
 end
 
@@ -379,6 +383,28 @@ function Private.Settings.GetBorderOptions()
 	table.sort(borders)
 
 	return borders
+end
+
+function Private.Settings.GetTtsVoiceOptions()
+	local seen = {}
+	local voices = {}
+
+	for _, list in ipairs({ C_VoiceChat.GetTtsVoices(), C_VoiceChat.GetRemoteTtsVoices() }) do
+		if list then
+			for _, voice in ipairs(list) do
+				if not seen[voice.voiceID] then
+					seen[voice.voiceID] = true
+					table.insert(voices, voice)
+				end
+			end
+		end
+	end
+
+	table.sort(voices, function(a, b)
+		return a.name < b.name
+	end)
+
+	return voices
 end
 
 function Private.Settings.GetContentTypesForKind(kind)
@@ -1731,6 +1757,67 @@ table.insert(Private.LoginFnQueue, function()
 			return {
 				initializer = initializer,
 				hideSteppers = true,
+				IsSectionEnabled = nil,
+			}
+		end
+
+		if
+			key == Private.Settings.Keys.Self.TextToSpeechVoice
+			or key == Private.Settings.Keys.Party.TextToSpeechVoice
+		then
+			local function GetValue()
+				return TargetedSpellsSaved.Settings.Self.TextToSpeechVoice or 0
+			end
+
+			local function SetValue(value)
+				if value ~= TargetedSpellsSaved.Settings.Self.TextToSpeechVoice then
+					TargetedSpellsSaved.Settings.Self.TextToSpeechVoice = value
+					TargetedSpellsSaved.Settings.Party.TextToSpeechVoice = value
+
+					Private.EventRegistry:TriggerEvent(
+						Private.Enum.Events.SETTING_CHANGED,
+						Private.Settings.Keys.Self.TextToSpeechVoice,
+						value
+					)
+					Private.EventRegistry:TriggerEvent(
+						Private.Enum.Events.SETTING_CHANGED,
+						Private.Settings.Keys.Party.TextToSpeechVoice,
+						value
+					)
+
+					local deafeningRoar = C_Spell.GetSpellName(1256047)
+
+					if deafeningRoar then
+						C_VoiceChat.SpeakText(value, deafeningRoar, 2, C_TTSSettings.GetSpeechVolume(), true)
+					end
+				end
+			end
+
+			local function GetOptions()
+				local container = Settings.CreateControlTextContainer()
+
+				for _, voice in ipairs(Private.Settings.GetTtsVoiceOptions()) do
+					container:Add(voice.voiceID, voice.name)
+				end
+
+				return container:GetData()
+			end
+
+			local setting = Settings.RegisterProxySetting(
+				category,
+				key,
+				Settings.VarType.Number,
+				L.Settings.TextToSpeechVoiceLabel,
+				0,
+				GetValue,
+				SetValue
+			)
+			local initializer =
+				Settings.CreateDropdown(category, setting, GetOptions, L.Settings.TextToSpeechVoiceTooltip)
+
+			return {
+				initializer = initializer,
+				hideSteppers = false,
 				IsSectionEnabled = nil,
 			}
 		end

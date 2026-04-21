@@ -137,6 +137,7 @@
 ---@field BorderStyle string
 ---@field AnnounceUntargetedSpells table<NpcType, boolean>
 ---@field AnnounceTargetedSpells table<NpcType, boolean>
+---@field TextToSpeechVoice integer|nil
 
 ---@class SavedVariablesSettingsParty
 ---@field Enabled boolean
@@ -162,6 +163,7 @@
 ---@field InterruptibleColor string
 ---@field AnnounceUntargetedSpells table<NpcType, boolean>
 ---@field AnnounceTargetedSpells table<NpcType, boolean>
+---@field TextToSpeechVoice integer|nil
 ---@field Position FramePosition
 
 ---@class TargetedSpellsSelfPreviewFrame: Frame
@@ -324,7 +326,6 @@
 ---@field private delay number
 ---@field private OnCooldownDoneClosure fun(info: SpellCastInfo)
 ---@field private ttsAnnouncementCache table<string, number>
----@field private voiceId number
 ---@field frames table<string, (TargetedSpellsIconMixin|TargetedSpellsBarMixin)[]>
 ---@field SetupFrame fun(self: TargetedSpellsDriver, isBoot: boolean)
 ---@field ProcessInfo fun(self: TargetedSpellsDriver, info: SpellCastInfo)
@@ -340,8 +341,6 @@
 ---@field MaybeAnnounceSpell fun(self: TargetedSpellsDriver, info: SpellCastInfo)
 ---@field GetCastInformation fun(self: TargetedSpellsDriver, unit: string): boolean, number, number
 ---@field ClearAnnouncementCacheForUnit fun(self: TargetedSpellsDriver, unit: string)
----@field DetectMostReasonableVoiceId fun(self: TargetedSpellsDriver)
----@field GetDefaultVoiceId fun(self: TargetedSpellsDriver): number
 ---@field UnitMatchesTTSCriteria fun(self: TargetedSpellsDriver, unit: string): boolean
 
 ---@class NumericFormatter
@@ -349,10 +348,7 @@
 
 ---@class DurationObject
 ---@field FormatRemainingDuration fun(self: DurationObject, formatter: NumericFormatter, modifier?: string): string
----@field GetRemainingDuration fun(self: DurationObject): number
 ---@field GetTimeFraction fun(self: DurationObject): number
----@field EvaluateRemainingDuration fun(self: DurationObject, curve: fun(remaining: number): number): number
----@field SetTimeSpan fun(self: DurationObject, startTime: number, endTime: number)
 
 ----- type patching / completion
 
