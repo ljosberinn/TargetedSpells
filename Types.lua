@@ -180,9 +180,6 @@
 ---@field Outer Texture
 ---@field Animation AnimationGroup
 
----@class CustomCooldown : ExtendedCooldownTypes
----@field DurationText FontString
-
 ---@class TargetedSpellsMixin : Frame
 ---@field private kind FrameKind?
 ---@field private startTime number?
@@ -218,7 +215,7 @@
 
 ---@class TargetedSpellsIconMixin : TargetedSpellsMixin
 ---@field private Overlay Texture
----@field Cooldown CustomCooldown
+---@field Cooldown ExtendedCooldownTypes
 ---@field private unit string?
 ---@field private duration DurationObject|nil
 ---@field private InterruptSource FontString

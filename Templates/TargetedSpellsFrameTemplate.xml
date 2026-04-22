@@ -113,12 +113,6 @@
                 <SwipeTexture file="Interface\HUD\UI-HUD-CoolDownManager-Icon-Swipe">
                     <Color r="0" g="0" b="0" a="0.7" />
                 </SwipeTexture>
-                <Layers>
-                    <Layer level="OVERLAY">
-                        <FontString hidden="true" parentKey="DurationText" font="GameFontHighlightHugeOutline" justifyH="CENTER" setAllPoints="true">
-                        </FontString>
-                    </Layer>
-                </Layers>
             </Cooldown>
             <StatusBar parentKey="Bar" ignoreParentAlpha="true" minValue="0" maxValue="1" />
         </Frames>

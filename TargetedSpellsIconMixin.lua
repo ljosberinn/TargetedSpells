@@ -13,11 +13,7 @@ function TargetedSpellsIconMixin:OnLoad()
 	TargetedSpellsMixin.OnLoad(self)
 	PixelUtil.SetSize(self, TargetedSpellsSaved.Settings.Self.Width, TargetedSpellsSaved.Settings.Self.Height)
 	self.Bar:SetStatusBarTexture("")
-
-	if Private.Utils.Formatter ~= nil then
-		self.Cooldown:SetCountdownFormatter(Private.Utils.Formatter)
-	end
-
+	self.Cooldown:SetCountdownFormatter(Private.Utils.Formatter)
 	self.Cooldown:SetCountdownFont("GameFontHighlightHugeOutline")
 	self:SetFont()
 	self:HideGlow()
@@ -221,13 +217,7 @@ function TargetedSpellsIconMixin:SetInterrupted(name, color)
 end
 
 function TargetedSpellsIconMixin:SetShowDuration(showDuration)
-	if Private.Utils.Formatter == nil then
-		self.Cooldown:SetHideCountdownNumbers(true)
-		self.Cooldown.DurationText:SetShown(showDuration)
-		self:SetScript("OnUpdate", showDuration and self.OnUpdate or nil)
-	else
-		self.Cooldown:SetHideCountdownNumbers(not showDuration)
-	end
+	self.Cooldown:SetHideCountdownNumbers(not showDuration)
 end
 
 --- shamelessly ~~stolen~~ repurposed from WeakAuras2
@@ -383,41 +373,18 @@ function TargetedSpellsIconMixin:Reset()
 end
 
 function TargetedSpellsIconMixin:SetFont()
-	local fontStrings = { self.Cooldown:GetCountdownFontString() }
+	local fontString = self.Cooldown:GetCountdownFontString()
 
-	if Private.Utils.Formatter == nil then
-		table.insert(fontStrings, self.Cooldown.DurationText)
-	end
+	fontString:SetFont(
+		TargetedSpellsSaved.Settings.Self.Font,
+		TargetedSpellsSaved.Settings.Self.FontSize,
+		TargetedSpellsSaved.Settings.Self.FontFlags[Private.Enum.FontFlags.OUTLINE] and "OUTLINE" or ""
+	)
 
-	local flags = TargetedSpellsSaved.Settings.Self.FontFlags[Private.Enum.FontFlags.OUTLINE] and "OUTLINE" or ""
-	local hasShadow = TargetedSpellsSaved.Settings.Self.FontFlags[Private.Enum.FontFlags.SHADOW]
-
-	for _, fontString in ipairs(fontStrings) do
-		fontString:SetFont(TargetedSpellsSaved.Settings.Self.Font, TargetedSpellsSaved.Settings.Self.FontSize, flags)
-
-		if hasShadow then
-			fontString:SetShadowOffset(1, -1)
-			fontString:SetShadowColor(0, 0, 0, 1)
-		else
-			fontString:SetShadowOffset(0, 0)
-		end
-	end
-end
-
-if Private.Utils.Formatter == nil then
-	function TargetedSpellsIconMixin:OnUpdate(elapsed)
-		self.elapsed = self.elapsed + elapsed
-
-		if self.elapsed < 0.1 then
-			return
-		end
-
-		self.elapsed = self.elapsed - 0.1
-
-		if self.info == nil then
-			return
-		end
-
-		self.Cooldown.DurationText:SetFormattedText("%.1f", self.info.duration:GetRemainingDuration())
+	if TargetedSpellsSaved.Settings.Self.FontFlags[Private.Enum.FontFlags.SHADOW] then
+		fontString:SetShadowOffset(1, -1)
+		fontString:SetShadowColor(0, 0, 0, 1)
+	else
+		fontString:SetShadowOffset(0, 0)
 	end
 end

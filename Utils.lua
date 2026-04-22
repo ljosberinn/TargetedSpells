@@ -14,9 +14,7 @@ do
 	Private.Utils.IsLongCastCurve = IsLongCastCurve
 end
 
-if C_StringUtil.CreateNumericRuleFormatter == nil then
-	Private.Utils.Formatter = nil
-else
+do
 	Private.Utils.Formatter = C_StringUtil.CreateNumericRuleFormatter()
 
 	-- thanks to m33shoq for this
