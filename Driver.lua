@@ -794,8 +794,14 @@ end
 
 -- todo: remove this, eventually
 function TargetedSpellsDriver:EncounterPreventsTTSExecution(unit)
-	-- ignore casts by boss units during Lothraxion, in an attempt to prevent the Lingering Image casts
-	return self.activeEncounterId == 3333 and UnitLevel(unit) == UnitLevel("player") + 2
+	-- Lothraxion, Nexus-Point Xenas
+	if self.activeEncounterId == 3333 then
+		-- ignores casts by a boss unit if the nameplateN id is greater than 1
+		-- Divine Guile spawns 12 images, all UnitLevel == -1
+		return UnitLevel(unit) == -1 and tonumber(string.gsub(unit, "nameplate", "")) > 1
+	end
+
+	return false
 end
 
 function TargetedSpellsDriver:MaybeAnnounceSpell(info)
