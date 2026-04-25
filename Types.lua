@@ -247,7 +247,6 @@
 ---@field SpellName FontString
 ---@field TargetName FontString
 ---@field InterruptSource FontString
----@field Duration FontString
 
 ---@class TargetedSpellsBarCustomElementsFrame : Frame
 ---@field TargetMarker Texture
@@ -256,11 +255,11 @@
 ---@field unit string?
 ---@field ProgressBar TargetedSpellsBarProgressBar
 ---@field CustomElementsFrame TargetedSpellsBarCustomElementsFrame
+---@field DurationCooldown ExtendedCooldownTypes
 ---@field OnLoad fun(self: TargetedSpellsBarMixin)
 ---@field OnSizeChanged fun(self: TargetedSpellsBarMixin)
----@field OnUpdate fun(self: TargetedSpellsBarMixin, elapsed: number)
 ---@field Reset fun(self: TargetedSpellsBarMixin)
----@field PostCreate fun(self: TargetedSpellsBarMixin, info: SpellCastInfo?)
+---@field PostCreate fun(self: TargetedSpellsBarMixin, info: SpellCastInfo?, OnCooldownDoneCallback: fun(info: SpellCastInfo)?)
 ---@field SetShowDuration fun(self: TargetedSpellsBarMixin, showDuration: boolean)
 ---@field SetFont fun(self: TargetedSpellsBarMixin)
 ---@field SetDuration fun(self: TargetedSpellsBarMixin, duration: DurationObject): number

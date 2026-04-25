@@ -14,6 +14,7 @@ function TargetedSpellsDriver:Init()
 	self.OnCooldownDoneClosure = GenerateClosure(self.OnCooldownDone, self)
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingsChanged, self)
 	self.ttsAnnouncementCache = {}
+	self.activeEncounterId = nil
 
 	self:SetupFrame(true)
 end
@@ -122,6 +123,8 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 		self.frame:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
 		self.frame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
 		self.frame:RegisterEvent("CVAR_UPDATE")
+		self.frame:RegisterEvent("ENCOUNTER_START")
+		self.frame:RegisterEvent("ENCOUNTER_END")
 
 		if TargetedSpellsSaved.Settings.Party.Enabled then
 			if TargetedSpellsSaved.Settings.Party.UseInterruptabilityColors then
@@ -220,7 +223,7 @@ function TargetedSpellsDriver:ProcessInfo(info)
 	then
 		self.partyFrameCount = self.partyFrameCount + 1
 		local barFrame = Private.Utils.Pools.Bar:Acquire()
-		barFrame:PostCreate(info)
+		barFrame:PostCreate(info, self.OnCooldownDoneClosure)
 		table.insert(self.frames[info.unit], barFrame)
 		count = count + 1
 	end
@@ -602,6 +605,11 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 				end
 			end
 		end
+	elseif event == "ENCOUNTER_START" then
+		local encounterId = ...
+		self.activeEncounterId = encounterId
+	elseif event == "ENCOUNTER_END" then
+		self.activeEncounterId = nil
 	elseif event == Private.Enum.Events.EDIT_MODE_SELF_POSITION_CHANGED then
 		self:PositionFrame(Private.Enum.FrameKind.Self)
 	elseif event == Private.Enum.Events.EDIT_MODE_PARTY_POSITION_CHANGED then
@@ -784,6 +792,18 @@ function TargetedSpellsDriver:UnitMatchesTTSCriteria(unit)
 	return settings[Private.Enum.NpcType.Melee]
 end
 
+function TargetedSpellsDriver:EncounterPreventsTTSExecution(unit)
+	if self.activeEncounterId == 3333 then
+		local level = UnitLevel(unit)
+
+		if level == UnitLevel("player") + 2 then
+			return true
+		end
+	end
+
+	return false
+end
+
 function TargetedSpellsDriver:MaybeAnnounceSpell(info)
 	if
 		info.isRetarget
@@ -791,10 +811,10 @@ function TargetedSpellsDriver:MaybeAnnounceSpell(info)
 			Private.Enum.FrameKind.Party
 		))
 		-- don't execute in open world if outside of combat, otherwise there's stray TTS from people casting stuff in town
-		or (
-			self.contentType == Private.Enum.ContentType.OpenWorld
-			and (not InCombatLockdown() or not UnitAffectingCombat(info.unit))
-		)
+		or (self.contentType == Private.Enum.ContentType.OpenWorld and (not InCombatLockdown() or not UnitAffectingCombat(
+			info.unit
+		)))
+		or self:EncounterPreventsTTSExecution(info.unit)
 	then
 		return
 	end
