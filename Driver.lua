@@ -792,16 +792,10 @@ function TargetedSpellsDriver:UnitMatchesTTSCriteria(unit)
 	return settings[Private.Enum.NpcType.Melee]
 end
 
+-- todo: remove this, eventually
 function TargetedSpellsDriver:EncounterPreventsTTSExecution(unit)
-	if self.activeEncounterId == 3333 then
-		local level = UnitLevel(unit)
-
-		if level == UnitLevel("player") + 2 then
-			return true
-		end
-	end
-
-	return false
+	-- ignore casts by boss units during Lothraxion, in an attempt to prevent the Lingering Image casts
+	return self.activeEncounterId == 3333 and UnitLevel(unit) == UnitLevel("player") + 2
 end
 
 function TargetedSpellsDriver:MaybeAnnounceSpell(info)

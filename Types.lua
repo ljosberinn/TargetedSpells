@@ -322,6 +322,7 @@
 ---@field private delay number
 ---@field private OnCooldownDoneClosure fun(info: SpellCastInfo)
 ---@field private ttsAnnouncementCache table<string, number>
+---@field private activeEncounterId number?
 ---@field frames table<string, (TargetedSpellsIconMixin|TargetedSpellsBarMixin)[]>
 ---@field SetupFrame fun(self: TargetedSpellsDriver, isBoot: boolean)
 ---@field ProcessInfo fun(self: TargetedSpellsDriver, info: SpellCastInfo)
@@ -334,6 +335,7 @@
 ---@field DetermineSpellDelayRequirement fun(self: TargetedSpellsDriver): boolean
 ---@field MaybeMarkAsInterruptedAndDelay fun(self: TargetedSpellsDriver, unit: string, id: number|string|nil, interruptedBy: string?)
 ---@field CleanupDanglingFrames fun(self: TargetedSpellsDriver)
+---@field EncounterPreventsTTSExecution fun(self: TargetedSpellsDriver, unit: string): boolean
 ---@field MaybeAnnounceSpell fun(self: TargetedSpellsDriver, info: SpellCastInfo)
 ---@field GetCastInformation fun(self: TargetedSpellsDriver, unit: string): boolean, number, number
 ---@field ClearAnnouncementCacheForUnit fun(self: TargetedSpellsDriver, unit: string)
