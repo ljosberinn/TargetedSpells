@@ -839,6 +839,7 @@ function TargetedSpellsDriver:MaybeAnnounceSpell(info)
 	self.ttsAnnouncementCache[info.unit] = now
 
 	local voiceId = TargetedSpellsSaved.Settings.Self.TextToSpeechVoice > -1
+			and TargetedSpellsSaved.Settings.Self.TextToSpeechVoice
 		or C_TTSSettings.GetVoiceOptionID(Enum.TtsVoiceType.Standard)
 
 	C_VoiceChat.SpeakText(voiceId, spellName, 2, C_TTSSettings.GetSpeechVolume(), true)
