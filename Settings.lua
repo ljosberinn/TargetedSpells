@@ -271,6 +271,7 @@ function Private.Settings.GetSelfDefaultSettings()
 			[Private.Enum.NpcType.Melee] = false,
 			[Private.Enum.NpcType.Minion] = false,
 		},
+		TextToSpeechVoice = -1,
 	}
 end
 
@@ -342,6 +343,7 @@ function Private.Settings.GetPartyDefaultSettings()
 			[Private.Enum.NpcType.Melee] = false,
 			[Private.Enum.NpcType.Minion] = false,
 		},
+		TextToSpeechVoice = -1,
 		Position = Private.Settings.GetDefaultEditModeFramePosition(Private.Enum.FrameKind.Party),
 	}
 end

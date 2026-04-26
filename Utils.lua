@@ -337,6 +337,13 @@ do
 				LoadConditionRole = Private.Enum.Role,
 				FontFlags = Private.Enum.FontFlags,
 				FeatureFlags = Private.Enum.FeatureFlag,
+				AnnounceUntargetedSpells = Private.Enum.NpcType,
+				AnnounceTargetedSpells = Private.Enum.NpcType,
+			}
+
+			local isLoadConditionKey = {
+				LoadConditionContentType = true,
+				LoadConditionRole = true,
 			}
 
 			for key, defaultValue in pairs(defaults) do
@@ -370,7 +377,7 @@ do
 								end
 							end
 
-							if allDisabled then
+							if allDisabled and isLoadConditionKey[key] then
 								anyPrimaryLoadConditionIsDisabled = true
 							end
 

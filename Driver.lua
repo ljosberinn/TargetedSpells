@@ -795,20 +795,12 @@ end
 -- todo: remove this, eventually
 function TargetedSpellsDriver:EncounterPreventsTTSExecution(unit)
 	-- Lothraxion, Nexus-Point Xenas
-	if self.activeEncounterId == 3333 then
-		local level = UnitLevel(unit)
-
-		if level == -1 then
-			return true
-		end
-
-		local nameplateId = tonumber(string.gsub(unit, "nameplate", ""))
-
-		-- print(unit, level, nameplateId, level == -1 and nameplateId > 1)
-
+	if self.activeEncounterId == 3333 and UnitLevel(unit) == -1 then
+		local id = string.gsub(unit, "nameplate", "")
+		local nameplateId = tonumber(id)
 		-- ignores casts by a boss unit if the nameplateN id is greater than 1
 		-- Divine Guile spawns 12 images, all UnitLevel == -1
-		return level == -1 and nameplateId > 1
+		return nameplateId > 1
 	end
 
 	return false
@@ -846,7 +838,7 @@ function TargetedSpellsDriver:MaybeAnnounceSpell(info)
 
 	self.ttsAnnouncementCache[info.unit] = now
 
-	local voiceId = TargetedSpellsSaved.Settings.Self.TextToSpeechVoice
+	local voiceId = TargetedSpellsSaved.Settings.Self.TextToSpeechVoice > -1
 		or C_TTSSettings.GetVoiceOptionID(Enum.TtsVoiceType.Standard)
 
 	C_VoiceChat.SpeakText(voiceId, spellName, 2, C_TTSSettings.GetSpeechVolume(), true)
