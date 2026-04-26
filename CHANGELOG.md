@@ -1,7 +1,3 @@
-## Version 3.2.4
+## Version 3.2.5
 
-- fixed a bug where, for new users importing a profile, the Party setting would get reset on the next reload
-
-## Version 3.2.3
-
-- fixed a bug selecting the correct text-to-speech voice
+- fixed a bug where importing a profile would not validate against the correct set of default settings

@@ -420,10 +420,10 @@ do
 
 			if sourceData ~= nil then
 				local tableRef = TargetedSpellsSaved.Settings[kind]
-				local defaults = kind == Private.Enum.FrameKind.Self and Private.Settings.GetSelfDefaultSettings()
+				local isSelf = kind == "Self"
+				local defaults = isSelf and Private.Settings.GetSelfDefaultSettings()
 					or Private.Settings.GetPartyDefaultSettings()
-				local eventKeys = kind == Private.Enum.FrameKind.Self and Private.Settings.Keys.Self
-					or Private.Settings.Keys.Party
+				local eventKeys = isSelf and Private.Settings.Keys.Self or Private.Settings.Keys.Party
 
 				ImportKindSettings(tableRef, kindString, sourceData, defaults, eventKeys)
 
@@ -442,7 +442,7 @@ do
 						tableRef.Position.x = x
 						tableRef.Position.y = y
 
-						local event = kind == Private.Enum.FrameKind.Self and Private.Enum.Events.SETTING_CHANGED
+						local event = isSelf and Private.Enum.Events.SETTING_CHANGED
 							or Private.Enum.Events.SETTING_CHANGED
 						Private.EventRegistry:TriggerEvent(event, point, x, y)
 					end
