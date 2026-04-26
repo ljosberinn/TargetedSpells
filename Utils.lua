@@ -413,6 +413,8 @@ do
 			end
 		end
 
+		TargetedSpellsSaved.V3MigrationWarningSeen = true
+
 		for kind, kindString in pairs(Private.Enum.FrameKind) do
 			local sourceData = result[kind]
 
