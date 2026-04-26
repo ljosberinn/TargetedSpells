@@ -1,4 +1,7 @@
-## Version 3.2.2
+## Version 3.2.4
 
-- Lothraxion will no longer spam Text-To-Speech announcements for Lingering Image casts (this time for real)
-- fixed a bug where TTS settings weren't properly exported
+- fixed a bug where, for new users importing a profile, the Party setting would get reset on the next reload
+
+## Version 3.2.3
+
+- fixed a bug selecting the correct text-to-speech voice
