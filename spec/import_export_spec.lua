@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global
+---@diagnostic disable: undefined-global, undefined-field
 
 local b = require("spec.bootstrap")
 local Private = b.Private
@@ -161,6 +161,122 @@ describe("Invalid input", function()
 
 	it("returns false for an empty string", function()
 		assert.is_false(Private.Utils.Import(""))
+	end)
+end)
+
+describe("LoadConditionRole import", function()
+	before_each(function()
+		b.reset()
+	end)
+
+	it("sets Enabled=false when all LoadConditionRole flags are disabled", function()
+		local decoded = b.exportDecoded()
+		for _, id in pairs(Enum.Role) do
+			decoded.Self.LoadConditionRole[id] = false
+		end
+		Private.Utils.Import(b.encode(decoded))
+		assert.is_false(b.savedVars().Settings.Self.Enabled)
+	end)
+
+	it("does not disable Enabled when at least one Role flag remains true", function()
+		local decoded = b.exportDecoded()
+		for _, id in pairs(Enum.Role) do
+			decoded.Self.LoadConditionRole[id] = false
+		end
+		decoded.Self.LoadConditionRole[Enum.Role.Healer] = true
+		Private.Utils.Import(b.encode(decoded))
+		assert.is_true(b.savedVars().Settings.Self.Enabled)
+	end)
+
+	it("fires SETTING_CHANGED with the correct key for a changed Role flag", function()
+		local decoded = b.exportDecoded()
+		decoded.Self.LoadConditionRole[Enum.Role.Damager] = false
+		Private.Utils.Import(b.encode(decoded))
+
+		local found = false
+		for _, ev in ipairs(Private.EventRegistry.triggeredEvents) do
+			if ev.event == Enum.Events.SETTING_CHANGED and ev.args[1] == Keys.Self.LoadConditionRole then
+				found = true
+			end
+		end
+		assert.is_true(found)
+	end)
+end)
+
+describe("FeatureFlags import", function()
+	before_each(function()
+		b.reset()
+	end)
+
+	it("applies a changed FeatureFlag", function()
+		local decoded = b.exportDecoded()
+		decoded.Self.FeatureFlags[Enum.FeatureFlag.ShowDuration] = false
+		assert.is_true(Private.Utils.Import(b.encode(decoded)))
+		assert.is_false(b.savedVars().Settings.Self.FeatureFlags[Enum.FeatureFlag.ShowDuration])
+	end)
+
+	it("preserves flags absent from the import payload", function()
+		local decoded = b.exportDecoded()
+		decoded.Self.FeatureFlags[Enum.FeatureFlag.ShowDuration] = false
+		decoded.Self.FeatureFlags[Enum.FeatureFlag.GlowImportant] = nil
+		Private.Utils.Import(b.encode(decoded))
+		assert.is_true(b.savedVars().Settings.Self.FeatureFlags[Enum.FeatureFlag.GlowImportant])
+	end)
+
+	it("fires SETTING_CHANGED with the correct key for a changed FeatureFlag", function()
+		local decoded = b.exportDecoded()
+		decoded.Self.FeatureFlags[Enum.FeatureFlag.ShowDuration] = false
+		Private.Utils.Import(b.encode(decoded))
+
+		local found = false
+		for _, ev in ipairs(Private.EventRegistry.triggeredEvents) do
+			if ev.event == Enum.Events.SETTING_CHANGED and ev.args[1] == Keys.Self.FeatureFlags then
+				found = true
+			end
+		end
+		assert.is_true(found)
+	end)
+end)
+
+describe("AnnounceUntargetedSpells import", function()
+	before_each(function()
+		b.reset()
+	end)
+
+	it("applies a changed NpcType flag", function()
+		local decoded = b.exportDecoded()
+		decoded.Self.AnnounceUntargetedSpells[Enum.NpcType.Boss] = false
+		assert.is_true(Private.Utils.Import(b.encode(decoded)))
+		assert.is_false(b.savedVars().Settings.Self.AnnounceUntargetedSpells[Enum.NpcType.Boss])
+	end)
+
+	it("preserves flags absent from the import payload", function()
+		local decoded = b.exportDecoded()
+		decoded.Self.AnnounceUntargetedSpells[Enum.NpcType.Boss] = false
+		decoded.Self.AnnounceUntargetedSpells[Enum.NpcType.Lieutenant] = nil
+		Private.Utils.Import(b.encode(decoded))
+		assert.is_true(b.savedVars().Settings.Self.AnnounceUntargetedSpells[Enum.NpcType.Lieutenant])
+	end)
+end)
+
+describe("AnnounceTargetedSpells import", function()
+	before_each(function()
+		b.reset()
+	end)
+
+	it("applies a changed NpcType flag", function()
+		local decoded = b.exportDecoded()
+		decoded.Self.AnnounceTargetedSpells[Enum.NpcType.Boss] = true
+		assert.is_true(Private.Utils.Import(b.encode(decoded)))
+		assert.is_true(b.savedVars().Settings.Self.AnnounceTargetedSpells[Enum.NpcType.Boss])
+	end)
+
+	it("preserves flags absent from the import payload", function()
+		local decoded = b.exportDecoded()
+		decoded.Self.AnnounceTargetedSpells[Enum.NpcType.Boss] = true
+		decoded.Self.AnnounceTargetedSpells[Enum.NpcType.Lieutenant] = nil
+		Private.Utils.Import(b.encode(decoded))
+		assert.is_false(b.savedVars().Settings.Self.AnnounceTargetedSpells[Enum.NpcType.Lieutenant])
 	end)
 end)
 

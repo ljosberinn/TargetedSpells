@@ -62,7 +62,7 @@
 
 ### Sound / TTS
 
-No longer possible in Midnight after the Beta Build 65337 as expected.
+It's not possible to play a sound specifically if a spell targets the player. It's not possible to play sounds based on which spell is being cast either (e.g. "AOE" for an aoe spell).
 
 ### Sorting
 
@@ -88,3 +88,13 @@ It's not possible to sort spells targeting a player in order of cast end, making
 ## Legal
 
 See [LICENSE](LICENSE.txt)
+
+## Tests
+
+These are AI generated based on existing data.
+
+Use
+
+```
+wsl bash -c "cd /mnt/c/Users/admin/Desktop/dev/TargetedSpells && ~/.luarocks/bin/busted" 2>&1
+```
