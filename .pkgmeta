@@ -4,6 +4,9 @@ ignore:
   - README.md
   - CHANGELOG.md
   - Profiling.lua
+  - .github
+  - spec
+  - .busted
 manual-changelog:
   filename: CHANGELOG.md
   markuptype: markdown
