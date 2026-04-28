@@ -1,3 +1,6 @@
-## Version 3.2.5
+## Version 3.2.6
 
-- fixed a bug where importing a profile would not validate against the correct set of default settings
+The following enemies will no longer announce their supposedly untargeted spells:
+
+- Ick and Krick, Pit of Saron: Shadowbind
+- Viceroy Nezhar, Seat of the Triumvirate: Mind Flay, via Umbral Tentacle
