@@ -604,7 +604,9 @@ function TargetedSpellsBarMixin:SetFont()
 		self.ProgressBar.InterruptSource,
 		self.DurationCooldown:GetCountdownFontString(),
 	}) do
-		fontString:SetFont(
+		Private.Utils.SafelySetFont(
+			Private.Enum.FrameKind.Party,
+			fontString,
 			TargetedSpellsSaved.Settings.Party.Font,
 			TargetedSpellsSaved.Settings.Party.FontSize,
 			TargetedSpellsSaved.Settings.Party.FontFlags[Private.Enum.FontFlags.OUTLINE] and "OUTLINE" or ""

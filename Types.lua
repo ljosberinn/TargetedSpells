@@ -34,6 +34,7 @@
 ---@field ShowMigrationPopup fun()
 ---@field MigratePartySettingsToV3 fun(existing: table): SavedVariablesSettingsParty
 ---@field ApplyMigration fun(key: string, kind: FrameKind, defaults: SavedVariablesSettingsSelf|SavedVariablesSettingsParty)
+---@field SafelySetFont fun(kind: FrameKind, fontString: FontString, font: string, fontSize: number, fontFlags: string)
 
 ---@class GlowFunctions
 ---@field PixelGlow_Start fun(frame: Frame, width: number, height: number)

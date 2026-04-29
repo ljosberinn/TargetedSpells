@@ -375,7 +375,9 @@ end
 function TargetedSpellsIconMixin:SetFont()
 	local fontString = self.Cooldown:GetCountdownFontString()
 
-	fontString:SetFont(
+	Private.Utils.SafelySetFont(
+		Private.Enum.FrameKind.Self,
+		fontString,
 		TargetedSpellsSaved.Settings.Self.Font,
 		TargetedSpellsSaved.Settings.Self.FontSize,
 		TargetedSpellsSaved.Settings.Self.FontFlags[Private.Enum.FontFlags.OUTLINE] and "OUTLINE" or ""

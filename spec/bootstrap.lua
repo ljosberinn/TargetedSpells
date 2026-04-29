@@ -104,7 +104,7 @@ local function reset()
 	TargetedSpellsSaved = {
 		V3MigrationWarningSeen = false,
 		Settings = {
-			Self  = Private.Settings.GetSelfDefaultSettings(),
+			Self = Private.Settings.GetSelfDefaultSettings(),
 			Party = Private.Settings.GetPartyDefaultSettings(),
 		},
 	}
@@ -129,9 +129,9 @@ local function exportDecoded()
 end
 
 return {
-	Private       = Private,
-	reset         = reset,
-	savedVars     = savedVars,
-	encode        = encode,
+	Private = Private,
+	reset = reset,
+	savedVars = savedVars,
+	encode = encode,
 	exportDecoded = exportDecoded,
 }

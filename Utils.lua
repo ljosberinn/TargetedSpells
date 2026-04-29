@@ -4,6 +4,22 @@ local addonName, Private = ...
 ---@class TargetedSpellsUtils
 Private.Utils = {}
 
+function Private.Utils.SafelySetFont(kind, fontString, font, fontSize, fontFlags)
+	local ok = pcall(function()
+		fontString:SetFont(font, fontSize, fontFlags)
+	end)
+
+	if not ok then
+		local tableRef = kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
+			or TargetedSpellsSaved.Settings.Party
+		local defaults = kind == Private.Enum.FrameKind.Self and Private.Settings.GetSelfDefaultSettings()
+			or Private.Settings.GetPartyDefaultSettings()
+
+		tableRef.Font = defaults.Font
+		fontString:SetFont(defaults.Font, fontSize, fontFlags)
+	end
+end
+
 do
 	local IsLongCastCurve = C_CurveUtil.CreateCurve()
 	IsLongCastCurve:SetType(Enum.LuaCurveType.Linear)
