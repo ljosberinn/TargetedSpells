@@ -1,9 +1,9 @@
-## Interface: 120005
+## Interface: 120005, 120007
 ## Title: Targeted Spells
 ## DefaultState: Enabled
 ## SavedVariables: TargetedSpellsSaved
 ## IconTexture: Interface\Icons\ability_hunter_snipershot
-## OptionalDeps: !!AddonLocale, Masque
+## OptionalDeps: !!AddonLocale
 ## Category: Archon
 ## Notes: Highlights spells targeting the player and/or the party
 ## Version: @project-version@
