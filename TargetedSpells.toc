@@ -26,7 +26,7 @@ Utils.lua
 Glows.lua
 
 Localization\enUS.lua
-Localization\[TextLocale].lua [AllowLoadTextLocale deDE, frFR, zhCN, esES, esMX, koKR, ruRU, itIT, ptBR]
+Localization\[TextLocale].lua [AllowLoadTextLocale deDE, frFR, zhCN, esES, esMX, koKR, ruRU, itIT, ptBR, zhTW]
 
 Settings.lua
 TargetedSpellsMixin.lua
