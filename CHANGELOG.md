@@ -1,3 +1,3 @@
-## Version 3.2.7
+## Version 3.2.8
 
-added zhTW localization
+ToC housekeeping
