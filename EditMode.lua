@@ -5,9 +5,13 @@ local LibEditMode = LibStub("LibEditMode")
 ---@class TargetedSpellsEditModeMixin
 local TargetedSpellsEditModeMixin = {}
 
-function TargetedSpellsEditModeMixin:Init(displayName, frameKind)
+function TargetedSpellsEditModeMixin:Init(displayName, frameKind, groupId)
 	self.displayName = displayName
 	self.frameKind = frameKind
+	-- the group this edit-mode instance drives (2-display for now; migration always
+	-- makes Groups[1]=Self/Icon, Groups[2]=Party/Bar). Phase 4 generalises to N.
+	self.groupId = groupId
+	self.group = TargetedSpellsSaved.Groups[groupId]
 	self.demoPlaying = false
 	self.frames = {}
 	self.demoTimers = {
@@ -27,8 +31,9 @@ function TargetedSpellsEditModeMixin:Init(displayName, frameKind)
 		self:UnregisterAllEvents()
 	end)
 
-	Private.Utils.RegisterEditModeFrame(frameKind, self.editModeFrame)
+	Private.Utils.RegisterEditModeFrame(groupId, self.editModeFrame)
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingsChanged, self)
+	Private.EventRegistry:RegisterCallback(Private.Enum.Events.PROFILE_IMPORTED, self.OnProfileImported, self)
 	LibEditMode:RegisterCallback("enter", GenerateClosure(self.StartDemo, self))
 
 	LibEditMode:RegisterCallback("exit", GenerateClosure(self.EndDemo, self))
@@ -1542,6 +1547,18 @@ function TargetedSpellsEditModeMixin:RestoreEditModePosition()
 	)
 end
 
+-- A v4 profile import updated the group tables in place, so self.group is still
+-- valid; refresh the frame's size/position and restart the demo if it's running.
+function TargetedSpellsEditModeMixin:OnProfileImported()
+	self:RestoreEditModePosition()
+	self:ResizeEditModeFrame()
+
+	if self.demoPlaying then
+		self:EndDemo()
+		self:StartDemo()
+	end
+end
+
 function TargetedSpellsEditModeMixin:OnEditModePositionChanged(_, _, point, x, y)
 	local tableRef = self.frameKind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
 		or TargetedSpellsSaved.Settings.Party
@@ -1665,6 +1682,8 @@ function TargetedSpellsEditModeMixin:LoopFrame(index)
 	end
 
 	local frame = self.frames[index]
+	-- demo frames render from this instance's group, just like live frames
+	frame:SetGroup(self.group)
 	local castTime = 4 + index / 2
 	local duration = C_DurationUtil.CreateDuration()
 	duration:SetTimeFromStart(GetTime(), castTime)
@@ -1759,9 +1778,9 @@ end
 local SelfEditModeMixin = CreateFromMixins(TargetedSpellsEditModeMixin)
 
 function SelfEditModeMixin:Init()
-	TargetedSpellsEditModeMixin.Init(self, Private.L.EditMode.TargetedSpellsSelfLabel, Private.Enum.FrameKind.Self)
+	TargetedSpellsEditModeMixin.Init(self, Private.L.EditMode.TargetedSpellsSelfLabel, Private.Enum.FrameKind.Self, 1)
 	self.maxFrames = 5
-	self.pool = Private.Utils.Pools.Self
+	self.pool = Private.Utils.Pools.Icon
 
 	PixelUtil.SetPoint(self.editModeFrame, "CENTER", UIParent, "CENTER", 0, 0)
 	self:ResizeEditModeFrame()
@@ -1799,7 +1818,7 @@ table.insert(Private.LoginFnQueue, GenerateClosure(SelfEditModeMixin.Init, SelfE
 local PartyEditModeMixin = CreateFromMixins(TargetedSpellsEditModeMixin)
 
 function PartyEditModeMixin:Init()
-	TargetedSpellsEditModeMixin.Init(self, Private.L.EditMode.TargetedSpellsPartyLabel, Private.Enum.FrameKind.Party)
+	TargetedSpellsEditModeMixin.Init(self, Private.L.EditMode.TargetedSpellsPartyLabel, Private.Enum.FrameKind.Party, 2)
 	self.maxFrames = 5
 	self.pool = Private.Utils.Pools.Bar
 

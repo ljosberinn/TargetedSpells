@@ -32,10 +32,10 @@
 ---@field ShowStaticPopup fun(args: StaticPopupDialogsArgs)
 ---@field Import fun(string: string): boolean
 ---@field Export fun(): string
----@field RegisterEditModeFrame fun(frameKind: FrameKind, frame: Frame)
----@field GetEditModeFrame fun(frameKind: FrameKind): Frame?
+---@field RegisterEditModeFrame fun(groupId: integer, frame: Frame)
+---@field GetEditModeFrame fun(groupId: integer): Frame?
 ---@field CreateEditablePopup fun(title: string, text: string, button1: string): StaticPopupDialogsArgs
----@field Pools { Self: FramePool<TargetedSpellsIconMixin>, Bar: FramePool<TargetedSpellsBarMixin> }
+---@field Pools { Icon: FramePool<TargetedSpellsIconMixin>, Bar: FramePool<TargetedSpellsBarMixin> }
 ---@field ShowMigrationPopup fun()
 ---@field MigratePartySettingsToV3 fun(existing: table): SavedVariablesSettingsParty
 ---@field ApplyMigration fun(key: string, kind: FrameKind, defaults: SavedVariablesSettingsSelf|SavedVariablesSettingsParty)
@@ -58,6 +58,7 @@
 -- A group owns its Template + Elements 1:1 (no shared Design). Core element's
 -- width/height live in Elements[core]; there is no top-level Width/Height.
 ---@class TargetedSpellsGroup
+---@field Id integer -- denormalised from the Groups map key at load (Driver)
 ---@field Name string
 ---@field Enabled boolean
 ---@field Filter table<TargetClass, boolean>
@@ -83,6 +84,10 @@
 
 ---@class TargetedSpellsGroups
 ---@field GetMatching fun(info: { targetClasses: table<TargetClass, boolean> }, groups: table<any, TargetedSpellsGroup>?): TargetedSpellsGroup[]
+---@field Create fun(template: TargetedSpellsTemplate, saved: table?): integer, TargetedSpellsGroup
+---@field Delete fun(id: integer, saved: table?): boolean
+---@field SetTemplate fun(group: TargetedSpellsGroup, template: TargetedSpellsTemplate)
+---@field Count fun(saved: table?): number
 
 ---@class TargetedSpellsTextToSpeech
 ---@field AnnounceUntargetedSpells table<NpcType, boolean>
@@ -141,7 +146,6 @@
 
 ---@class DelayInfo
 ---@field unit string
----@field kinds table<FrameKind, boolean>
 ---@field id number|string|nil
 
 ---@class SpellCastInfo
@@ -152,6 +156,7 @@
 ---@field duration DurationObject
 ---@field isChannel boolean
 ---@field isRetarget boolean?
+---@field targetClasses table<TargetClass, boolean>?
 
 ---@class FontInfo
 ---@field fonts table<string, string>
@@ -265,6 +270,14 @@
 ---@field SetId fun(self: TargetedSpellsMixin, id: number?)
 ---@field GetId fun(self: TargetedSpellsMixin): number?
 ---@field GetKind fun(self: TargetedSpellsMixin): FrameKind?
+---@field private group TargetedSpellsGroup?
+---@field private layoutOverride table<Element, table<string, any>>?
+---@field SetGroup fun(self: TargetedSpellsMixin, group: TargetedSpellsGroup?)
+---@field GetGroup fun(self: TargetedSpellsMixin): TargetedSpellsGroup?
+---@field SetLayoutOverride fun(self: TargetedSpellsMixin, elements: table<Element, table<string, any>>?)
+---@field ClearLayoutOverride fun(self: TargetedSpellsMixin)
+---@field GetElements fun(self: TargetedSpellsMixin): table<Element, table<string, any>>?
+---@field GetElement fun(self: TargetedSpellsMixin, element: Element): table<string, any>?
 ---@field CanBeHidden fun(self: TargetedSpellsMixin, id: number|string|nil): boolean
 ---@field SetStartTime fun(self: TargetedSpellsMixin, startTime: number?)
 ---@field GetStartTime fun(self: TargetedSpellsMixin): number?
@@ -352,11 +365,14 @@
 ---@field private demoPlaying boolean
 ---@field private frames TargetedSpellsIconMixin[] | TargetedSpellsBarMixin[]
 ---@field protected demoTimers { tickers: table<number, FunctionContainer>, timers: table<number, FunctionContainer> }
----@field Init fun(self: TargetedSpellsEditModeMixin, displayName: string, frameKind: FrameKind)
+---@field Init fun(self: TargetedSpellsEditModeMixin, displayName: string, frameKind: FrameKind, groupId: integer)
+---@field group TargetedSpellsGroup
+---@field groupId integer
 ---@field OnSettingsChanged fun(self: TargetedSpellsEditModeMixin, key: string, flagIdOrValue: number|string|boolean|table, newBool: boolean?)
 ---@field CreateSetting fun(self: TargetedSpellsEditModeMixin, key: string, defaults: SavedVariablesSettingsParty|SavedVariablesSettingsSelf): LibEditModeButton|LibEditModeCheckbox|LibEditModeDropdown|LibEditModeSlider|LibEditModeColorPicker
 ---@field ResizeEditModeFrame fun(self: TargetedSpellsEditModeMixin)
 ---@field RestoreEditModePosition fun(self: TargetedSpellsEditModeMixin)
+---@field OnProfileImported fun(self: TargetedSpellsEditModeMixin)
 ---@field OnEditModePositionChanged fun(self: TargetedSpellsEditModeMixin, frame: Frame, layoutName: string, point: FramePoint, x: number, y: number)
 ---@field AppendSettings fun(self: TargetedSpellsEditModeMixin)
 ---@field OnLayoutSettingChanged fun(self: TargetedSpellsEditModeMixin, key: string, value: number|string, newBool: boolean?)
@@ -393,15 +409,28 @@
 ---@field private ttsAnnouncementCache table<string, number>
 ---@field private activeEncounterId number?
 ---@field frames table<string, (TargetedSpellsIconMixin|TargetedSpellsBarMixin)[]>
+---@field private containers table<integer, Frame>
+---@field PoolForGroup fun(self: TargetedSpellsDriver, group: TargetedSpellsGroup): FramePool<TargetedSpellsIconMixin|TargetedSpellsBarMixin>
+---@field GroupCoreElement fun(self: TargetedSpellsDriver, group: TargetedSpellsGroup): Element
+---@field GetContainer fun(self: TargetedSpellsDriver, groupId: integer): Frame
+---@field PositionFrame fun(self: TargetedSpellsDriver, group: TargetedSpellsGroup)
 ---@field SetupFrame fun(self: TargetedSpellsDriver, isBoot: boolean)
+---@field AnyGroupEnabled fun(self: TargetedSpellsDriver): boolean
+---@field AnyGroupUsesInterruptibility fun(self: TargetedSpellsDriver): boolean
+---@field AnyGroupShowsTargetMarker fun(self: TargetedSpellsDriver): boolean
+---@field AnyGroupIndicatesInterrupts fun(self: TargetedSpellsDriver): boolean
+---@field AnyGroupLoadConditionsAllow fun(self: TargetedSpellsDriver): boolean
+---@field GetTargetClasses fun(self: TargetedSpellsDriver, info: SpellCastInfo): table<TargetClass, boolean>
+---@field GroupLoadConditionsProhibit fun(self: TargetedSpellsDriver, group: TargetedSpellsGroup): boolean
+---@field CountActiveFramesForGroup fun(self: TargetedSpellsDriver, group: TargetedSpellsGroup): number
 ---@field ProcessInfo fun(self: TargetedSpellsDriver, info: SpellCastInfo)
+---@field ReleaseFrame fun(self: TargetedSpellsDriver, frame: TargetedSpellsIconMixin|TargetedSpellsBarMixin)
 ---@field RepositionFrames fun(self: TargetedSpellsDriver)
 ---@field ReleaseFrameForUnit fun(self: TargetedSpellsDriver, unit: string, removeUnit: boolean, id?: number): boolean
----@field LoadConditionsProhibitExecution fun(self: TargetedSpellsDriver, kind: FrameKind): boolean
 ---@field UnitIsIrrelevant fun(self: TargetedSpellsDriver, unit: string, skipTargetCheck?: boolean): boolean
 ---@field OnFrameEvent fun(self: TargetedSpellsDriver, listenerFrame: Frame, event: WowEvent, ...)
 ---@field OnSettingsChanged fun(self: TargetedSpellsDriver, key: string, value: number|string|boolean|table)
----@field DetermineSpellDelayRequirement fun(self: TargetedSpellsDriver): boolean
+---@field OnProfileImported fun(self: TargetedSpellsDriver)
 ---@field MaybeMarkAsInterruptedAndDelay fun(self: TargetedSpellsDriver, unit: string, id: number|string|nil, interruptedBy: string?)
 ---@field CleanupDanglingFrames fun(self: TargetedSpellsDriver)
 ---@field EncounterPreventsTTSExecution fun(self: TargetedSpellsDriver, unit: string): boolean
@@ -570,27 +599,28 @@ StaticPopupDialogs = {}
 
 PixelUtil = {
 	SetPoint =
-		---@param region Region
-		---@param point FramePoint
-		---@param relativeTo Region
-		---@param relativePoint FramePoint
-		---@param offsetX number
-		---@param offsetY number
-		---@param minOffsetXPixels number?
-		---@param minOffsetYPixels number?
+	---@param region Region
+	---@param point FramePoint
+	---@param relativeTo Region
+	---@param relativePoint FramePoint
+	---@param offsetX number
+	---@param offsetY number
+	---@param minOffsetXPixels number?
+	---@param minOffsetYPixels number?
 		function(region, point, relativeTo, relativePoint, offsetX, offsetY, minOffsetXPixels, minOffsetYPixels)
 			region:SetPoint(point, relativeTo, relativePoint, offsetX, offsetY)
 		end,
 	SetSize =
-		---@param region Region
-		---@param width number
-		---@param height number
+	---@param region Region
+	---@param width number
+	---@param height number
 		function(region, width, height)
 			region:SetSize(width, height)
 		end,
 }
 
 function StaticPopup_Hide(name) end
+
 function StaticPopup_Show(name) end
 
 ---@enum Enum.StatusBarInterpolation

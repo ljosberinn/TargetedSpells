@@ -4,32 +4,71 @@ local addonName, Private = ...
 ---@class TargetedSpellsDriver
 local TargetedSpellsDriver = {}
 
+---@param group TargetedSpellsGroup
+function TargetedSpellsDriver:PoolForGroup(group)
+	if group.Template == Private.Enum.Template.Icon then
+		return Private.Utils.Pools.Icon
+	end
+
+	return Private.Utils.Pools.Bar
+end
+
+---@param group TargetedSpellsGroup
+function TargetedSpellsDriver:GroupCoreElement(group)
+	if group.Template == Private.Enum.Template.Icon then
+		return Private.Enum.Element.Icon
+	end
+
+	return Private.Enum.Element.ProgressBar
+end
+
 function TargetedSpellsDriver:Init()
 	self.delay = 0.2
 	self.frames = {}
-	self.selfFrameCount = 0
-	self.partyFrameCount = 0
+	---@type table<integer, Frame>
+	self.containers = {}
 	self.role = Private.Enum.Role.Damager
 	self.contentType = Private.Enum.ContentType.OpenWorld
 	self.OnCooldownDoneClosure = GenerateClosure(self.OnCooldownDone, self)
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingsChanged, self)
+	Private.EventRegistry:RegisterCallback(Private.Enum.Events.PROFILE_IMPORTED, self.OnProfileImported, self)
 	self.ttsAnnouncementCache = {}
 	self.activeEncounterId = nil
+
+	-- denormalise the id onto each group so frames can find their container
+	for id, group in pairs(TargetedSpellsSaved.Groups) do
+		group.Id = id
+	end
 
 	self:SetupFrame(true)
 end
 
--- the edit mode frame anchors via its own position.point, but the driver frame always anchors via CENTER,
--- so the offset must compensate for the difference between those two anchor origins
-function TargetedSpellsDriver:PositionFrame(kind)
-	local tableRef = kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
-		or TargetedSpellsSaved.Settings.Party
-	local driverFrame = kind == Private.Enum.FrameKind.Self and self.frame or self.partyFrame
+-- ── Group containers ─────────────────────────────────────────────────────────
+-- Each group anchors its frames to a 1x1 container placed at the group's saved
+-- Position. Created lazily; positions itself relative to the group's edit-mode
+-- frame so the growth direction stays visually anchored.
+
+---@param groupId integer
+function TargetedSpellsDriver:GetContainer(groupId)
+	if self.containers[groupId] == nil then
+		local frame = CreateFrame("Frame", "TargetedSpellsGroupContainer" .. groupId, UIParent)
+		frame:SetSize(1, 1)
+		self.containers[groupId] = frame
+	end
+
+	return self.containers[groupId]
+end
+
+-- the edit-mode frame anchors via its own position.point, but the container always
+-- anchors via CENTER, so the offset compensates for the difference in origins
+---@param group TargetedSpellsGroup
+function TargetedSpellsDriver:PositionFrame(group)
+	local container = self:GetContainer(group.Id)
 
 	local offsetX = 0
 	local offsetY = 0
 
-	local editModeFrame = Private.Utils.GetEditModeFrame(kind)
+	local editModeFrame = Private.Utils.GetEditModeFrame(group.Id)
 
 	if editModeFrame ~= nil then
 		local width, height = editModeFrame:GetSize()
@@ -57,35 +96,83 @@ function TargetedSpellsDriver:PositionFrame(kind)
 			},
 		}
 
-		local anchor = AnchorSign[tableRef.Position.point]
-		local direction = kind == Private.Enum.FrameKind.Party and Private.Enum.Direction.Vertical or tableRef.Direction
-		local target = GrowTarget[direction][tableRef.Grow]
+		local anchor = AnchorSign[group.Position.point]
+		local target = GrowTarget[group.Direction][group.Grow]
 
 		offsetX = (target.x - anchor.x) * (width / 2)
 		offsetY = (target.y - anchor.y) * (height / 2)
 	end
 
-	driverFrame:ClearAllPoints()
+	container:ClearAllPoints()
 	PixelUtil.SetPoint(
-		driverFrame,
+		container,
 		"CENTER",
 		UIParent,
-		tableRef.Position.point,
-		tableRef.Position.x + offsetX,
-		tableRef.Position.y + offsetY
+		group.Position.point,
+		group.Position.x + offsetX,
+		group.Position.y + offsetY
 	)
-	driverFrame:Show()
+	container:Show()
+end
+
+-- ── Cross-group setting queries (event registration decisions) ───────────────
+
+function TargetedSpellsDriver:AnyGroupEnabled()
+	for _, group in pairs(TargetedSpellsSaved.Groups) do
+		if group.Enabled then
+			return true
+		end
+	end
+
+	return false
+end
+
+function TargetedSpellsDriver:AnyGroupUsesInterruptibility()
+	for _, group in pairs(TargetedSpellsSaved.Groups) do
+		if group.Enabled and group.Template == Private.Enum.Template.Bar then
+			local core = group.Elements[Private.Enum.Element.ProgressBar]
+
+			if core ~= nil and core.barColorMode == Private.Enum.BarColorMode.Interruptibility then
+				return true
+			end
+		end
+	end
+
+	return false
+end
+
+function TargetedSpellsDriver:AnyGroupShowsTargetMarker()
+	for _, group in pairs(TargetedSpellsSaved.Groups) do
+		if group.Enabled and group.Template == Private.Enum.Template.Bar then
+			local marker = group.Elements[Private.Enum.Element.TargetMarker]
+
+			if marker ~= nil and marker.active then
+				return true
+			end
+		end
+	end
+
+	return false
+end
+
+function TargetedSpellsDriver:AnyGroupIndicatesInterrupts()
+	for _, group in pairs(TargetedSpellsSaved.Groups) do
+		if group.IndicateInterrupts then
+			return true
+		end
+	end
+
+	return false
 end
 
 function TargetedSpellsDriver:SetupFrame(isBoot)
 	if isBoot then
 		self.frame = CreateFrame("Frame", "TargetedSpellsDriverFrame", UIParent)
 		self.frame:SetSize(1, 1)
-		self:PositionFrame(Private.Enum.FrameKind.Self)
 
-		self.partyFrame = CreateFrame("Frame", "TargetedSpellsPartyDriverFrame", UIParent)
-		self.partyFrame:SetSize(1, 1)
-		self:PositionFrame(Private.Enum.FrameKind.Party)
+		for _, group in pairs(TargetedSpellsSaved.Groups) do
+			self:PositionFrame(group)
+		end
 
 		Private.EventRegistry:RegisterCallback(
 			Private.Enum.Events.EDIT_MODE_SELF_POSITION_CHANGED,
@@ -104,10 +191,7 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 		)
 	end
 
-	if
-		(TargetedSpellsSaved.Settings.Self.Enabled or TargetedSpellsSaved.Settings.Party.Enabled)
-		and not self.frame:IsEventRegistered("UNIT_SPELLCAST_START")
-	then
+	if self:AnyGroupEnabled() and not self.frame:IsEventRegistered("UNIT_SPELLCAST_START") then
 		self.frame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 		self.frame:RegisterEvent("LOADING_SCREEN_DISABLED")
 		self.frame:RegisterEvent("UPDATE_INSTANCE_INFO")
@@ -126,72 +210,65 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 		self.frame:RegisterEvent("ENCOUNTER_START")
 		self.frame:RegisterEvent("ENCOUNTER_END")
 
-		if TargetedSpellsSaved.Settings.Party.Enabled then
-			if TargetedSpellsSaved.Settings.Party.UseInterruptabilityColors then
-				self.frame:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTIBLE")
-				self.frame:RegisterUnitEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE")
-			end
+		if self:AnyGroupUsesInterruptibility() then
+			self.frame:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTIBLE")
+			self.frame:RegisterUnitEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE")
+		end
 
-			if TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowTargetMarker] then
-				self.frame:RegisterEvent("RAID_TARGET_UPDATE")
-			end
+		if self:AnyGroupShowsTargetMarker() then
+			self.frame:RegisterEvent("RAID_TARGET_UPDATE")
 		end
 
 		self.frame:SetScript("OnEvent", GenerateClosure(self.OnFrameEvent, self))
 	end
 end
 
-function TargetedSpellsDriver:RepositionFrames()
-	---@type table<string, (TargetedSpellsIconMixin|TargetedSpellsBarMixin)[]>
-	local activeFrames = {}
+-- ── Frame lifecycle ──────────────────────────────────────────────────────────
 
-	for sourceUnit, frames in pairs(self.frames) do
-		for i, frame in pairs(frames) do
-			if frame ~= nil then
-				local kind = frame:GetKind()
+---@param info SpellCastInfo
+---@return table<TargetClass, boolean>
+function TargetedSpellsDriver:GetTargetClasses(info)
+	local targetName = UnitSpellTargetName(info.unit)
 
-				if kind ~= nil then
-					if activeFrames[kind] == nil then
-						activeFrames[kind] = {}
-					end
+	if targetName == nil then
+		return {
+			[Private.Enum.TargetClass.Nobody] = true
+		}
+	end
 
-					table.insert(activeFrames[kind], frame)
-				end
-			end
+	-- A targeted cast is Player or PartyMember, but PlayerIsSpellTarget is a *secret*
+	-- boolean that cannot be branched on here. Offer the cast to both classes; each
+	-- acquired frame resolves the distinction secret-safely (mixin:ApplyCastAlpha).
+	return {
+		[Private.Enum.TargetClass.Player] = true,
+		[Private.Enum.TargetClass.PartyMember] = true
+	}
+end
+
+---@param group TargetedSpellsGroup
+function TargetedSpellsDriver:GroupLoadConditionsProhibit(group)
+	if not group.LoadConditionRole[self.role] then
+		return true
+	end
+
+	if not group.LoadConditionContentType[self.contentType] then
+		return true
+	end
+
+	return false
+end
+
+---@param group TargetedSpellsGroup
+function TargetedSpellsDriver:CountActiveFramesForGroup(group)
+	local count = 0
+
+	for frame in self:PoolForGroup(group):EnumerateActive() do
+		if frame:GetGroup() == group then
+			count = count + 1
 		end
 	end
 
-	for kind, frames in pairs(activeFrames) do
-		local tableRef = kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
-			or TargetedSpellsSaved.Settings.Party
-
-		Private.Utils.SortFrames(frames, tableRef.SortOrder)
-		Private.Utils.AdjustLayout(
-			frames,
-			Private.Utils.CollectLayoutingArguments(
-				kind == Private.Enum.FrameKind.Party and Private.Enum.Direction.Vertical or tableRef.Direction,
-				tableRef.Grow,
-				tableRef.Width,
-				tableRef.Height,
-				tableRef.Gap
-			),
-			kind == Private.Enum.FrameKind.Self and self.frame or self.partyFrame,
-			"CENTER",
-			0,
-			0,
-			false
-		)
-	end
-end
-
-function TargetedSpellsDriver:ReleaseFrame(frame)
-	if frame:GetKind() == Private.Enum.FrameKind.Self then
-		self.selfFrameCount = self.selfFrameCount - 1
-		Private.Utils.Pools.Self:Release(frame)
-	else
-		self.partyFrameCount = self.partyFrameCount - 1
-		Private.Utils.Pools.Bar:Release(frame)
-	end
+	return count
 end
 
 function TargetedSpellsDriver:ProcessInfo(info)
@@ -201,31 +278,21 @@ function TargetedSpellsDriver:ProcessInfo(info)
 		self:ReleaseFrameForUnit(info.unit, false)
 	end
 
+	info.targetClasses = self:GetTargetClasses(info)
+
 	local count = 0
 
-	if
-		TargetedSpellsSaved.Settings.Self.Enabled
-		and not self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Self)
-		and self.selfFrameCount < 10
-	then
-		self.selfFrameCount = self.selfFrameCount + 1
-		local selfFrame = Private.Utils.Pools.Self:Acquire()
-		selfFrame:PostCreate(info, self.OnCooldownDoneClosure)
-		table.insert(self.frames[info.unit], selfFrame)
-		count = count + 1
-	end
-
-	if
-		TargetedSpellsSaved.Settings.Party.Enabled
-		and (IsInGroup() or TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.SelfOnly])
-		and not self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Party)
-		and self.partyFrameCount < 10
-	then
-		self.partyFrameCount = self.partyFrameCount + 1
-		local barFrame = Private.Utils.Pools.Bar:Acquire()
-		barFrame:PostCreate(info, self.OnCooldownDoneClosure)
-		table.insert(self.frames[info.unit], barFrame)
-		count = count + 1
+	for _, group in ipairs(Private.Groups.GetMatching(info, TargetedSpellsSaved.Groups)) do
+		if
+			not self:GroupLoadConditionsProhibit(group)
+			and self:CountActiveFramesForGroup(group) < (group.MaxItems or 10)
+		then
+			local frame = self:PoolForGroup(group):Acquire()
+			frame:SetGroup(group)
+			frame:PostCreate(info, self.OnCooldownDoneClosure)
+			table.insert(self.frames[info.unit], frame)
+			count = count + 1
+		end
 	end
 
 	if count == 0 then
@@ -233,6 +300,59 @@ function TargetedSpellsDriver:ProcessInfo(info)
 	end
 
 	self:RepositionFrames()
+end
+
+---@param frame TargetedSpellsIconMixin|TargetedSpellsBarMixin
+function TargetedSpellsDriver:ReleaseFrame(frame)
+	local group = frame:GetGroup()
+
+	if group ~= nil then
+		self:PoolForGroup(group):Release(frame)
+	else
+		-- fall back on the XML kind if the group tag was lost
+		if frame:GetKind() == Private.Enum.FrameKind.Self then
+			Private.Utils.Pools.Icon:Release(frame)
+		else
+			Private.Utils.Pools.Bar:Release(frame)
+		end
+	end
+end
+
+function TargetedSpellsDriver:RepositionFrames()
+	---@type table<integer, { group: TargetedSpellsGroup, frames: table }>
+	local byGroup = {}
+
+	for _, frames in pairs(self.frames) do
+		for _, frame in pairs(frames) do
+			if frame ~= nil then
+				local group = frame:GetGroup()
+
+				if group ~= nil then
+					if byGroup[group.Id] == nil then
+						byGroup[group.Id] = { group = group, frames = {} }
+					end
+
+					table.insert(byGroup[group.Id].frames, frame)
+				end
+			end
+		end
+	end
+
+	for groupId, entry in pairs(byGroup) do
+		local group = entry.group
+		local core = group.Elements[self:GroupCoreElement(group)]
+
+		Private.Utils.SortFrames(entry.frames, group.SortOrder)
+		Private.Utils.AdjustLayout(
+			entry.frames,
+			Private.Utils.CollectLayoutingArguments(group.Direction, group.Grow, core.width, core.height, group.Gap),
+			self:GetContainer(groupId),
+			"CENTER",
+			0,
+			0,
+			false
+		)
+	end
 end
 
 function TargetedSpellsDriver:ReleaseFrameForUnit(unit, removeUnit, id)
@@ -270,21 +390,6 @@ function TargetedSpellsDriver:ReleaseFrameForUnit(unit, removeUnit, id)
 	end
 
 	return cleanedSomethingUp
-end
-
-function TargetedSpellsDriver:LoadConditionsProhibitExecution(kind)
-	local tableRef = kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
-		or TargetedSpellsSaved.Settings.Party
-
-	if not tableRef.LoadConditionRole[self.role] then
-		return true
-	end
-
-	if not tableRef.LoadConditionContentType[self.contentType] then
-		return true
-	end
-
-	return false
 end
 
 function TargetedSpellsDriver:UnitIsIrrelevant(unit, skipTargetCheck)
@@ -326,7 +431,7 @@ function TargetedSpellsDriver:GetCastInformation(unit)
 end
 
 ---@param _ Frame -- identical to self.frame
----@param event "DELAYED_FRAME_CLEANUP" | "UNIT_SPELLCAST_INTERRUPTED" | "ZONE_CHANGED_NEW_AREA" | "LOADING_SCREEN_DISABLED" | "PLAYER_SPECIALIZATION_CHANGED" | "UNIT_SPELLCAST_EMPOWER_STOP" | "UNIT_SPELLCAST_EMPOWER_START" |"EDIT_MODE_SELF_POSITION_CHANGED" | "DELAYED_UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_START" | "UNIT_SPELLCAST_STOP" | "UNIT_SPELLCAST_CHANNEL_START" | "UNIT_SPELLCAST_CHANNEL_STOP" | "NAME_PLATE_UNIT_REMOVED" | "NAME_PLATE_UNIT_ADDED" | "UNIT_SPELLCAST_INTERRUPTIBLE" | "UNIT_SPELLCAST_NOT_INTERRUPTIBLE" | "RAID_TARGET_UPDATE"
+---@param event string
 function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 	if
 		event == "UNIT_SPELLCAST_START"
@@ -405,10 +510,8 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		if name == "nameplateShowEnemies" then
 			if value == 0 or value == "0" then
 				Private.Utils.Pools.Bar:ReleaseAll()
-				Private.Utils.Pools.Self:ReleaseAll()
+				Private.Utils.Pools.Icon:ReleaseAll()
 				table.wipe(self.frames)
-				self.selfFrameCount = 0
-				self.partyFrameCount = 0
 			end
 		elseif name == "nameplateShowOffscreen" then
 			if value == "1" or value == 1 then
@@ -419,7 +522,6 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 					button2 = CLOSE,
 					OnAccept = function()
 						C_CVar.SetCVar("nameplateShowOffscreen", 1)
-						-- Settings.OpenToCategory(Settings.NAMEPLATE_OPTIONS_CATEGORY_ID, UNIT_NAMEPLATES_SHOW_OFFSCREEN)
 					end,
 				})
 			end
@@ -481,29 +583,7 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		---@type DelayInfo
 		local delayInfo = ...
 
-		local frames = self.frames[delayInfo.unit]
-
-		if frames == nil or #frames == 0 then
-			return
-		end
-
-		local cleanedSomethingUp = false
-
-		for i = #frames, 1, -1 do
-			local frame = frames[i]
-
-			if frame then
-				local kind = frame:GetKind()
-
-				if delayInfo.kinds[kind] and frame:GetId() == delayInfo.id then
-					self:ReleaseFrame(frame)
-					table.remove(frames, i)
-					cleanedSomethingUp = true
-				end
-			end
-		end
-
-		if cleanedSomethingUp then
+		if self:ReleaseFrameForUnit(delayInfo.unit, true, delayInfo.id) then
 			self:RepositionFrames()
 		end
 	elseif
@@ -570,10 +650,6 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 			self.role = Private.Enum.Role.Damager
 		end
 	elseif event == "UNIT_SPELLCAST_INTERRUPTIBLE" or event == "UNIT_SPELLCAST_NOT_INTERRUPTIBLE" then
-		if self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Party) then
-			return
-		end
-
 		local unit = ...
 
 		if self:UnitIsIrrelevant(unit) then
@@ -594,10 +670,6 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 			end
 		end
 	elseif event == "RAID_TARGET_UPDATE" then
-		if self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Party) then
-			return
-		end
-
 		for _, frames in pairs(self.frames) do
 			for _, frame in ipairs(frames) do
 				if frame.SetTargetMarker then
@@ -611,9 +683,15 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 	elseif event == "ENCOUNTER_END" then
 		self.activeEncounterId = nil
 	elseif event == Private.Enum.Events.EDIT_MODE_SELF_POSITION_CHANGED then
-		self:PositionFrame(Private.Enum.FrameKind.Self)
+		local group = TargetedSpellsSaved.Groups[1]
+		if group ~= nil then
+			self:PositionFrame(group)
+		end
 	elseif event == Private.Enum.Events.EDIT_MODE_PARTY_POSITION_CHANGED then
-		self:PositionFrame(Private.Enum.FrameKind.Party)
+		local group = TargetedSpellsSaved.Groups[2]
+		if group ~= nil then
+			self:PositionFrame(group)
+		end
 	end
 end
 
@@ -632,48 +710,70 @@ function TargetedSpellsDriver:CleanupDanglingFrames()
 	end
 end
 
-function TargetedSpellsDriver:OnSettingsChanged(key, value)
-	if key == Private.Settings.Keys.Self.Enabled or key == Private.Settings.Keys.Party.Enabled then
-		local allDisabled = TargetedSpellsSaved.Settings.Self.Enabled == false
-			and TargetedSpellsSaved.Settings.Party.Enabled == false
+-- A v4 profile import updates the group tables in place (Utils.ImportV4Profile),
+-- so refs stay valid; here we drop live frames (they re-acquire with the new
+-- settings), reposition every container, and re-evaluate event registration.
+function TargetedSpellsDriver:OnProfileImported()
+	-- Release only the Driver's own frames — NOT Pools:ReleaseAll, which would also
+	-- release the edit-mode demo frames sharing these pools (double-release error).
+	for _, frames in pairs(self.frames) do
+		for _, frame in ipairs(frames) do
+			self:ReleaseFrame(frame)
+		end
+	end
 
-		if allDisabled then
+	table.wipe(self.frames)
+
+	for _, group in pairs(TargetedSpellsSaved.Groups) do
+		self:PositionFrame(group)
+	end
+
+	self:SetupFrame(false)
+end
+
+function TargetedSpellsDriver:OnSettingsChanged(key, value)
+	local Keys = Private.Settings.Keys
+
+	if key == Keys.Self.Enabled or key == Keys.Party.Enabled then
+		if not self:AnyGroupEnabled() then
 			self.frame:UnregisterAllEvents()
 			self.frame:SetScript("OnEvent", nil)
 		else
 			self:SetupFrame(false)
 		end
 	elseif
-		key == Private.Settings.Keys.Self.Grow
-		or key == Private.Settings.Keys.Self.Direction
-		or key == Private.Settings.Keys.Self.Width
-		or key == Private.Settings.Keys.Self.Height
-		or key == Private.Settings.Keys.Self.Gap
+		key == Keys.Self.Grow
+		or key == Keys.Self.Direction
+		or key == Keys.Self.Width
+		or key == Keys.Self.Height
+		or key == Keys.Self.Gap
 	then
-		self:PositionFrame(Private.Enum.FrameKind.Self)
+		local group = TargetedSpellsSaved.Groups[1]
+		if group ~= nil then
+			self:PositionFrame(group)
+		end
 	elseif
-		key == Private.Settings.Keys.Party.Grow
-		or key == Private.Settings.Keys.Party.Width
-		or key == Private.Settings.Keys.Party.Height
-		or key == Private.Settings.Keys.Party.Gap
+		key == Keys.Party.Grow
+		or key == Keys.Party.Direction
+		or key == Keys.Party.Width
+		or key == Keys.Party.Height
+		or key == Keys.Party.Gap
 	then
-		self:PositionFrame(Private.Enum.FrameKind.Party)
-	elseif key == Private.Settings.Keys.Party.UseInterruptabilityColors then
-		if value and TargetedSpellsSaved.Settings.Party.Enabled then
+		local group = TargetedSpellsSaved.Groups[2]
+		if group ~= nil then
+			self:PositionFrame(group)
+		end
+	elseif key == Keys.Party.UseInterruptabilityColors then
+		if self:AnyGroupUsesInterruptibility() then
 			self.frame:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTIBLE")
 			self.frame:RegisterUnitEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE")
 		else
 			self.frame:UnregisterEvent("UNIT_SPELLCAST_INTERRUPTIBLE")
 			self.frame:UnregisterEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE")
 		end
-	elseif key == Private.Settings.Keys.Party.FeatureFlags then
-		local flagId = value
-
-		if flagId == Private.Enum.FeatureFlag.ShowTargetMarker then
-			if
-				TargetedSpellsSaved.Settings.Party.Enabled
-				and TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.ShowTargetMarker]
-			then
+	elseif key == Keys.Party.FeatureFlags then
+		if value == Private.Enum.FeatureFlag.ShowTargetMarker then
+			if self:AnyGroupShowsTargetMarker() then
 				self.frame:RegisterEvent("RAID_TARGET_UPDATE")
 			else
 				self.frame:UnregisterEvent("RAID_TARGET_UPDATE")
@@ -683,14 +783,11 @@ function TargetedSpellsDriver:OnSettingsChanged(key, value)
 end
 
 function TargetedSpellsDriver:MaybeMarkAsInterruptedAndDelay(unit, id, interruptedBy)
-	if
-		not TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.IndicateInterrupts]
-		and not TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.IndicateInterrupts]
-	then
+	if not self:AnyGroupIndicatesInterrupts() then
 		return
 	end
 
-	-- either via events that don't communicate interruptedBy, or via interrupt events briefly before deaths, e.g. on totems that cast something like Cinderbrew Meadery barrels
+	-- either via events that don't communicate interruptedBy, or via interrupt events briefly before deaths
 	if interruptedBy == nil then
 		return
 	end
@@ -709,40 +806,25 @@ function TargetedSpellsDriver:MaybeMarkAsInterruptedAndDelay(unit, id, interrupt
 		interruptColor = C_ClassColor.GetClassColor(className)
 	end
 
-	local kindsToDelay = {
-		[Private.Enum.FrameKind.Self] = false,
-		[Private.Enum.FrameKind.Party] = false,
-	}
-
 	local frames = self.frames[unit]
+	local anyIndicated = false
 
-	for i, frame in pairs(frames) do
-		local indicateInterrupts = false
-		local kind = frame:GetKind()
+	for _, frame in pairs(frames) do
+		local group = frame:GetGroup()
 
-		if kind == Private.Enum.FrameKind.Self then
-			indicateInterrupts =
-				TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.IndicateInterrupts]
-		else
-			indicateInterrupts =
-				TargetedSpellsSaved.Settings.Party.FeatureFlags[Private.Enum.FeatureFlag.IndicateInterrupts]
-		end
-
-		if indicateInterrupts then
+		if group ~= nil and group.IndicateInterrupts then
 			frame:SetInterrupted(interruptName, interruptColor)
-
-			kindsToDelay[kind] = true
+			anyIndicated = true
 		end
 	end
 
-	if not kindsToDelay[Private.Enum.FrameKind.Self] and not kindsToDelay[Private.Enum.FrameKind.Party] then
+	if not anyIndicated then
 		return
 	end
 
 	---@type DelayInfo
 	local delayInfo = {
 		unit = unit,
-		kinds = kindsToDelay,
 		id = id,
 	}
 
@@ -767,8 +849,8 @@ function TargetedSpellsDriver:GetDefaultVoiceId()
 end
 
 function TargetedSpellsDriver:UnitMatchesTTSCriteria(unit)
-	local settings = UnitSpellTargetName(unit) == nil and TargetedSpellsSaved.Settings.Self.AnnounceUntargetedSpells
-		or TargetedSpellsSaved.Settings.Self.AnnounceTargetedSpells
+	local settings = UnitSpellTargetName(unit) == nil and TargetedSpellsSaved.TextToSpeech.AnnounceUntargetedSpells or
+		TargetedSpellsSaved.TextToSpeech.AnnounceTargetedSpells
 	local classification = UnitClassification(unit)
 
 	if UnitIsMinion(unit) or classification == "normal" or classification == "trivial" or classification == "minus" then
@@ -792,31 +874,29 @@ function TargetedSpellsDriver:UnitMatchesTTSCriteria(unit)
 	return settings[Private.Enum.NpcType.Melee]
 end
 
--- todo: remove this, eventually
 function TargetedSpellsDriver:EncounterPreventsTTSExecution(unit)
-	-- Lothraxion, Nexus-Point Xenas
-	if self.activeEncounterId == 3333 then
+	if self.activeEncounterId == 3333 then -- Lothraxion, Nexus-Point Xenas
 		if UnitLevel(unit) == -1 then
 			local id = string.gsub(unit, "nameplate", "")
 			-- ignores casts by a boss unit if the nameplateN id is greater than 1
-			-- Divine Guile spawns 12 images, all UnitLevel == -1
 			return tonumber(id) > 1
 		end
 
 		return false
-	end
-
-	-- Ick and Krick, Pit of Saron
-	if self.activeEncounterId == 2001 then
-		-- ignore Shade of Krick, Shadowbind casts
-		-- this might ignore the Gargoyle too but realistically you don't pull that (please)
+	elseif self.activeEncounterId == 2001 then -- Ick and Krick, Pit of Saron
 		return UnitLevel(unit) == 91 and UnitIsLieutenant(unit)
+	elseif self.activeEncounterId == 2067 then -- Viceroy Nezhar, Seat of the Triumvirate
+		return UnitLevel(unit) == 90
 	end
 
-	-- Viceroy Nezhar, Seat of the Triumvirate
-	if self.activeEncounterId == 2067 then
-		-- ignores Umbral Tentacle casts (and also other elites if you pull those but why would you)
-		return UnitLevel(unit) == 90
+	return false
+end
+
+function TargetedSpellsDriver:AnyGroupLoadConditionsAllow()
+	for _, group in pairs(TargetedSpellsSaved.Groups) do
+		if group.Enabled and not self:GroupLoadConditionsProhibit(group) then
+			return true
+		end
 	end
 
 	return false
@@ -825,9 +905,7 @@ end
 function TargetedSpellsDriver:MaybeAnnounceSpell(info)
 	if
 		info.isRetarget
-		or (self:LoadConditionsProhibitExecution(Private.Enum.FrameKind.Self) and self:LoadConditionsProhibitExecution(
-			Private.Enum.FrameKind.Party
-		))
+		or not self:AnyGroupLoadConditionsAllow()
 		-- don't execute in open world if outside of combat, otherwise there's stray TTS from people casting stuff in town
 		or (self.contentType == Private.Enum.ContentType.OpenWorld and (not InCombatLockdown() or not UnitAffectingCombat(
 			info.unit
@@ -854,8 +932,8 @@ function TargetedSpellsDriver:MaybeAnnounceSpell(info)
 
 	self.ttsAnnouncementCache[info.unit] = now
 
-	local voiceId = TargetedSpellsSaved.Settings.Self.TextToSpeechVoice > -1
-			and TargetedSpellsSaved.Settings.Self.TextToSpeechVoice
+	local configuredVoice = TargetedSpellsSaved.TextToSpeech.TextToSpeechVoice
+	local voiceId = configuredVoice ~= nil and configuredVoice > -1 and configuredVoice
 		or C_TTSSettings.GetVoiceOptionID(Enum.TtsVoiceType.Standard)
 
 	C_VoiceChat.SpeakText(voiceId, spellName, 2, C_TTSSettings.GetSpeechVolume(), true)

@@ -6,6 +6,14 @@ local base64 = require("spec.base64")
 local addonName = "TargetedSpells"
 local Private = {}
 
+-- WoW global not present in plain Lua 5.1
+function table.wipe(target)
+	for key in pairs(target) do
+		target[key] = nil
+	end
+	return target
+end
+
 loadfile("Enum.lua")(addonName, Private)
 
 LibStub = function(name)

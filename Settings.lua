@@ -348,6 +348,401 @@ function Private.Settings.GetPartyDefaultSettings()
 	}
 end
 
+-- ── v3 Settings view over a v4 group (Phase-3 transitional proxy) ────────────
+-- Edit mode and the settings UI still read/write the flat v3 shape at
+-- TargetedSpellsSaved.Settings.Self/.Party. After migration those tables are
+-- replaced by these metatable proxies backed by the group model, so the ~165
+-- edit-mode/settings read/write sites keep working unedited while the group model
+-- stays authoritative. The whole edit-mode UI is restructured in Phase 4, which
+-- deletes this proxy. Some v3 concepts fan out (Font/FontSize/FontFlags → every
+-- text element) or are lossy inversions (bar colour mode, party filter flags);
+-- those are noted inline and are best-effort transitional mappings.
+---@param group TargetedSpellsGroup
+function Private.Settings.CreateGroupView(group)
+	local Enum = Private.Enum
+	local Element = Enum.Element
+	local FeatureFlag = Enum.FeatureFlag
+	local BarColorMode = Enum.BarColorMode
+	local TargetClass = Enum.TargetClass
+
+	local isIcon = group.Template == Enum.Template.Icon
+	local coreTag = isIcon and Element.Icon or Element.ProgressBar
+
+	local function core()
+		return group.Elements[coreTag]
+	end
+
+	local function getElement(tag)
+		return group.Elements[tag]
+	end
+
+	-- text elements carrying a font, per template (for Font/FontSize/FontFlags fan-out)
+	local fontTargets = isIcon
+			and {
+				{ tag = Element.Cooldown, countdown = true },
+				{ tag = Element.InterruptSource },
+			}
+		or {
+			{ tag = Element.SpellName },
+			{ tag = Element.TargetName },
+			{ tag = Element.InterruptSource },
+			{ tag = Element.DurationCooldown, countdown = true },
+		}
+
+	-- "font" | "fontSize" | "fontFlags" → the element field, prefixed for cooldowns
+	local function fontField(target, base)
+		if target.countdown then
+			return "countdown" .. base:gsub("^%l", string.upper)
+		end
+		return base
+	end
+
+	local getters = {}
+	local setters = {}
+
+	for _, groupKey in ipairs({ "Enabled", "Gap", "Grow", "Direction", "SortOrder", "GlowType" }) do
+		getters[groupKey] = function()
+			return group[groupKey]
+		end
+		setters[groupKey] = function(value)
+			group[groupKey] = value
+		end
+	end
+
+	-- old container Width/Height now live on the core element
+	getters.Width = function()
+		return core().width
+	end
+	setters.Width = function(value)
+		core().width = value
+	end
+	getters.Height = function()
+		return core().height
+	end
+	setters.Height = function(value)
+		core().height = value
+	end
+
+	getters.Font = function()
+		local first = getElement(fontTargets[1].tag)
+		return first and first[fontField(fontTargets[1], "font")]
+	end
+	setters.Font = function(value)
+		for _, target in ipairs(fontTargets) do
+			local elementTable = getElement(target.tag)
+			if elementTable then
+				elementTable[fontField(target, "font")] = value
+			end
+		end
+	end
+	getters.FontSize = function()
+		local first = getElement(fontTargets[1].tag)
+		return first and first[fontField(fontTargets[1], "fontSize")]
+	end
+	setters.FontSize = function(value)
+		for _, target in ipairs(fontTargets) do
+			local elementTable = getElement(target.tag)
+			if elementTable then
+				elementTable[fontField(target, "fontSize")] = value
+			end
+		end
+	end
+
+	if isIcon then
+		getters.IconZoom = function()
+			return getElement(Element.Icon).iconZoom
+		end
+		setters.IconZoom = function(value)
+			getElement(Element.Icon).iconZoom = value
+		end
+		getters.BorderStyle = function()
+			local border = getElement(Element.Border)
+			if border == nil then
+				return "None"
+			end
+			return border.active == false and "None" or border.borderTexture
+		end
+		setters.BorderStyle = function(value)
+			local border = getElement(Element.Border)
+			if border == nil then
+				return
+			end
+			if value == "None" then
+				border.active = false
+			else
+				border.active = true
+				border.borderTexture = value
+			end
+		end
+	else
+		getters.ForegroundBarTexture = function()
+			return core().barTexture
+		end
+		setters.ForegroundBarTexture = function(value)
+			core().barTexture = value
+		end
+		getters.ProgressBarColor = function()
+			return core().progressBarColor
+		end
+		setters.ProgressBarColor = function(value)
+			core().progressBarColor = value
+		end
+		getters.UninterruptibleColor = function()
+			return core().uninterruptibleColor
+		end
+		setters.UninterruptibleColor = function(value)
+			core().uninterruptibleColor = value
+		end
+		getters.InterruptibleColor = function()
+			return core().interruptibleColor
+		end
+		setters.InterruptibleColor = function(value)
+			core().interruptibleColor = value
+		end
+		getters.BackgroundBarTexture = function()
+			return getElement(Element.Background).backgroundTexture
+		end
+		setters.BackgroundBarTexture = function(value)
+			getElement(Element.Background).backgroundTexture = value
+		end
+		getters.BackgroundBarColor = function()
+			return getElement(Element.Background).backgroundColor
+		end
+		setters.BackgroundBarColor = function(value)
+			getElement(Element.Background).backgroundColor = value
+		end
+
+		-- lossy: two independent v3 bools ↔ one v4 mode (Phase 6 makes it a dropdown)
+		getters.UseInterruptabilityColors = function()
+			return core().barColorMode == BarColorMode.Interruptibility
+		end
+		setters.UseInterruptabilityColors = function(value)
+			if value then
+				core().barColorMode = BarColorMode.Interruptibility
+			elseif core().barColorMode == BarColorMode.Interruptibility then
+				core().barColorMode = BarColorMode.Static
+			end
+		end
+		getters.UseTargetClassColor = function()
+			return core().barColorMode == BarColorMode.TargetClassColor
+		end
+		setters.UseTargetClassColor = function(value)
+			if value then
+				core().barColorMode = BarColorMode.TargetClassColor
+			elseif core().barColorMode == BarColorMode.TargetClassColor then
+				core().barColorMode = BarColorMode.Static
+			end
+		end
+	end
+
+	-- sub-tables with an identical v4 shape are handed back by reference
+	local directTables = {
+		Position = function()
+			return group.Position
+		end,
+		LoadConditionContentType = function()
+			return group.LoadConditionContentType
+		end,
+		LoadConditionRole = function()
+			return group.LoadConditionRole
+		end,
+		AnnounceUntargetedSpells = function()
+			return TargetedSpellsSaved.TextToSpeech.AnnounceUntargetedSpells
+		end,
+		AnnounceTargetedSpells = function()
+			return TargetedSpellsSaved.TextToSpeech.AnnounceTargetedSpells
+		end,
+	}
+	getters.TextToSpeechVoice = function()
+		return TargetedSpellsSaved.TextToSpeech.TextToSpeechVoice
+	end
+	setters.TextToSpeechVoice = function(value)
+		TargetedSpellsSaved.TextToSpeech.TextToSpeechVoice = value
+	end
+
+	-- FontFlags: read a representative element, write fans out to all
+	local fontFlagsProxy = setmetatable({}, {
+		__index = function(_, flagId)
+			local first = getElement(fontTargets[1].tag)
+			local flags = first and first[fontField(fontTargets[1], "fontFlags")]
+			return flags and flags[flagId]
+		end,
+		__newindex = function(_, flagId, value)
+			for _, target in ipairs(fontTargets) do
+				local elementTable = getElement(target.tag)
+				local flags = elementTable and elementTable[fontField(target, "fontFlags")]
+				if flags then
+					flags[flagId] = value
+				end
+			end
+		end,
+	})
+
+	-- FeatureFlags: each v3 flag maps to a group field, an element field, or the
+	-- filter set. Behaviour flags → group; Show*/active → element.active; the
+	-- Hide/SelfOnly flags are the inverse of derivePartyFilter; Mirror/Inline gone.
+	local function featureFlagGet(flagId)
+		if flagId == FeatureFlag.GlowImportant then
+			return group.GlowImportant
+		elseif flagId == FeatureFlag.OnlyImportant then
+			return group.OnlyImportant
+		elseif flagId == FeatureFlag.IndicateInterrupts then
+			return group.IndicateInterrupts
+		elseif flagId == FeatureFlag.RenderInterruptSourceName then
+			local elementTable = getElement(Element.InterruptSource)
+			return elementTable ~= nil and elementTable.active
+		end
+
+		if isIcon then
+			if flagId == FeatureFlag.ShowDuration then
+				local elementTable = getElement(Element.Cooldown)
+				return elementTable ~= nil and elementTable.showCountdown
+			elseif flagId == FeatureFlag.ShowSwipe then
+				local elementTable = getElement(Element.Cooldown)
+				return elementTable ~= nil and elementTable.showSwipe
+			end
+
+			return false
+		end
+
+		if flagId == FeatureFlag.ShowDuration then
+			local elementTable = getElement(Element.DurationCooldown)
+			return elementTable ~= nil and elementTable.active
+		elseif flagId == FeatureFlag.ShowIcon then
+			local elementTable = getElement(Element.Icon)
+			return elementTable ~= nil and elementTable.active
+		elseif flagId == FeatureFlag.ShowTargetMarker then
+			local elementTable = getElement(Element.TargetMarker)
+			return elementTable ~= nil and elementTable.active
+		elseif flagId == FeatureFlag.ShowSpellName then
+			local elementTable = getElement(Element.SpellName)
+			return elementTable ~= nil and elementTable.active
+		elseif flagId == FeatureFlag.ShowTargetName then
+			local elementTable = getElement(Element.TargetName)
+			return elementTable ~= nil and elementTable.active
+		elseif flagId == FeatureFlag.ShowTargetClassColor then
+			local elementTable = getElement(Element.TargetName)
+			return elementTable ~= nil and elementTable.useClassColor
+		elseif flagId == FeatureFlag.HideUntargetedSpells then
+			return not group.Filter[TargetClass.Nobody]
+		elseif flagId == FeatureFlag.HideTargetedSpells then
+			return not group.Filter[TargetClass.Player] and not group.Filter[TargetClass.PartyMember]
+		elseif flagId == FeatureFlag.SelfOnly then
+			return not group.Filter[TargetClass.PartyMember] and group.Filter[TargetClass.Player] == true
+		end
+
+		return false
+	end
+
+	local function setElementActive(tag, value)
+		local elementTable = getElement(tag)
+		if elementTable then
+			elementTable.active = value
+		end
+	end
+
+	local function setFilterClass(targetClass, present)
+		if present then
+			group.Filter[targetClass] = true
+		else
+			group.Filter[targetClass] = nil
+		end
+	end
+
+	local function featureFlagSet(flagId, value)
+		if flagId == FeatureFlag.GlowImportant then
+			group.GlowImportant = value
+		elseif flagId == FeatureFlag.OnlyImportant then
+			group.OnlyImportant = value
+		elseif flagId == FeatureFlag.IndicateInterrupts then
+			group.IndicateInterrupts = value
+		elseif flagId == FeatureFlag.RenderInterruptSourceName then
+			setElementActive(Element.InterruptSource, value)
+		elseif isIcon and flagId == FeatureFlag.ShowDuration then
+			local elementTable = getElement(Element.Cooldown)
+			if elementTable then
+				elementTable.showCountdown = value
+			end
+		elseif isIcon and flagId == FeatureFlag.ShowSwipe then
+			local elementTable = getElement(Element.Cooldown)
+			if elementTable then
+				elementTable.showSwipe = value
+			end
+		elseif flagId == FeatureFlag.ShowDuration then
+			local elementTable = getElement(Element.DurationCooldown)
+			if elementTable then
+				elementTable.active = value
+				elementTable.showCountdown = value
+			end
+		elseif flagId == FeatureFlag.ShowIcon then
+			setElementActive(Element.Icon, value)
+		elseif flagId == FeatureFlag.ShowTargetMarker then
+			setElementActive(Element.TargetMarker, value)
+		elseif flagId == FeatureFlag.ShowSpellName then
+			setElementActive(Element.SpellName, value)
+		elseif flagId == FeatureFlag.ShowTargetName then
+			setElementActive(Element.TargetName, value)
+		elseif flagId == FeatureFlag.ShowTargetClassColor then
+			local elementTable = getElement(Element.TargetName)
+			if elementTable then
+				elementTable.useClassColor = value
+			end
+		elseif flagId == FeatureFlag.HideUntargetedSpells then
+			setFilterClass(TargetClass.Nobody, not value)
+		elseif flagId == FeatureFlag.HideTargetedSpells then
+			setFilterClass(TargetClass.Player, not value)
+			setFilterClass(TargetClass.PartyMember, not value)
+		elseif flagId == FeatureFlag.SelfOnly then
+			setFilterClass(TargetClass.PartyMember, not value)
+		end
+		-- MirrorLayout / InlineDuration and anything unmapped: intentionally ignored
+	end
+
+	local featureFlagsProxy = setmetatable({}, {
+		__index = function(_, flagId)
+			return featureFlagGet(flagId)
+		end,
+		__newindex = function(_, flagId, value)
+			featureFlagSet(flagId, value)
+		end,
+	})
+
+	return setmetatable({}, {
+		__index = function(_, key)
+			if key == "FeatureFlags" then
+				return featureFlagsProxy
+			elseif key == "FontFlags" then
+				return fontFlagsProxy
+			elseif directTables[key] ~= nil then
+				return directTables[key]()
+			end
+
+			local getter = getters[key]
+			return getter and getter()
+		end,
+		__newindex = function(_, key, value)
+			if key == "FeatureFlags" or key == "FontFlags" then
+				return -- these are edited element-wise through their sub-proxies
+			elseif directTables[key] ~= nil then
+				-- whole sub-table assignment: copy into the backing table in place
+				local target = directTables[key]()
+				if type(value) == "table" and type(target) == "table" then
+					table.wipe(target)
+					for subKey, subValue in pairs(value) do
+						target[subKey] = subValue
+					end
+				end
+				return
+			end
+
+			local setter = setters[key]
+			if setter then
+				setter(value)
+			end
+		end,
+	})
+end
+
 function Private.Settings.GetFontOptions()
 	local fonts = CopyTable(LibSharedMedia:List(LibSharedMedia.MediaType.FONT))
 	table.sort(fonts)

@@ -9,17 +9,39 @@ local BACKDROP_COORD_END = 1 - BACKDROP_COORD_START
 ---@class TargetedSpellsIconMixin : TargetedSpellsMixin
 TargetedSpellsIconMixin = CreateFromMixins(TargetedSpellsMixin)
 
+function TargetedSpellsIconMixin:GetCoreElement()
+	return Private.Enum.Element.Icon
+end
+
 function TargetedSpellsIconMixin:OnLoad()
 	TargetedSpellsMixin.OnLoad(self)
-	PixelUtil.SetSize(self, TargetedSpellsSaved.Settings.Self.Width, TargetedSpellsSaved.Settings.Self.Height)
+	-- group-agnostic setup only; OnLoad runs once at pool creation, before the
+	-- Driver assigns a group. All group-dependent styling lives in ApplyLayout.
 	self.Bar:SetStatusBarTexture("")
 	self.Cooldown:SetCountdownFormatter(Private.Utils.Formatter)
 	self.Cooldown:SetCountdownFont("GameFontHighlightHugeOutline")
-	self:SetFont()
 	self:HideGlow()
-	self:ApplyBorderStyle(TargetedSpellsSaved.Settings.Self.BorderStyle)
-	self:SetShowDuration(TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration])
-	self.Cooldown:SetDrawSwipe(TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowSwipe])
+end
+
+-- Sizes and styles the frame from its assigned group's Icon layout. Runs on
+-- acquire (PostCreate), once the group is set — SetSize here drives OnSizeChanged.
+function TargetedSpellsIconMixin:ApplyLayout()
+	local iconElement = self:GetElement(Private.Enum.Element.Icon)
+	if iconElement == nil then
+		return
+	end
+
+	PixelUtil.SetSize(self, iconElement.width, iconElement.height)
+	self:SetFont()
+
+	local border = self:GetElement(Private.Enum.Element.Border)
+	self:ApplyBorderStyle(border ~= nil and border.active ~= false and border.borderTexture or "None")
+
+	local cooldown = self:GetElement(Private.Enum.Element.Cooldown)
+	if cooldown ~= nil then
+		self:SetShowDuration(cooldown.showCountdown)
+		self.Cooldown:SetDrawSwipe(cooldown.showSwipe)
+	end
 end
 
 do
@@ -72,8 +94,9 @@ do
 
 			local edgeSize = BORDER_EDGE_SIZES[styleName] or 8
 			local outwardOffset = BORDER_INSETS[styleName] or 0
-			local borderWidth = TargetedSpellsSaved.Settings.Self.Width + 2 * outwardOffset
-			local borderHeight = TargetedSpellsSaved.Settings.Self.Height + 2 * outwardOffset
+			local iconElement = self:GetElement(Private.Enum.Element.Icon)
+			local borderWidth = iconElement.width + 2 * outwardOffset
+			local borderHeight = iconElement.height + 2 * outwardOffset
 
 			-- replicates BackdropTemplateMixin:SetupTextureCoordinates using known
 			-- dimensions instead of GetWidth()/GetHeight() to avoid secret errors
@@ -203,7 +226,9 @@ function TargetedSpellsIconMixin:SetInterrupted(name, color)
 		return
 	end
 
-	if TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.RenderInterruptSourceName] then
+	local interruptSource = self:GetElement(Private.Enum.Element.InterruptSource)
+
+	if interruptSource ~= nil and interruptSource.active then
 		self.InterruptSource:SetText(name)
 
 		if color ~= nil then
@@ -222,8 +247,13 @@ end
 
 --- shamelessly ~~stolen~~ repurposed from WeakAuras2
 function TargetedSpellsIconMixin:OnSizeChanged()
+	local iconElement = self:GetElement(Private.Enum.Element.Icon)
+	if iconElement == nil then
+		return
+	end
+
 	local coordinates = { 0, 0, 0, 1, 1, 0, 1, 1 }
-	local aspectRatio = TargetedSpellsSaved.Settings.Self.Width / TargetedSpellsSaved.Settings.Self.Height
+	local aspectRatio = iconElement.width / iconElement.height
 
 	local xRatio = aspectRatio < 1 and aspectRatio or 1
 	local yRatio = aspectRatio > 1 and 1 / aspectRatio or 1
@@ -232,9 +262,9 @@ function TargetedSpellsIconMixin:OnSizeChanged()
 		local coordinate = coordinates[i]
 
 		if i % 2 == 1 then
-			coordinates[i] = (coordinate - 0.5) * (xRatio / TargetedSpellsSaved.Settings.Self.IconZoom) + 0.5
+			coordinates[i] = (coordinate - 0.5) * (xRatio / iconElement.iconZoom) + 0.5
 		else
-			coordinates[i] = (coordinate - 0.5) * (yRatio / TargetedSpellsSaved.Settings.Self.IconZoom) + 0.5
+			coordinates[i] = (coordinate - 0.5) * (yRatio / iconElement.iconZoom) + 0.5
 		end
 	end
 
@@ -245,12 +275,12 @@ function TargetedSpellsIconMixin:OnSizeChanged()
 	self.Overlay:ClearAllPoints()
 
 	do
-		local fifteenPercent = 0.15 * TargetedSpellsSaved.Settings.Self.Width
+		local fifteenPercent = 0.15 * iconElement.width
 		PixelUtil.SetPoint(self.Overlay, "TOPLEFT", topleftRelativePoint, "TOPLEFT", -fifteenPercent, fifteenPercent)
 	end
 
 	do
-		local fifteenPercent = 0.15 * TargetedSpellsSaved.Settings.Self.Height
+		local fifteenPercent = 0.15 * iconElement.height
 		PixelUtil.SetPoint(
 			self.Overlay,
 			"BOTTOMRIGHT",
@@ -263,10 +293,16 @@ function TargetedSpellsIconMixin:OnSizeChanged()
 end
 
 function TargetedSpellsIconMixin:OnSettingChanged(key, flagIdOrValue, newBool)
+	local iconElement = self:GetElement(Private.Enum.Element.Icon)
+	-- an unassigned/pooled frame has no group yet; nothing to restyle
+	if iconElement == nil then
+		return
+	end
+
 	if key == Private.Settings.Keys.Self.Width then
-		PixelUtil.SetSize(self, flagIdOrValue, TargetedSpellsSaved.Settings.Self.Height)
+		PixelUtil.SetSize(self, flagIdOrValue, iconElement.height)
 	elseif key == Private.Settings.Keys.Self.Height then
-		PixelUtil.SetSize(self, TargetedSpellsSaved.Settings.Self.Width, flagIdOrValue)
+		PixelUtil.SetSize(self, iconElement.width, flagIdOrValue)
 	elseif
 		key == Private.Settings.Keys.Self.FontSize
 		or key == Private.Settings.Keys.Self.Font
@@ -278,14 +314,17 @@ function TargetedSpellsIconMixin:OnSettingChanged(key, flagIdOrValue, newBool)
 	elseif key == Private.Settings.Keys.Self.GlowType then
 		self:HideGlow()
 
-		if TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.GlowImportant] then
+		local group = self:GetGroup()
+		if group ~= nil and group.GlowImportant then
 			self:ShowGlow(self:IsSpellImportant(LibEditMode:IsInEditMode() and Private.Utils.RollDice()))
 		end
 	elseif key == Private.Settings.Keys.Self.BorderStyle then
-		self:ApplyBorderStyle(flagIdOrValue)
+		local border = self:GetElement(Private.Enum.Element.Border)
+		self:ApplyBorderStyle(border ~= nil and border.active ~= false and border.borderTexture or "None")
 	elseif key == Private.Settings.Keys.Self.FeatureFlags then
 		if flagIdOrValue == Private.Enum.FeatureFlag.ShowDuration then
-			self:SetShowDuration(TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration])
+			local cooldown = self:GetElement(Private.Enum.Element.Cooldown)
+			self:SetShowDuration(cooldown ~= nil and cooldown.showCountdown)
 		elseif flagIdOrValue == Private.Enum.FeatureFlag.ShowSwipe then
 			self.Cooldown:SetDrawSwipe(newBool)
 		elseif flagIdOrValue == Private.Enum.FeatureFlag.GlowImportant then
@@ -301,27 +340,22 @@ function TargetedSpellsIconMixin:PostCreate(info, OnCooldownDoneCallback)
 		return
 	end
 
+	-- the Driver assigns the group before PostCreate; size/style from it now
+	self:ApplyLayout()
+
+	local group = self:GetGroup()
+
 	self.info = info
 	self.Cooldown:SetCooldownFromDurationObject(info.duration)
 
 	self:SetSpellId(info.spellId)
 
 	local durationAlpha = self:SetDuration(info.duration)
-	local targetsPlayer = PlayerIsSpellTarget(info.unit, "player")
-
-	if TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.OnlyImportant] then
-		self:SetAlphaFromBoolean(
-			targetsPlayer,
-			C_CurveUtil.EvaluateColorValueFromBoolean(self:IsSpellImportant(), 0, durationAlpha),
-			0
-		)
-	else
-		self:SetAlphaFromBoolean(targetsPlayer, durationAlpha, 0)
-	end
+	self:ApplyCastAlpha(info, durationAlpha)
 
 	self.Bar:SetValue(self:GetAlpha())
 
-	if TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.GlowImportant] then
+	if group ~= nil and group.GlowImportant then
 		self:ShowGlow(self:IsSpellImportant())
 	end
 
@@ -345,8 +379,12 @@ function TargetedSpellsIconMixin:Reset()
 	self.InterruptSource:Hide()
 	self.InterruptSource:SetTextColor(1, 1, 1)
 
-	if TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.GlowImportant] then
-		local glowType = TargetedSpellsSaved.Settings.Self.GlowType
+	-- group is retained through Reset (base Reset no longer nils it)
+	local group = self:GetGroup()
+	local cooldown = self:GetElement(Private.Enum.Element.Cooldown)
+
+	if group ~= nil and group.GlowImportant then
+		local glowType = group.GlowType
 
 		if glowType == Private.Enum.GlowType.PixelGlow then
 			if self._PixelGlow ~= nil then
@@ -365,25 +403,32 @@ function TargetedSpellsIconMixin:Reset()
 
 	TargetedSpellsMixin.Reset(self)
 
-	-- important to come last - the cooldown swipe ignores display status of its parent
-	self:SetShowDuration(TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowDuration])
-	self.Cooldown:SetDrawSwipe(TargetedSpellsSaved.Settings.Self.FeatureFlags[Private.Enum.FeatureFlag.ShowSwipe])
-	-- Cooldown:Clear() re-inherits from SetCountdownFont, overwriting any previously applied font
-	self:SetFont()
+	if cooldown ~= nil then
+		-- important to come last - the cooldown swipe ignores display status of its parent
+		self:SetShowDuration(cooldown.showCountdown)
+		self.Cooldown:SetDrawSwipe(cooldown.showSwipe)
+		-- Cooldown:Clear() re-inherits from SetCountdownFont, overwriting any previously applied font
+		self:SetFont()
+	end
 end
 
 function TargetedSpellsIconMixin:SetFont()
+	local cooldown = self:GetElement(Private.Enum.Element.Cooldown)
+	if cooldown == nil then
+		return
+	end
+
 	local fontString = self.Cooldown:GetCountdownFontString()
 
 	Private.Utils.SafelySetFont(
 		Private.Enum.FrameKind.Self,
 		fontString,
-		TargetedSpellsSaved.Settings.Self.Font,
-		TargetedSpellsSaved.Settings.Self.FontSize,
-		TargetedSpellsSaved.Settings.Self.FontFlags[Private.Enum.FontFlags.OUTLINE] and "OUTLINE" or ""
+		cooldown.countdownFont,
+		cooldown.countdownFontSize,
+		cooldown.countdownFontFlags[Private.Enum.FontFlags.OUTLINE] and "OUTLINE" or ""
 	)
 
-	if TargetedSpellsSaved.Settings.Self.FontFlags[Private.Enum.FontFlags.SHADOW] then
+	if cooldown.countdownFontFlags[Private.Enum.FontFlags.SHADOW] then
 		fontString:SetShadowOffset(1, -1)
 		fontString:SetShadowColor(0, 0, 0, 1)
 	else

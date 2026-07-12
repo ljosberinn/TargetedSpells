@@ -78,8 +78,73 @@ function TargetedSpellsMixin:GetId()
 	return self.id
 end
 
+-- `kind` (the XML KeyValue, "self"/"party") survives in v4 only as "which pool
+-- do I return to". Settings resolution goes through GetGroup / the element layout
+-- below, not through kind.
 function TargetedSpellsMixin:GetKind()
 	return self.kind
+end
+
+-- ── Group + layout resolution (Phase 3 seam) ─────────────────────────────────
+-- A frame belongs to a group (assigned by the Driver on acquire). It renders its
+-- element layout from that group — unless a scratch layout is injected, which is
+-- how the designer previews unsaved edits on a frame that belongs to no group
+-- (v4 plan §Designer / challenge #3a). Everything downstream resolves settings
+-- through these accessors rather than reaching for Settings.Self/Party.
+
+function TargetedSpellsMixin:SetGroup(group)
+	self.group = group
+end
+
+function TargetedSpellsMixin:GetGroup()
+	return self.group
+end
+
+-- Designer preview: render from an injected scratch Elements table instead of the
+-- group's saved layout. Set while previewing, cleared on release / apply.
+function TargetedSpellsMixin:SetLayoutOverride(elements)
+	self.layoutOverride = elements
+end
+
+function TargetedSpellsMixin:ClearLayoutOverride()
+	self.layoutOverride = nil
+end
+
+-- The element layout this frame renders from: the injected override if present,
+-- otherwise the frame's group's Elements. Nil only for an unassigned frame.
+---@return table<Element, table<string, any>>?
+function TargetedSpellsMixin:GetElements()
+	if self.layoutOverride ~= nil then
+		return self.layoutOverride
+	end
+
+	return self.group and self.group.Elements
+end
+
+-- One element's resolved settings table, or nil if unavailable.
+---@param element Element
+---@return table<string, any>?
+function TargetedSpellsMixin:GetElement(element)
+	local elements = self:GetElements()
+	return elements and elements[element]
+end
+
+-- The template's core element tag (Icon frames → Icon, Bar frames → ProgressBar).
+-- Overridden per derived mixin; its width/height are what the old container
+-- Width/Height controlled.
+---@return Element?
+function TargetedSpellsMixin:GetCoreElement()
+	return nil
+end
+
+-- Core element's width/height from the resolved layout (glow sizing, footprint).
+---@return number?, number?
+function TargetedSpellsMixin:GetCoreSize()
+	local core = self:GetElement(self:GetCoreElement())
+	if core == nil then
+		return nil, nil
+	end
+	return core.width, core.height
 end
 
 function TargetedSpellsMixin:CanBeHidden(id)
@@ -123,10 +188,8 @@ function TargetedSpellsMixin:IsSpellImportant(boolOverride)
 end
 
 function TargetedSpellsMixin:GetGlowTarget()
-	local tableRef = self.kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
-		or TargetedSpellsSaved.Settings.Party
-
-	return self, tableRef.Width, tableRef.Height
+	local width, height = self:GetCoreSize()
+	return self, width, height
 end
 
 function TargetedSpellsMixin:HideGlow()
@@ -145,11 +208,15 @@ function TargetedSpellsMixin:HideGlow()
 end
 
 function TargetedSpellsMixin:ShowGlow(isImportant)
-	local tableRef = self.kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
-		or TargetedSpellsSaved.Settings.Party
+	local group = self:GetGroup()
+	if group == nil then
+		return
+	end
+
+	local glowType = group.GlowType
 	local glowFrame, glowWidth, glowHeight = self:GetGlowTarget()
 
-	if tableRef.GlowType == Private.Enum.GlowType.Star4 then
+	if glowType == Private.Enum.GlowType.Star4 then
 		if glowFrame._Star4 == nil then
 			glowFrame._Star4 = CreateStar4Glow(glowFrame, glowWidth, glowHeight)
 		end
@@ -160,15 +227,15 @@ function TargetedSpellsMixin:ShowGlow(isImportant)
 		glowFrame._Star4.Animation:Play()
 
 		glowFrame._Star4:SetAlphaFromBoolean(isImportant)
-	elseif tableRef.GlowType == Private.Enum.GlowType.PixelGlow then
+	elseif glowType == Private.Enum.GlowType.PixelGlow then
 		Private.Glows.PixelGlow_Start(glowFrame, glowWidth, glowHeight)
 
 		glowFrame._PixelGlow:SetAlphaFromBoolean(isImportant)
-	elseif tableRef.GlowType == Private.Enum.GlowType.AutoCastGlow then
+	elseif glowType == Private.Enum.GlowType.AutoCastGlow then
 		Private.Glows.AutoCastGlow_Start(glowFrame, glowWidth, glowHeight)
 
 		glowFrame._AutoCastGlow:SetAlphaFromBoolean(isImportant)
-	elseif tableRef.GlowType == Private.Enum.GlowType.ProcGlow then
+	elseif glowType == Private.Enum.GlowType.ProcGlow then
 		Private.Glows.ProcGlow_Start(glowFrame, glowWidth, glowHeight)
 
 		glowFrame._ProcGlow:SetAlphaFromBoolean(isImportant)
@@ -206,6 +273,9 @@ function TargetedSpellsMixin:Reset()
 	self.Icon:SetDesaturated(false)
 	self:SetId()
 	self:HideGlow()
+	-- drop the designer preview override; the group ref is left intact so derived
+	-- Reset()s can still read it, and it is overwritten on the next acquire
+	self.layoutOverride = nil
 	self:Hide()
 end
 
@@ -223,4 +293,41 @@ function TargetedSpellsMixin:SetDuration(duration)
 	self.Bar:SetValue(alpha)
 
 	return alpha
+end
+
+-- Applies the frame's alpha for a cast, secret-safe. Combines the duration alpha,
+-- the OnlyImportant behaviour, and the Player/PartyMember filter distinction. The
+-- latter two hinge on *secret* booleans (IsSpellImportant / PlayerIsSpellTarget)
+-- that cannot be used in a Lua `if`, so they are only ever fed to `*FromBoolean`.
+-- Player-vs-PartyMember can't be decided in the Driver before acquisition for the
+-- same reason, so the group offers a targeted cast to both classes and the frame
+-- resolves visibility here.
+---@param info SpellCastInfo
+---@param durationAlpha number
+function TargetedSpellsMixin:ApplyCastAlpha(info, durationAlpha)
+	local group = self:GetGroup()
+	local onlyImportant = group ~= nil and group.OnlyImportant
+
+	-- alpha to show when the cast passes the filter; a secret value when OnlyImportant
+	local shownAlpha = durationAlpha
+	if onlyImportant then
+		shownAlpha = C_CurveUtil.EvaluateColorValueFromBoolean(self:IsSpellImportant(), 0, durationAlpha)
+	end
+
+	local targetName = UnitSpellTargetName(info.unit)
+	local wantsPlayer = group ~= nil and group.Filter[Private.Enum.TargetClass.Player]
+	local wantsPartyMember = group ~= nil and group.Filter[Private.Enum.TargetClass.PartyMember]
+
+	if targetName ~= nil and wantsPlayer and not wantsPartyMember then
+		-- player-only group: visible only when the player is the target
+		self:SetAlphaFromBoolean(PlayerIsSpellTarget(info.unit, "player"), shownAlpha, 0)
+	elseif targetName ~= nil and wantsPartyMember and not wantsPlayer then
+		-- party-member-only group: visible only when the player is NOT the target
+		self:SetAlphaFromBoolean(PlayerIsSpellTarget(info.unit, "player"), 0, shownAlpha)
+	elseif onlyImportant then
+		-- no target distinction, but shownAlpha is secret → must route through *FromBoolean
+		self:SetAlphaFromBoolean(self:IsSpellImportant(), durationAlpha, 0)
+	else
+		self:SetAlpha(shownAlpha)
+	end
 end

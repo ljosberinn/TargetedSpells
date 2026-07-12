@@ -10,13 +10,8 @@ function Private.Utils.SafelySetFont(kind, fontString, font, fontSize, fontFlags
 	end)
 
 	if not ok then
-		local tableRef = kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
-			or TargetedSpellsSaved.Settings.Party
-		local defaults = kind == Private.Enum.FrameKind.Self and Private.Settings.GetSelfDefaultSettings()
-			or Private.Settings.GetPartyDefaultSettings()
-
-		tableRef.Font = defaults.Font
-		fontString:SetFont(defaults.Font, fontSize, fontFlags)
+		-- fall back to a known-good font; the invalid one is not persisted anywhere
+		fontString:SetFont("Fonts\\FRIZQT__.TTF", fontSize, fontFlags)
 	end
 end
 
@@ -122,8 +117,9 @@ do
 	})
 end
 
+-- pools are per-template (Icon / Bar); the old Self/Party names were per-display
 Private.Utils.Pools = {
-	Self = CreateFramePool(
+	Icon = CreateFramePool(
 		"Frame",
 		UIParent,
 		"TargetedSpellsFrameTemplate",
@@ -345,18 +341,15 @@ local function DecodeProfileString(string)
 end
 
 do
-	---@type table<string, Frame|nil>
-	local editModeFrameByKind = {
-		[Private.Enum.FrameKind.Self] = nil,
-		[Private.Enum.FrameKind.Party] = nil,
-	}
+	---@type table<integer, Frame>
+	local editModeFrameByGroupId = {}
 
-	function Private.Utils.RegisterEditModeFrame(frameKind, frame)
-		editModeFrameByKind[frameKind] = frame
+	function Private.Utils.RegisterEditModeFrame(groupId, frame)
+		editModeFrameByGroupId[groupId] = frame
 	end
 
-	function Private.Utils.GetEditModeFrame(frameKind)
-		return editModeFrameByKind[frameKind]
+	function Private.Utils.GetEditModeFrame(groupId)
+		return editModeFrameByGroupId[groupId]
 	end
 
 	-- v4 profile import: accepts a v4 payload (has Groups) or a v3 payload
@@ -385,16 +378,38 @@ do
 		)
 
 		if changed then
-			TargetedSpellsSaved.Groups = Private.Utils.DeepCopy(payload.Groups)
+			-- Update groups IN PLACE so the transitional Settings views and the
+			-- edit-mode `self.group` refs (which captured these tables) survive the
+			-- import. Replacing the tables wholesale would strand those references.
+			local incoming = Private.Utils.DeepCopy(payload.Groups)
+
+			for id in pairs(TargetedSpellsSaved.Groups) do
+				if incoming[id] == nil then
+					TargetedSpellsSaved.Groups[id] = nil
+				end
+			end
+
+			for id, group in pairs(incoming) do
+				local existing = TargetedSpellsSaved.Groups[id]
+
+				if existing == nil then
+					TargetedSpellsSaved.Groups[id] = group
+				else
+					table.wipe(existing)
+					for key, value in pairs(group) do
+						existing[key] = value
+					end
+				end
+
+				TargetedSpellsSaved.Groups[id].Id = id
+			end
+
 			TargetedSpellsSaved.TextToSpeech = Private.Utils.DeepCopy(payload.TextToSpeech)
 			if payload.NextGroupId ~= nil then
 				TargetedSpellsSaved.NextGroupId = payload.NextGroupId
 			end
-			Private.EventRegistry:TriggerEvent(
-				Private.Enum.Events.SETTING_CHANGED,
-				"Groups",
-				TargetedSpellsSaved.Groups
-			)
+
+			Private.EventRegistry:TriggerEvent(Private.Enum.Events.PROFILE_IMPORTED)
 		end
 
 		return changed
@@ -529,7 +544,8 @@ do
 
 				if sourceData.Position ~= nil then
 					local point, x, y = sourceData.Position.point, sourceData.Position.x, sourceData.Position.y
-					local frame = editModeFrameByKind[kindString]
+					-- v3 import path (only reachable pre-migration); frames are keyed by group id
+					local frame = editModeFrameByGroupId[isSelf and 1 or 2]
 
 					if
 						frame ~= nil

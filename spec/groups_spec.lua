@@ -81,3 +81,67 @@ describe("Groups.GetMatching", function()
 		assert.same({}, Private.Groups.GetMatching({}, makeGroups()))
 	end)
 end)
+
+describe("Groups.Create / Delete / SetTemplate / Count", function()
+	local Template = Enum.Template
+	local Element = Enum.Element
+
+	local function newSaved()
+		return { NextGroupId = 1, Groups = {} }
+	end
+
+	it("Create seeds a group from the template defaults with a fresh id", function()
+		local saved = newSaved()
+		local id, group = Private.Groups.Create(Template.Bar, saved)
+
+		assert.equals(1, id)
+		assert.equals(2, saved.NextGroupId)
+		assert.equals(group, saved.Groups[1])
+		assert.equals(Template.Bar, group.Template)
+		assert.equals(1, group.Id)
+		assert.is_string(group.Name)
+		assert.is_table(group.Elements[Element.ProgressBar])
+		-- fresh group sees every target class until narrowed
+		assert.is_true(group.Filter[Enum.TargetClass.Player])
+		assert.is_true(group.Filter[Enum.TargetClass.Nobody])
+	end)
+
+	it("never reuses ids across delete/create", function()
+		local saved = newSaved()
+		local firstId = Private.Groups.Create(Template.Icon, saved)
+		Private.Groups.Create(Template.Icon, saved)
+		assert.is_true(Private.Groups.Delete(firstId, saved))
+		local reusedId = Private.Groups.Create(Template.Icon, saved)
+		assert.equals(3, reusedId)
+	end)
+
+	it("Delete refuses to remove the last remaining group", function()
+		local saved = newSaved()
+		Private.Groups.Create(Template.Icon, saved)
+		assert.is_false(Private.Groups.Delete(1, saved))
+		assert.is_not_nil(saved.Groups[1])
+
+		Private.Groups.Create(Template.Bar, saved)
+		assert.is_true(Private.Groups.Delete(1, saved))
+		assert.is_nil(saved.Groups[1])
+	end)
+
+	it("SetTemplate swaps template and reseeds Elements", function()
+		local saved = newSaved()
+		local _, group = Private.Groups.Create(Template.Icon, saved)
+		assert.is_table(group.Elements[Element.Border]) -- icon-only element
+
+		Private.Groups.SetTemplate(group, Template.Bar)
+		assert.equals(Template.Bar, group.Template)
+		assert.is_table(group.Elements[Element.ProgressBar])
+		assert.is_nil(group.Elements[Element.Border]) -- gone: bar has no Border
+	end)
+
+	it("Count reflects the number of groups", function()
+		local saved = newSaved()
+		assert.equals(0, Private.Groups.Count(saved))
+		Private.Groups.Create(Template.Icon, saved)
+		Private.Groups.Create(Template.Bar, saved)
+		assert.equals(2, Private.Groups.Count(saved))
+	end)
+end)
