@@ -10,6 +10,8 @@
 ---@field Utils TargetedSpellsUtils
 ---@field Design TargetedSpellsDesign
 ---@field Groups TargetedSpellsGroups
+---@field Migration TargetedSpellsMigration
+---@field __test table?
 ---@field Glows GlowFunctions
 
 ---@class CollectLayoutingArguments
@@ -81,6 +83,22 @@
 
 ---@class TargetedSpellsGroups
 ---@field GetMatching fun(info: { targetClasses: table<TargetClass, boolean> }, groups: table<any, TargetedSpellsGroup>?): TargetedSpellsGroup[]
+
+---@class TargetedSpellsTextToSpeech
+---@field AnnounceUntargetedSpells table<NpcType, boolean>
+---@field AnnounceTargetedSpells table<NpcType, boolean>
+---@field TextToSpeechVoice integer|nil
+
+-- v4 SavedVariables container. Groups replace the fixed Settings.Self/Party
+-- trees; TTS is hoisted to one global table. No `Designs` map (layout is 1:1).
+---@class SavedVariablesV4
+---@field SchemaVersion integer
+---@field NextGroupId integer
+---@field Groups table<integer, TargetedSpellsGroup>
+---@field TextToSpeech TargetedSpellsTextToSpeech
+
+---@class TargetedSpellsMigration
+---@field Apply fun(saved: table): table
 
 ---@class GlowFunctions
 ---@field PixelGlow_Start fun(frame: Frame, width: number, height: number)
@@ -154,6 +172,10 @@
 ---@class SavedVariables
 ---@field Settings SavedVariablesSettings
 ---@field nameplateShowOffscreenWasInitialized boolean
+---@field SchemaVersion integer?
+---@field NextGroupId integer?
+---@field Groups table<integer, TargetedSpellsGroup>?
+---@field TextToSpeech TargetedSpellsTextToSpeech?
 
 ---@class SavedVariablesSettings
 ---@field Self SavedVariablesSettingsSelf

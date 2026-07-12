@@ -31,6 +31,7 @@ Localization\[TextLocale].lua [AllowLoadTextLocale deDE, frFR, zhCN, esES, esMX,
 Settings.lua
 Design.lua
 Groups.lua
+Migration.lua
 TargetedSpellsMixin.lua
 TargetedSpellsIconMixin.lua
 TargetedSpellsBarMixin.lua

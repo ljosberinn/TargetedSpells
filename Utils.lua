@@ -35,6 +35,28 @@ function Private.Utils.DeepCopy(source)
 	return copy
 end
 
+-- Structural equality of two values (tables compared recursively). Used by the
+-- v4 profile import to decide whether an imported config actually differs.
+function Private.Utils.DeepEqual(left, right)
+	if left == right then
+		return true
+	end
+	if type(left) ~= "table" or type(right) ~= "table" then
+		return false
+	end
+	for key, value in pairs(left) do
+		if not Private.Utils.DeepEqual(value, right[key]) then
+			return false
+		end
+	end
+	for key in pairs(right) do
+		if left[key] == nil then
+			return false
+		end
+	end
+	return true
+end
+
 do
 	local IsLongCastCurve = C_CurveUtil.CreateCurve()
 	IsLongCastCurve:SetType(Enum.LuaCurveType.Linear)
@@ -337,6 +359,47 @@ do
 		return editModeFrameByKind[frameKind]
 	end
 
+	-- v4 profile import: accepts a v4 payload (has Groups) or a v3 payload
+	-- (Self/Party), normalising the latter through the migration first, then
+	-- adopts it wholesale — profile import means replacing your config. Returns
+	-- whether anything actually changed.
+	---@param result table
+	---@return boolean
+	local function ImportV4Profile(result)
+		local payload = result
+
+		if result.Groups == nil then
+			if result.Self == nil and result.Party == nil then
+				return false
+			end
+
+			-- a v3 profile string imported into a v4 config: migrate it first
+			local temp = { Settings = { Self = result.Self, Party = result.Party } }
+			Private.Migration.Apply(temp)
+			payload = temp
+		end
+
+		local changed = not Private.Utils.DeepEqual(
+			{ Groups = TargetedSpellsSaved.Groups, TextToSpeech = TargetedSpellsSaved.TextToSpeech },
+			{ Groups = payload.Groups, TextToSpeech = payload.TextToSpeech }
+		)
+
+		if changed then
+			TargetedSpellsSaved.Groups = Private.Utils.DeepCopy(payload.Groups)
+			TargetedSpellsSaved.TextToSpeech = Private.Utils.DeepCopy(payload.TextToSpeech)
+			if payload.NextGroupId ~= nil then
+				TargetedSpellsSaved.NextGroupId = payload.NextGroupId
+			end
+			Private.EventRegistry:TriggerEvent(
+				Private.Enum.Events.SETTING_CHANGED,
+				"Groups",
+				TargetedSpellsSaved.Groups
+			)
+		end
+
+		return changed
+	end
+
 	function Private.Utils.Import(string)
 		local ok, result = pcall(DecodeProfileString, string)
 
@@ -351,6 +414,12 @@ do
 		-- just a type check
 		if result == nil then
 			return false
+		end
+
+		-- once migrated to the v4 group model, import runs the v4 path (which
+		-- also accepts v3 strings by migrating them). Until then, the v3 path below.
+		if TargetedSpellsSaved.Groups ~= nil then
+			return ImportV4Profile(result)
 		end
 
 		local hasAnyChange = false
@@ -485,7 +554,20 @@ do
 	end
 
 	function Private.Utils.Export()
-		return C_EncodingUtil.EncodeBase64(C_EncodingUtil.SerializeCBOR(TargetedSpellsSaved.Settings))
+		local payload
+		if TargetedSpellsSaved.Groups ~= nil then
+			-- v4: serialise the group model + hoisted TTS, not the old Settings tree
+			payload = {
+				SchemaVersion = TargetedSpellsSaved.SchemaVersion,
+				NextGroupId = TargetedSpellsSaved.NextGroupId,
+				Groups = TargetedSpellsSaved.Groups,
+				TextToSpeech = TargetedSpellsSaved.TextToSpeech,
+			}
+		else
+			payload = TargetedSpellsSaved.Settings
+		end
+
+		return C_EncodingUtil.EncodeBase64(C_EncodingUtil.SerializeCBOR(payload))
 	end
 end
 

@@ -14,6 +14,11 @@ local L = Private.L
 L.EditMode = {}
 L.Functionality = {}
 L.Settings = {}
+L.Migration = {}
+
+-- Default names for the two groups the v3 → v4 migration creates.
+L.Migration.SelfGroupName = "Self"
+L.Migration.PartyGroupName = "Party"
 
 L.Settings.EditModeReminder =
 	"Consider using the Edit Mode instead, it includes live preview of all settings.\nThese here are only present to allow editing in combat."
