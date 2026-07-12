@@ -20,6 +20,21 @@ function Private.Utils.SafelySetFont(kind, fontString, font, fontSize, fontFlags
 	end
 end
 
+-- Recursive deep copy of a (possibly nested) table. Backs the designer's scratch
+-- copy and the "copy layout from group" action; also used by Design.GetDefault so
+-- callers can mutate the returned Elements without touching the code constant.
+function Private.Utils.DeepCopy(source)
+	if type(source) ~= "table" then
+		return source
+	end
+
+	local copy = {}
+	for key, value in pairs(source) do
+		copy[key] = Private.Utils.DeepCopy(value)
+	end
+	return copy
+end
+
 do
 	local IsLongCastCurve = C_CurveUtil.CreateCurve()
 	IsLongCastCurve:SetType(Enum.LuaCurveType.Linear)

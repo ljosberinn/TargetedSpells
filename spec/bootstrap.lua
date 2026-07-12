@@ -93,6 +93,8 @@ Private.L = setmetatable({}, {
 TargetedSpellsSaved = {}
 
 loadfile("Utils.lua")(addonName, Private)
+loadfile("Design.lua")(addonName, Private)
+loadfile("Groups.lua")(addonName, Private)
 
 -- ── State kept in bootstrap's own _G (shared with Utils.lua loaded here) ──────
 -- Busted uses setfenv() to sandbox spec files in Lua 5.1, so assignments to

@@ -8,6 +8,8 @@
 ---@field LoginFnQueue table<string, function>
 ---@field L table<string, table<string, string|nil>>
 ---@field Utils TargetedSpellsUtils
+---@field Design TargetedSpellsDesign
+---@field Groups TargetedSpellsGroups
 ---@field Glows GlowFunctions
 
 ---@class CollectLayoutingArguments
@@ -20,6 +22,7 @@
 ---@field relativePoint FramePoint
 
 ---@class TargetedSpellsUtils
+---@field DeepCopy fun(source: any): any
 ---@field CollectLayoutingArguments fun(direction: Direction, grow: Grow, width: number, height: number, gap: number): CollectLayoutingArguments
 ---@field AdjustLayout fun(frames: TargetedSpellsIconMixin[], geo: CollectLayoutingArguments, barParent: Frame, firstAnchorPoint: FramePoint, firstOffsetX: number, firstOffsetY: number, isEditMode: boolean)
 ---@field SortFrames fun(frames: TargetedSpellsIconMixin[], sortOrder: SortOrder)
@@ -35,6 +38,49 @@
 ---@field MigratePartySettingsToV3 fun(existing: table): SavedVariablesSettingsParty
 ---@field ApplyMigration fun(key: string, kind: FrameKind, defaults: SavedVariablesSettingsSelf|SavedVariablesSettingsParty)
 ---@field SafelySetFont fun(kind: FrameKind, fontString: FontString, font: string, fontSize: number, fontFlags: string)
+
+-- ── v4 model (Phase 1) ───────────────────────────────────────────────────────
+
+-- One schema record: mirrors Blizzard's systemSettingDisplayInfo shape. `type`
+-- selects the designer widget (boolean/number/color/enum/font/fontFlags/texture).
+---@class TargetedSpellsElementRecord
+---@field setting string
+---@field name string
+---@field type string
+---@field default any
+---@field min number?
+---@field max number?
+---@field step number?
+---@field options table[]?
+
+-- A group owns its Template + Elements 1:1 (no shared Design). Core element's
+-- width/height live in Elements[core]; there is no top-level Width/Height.
+---@class TargetedSpellsGroup
+---@field Name string
+---@field Enabled boolean
+---@field Filter table<TargetClass, boolean>
+---@field Template TargetedSpellsTemplate
+---@field Elements table<Element, table<string, any>>
+---@field Position FramePosition
+---@field Gap number
+---@field Grow Grow
+---@field Direction Direction
+---@field SortOrder SortOrder
+---@field MaxItems number
+---@field LoadConditionContentType table<number, boolean>
+---@field LoadConditionRole table<number, boolean>
+---@field GlowType GlowType
+---@field GlowImportant boolean
+---@field OnlyImportant boolean
+---@field IndicateInterrupts boolean
+
+---@class TargetedSpellsDesign
+---@field GetDefault fun(template: TargetedSpellsTemplate): table<Element, table<string, any>>
+---@field GetSchema fun(template: TargetedSpellsTemplate): table<Element, TargetedSpellsElementRecord[]>
+---@field CopyElements fun(elements: table): table
+
+---@class TargetedSpellsGroups
+---@field GetMatching fun(info: { targetClasses: table<TargetClass, boolean> }, groups: table<any, TargetedSpellsGroup>?): TargetedSpellsGroup[]
 
 ---@class GlowFunctions
 ---@field PixelGlow_Start fun(frame: Frame, width: number, height: number)

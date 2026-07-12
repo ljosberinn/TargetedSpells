@@ -807,7 +807,6 @@ table.insert(Private.LoginFnQueue, function()
 			end
 
 			local function SetValue(value)
-				print(value)
 				if value ~= TargetedSpellsSaved.Settings.Party.BackgroundBarColor then
 					TargetedSpellsSaved.Settings.Party.BackgroundBarColor = value
 					Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, key, value)
@@ -1912,17 +1911,17 @@ table.insert(Private.LoginFnQueue, function()
 
 				tooltip:AddLine(L.Settings.AddonCompartmentTooltipLine1:format(WrapTextInColorCode(
 					string.lower(
-						---@diagnostic disable-next-line: param-type-mismatch
+					---@diagnostic disable-next-line: param-type-mismatch
 						TargetedSpellsSaved.Settings.Self.Enabled and L.Settings.EnabledLabel
-							or L.Settings.DisabledLabel
+						or L.Settings.DisabledLabel
 					),
 					TargetedSpellsSaved.Settings.Self.Enabled and enabledColor or disabledColor
 				)))
 				tooltip:AddLine(L.Settings.AddonCompartmentTooltipLine2:format(WrapTextInColorCode(
 					string.lower(
-						---@diagnostic disable-next-line: param-type-mismatch
+					---@diagnostic disable-next-line: param-type-mismatch
 						TargetedSpellsSaved.Settings.Party.Enabled and L.Settings.EnabledLabel
-							or L.Settings.DisabledLabel
+						or L.Settings.DisabledLabel
 					),
 					TargetedSpellsSaved.Settings.Party.Enabled and enabledColor or disabledColor
 				)))

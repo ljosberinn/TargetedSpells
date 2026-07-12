@@ -93,6 +93,55 @@ Private.Enum.NpcType = {
 	Minion = 5,
 }
 
+-- v4 model ─────────────────────────────────────────────────────────────────
+
+---@enum TargetedSpellsTemplate
+-- Which XML frame + mixin + pool a group renders with. A per-group property;
+-- the surviving meaning of the old FrameKind/GetKind value.
+Private.Enum.Template = {
+	Icon = "Icon",
+	Bar = "Bar",
+}
+
+---@enum Element
+-- One tag per configurable (and a few non-configurable) sub-widgets of a frame.
+-- Schemas, per-template defaults and migration all key off these. Some tags
+-- (Icon, InterruptSource, InterruptIcon) are shared between templates.
+Private.Enum.Element = {
+	-- shared / icon template
+	Icon = "Icon",
+	Overlay = "Overlay",
+	Cooldown = "Cooldown",
+	Border = "Border",
+	InterruptSource = "InterruptSource",
+	InterruptIcon = "InterruptIcon", -- non-designer: shown on interrupt, no widget
+	Bar = "Bar", -- non-designer: invisible layout spine (icon template)
+	-- bar template
+	ProgressBar = "ProgressBar",
+	Background = "Background",
+	TargetMarker = "TargetMarker",
+	DurationCooldown = "DurationCooldown",
+	SpellName = "SpellName",
+	TargetName = "TargetName",
+	InterruptShield = "InterruptShield",
+}
+
+---@enum TargetClass
+-- What a cast is targeting. A group's Filter is a multi-select over this.
+Private.Enum.TargetClass = {
+	Player = 1,
+	PartyMember = 2,
+	Nobody = 3,
+}
+
+---@enum BarColorMode
+-- Collapses the old UseInterruptabilityColors + UseTargetClassColor booleans.
+Private.Enum.BarColorMode = {
+	Static = 1,
+	Interruptibility = 2,
+	TargetClassColor = 3,
+}
+
 ---@enum FeatureFlag
 Private.Enum.FeatureFlag = {
 	GlowImportant = 1,

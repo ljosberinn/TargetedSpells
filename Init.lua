@@ -72,6 +72,8 @@ EventUtil.ContinueOnAddOnLoaded(addonName, function()
 		then
 			TargetedSpellsSaved.Settings.Party[key] = value
 		end
+
+		Private.Utils.ApplyMigration(key, Private.Enum.FrameKind.Party, partyDefaults)
 	end
 
 	if TargetedSpellsSaved.V3MigrationWarningSeen == nil and not isFirstRun then
