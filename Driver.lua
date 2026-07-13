@@ -32,6 +32,7 @@ function TargetedSpellsDriver:Init()
 	self.OnCooldownDoneClosure = GenerateClosure(self.OnCooldownDone, self)
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingsChanged, self)
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.PROFILE_IMPORTED, self.OnProfileImported, self)
+	Private.EventRegistry:RegisterCallback(Private.Enum.Events.GROUP_CHANGED, self.OnGroupChanged, self)
 	self.ttsAnnouncementCache = {}
 	self.activeEncounterId = nil
 
@@ -729,6 +730,38 @@ function TargetedSpellsDriver:OnProfileImported()
 	end
 
 	self:SetupFrame(false)
+end
+
+-- Releases just one group's live frames (they re-acquire with the current settings
+-- on the next cast) and repositions its container. Shared by the group-change refresh.
+---@param group TargetedSpellsGroup
+function TargetedSpellsDriver:RefreshGroup(group)
+	for _, frames in pairs(self.frames) do
+		for index = #frames, 1, -1 do
+			if frames[index]:GetGroup() == group then
+				self:ReleaseFrame(frames[index])
+				table.remove(frames, index)
+			end
+		end
+	end
+
+	self:PositionFrame(group)
+end
+
+-- Fired when an edit-mode setting changes a group's container/behaviour. Refreshes
+-- that group's live frames + container and re-evaluates event registration (marker /
+-- interruptibility / enabled may have changed). The group's edit-mode instance
+-- handles its own demo refresh.
+---@param groupId integer
+function TargetedSpellsDriver:OnGroupChanged(groupId)
+	local group = TargetedSpellsSaved.Groups[groupId]
+	if group == nil then
+		return
+	end
+
+	self:RefreshGroup(group)
+	self:SetupFrame(false)
+	self:RepositionFrames()
 end
 
 function TargetedSpellsDriver:OnSettingsChanged(key, value)
