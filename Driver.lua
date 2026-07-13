@@ -33,6 +33,7 @@ function TargetedSpellsDriver:Init()
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingsChanged, self)
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.PROFILE_IMPORTED, self.OnProfileImported, self)
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.GROUP_CHANGED, self.OnGroupChanged, self)
+	Private.EventRegistry:RegisterCallback(Private.Enum.Events.GROUP_POSITION_CHANGED, self.OnGroupPositionChanged, self)
 	self.ttsAnnouncementCache = {}
 	self.activeEncounterId = nil
 
@@ -762,6 +763,14 @@ function TargetedSpellsDriver:OnGroupChanged(groupId)
 	self:RefreshGroup(group)
 	self:SetupFrame(false)
 	self:RepositionFrames()
+end
+
+function TargetedSpellsDriver:OnGroupPositionChanged(groupId)
+	local group = TargetedSpellsSaved.Groups[groupId]
+
+	if group ~= nil then
+		self:PositionFrame(group)
+	end
 end
 
 function TargetedSpellsDriver:OnSettingsChanged(key, value)

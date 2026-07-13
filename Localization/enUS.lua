@@ -220,3 +220,33 @@ L.Settings.FeatureFlagSettingTitles = {
 	[Private.Enum.FeatureFlag.GlowImportant] = "Display",
 	[Private.Enum.FeatureFlag.IndicateInterrupts] = "Interrupt Settings",
 }
+
+-- Phase 4 — per-group edit-mode panel (container settings + group management)
+L.Settings.GroupNameLabel = "Rename Group"
+L.Settings.GroupNamePrompt = "Enter a name for this group:"
+
+L.Settings.TemplateLabel = "Template"
+L.Settings.TemplateTooltip = "Switching template resets this group's element layout to the template default."
+L.Settings.TemplateLabels = {
+	[Private.Enum.Template.Icon] = "Icon",
+	[Private.Enum.Template.Bar] = "Bar",
+}
+
+L.Settings.FilterLabel = "Show Casts Targeting"
+L.Settings.FilterTooltip = "Which cast targets this group displays."
+L.Settings.TargetClassLabels = {
+	[Private.Enum.TargetClass.Player] = "You",
+	[Private.Enum.TargetClass.PartyMember] = "Party Members",
+	[Private.Enum.TargetClass.Nobody] = "Nobody (untargeted)",
+}
+
+L.Settings.MaxItemsLabel = "Max Items"
+L.Settings.MaxItemsTooltip = "Maximum number of simultaneous casts this group shows."
+
+L.Settings.CreateGroup = "Create Group"
+L.Settings.DeleteGroup = "Delete Group"
+L.Settings.DeleteGroupConfirm = "Delete this group? This cannot be undone."
+L.Settings.CannotDeleteLastGroup = "You cannot delete the last remaining group."
+
+L.Settings.ElementSettingsMovedToDesigner =
+	"Element appearance (size, colors, fonts, textures) is now edited in the designer: /targetedspells design"

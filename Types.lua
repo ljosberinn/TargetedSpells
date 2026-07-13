@@ -11,6 +11,7 @@
 ---@field Design TargetedSpellsDesign
 ---@field Groups TargetedSpellsGroups
 ---@field Migration TargetedSpellsMigration
+---@field EditMode TargetedSpellsEditModeManager
 ---@field __test table?
 ---@field Glows GlowFunctions
 
@@ -104,6 +105,12 @@
 
 ---@class TargetedSpellsMigration
 ---@field Apply fun(saved: table): table
+
+---@class TargetedSpellsEditModeManager
+---@field instances table<integer, TargetedSpellsEditModeMixin>
+---@field CreateInstance fun(group: TargetedSpellsGroup): TargetedSpellsEditModeMixin
+---@field CreateGroup fun()
+---@field DeleteGroup fun(groupId: integer)
 
 ---@class GlowFunctions
 ---@field PixelGlow_Start fun(frame: Frame, width: number, height: number)
@@ -365,9 +372,15 @@
 ---@field private demoPlaying boolean
 ---@field private frames TargetedSpellsIconMixin[] | TargetedSpellsBarMixin[]
 ---@field protected demoTimers { tickers: table<number, FunctionContainer>, timers: table<number, FunctionContainer> }
----@field Init fun(self: TargetedSpellsEditModeMixin, displayName: string, frameKind: FrameKind, groupId: integer)
+---@field Init fun(self: TargetedSpellsEditModeMixin, group: TargetedSpellsGroup)
 ---@field group TargetedSpellsGroup
 ---@field groupId integer
+---@field deleted boolean?
+---@field OnGroupChanged fun(self: TargetedSpellsEditModeMixin, groupId: integer)
+---@field GroupTemplatePool fun(self: TargetedSpellsEditModeMixin): FramePool<TargetedSpellsIconMixin>|FramePool<TargetedSpellsBarMixin>
+---@field CreateManagementButtons fun(self: TargetedSpellsEditModeMixin): LibEditModeButton[]
+---@field OnRenameButtonClick fun(self: TargetedSpellsEditModeMixin)
+---@field OnDeleteButtonClick fun(self: TargetedSpellsEditModeMixin)
 ---@field OnSettingsChanged fun(self: TargetedSpellsEditModeMixin, key: string, flagIdOrValue: number|string|boolean|table, newBool: boolean?)
 ---@field CreateSetting fun(self: TargetedSpellsEditModeMixin, key: string, defaults: SavedVariablesSettingsParty|SavedVariablesSettingsSelf): LibEditModeButton|LibEditModeCheckbox|LibEditModeDropdown|LibEditModeSlider|LibEditModeColorPicker
 ---@field ResizeEditModeFrame fun(self: TargetedSpellsEditModeMixin)
@@ -410,6 +423,7 @@
 ---@field private activeEncounterId number?
 ---@field frames table<string, (TargetedSpellsIconMixin|TargetedSpellsBarMixin)[]>
 ---@field private containers table<integer, Frame>
+---@field OnGroupPositionChanged fun(self: TargetedSpellsDriver, groupId: integer)
 ---@field PoolForGroup fun(self: TargetedSpellsDriver, group: TargetedSpellsGroup): FramePool<TargetedSpellsIconMixin|TargetedSpellsBarMixin>
 ---@field GroupCoreElement fun(self: TargetedSpellsDriver, group: TargetedSpellsGroup): Element
 ---@field GetContainer fun(self: TargetedSpellsDriver, groupId: integer): Frame
