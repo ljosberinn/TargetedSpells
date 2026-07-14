@@ -381,14 +381,12 @@
 ---@field CreateManagementButtons fun(self: TargetedSpellsEditModeMixin): LibEditModeButton[]
 ---@field OnRenameButtonClick fun(self: TargetedSpellsEditModeMixin)
 ---@field OnDeleteButtonClick fun(self: TargetedSpellsEditModeMixin)
----@field OnSettingsChanged fun(self: TargetedSpellsEditModeMixin, key: string, flagIdOrValue: number|string|boolean|table, newBool: boolean?)
----@field CreateSetting fun(self: TargetedSpellsEditModeMixin, key: string, defaults: SavedVariablesSettingsParty|SavedVariablesSettingsSelf): LibEditModeButton|LibEditModeCheckbox|LibEditModeDropdown|LibEditModeSlider|LibEditModeColorPicker
+---@field CreateSetting fun(self: TargetedSpellsEditModeMixin, base: string): LibEditModeButton|LibEditModeCheckbox|LibEditModeDropdown|LibEditModeSlider|LibEditModeColorPicker
 ---@field ResizeEditModeFrame fun(self: TargetedSpellsEditModeMixin)
 ---@field RestoreEditModePosition fun(self: TargetedSpellsEditModeMixin)
 ---@field OnProfileImported fun(self: TargetedSpellsEditModeMixin)
 ---@field OnEditModePositionChanged fun(self: TargetedSpellsEditModeMixin, frame: Frame, layoutName: string, point: FramePoint, x: number, y: number)
 ---@field AppendSettings fun(self: TargetedSpellsEditModeMixin)
----@field OnLayoutSettingChanged fun(self: TargetedSpellsEditModeMixin, key: string, value: number|string, newBool: boolean?)
 ---@field RepositionPreviewFrames fun(self: TargetedSpellsEditModeMixin)
 ---@field LoopFrame fun(self: TargetedSpellsEditModeMixin, index: number)
 ---@field StartDemo fun(self: TargetedSpellsEditModeMixin)
@@ -399,19 +397,6 @@
 ---@field OnImportButtonClick fun(self: TargetedSpellsEditModeMixin)
 ---@field OnImportConfirmation fun(self: TargetedSpellsEditModeMixin, encodedString: string)
 ---@field IsPastLoadingScreen fun(self: TargetedSpellsEditModeMixin): boolean
-
----@class TargetedSpellsSelfEditMode : TargetedSpellsEditModeMixin
----@field private frames TargetedSpellsIconMixin[]
----@field pool FramePool<TargetedSpellsIconMixin>
----@field Init fun(self: TargetedSpellsSelfEditMode)
----@field OnLayoutSettingChanged fun(self: TargetedSpellsSelfEditMode, key: string, value: number|string, newBool: boolean?): nil
-
----@class TargetedSpellsPartyEditMode : TargetedSpellsEditModeMixin
----@field private frames TargetedSpellsBarMixin[]
----@field pool FramePool<TargetedSpellsBarMixin>
----@field Init fun(self: TargetedSpellsPartyEditMode)
----@field OnLayoutSettingChanged fun(self: TargetedSpellsPartyEditMode, key: string, value: number|string, newBool: boolean?)
----@field LoopFrame fun(self: TargetedSpellsPartyEditMode, index: number)
 
 ---@class TargetedSpellsDriver
 ---@field private frame Frame
