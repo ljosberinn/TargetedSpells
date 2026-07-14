@@ -12,8 +12,17 @@
 ---@field Groups TargetedSpellsGroups
 ---@field Migration TargetedSpellsMigration
 ---@field EditMode TargetedSpellsEditModeManager
+---@field SlashCommands TargetedSpellsSlashCommands
+---@field Designer TargetedSpellsDesigner
 ---@field __test table?
 ---@field Glows GlowFunctions
+
+---@class TargetedSpellsSlashCommands
+---@field Register fun(name: string, description: string, handler: fun(rest: string))
+---@field Dispatch fun(message: string?)
+
+---@class TargetedSpellsDesigner
+---@field Toggle fun()
 
 ---@class CollectLayoutingArguments
 ---@field isHorizontal boolean

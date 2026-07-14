@@ -2336,16 +2336,8 @@ table.insert(Private.LoginFnQueue, function()
 		end,
 	})
 
-	local uppercased = string.upper(settingsName)
-	local lowercased = string.lower(settingsName)
-
-	SlashCmdList[uppercased] = function(message)
-		local command, rest = message:match("^(%S+)%s*(.*)$")
-
-		if command == "options" or command == "settings" then
-			OpenSettings()
-		end
-	end
-
-	_G[string.format("SLASH_%s1", uppercased)] = string.format("/%s", lowercased)
+	-- The single /<addon> entry is owned by Private.SlashCommands (installed at
+	-- login); here we only contribute the two settings subcommands.
+	Private.SlashCommands.Register("options", L.SlashCommands.OptionsDescription, OpenSettings)
+	Private.SlashCommands.Register("settings", L.SlashCommands.SettingsDescription, OpenSettings)
 end)

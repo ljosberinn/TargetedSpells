@@ -15,6 +15,16 @@ L.EditMode = {}
 L.Functionality = {}
 L.Settings = {}
 L.Migration = {}
+L.SlashCommands = {}
+L.Designer = {}
+
+L.Designer.Title = "Targeted Spells - Layout Designer"
+
+-- Slash-command dispatcher: header + one description per subcommand.
+L.SlashCommands.Header = "Targeted Spells commands:"
+L.SlashCommands.OptionsDescription = "Open the settings panel"
+L.SlashCommands.SettingsDescription = "Open the settings panel"
+L.SlashCommands.DesignDescription = "Open the layout designer"
 
 -- Default names for the two groups the v3 → v4 migration creates.
 L.Migration.SelfGroupName = "Self"
