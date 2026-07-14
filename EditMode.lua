@@ -203,35 +203,33 @@ end
 
 -- Rename / Create / Delete manage the group list; Import / Export round-trip config.
 function TargetedSpellsEditModeMixin:CreateManagementButtons()
-	local L = Private.L
-
 	return {
 		{
-			text = L.Settings.GroupNameLabel,
+			text = Private.L.Settings.GroupNameLabel,
 			click = function()
 				self:OnRenameButtonClick()
 			end,
 		},
 		{
-			text = L.Settings.CreateGroup,
+			text = Private.L.Settings.CreateGroup,
 			click = function()
 				Private.EditMode.CreateGroup()
 			end,
 		},
 		{
-			text = L.Settings.DeleteGroup,
+			text = Private.L.Settings.DeleteGroup,
 			click = function()
 				self:OnDeleteButtonClick()
 			end,
 		},
 		{
-			text = L.Settings.Import,
+			text = Private.L.Settings.Import,
 			click = function()
 				self:OnImportButtonClick()
 			end,
 		},
 		{
-			text = L.Settings.Export,
+			text = Private.L.Settings.Export,
 			click = function()
 				self:OnExportButtonClick()
 			end,
@@ -1952,17 +1950,22 @@ function TargetedSpellsEditModeMixin:GroupTemplatePool()
 	return Private.Utils.Pools.Bar
 end
 
-function TargetedSpellsEditModeMixin:ResizeEditModeFrame()
-	local group = self.group
-	local coreTag = group.Template == Private.Enum.Template.Icon and Private.Enum.Element.Icon
+-- the group's core element table (Icon or ProgressBar) for its current template
+function TargetedSpellsEditModeMixin:CoreElement()
+	local coreTag = self.group.Template == Private.Enum.Template.Icon and Private.Enum.Element.Icon
 		or Private.Enum.Element.ProgressBar
-	local core = group.Elements[coreTag]
 
-	if group.Direction == Private.Enum.Direction.Horizontal then
-		local totalWidth = (self.maxFrames * core.width) + (self.maxFrames - 1) * group.Gap
+	return self.group.Elements[coreTag]
+end
+
+function TargetedSpellsEditModeMixin:ResizeEditModeFrame()
+	local core = self:CoreElement()
+
+	if self.group.Direction == Private.Enum.Direction.Horizontal then
+		local totalWidth = (self.maxFrames * core.width) + (self.maxFrames - 1) * self.group.Gap
 		PixelUtil.SetSize(self.editModeFrame, totalWidth, core.height)
 	else
-		local totalHeight = (self.maxFrames * core.height) + (self.maxFrames - 1) * group.Gap
+		local totalHeight = (self.maxFrames * core.height) + (self.maxFrames - 1) * self.group.Gap
 		PixelUtil.SetSize(self.editModeFrame, core.width, totalHeight)
 	end
 end
@@ -2084,23 +2087,20 @@ function TargetedSpellsEditModeMixin:RepositionPreviewFrames()
 		return
 	end
 
-	local group = self.group
-	local coreTag = group.Template == Private.Enum.Template.Icon and Private.Enum.Element.Icon
-		or Private.Enum.Element.ProgressBar
-	local core = group.Elements[coreTag]
+	local core = self:CoreElement()
 
-	Private.Utils.SortFrames(activeFrames, group.SortOrder)
+	Private.Utils.SortFrames(activeFrames, self.group.SortOrder)
 
 	local layouting = Private.Utils.CollectLayoutingArguments(
-		group.Direction,
-		group.Grow,
+		self.group.Direction,
+		self.group.Grow,
 		core.width,
 		core.height,
-		group.Gap
+		self.group.Gap
 	)
 
 	local parentDimension = layouting.isHorizontal and self.editModeFrame:GetWidth() or self.editModeFrame:GetHeight()
-	local offset = layouting.isGrowEnd and (parentDimension / 2 - group.Gap) or (-parentDimension / 2)
+	local offset = layouting.isGrowEnd and (parentDimension / 2 - self.group.Gap) or (-parentDimension / 2)
 
 	Private.Utils.AdjustLayout(
 		activeFrames,
