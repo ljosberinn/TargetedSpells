@@ -19,6 +19,24 @@ L.SlashCommands = {}
 L.Designer = {}
 
 L.Designer.Title = "Targeted Spells - Layout Designer"
+L.Designer.NoElementSelected = "Select an element"
+L.Designer.SelectHint = "Click an element to select it. Settings widgets arrive in the next step."
+
+-- Friendly names for the configurable elements, shown as the widget-panel header.
+L.Designer.ElementNames = {
+	[Private.Enum.Element.Icon] = "Icon",
+	[Private.Enum.Element.Overlay] = "Cooldown Manager Bezel",
+	[Private.Enum.Element.Cooldown] = "Cooldown",
+	[Private.Enum.Element.Border] = "Border",
+	[Private.Enum.Element.InterruptSource] = "Interrupter Name",
+	[Private.Enum.Element.ProgressBar] = "Progress Bar",
+	[Private.Enum.Element.Background] = "Background",
+	[Private.Enum.Element.TargetMarker] = "Target Marker",
+	[Private.Enum.Element.DurationCooldown] = "Duration",
+	[Private.Enum.Element.SpellName] = "Spell Name",
+	[Private.Enum.Element.TargetName] = "Target Name",
+	[Private.Enum.Element.InterruptShield] = "Interrupt Shield",
+}
 
 -- Slash-command dispatcher: header + one description per subcommand.
 L.SlashCommands.Header = "Targeted Spells commands:"

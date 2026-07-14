@@ -116,6 +116,7 @@ end
 function DesignerMixin:RefreshCanvas()
 	self:EndDemo()
 	self:StartDemo()
+	self:BuildMarkers()
 end
 
 -- Acquires a single demo frame from the selected group's pool, parents it into the
@@ -133,11 +134,11 @@ function DesignerMixin:StartDemo()
 
 	self.demoFrame:SetGroup(group)
 	self.demoFrame:SetLayoutOverride(self.scratchElements)
-	self.demoFrame:SetParent(self.Canvas)
+	self.demoFrame:SetParent(self.Preview)
 	self.demoFrame:ClearAllPoints()
-	self.demoFrame:SetPoint("CENTER", self.Canvas, "CENTER", 0, 0)
-	self.demoFrame:SetFrameStrata(self.Canvas:GetFrameStrata())
-	self.demoFrame:SetFrameLevel(self.Canvas:GetFrameLevel() + 5)
+	self.demoFrame:SetPoint("CENTER", self.Preview, "CENTER", 0, 0)
+	self.demoFrame:SetFrameStrata(self.Preview:GetFrameStrata())
+	self.demoFrame:SetFrameLevel(self.Preview:GetFrameLevel() + 5)
 
 	self:PlayDemoCast()
 
@@ -197,18 +198,191 @@ function DesignerMixin:EndDemo()
 	end
 end
 
+-- ── Element selection ────────────────────────────────────────────────────────
+-- Markers are mouse-enabled buttons floating over the preview at each element's
+-- CENTER→CENTER offset, computed from the scratch record (never from the live
+-- frame's regions). Elements with no spatial footprint (welded / active-only, e.g.
+-- Overlay / Background / Cooldown) get no marker — they are reachable from the
+-- panel once step 7's element list lands.
+
+-- The marker rectangle for an element record, or nil for a footprint-less element.
+---@param record table<string, any>
+function DesignerMixin:ElementMarkerRect(record)
+	local x = record.x or 0
+	local y = record.y or 0
+
+	if record.width ~= nil and record.height ~= nil then
+		return x, y, record.width, record.height
+	end
+
+	if record.fontSize ~= nil then
+		-- text element: no stored size, so use a nominal clickable box (maxWidth if
+		-- the user has capped it, else a default) scaled to the font.
+		local width = (record.maxWidth ~= nil and record.maxWidth > 0) and record.maxWidth or 120
+		return x, y, width, record.fontSize * 1.8
+	end
+
+	return nil
+end
+
+-- Lazily builds a marker's visuals on first acquire: a mouseover fill (auto-shown
+-- on the HIGHLIGHT layer) and a gold selection border of four thin solid edges
+-- (no authored art — SetColorTexture only), hidden until the marker is selected.
+---@param marker Button
+function DesignerMixin:EnsureMarkerVisuals(marker)
+	if marker.SelectedBorder ~= nil then
+		return
+	end
+
+	marker:RegisterForClicks("LeftButtonUp")
+
+	local highlight = marker:CreateTexture(nil, "HIGHLIGHT")
+	highlight:SetAllPoints()
+	highlight:SetColorTexture(1, 1, 1, 0.10)
+
+	marker.SelectedBorder = {}
+	local edges = {
+		{ points = { "TOPLEFT", "TOPRIGHT" }, height = 2 },
+		{ points = { "BOTTOMLEFT", "BOTTOMRIGHT" }, height = 2 },
+		{ points = { "TOPLEFT", "BOTTOMLEFT" }, width = 2 },
+		{ points = { "TOPRIGHT", "BOTTOMRIGHT" }, width = 2 },
+	}
+
+	for _, edge in ipairs(edges) do
+		local line = marker:CreateTexture(nil, "OVERLAY")
+		line:SetColorTexture(1, 0.82, 0, 0.9)
+		line:SetPoint(edge.points[1])
+		line:SetPoint(edge.points[2])
+
+		if edge.height ~= nil then
+			line:SetHeight(edge.height)
+		else
+			line:SetWidth(edge.width)
+		end
+
+		line:Hide()
+		table.insert(marker.SelectedBorder, line)
+	end
+end
+
+-- Rebuilds the selection markers from the scratch layout. Called after every canvas
+-- refresh (tab switch / template swap / future edits) since offsets can change.
+function DesignerMixin:BuildMarkers()
+	self.selectorPool:ReleaseAll()
+	table.wipe(self.markers)
+
+	if self.scratchElements == nil then
+		return
+	end
+
+	for elementTag in pairs(Private.Design.GetSchema(self.scratchTemplate)) do
+		local record = self.scratchElements[elementTag]
+		local x, y, width, height = nil, nil, nil, nil
+
+		if record ~= nil then
+			x, y, width, height = self:ElementMarkerRect(record)
+		end
+
+		if width ~= nil then
+			local marker = self.selectorPool:Acquire()
+			self:EnsureMarkerVisuals(marker)
+
+			marker.element = elementTag
+			marker:ClearAllPoints()
+			PixelUtil.SetSize(marker, width, height)
+			PixelUtil.SetPoint(marker, "CENTER", self.Preview, "CENTER", x, y)
+			-- stack smaller markers on top so a small element centred inside a large
+			-- one (e.g. the interrupt shield over the progress bar) stays clickable
+			local areaLevel = math.min(200, math.floor(50000 / math.max(1, width * height)))
+			marker:SetFrameLevel(self.Preview:GetFrameLevel() + 20 + areaLevel)
+			marker:SetScript("OnClick", function(clicked)
+				self:SelectElement(clicked.element)
+			end)
+			marker:Show()
+
+			self.markers[elementTag] = marker
+		end
+	end
+
+	-- keep the current selection if its marker survived, else clear it
+	if self.selectedElement ~= nil and self.markers[self.selectedElement] ~= nil then
+		self:SelectElement(self.selectedElement)
+	else
+		self.selectedElement = nil
+		self:UpdatePanelHeader()
+	end
+end
+
+-- Selects an element: highlights its marker and points the panel header (and, in
+-- step 7, the widget list) at that element's scratch record.
+---@param elementTag Element
+function DesignerMixin:SelectElement(elementTag)
+	self.selectedElement = elementTag
+
+	for tag, marker in pairs(self.markers) do
+		local isSelected = tag == elementTag
+		for _, line in ipairs(marker.SelectedBorder) do
+			line:SetShown(isSelected)
+		end
+	end
+
+	self:UpdatePanelHeader()
+end
+
+-- The panel header names the selected element (or prompts for a selection).
+function DesignerMixin:UpdatePanelHeader()
+	if self.selectedElement == nil then
+		self.Panel.Header:SetText(Private.L.Designer.NoElementSelected)
+		return
+	end
+
+	self.Panel.Header:SetText(
+		Private.L.Designer.ElementNames[self.selectedElement] or self.selectedElement
+	)
+end
+
 function DesignerMixin:Initialize()
-	-- Canvas: a bordered inset that will hold the demo frame + selection markers.
-	-- Elevated above the ButtonFrame's own regions so preview elements take mouse.
+	-- Canvas: a bordered inset split into a Preview (left, holds the demo frame +
+	-- selection markers) and a Panel (right, the schema-driven widget list in step 7).
 	self.Canvas = CreateFrame("Frame", nil, self, "InsetFrameTemplate")
 	self.Canvas:SetPoint("TOPLEFT", self, "TOPLEFT", 12, -32)
 	self.Canvas:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", -12, 12)
-	self.Canvas:EnableMouse(true)
 	self.Canvas:SetFrameLevel(self:GetFrameLevel() + 10)
 
-	self.Canvas.Hint = self.Canvas:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
-	self.Canvas.Hint:SetPoint("BOTTOM", self.Canvas, "BOTTOM", 0, 10)
-	self.Canvas.Hint:SetText("Live preview - element selection & widgets arrive in the next steps.")
+	self.Panel = CreateFrame("Frame", nil, self.Canvas, "InsetFrameTemplate")
+	self.Panel:SetPoint("TOPRIGHT", self.Canvas, "TOPRIGHT", -6, -6)
+	self.Panel:SetPoint("BOTTOMRIGHT", self.Canvas, "BOTTOMRIGHT", -6, 6)
+	self.Panel:SetWidth(260)
+
+	self.Panel.Header = self.Panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+	self.Panel.Header:SetPoint("TOP", self.Panel, "TOP", 0, -10)
+
+	-- Preview holds the demo frame + the selection markers. It stays mouse-passive
+	-- itself (its markers, as mouse-enabled children, still receive clicks) so empty
+	-- space doesn't swallow input.
+	self.Preview = CreateFrame("Frame", nil, self.Canvas)
+	self.Preview:SetPoint("TOPLEFT", self.Canvas, "TOPLEFT", 6, -6)
+	self.Preview:SetPoint("BOTTOMRIGHT", self.Panel, "BOTTOMLEFT", -6, 6)
+
+	self.Preview.Hint = self.Preview:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+	self.Preview.Hint:SetPoint("BOTTOM", self.Preview, "BOTTOM", 0, 6)
+	self.Preview.Hint:SetText(Private.L.Designer.SelectHint)
+
+	-- Selection markers: mouse-enabled buttons floating over the preview at each
+	-- element's stored offset. Pooled + rebuilt whenever the layout/template changes.
+	self.selectorPool = CreateFramePool("Button", self.Preview, nil, function(_, marker)
+		marker:Hide()
+		marker:ClearAllPoints()
+		marker:SetScript("OnClick", nil)
+		if marker.SelectedBorder ~= nil then
+			for _, line in ipairs(marker.SelectedBorder) do
+				line:Hide()
+			end
+		end
+	end)
+	---@type table<Element, Button>
+	self.markers = {}
+	self.selectedElement = nil
 
 	-- One PanelTabButton per group. The template auto-resizes to its text on show
 	-- and appends itself to self.Tabs; we track our own active set in self.tabs and
