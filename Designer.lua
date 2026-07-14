@@ -15,6 +15,9 @@ local _, Private = ...
 local FRAME_WIDTH = 760
 local FRAME_HEIGHT = 520
 
+-- seconds per looping demo cast in the canvas
+local DEMO_CAST_TIME = 6
+
 ---@class TargetedSpellsDesignerFrame : Frame
 local DesignerMixin = {}
 
@@ -97,22 +100,101 @@ function DesignerMixin:SelectGroup(groupId)
 	self:RefreshCanvas()
 end
 
--- Draws the selected group into the canvas. Step 5 replaces the placeholder text
--- with a looping demo frame rendered from self.scratchElements via the injected
--- layout-override seam (TargetedSpellsMixin:SetLayoutOverride).
+-- The pool a group's demo frame comes from, following its current template.
+---@param group TargetedSpellsGroup
+function DesignerMixin:GroupPool(group)
+	if group.Template == Private.Enum.Template.Icon then
+		return Private.Utils.Pools.Icon
+	end
+
+	return Private.Utils.Pools.Bar
+end
+
+-- Redraws the canvas for the current selection by restarting the looping demo. The
+-- template (hence pool) can differ between groups, so the frame is released and
+-- re-acquired rather than reused across a tab switch.
 function DesignerMixin:RefreshCanvas()
+	self:EndDemo()
+	self:StartDemo()
+end
+
+-- Acquires a single demo frame from the selected group's pool, parents it into the
+-- canvas centred on its core element, and drives a looping cast. Crucially it
+-- renders from the scratch Elements copy via SetLayoutOverride — not the group's
+-- saved layout — so later widget edits preview before Apply (v4 plan step 3a).
+function DesignerMixin:StartDemo()
 	local group = self.selectedGroupId and TargetedSpellsSaved.Groups[self.selectedGroupId]
-	if group == nil then
+	if group == nil or not self:IsShown() then
 		return
 	end
 
-	-- Lua's string.format (not FontString:SetFormattedText, which is C printf and
-	-- rejects %q) so the group name is quoted safely.
-	self.Canvas.PlaceholderText:SetText(string.format(
-		"Editing group %q (template %d)\n\nElement preview & widgets arrive in the next steps.",
-		group.Name,
-		group.Template
-	))
+	self.demoPool = self:GroupPool(group)
+	self.demoFrame = self.demoPool:Acquire()
+
+	self.demoFrame:SetGroup(group)
+	self.demoFrame:SetLayoutOverride(self.scratchElements)
+	self.demoFrame:SetParent(self.Canvas)
+	self.demoFrame:ClearAllPoints()
+	self.demoFrame:SetPoint("CENTER", self.Canvas, "CENTER", 0, 0)
+	self.demoFrame:SetFrameStrata(self.Canvas:GetFrameStrata())
+	self.demoFrame:SetFrameLevel(self.Canvas:GetFrameLevel() + 5)
+
+	self:PlayDemoCast()
+
+	-- restart the cast a beat after each one finishes, so the preview keeps looping
+	self.demoTicker = C_Timer.NewTicker(DEMO_CAST_TIME + 1, function()
+		self:PlayDemoCast()
+	end)
+end
+
+-- One demo cast on the current demo frame (reused across loops, like the edit-mode
+-- demo). A player "cast" of unbounded duration with a random preview colour/marker.
+function DesignerMixin:PlayDemoCast()
+	if self.demoFrame == nil then
+		return
+	end
+
+	local duration = C_DurationUtil.CreateDuration()
+	duration:SetTimeFromStart(GetTime(), DEMO_CAST_TIME)
+
+	self.demoFrame:PostCreate({
+		unit = "player",
+		spellId = nil,
+		startTime = GetTime(),
+		id = 1,
+		duration = duration,
+		isChannel = false,
+	})
+
+	self.demoFrame:Show()
+	self.demoFrame:SetAlpha(secretwrap(1))
+
+	-- bar demo frames get their preview colour + a random raid marker
+	if self.demoFrame.SetPreviewBarColor then
+		self.demoFrame:SetPreviewBarColor()
+		self.demoFrame:SetTargetMarker(Private.Utils.RollDice() and math.random(1, 8) or nil)
+	end
+
+	local group = self.selectedGroupId and TargetedSpellsSaved.Groups[self.selectedGroupId]
+	if group ~= nil and group.GlowImportant then
+		self.demoFrame:ShowGlow(secretwrap(true))
+	else
+		self.demoFrame:HideGlow()
+	end
+end
+
+-- Stops the loop and returns the demo frame to its pool (Reset reparents it to
+-- UIParent and clears the layout override). Only ever releases our own frame.
+function DesignerMixin:EndDemo()
+	if self.demoTicker ~= nil then
+		self.demoTicker:Cancel()
+		self.demoTicker = nil
+	end
+
+	if self.demoFrame ~= nil then
+		self.demoPool:Release(self.demoFrame)
+		self.demoFrame = nil
+	end
 end
 
 function DesignerMixin:Initialize()
@@ -124,9 +206,9 @@ function DesignerMixin:Initialize()
 	self.Canvas:EnableMouse(true)
 	self.Canvas:SetFrameLevel(self:GetFrameLevel() + 10)
 
-	self.Canvas.PlaceholderText = self.Canvas:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-	self.Canvas.PlaceholderText:SetPoint("CENTER")
-	self.Canvas.PlaceholderText:SetJustifyH("CENTER")
+	self.Canvas.Hint = self.Canvas:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+	self.Canvas.Hint:SetPoint("BOTTOM", self.Canvas, "BOTTOM", 0, 10)
+	self.Canvas.Hint:SetText("Live preview - element selection & widgets arrive in the next steps.")
 
 	-- One PanelTabButton per group. The template auto-resizes to its text on show
 	-- and appends itself to self.Tabs; we track our own active set in self.tabs and
@@ -137,6 +219,8 @@ function DesignerMixin:Initialize()
 	self.selectedGroupId = nil
 
 	self:SetScript("OnShow", self.RebuildTabs)
+	-- closing (Esc / close button / Toggle) stops the loop and frees the demo frame
+	self:HookScript("OnHide", self.EndDemo)
 
 	-- Keep the tab strip current if groups change while the designer is open. A
 	-- rename fires GROUP_CHANGED; create/delete route through PROFILE_IMPORTED.
