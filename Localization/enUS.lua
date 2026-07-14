@@ -20,7 +20,48 @@ L.Designer = {}
 
 L.Designer.Title = "Targeted Spells - Layout Designer"
 L.Designer.NoElementSelected = "Select an element"
-L.Designer.SelectHint = "Click an element to select it. Settings widgets arrive in the next step."
+L.Designer.ElementPickerLabel = "Element"
+L.Designer.SelectHint = "Click an element in the preview, or pick one from the Element dropdown."
+
+-- Widget-row labels, keyed by the schema record's `name`.
+L.Designer.SettingNames = {
+	ELEMENT_ACTIVE = "Enabled",
+	ELEMENT_WIDTH = "Width",
+	ELEMENT_HEIGHT = "Height",
+	ELEMENT_X = "X Offset",
+	ELEMENT_Y = "Y Offset",
+	ELEMENT_DRAW_LAYER = "Draw Layer",
+	ELEMENT_FONT_SIZE = "Font Size",
+	ELEMENT_FONT = "Font",
+	ELEMENT_FONT_FLAGS = "Font Style",
+	ELEMENT_TEXT_COLOR = "Text Color",
+	ELEMENT_JUSTIFY_H = "Alignment",
+	ELEMENT_MAX_WIDTH = "Max Width",
+	ELEMENT_USE_CLASS_COLOR = "Use Class Color",
+	ELEMENT_ICON_ZOOM = "Icon Zoom",
+	ELEMENT_SHOW_SWIPE = "Show Swipe",
+	ELEMENT_SHOW_COUNTDOWN = "Show Countdown",
+	ELEMENT_BORDER_TEXTURE = "Border Texture",
+	ELEMENT_BORDER_COLOR = "Border Color",
+	ELEMENT_BORDER_SIZE = "Border Size",
+	ELEMENT_BAR_TEXTURE = "Bar Texture",
+	ELEMENT_BAR_COLOR_MODE = "Color Mode",
+	ELEMENT_BAR_COLOR = "Bar Color",
+	ELEMENT_INTERRUPTIBLE_COLOR = "Interruptible Color",
+	ELEMENT_UNINTERRUPTIBLE_COLOR = "Uninterruptible Color",
+	ELEMENT_BACKGROUND_TEXTURE = "Background Texture",
+	ELEMENT_BACKGROUND_COLOR = "Background Color",
+}
+
+-- Dropdown option labels, keyed by the option's `name`.
+L.Designer.Options = {
+	JUSTIFY_LEFT = "Left",
+	JUSTIFY_CENTER = "Center",
+	JUSTIFY_RIGHT = "Right",
+	BAR_COLOR_STATIC = "Static",
+	BAR_COLOR_INTERRUPTIBILITY = "Interruptibility",
+	BAR_COLOR_TARGET_CLASS = "Target Class Color",
+}
 
 -- Friendly names for the configurable elements, shown as the widget-panel header.
 L.Designer.ElementNames = {
