@@ -54,6 +54,9 @@ function TargetedSpellsBarMixin:OnLoad()
 	-- group-agnostic setup only; group-dependent styling lives in ApplyLayout,
 	-- which runs on acquire once the Driver has assigned a group
 	self.Bar:SetStatusBarTexture("")
+	-- native non-interruptible shield atlas (no new art). useAtlasSize omitted → keeps
+	-- our own size, which PositionElements sets from the element's width/height.
+	-- self.CustomElementsFrame.InterruptShield:SetAtlas("nameplates-InterruptShield")
 	-- per-frame formatter so each group's fraction threshold is independent
 	self.countdownFormatter = Private.Utils.CreateCountdownFormatter()
 	self.DurationCooldown:SetCountdownFormatter(self.countdownFormatter)
@@ -75,12 +78,14 @@ function TargetedSpellsBarMixin:PositionElements()
 	local background = elements[Element.Background]
 	self.ProgressBar.Background:SetShown(background == nil or background.active ~= false)
 
-	-- boxed elements: centered on the core, explicit size. TargetMarker manages
-	-- its own visibility (raid-icon presence) via SetTargetMarker.
+	-- boxed elements: centered on the core, explicit size. TargetMarker and
+	-- InterruptShield manage their own visibility (raid-icon presence / the secret
+	-- interruptibility boolean, driven in PostCreate), so they only get positioned here.
 	local boxes = {
-		{ region = self.Icon, element = elements[Element.Icon], applyShown = true },
-		{ region = self.CustomElementsFrame.TargetMarker, element = elements[Element.TargetMarker], applyShown = false },
-		{ region = self.DurationCooldown, element = elements[Element.DurationCooldown], applyShown = true },
+		{ region = self.Icon,                                element = elements[Element.Icon],             applyShown = true },
+		{ region = self.CustomElementsFrame.TargetMarker,    element = elements[Element.TargetMarker],     applyShown = false },
+		{ region = self.CustomElementsFrame.InterruptShield, element = elements[Element.InterruptShield],  applyShown = false },
+		{ region = self.DurationCooldown,                    element = elements[Element.DurationCooldown], applyShown = true },
 	}
 
 	for _, entry in ipairs(boxes) do
@@ -97,12 +102,14 @@ function TargetedSpellsBarMixin:PositionElements()
 		end
 	end
 
-	-- text elements: centered offset, auto-sizing unless maxWidth caps it (native
-	-- ellipsis truncation). Visibility is driven at runtime (SetSpellId /
+	-- text elements: the justifyH edge (LEFT/CENTER/RIGHT — all valid anchor points) is
+	-- pinned to the offset, so alignment stays meaningful even for auto-sized text (a
+	-- centered auto-sized string has nothing to justify within). maxWidth caps the width
+	-- and truncates with a native ellipsis. Visibility is driven at runtime (SetSpellId /
 	-- UpdateTargetName / SetInterrupted); here we only place and colour them.
 	local texts = {
-		{ region = self.ProgressBar.SpellName, element = elements[Element.SpellName] },
-		{ region = self.ProgressBar.TargetName, element = elements[Element.TargetName] },
+		{ region = self.ProgressBar.SpellName,       element = elements[Element.SpellName] },
+		{ region = self.ProgressBar.TargetName,      element = elements[Element.TargetName] },
 		{ region = self.ProgressBar.InterruptSource, element = elements[Element.InterruptSource] },
 	}
 
@@ -111,8 +118,9 @@ function TargetedSpellsBarMixin:PositionElements()
 		entry.region:ClearAllPoints()
 
 		if element ~= nil then
-			PixelUtil.SetPoint(entry.region, "CENTER", self.ProgressBar, "CENTER", element.x or 0, element.y or 0)
-			entry.region:SetJustifyH(element.justifyH or "LEFT")
+			local edge = element.justifyH or "LEFT"
+			PixelUtil.SetPoint(entry.region, edge, self.ProgressBar, "CENTER", element.x or 0, element.y or 0)
+			entry.region:SetJustifyH(edge)
 
 			if element.maxWidth ~= nil and element.maxWidth > 0 then
 				entry.region:SetWidth(element.maxWidth)
@@ -279,6 +287,10 @@ function TargetedSpellsBarMixin:Reset()
 	self.ProgressBar.InterruptSource:Hide()
 	self.ProgressBar.InterruptSource:SetTextColor(1, 1, 1)
 	self.CustomElementsFrame.TargetMarker:Hide()
+	-- SetAlpha(1) clears the secret alpha aspect left by SetAlphaFromBoolean before the
+	-- pooled frame is reused; Hide() keeps it invisible until the next active cast
+	self.CustomElementsFrame.InterruptShield:SetAlpha(1)
+	self.CustomElementsFrame.InterruptShield:Hide()
 	self.ProgressBar.TargetName:Hide()
 	self.DurationCooldown:Clear()
 	self.DurationCooldown:SetScript("OnCooldownDone", nil)
@@ -370,7 +382,13 @@ function TargetedSpellsBarMixin:PostCreate(info, OnCooldownDoneCallback)
 		end
 	end
 
-	if barColorMode == BarColorMode.Interruptibility then
+	-- The interruptibility state is a secret boolean; both the Interruptibility bar
+	-- colour and the InterruptShield consume it without the addon ever branching on it
+	-- (SetVertexColorFromBoolean / SetShown). Fetch it once if either needs it.
+	local shield = self:GetElement(Element.InterruptShield)
+	local shieldActive = shield ~= nil and shield.active
+
+	if barColorMode == BarColorMode.Interruptibility or shieldActive then
 		local uninterruptible = select(8, UnitCastingInfo(info.unit))
 
 		if uninterruptible == nil then
@@ -378,11 +396,22 @@ function TargetedSpellsBarMixin:PostCreate(info, OnCooldownDoneCallback)
 		end
 
 		if uninterruptible ~= nil then
-			self.ProgressBar:GetStatusBarTexture():SetVertexColorFromBoolean(
-				uninterruptible,
-				CreateColorFromHexString(core.uninterruptibleColor),
-				CreateColorFromHexString(core.interruptibleColor)
-			)
+			if barColorMode == BarColorMode.Interruptibility then
+				self.ProgressBar:GetStatusBarTexture():SetVertexColorFromBoolean(
+					uninterruptible,
+					CreateColorFromHexString(core.uninterruptibleColor),
+					CreateColorFromHexString(core.interruptibleColor)
+				)
+			end
+
+			if shieldActive then
+				-- visible only when NOT interruptible. The interruptibility boolean is
+				-- secret, so we can't branch on it or SetShown() from it; SetAlphaFromBoolean
+				-- resolves it to alpha secret-safely (there is no SetShownFromBoolean). The
+				-- texture stays shown; alpha 1/0 is what actually reveals/hides it.
+				self.CustomElementsFrame.InterruptShield:Show()
+				self.CustomElementsFrame.InterruptShield:SetAlphaFromBoolean(uninterruptible)
+			end
 		end
 	end
 
@@ -472,8 +501,8 @@ function TargetedSpellsBarMixin:SetFont()
 	end
 
 	local targets = {
-		{ fontString = self.ProgressBar.SpellName, element = elements[Element.SpellName] },
-		{ fontString = self.ProgressBar.TargetName, element = elements[Element.TargetName] },
+		{ fontString = self.ProgressBar.SpellName,       element = elements[Element.SpellName] },
+		{ fontString = self.ProgressBar.TargetName,      element = elements[Element.TargetName] },
 		{ fontString = self.ProgressBar.InterruptSource, element = elements[Element.InterruptSource] },
 		{
 			fontString = self.DurationCooldown:GetCountdownFontString(),

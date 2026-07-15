@@ -105,10 +105,6 @@ do
 		Private.Utils.ApplyFractionThreshold(formatter, fractionThreshold or 3)
 		return formatter
 	end
-
-	-- Shared default formatter (fallback; frames build their own via
-	-- CreateCountdownFormatter so per-element thresholds don't collide).
-	Private.Utils.Formatter = Private.Utils.CreateCountdownFormatter(3)
 end
 
 -- pools are per-template (Icon / Bar); the old Self/Party names were per-display

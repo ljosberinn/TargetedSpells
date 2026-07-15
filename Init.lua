@@ -98,6 +98,9 @@ EventUtil.ContinueOnAddOnLoaded(addonName, function()
 	-- Edit mode and the settings UI read these; the group model stays authoritative.
 	for id, group in pairs(TargetedSpellsSaved.Groups) do
 		group.Id = id
+		-- backfill element fields added to the schema after this group was created
+		-- (dev iteration / future schema additions); the once-only migration can't
+		Private.Design.BackfillElements(group)
 	end
 	TargetedSpellsSaved.Settings = {
 		Self = Private.Settings.CreateGroupView(TargetedSpellsSaved.Groups[1]),

@@ -155,7 +155,8 @@ describe("v3 -> v4 transform", function()
 		assert.is_string(group.Name)
 		assert.equals(48, group.Elements[Element.Icon].width)
 		assert.equals(1, group.Elements[Element.Icon].iconZoom)
-		assert.equals(0, group.Elements[Element.Icon].x)
+		-- the core element is the 0,0 origin; it carries no x/y offset
+		assert.is_nil(group.Elements[Element.Icon].x)
 	end)
 
 	it("Party settings become a Bar group with reconstructed geometry", function()

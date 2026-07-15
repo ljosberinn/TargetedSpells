@@ -64,6 +64,7 @@
 ---@field max number?
 ---@field step number?
 ---@field options table[]?
+---@field mediaType string? -- for texture records: "statusbar" | "background" | "border"
 
 -- A group owns its Template + Elements 1:1 (no shared Design). Core element's
 -- width/height live in Elements[core]; there is no top-level Width/Height.
@@ -91,6 +92,7 @@
 ---@field GetDefault fun(template: TargetedSpellsTemplate): table<Element, table<string, any>>
 ---@field GetSchema fun(template: TargetedSpellsTemplate): table<Element, TargetedSpellsElementRecord[]>
 ---@field CopyElements fun(elements: table): table
+---@field BackfillElements fun(group: TargetedSpellsGroup)
 
 ---@class TargetedSpellsGroups
 ---@field GetMatching fun(info: { targetClasses: table<TargetClass, boolean> }, groups: table<any, TargetedSpellsGroup>?): TargetedSpellsGroup[]

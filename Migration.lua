@@ -183,7 +183,7 @@ local function buildIconElements(selfSettings)
 
 	local cooldown = elements[Element.Cooldown]
 	cooldown.showSwipe = flag(flags, V3_FLAG.ShowSwipe)
-	-- v4 always renders the icon countdown number; the old ShowDuration toggle is gone
+	cooldown.showCountdown = flag(flags, V3_FLAG.ShowDuration)
 	cooldown.countdownFontSize = selfSettings.FontSize
 	cooldown.countdownFont = selfSettings.Font
 	cooldown.countdownFontFlags = copy(fontFlags)

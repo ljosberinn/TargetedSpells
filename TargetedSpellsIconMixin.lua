@@ -46,8 +46,8 @@ function TargetedSpellsIconMixin:ApplyLayout()
 
 	local cooldown = self:GetElement(Private.Enum.Element.Cooldown)
 	if cooldown ~= nil then
-		-- the countdown number always renders now (no toggle); only the swipe toggles
-		self:SetShowDuration(true)
+		-- swipe and countdown number toggle independently
+		self:SetShowDuration(cooldown.showCountdown ~= false)
 		self.Cooldown:SetDrawSwipe(cooldown.showSwipe)
 		Private.Utils.ApplyFractionThreshold(self.countdownFormatter, cooldown.fractionThreshold)
 	end
@@ -67,6 +67,9 @@ do
 	}
 
 	function TargetedSpellsIconMixin:ApplyBorderStyle(styleName)
+		local border = self:GetElement(Private.Enum.Element.Border)
+		local borderColor = border and border.borderColor and CreateColorFromHexString(border.borderColor)
+
 		if styleName == "Solid" then
 			self.BorderTopLeft:Hide()
 			self.BorderTopRight:Hide()
@@ -77,10 +80,19 @@ do
 			self.BorderLeft:Hide()
 			self.BorderRight:Hide()
 
-			self.BorderSolidTop:Show()
-			self.BorderSolidBottom:Show()
-			self.BorderSolidLeft:Show()
-			self.BorderSolidRight:Show()
+			-- solid strips: thickness from borderSize, tint from borderColor
+			local size = (border and border.borderSize) or 1
+			self.BorderSolidTop:SetHeight(size)
+			self.BorderSolidBottom:SetHeight(size)
+			self.BorderSolidLeft:SetWidth(size)
+			self.BorderSolidRight:SetWidth(size)
+
+			for _, strip in ipairs({ self.BorderSolidTop, self.BorderSolidBottom, self.BorderSolidLeft, self.BorderSolidRight }) do
+				if borderColor ~= nil then
+					strip:SetVertexColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a)
+				end
+				strip:Show()
+			end
 		elseif styleName == "None" then
 			self.BorderSolidTop:Hide()
 			self.BorderSolidBottom:Hide()
@@ -101,7 +113,9 @@ do
 			self.BorderSolidLeft:Hide()
 			self.BorderSolidRight:Hide()
 
-			local edgeSize = BORDER_EDGE_SIZES[styleName] or 8
+			-- borderSize drives the slice edge thickness (per-texture natural sizes
+			-- are the fallback when no group/border element is set)
+			local edgeSize = (border and border.borderSize) or BORDER_EDGE_SIZES[styleName] or 8
 			local outwardOffset = BORDER_INSETS[styleName] or 0
 			local iconElement = self:GetElement(Private.Enum.Element.Icon)
 			local borderWidth = iconElement.width + 2 * outwardOffset
@@ -221,6 +235,11 @@ do
 			for tex, entry in pairs(sliceTexCoords) do
 				tex:SetTexture(path, "REPEAT", "REPEAT")
 				tex:SetTexCoord(entry[1], entry[2], entry[3], entry[4], entry[5], entry[6], entry[7], entry[8])
+				if borderColor ~= nil then
+					tex:SetVertexColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a)
+				else
+					tex:SetVertexColor(1, 1, 1, 1)
+				end
 				tex:Show()
 			end
 		end
@@ -332,8 +351,7 @@ function TargetedSpellsIconMixin:OnSettingChanged(key, flagIdOrValue, newBool)
 		self:ApplyBorderStyle(border ~= nil and border.active ~= false and border.borderTexture or "None")
 	elseif key == Private.Settings.Keys.Self.FeatureFlags then
 		if flagIdOrValue == Private.Enum.FeatureFlag.ShowDuration then
-			-- icon countdown number is always shown in v4 (no toggle)
-			self:SetShowDuration(true)
+			self:SetShowDuration(newBool)
 		elseif flagIdOrValue == Private.Enum.FeatureFlag.ShowSwipe then
 			self.Cooldown:SetDrawSwipe(newBool)
 		elseif flagIdOrValue == Private.Enum.FeatureFlag.GlowImportant then
@@ -414,7 +432,7 @@ function TargetedSpellsIconMixin:Reset()
 
 	if cooldown ~= nil then
 		-- important to come last - the cooldown swipe ignores display status of its parent
-		self:SetShowDuration(true)
+		self:SetShowDuration(cooldown.showCountdown ~= false)
 		self.Cooldown:SetDrawSwipe(cooldown.showSwipe)
 		Private.Utils.ApplyFractionThreshold(self.countdownFormatter, cooldown.fractionThreshold)
 		-- Cooldown:Clear() re-inherits from SetCountdownFont, overwriting any previously applied font
@@ -432,9 +450,12 @@ function TargetedSpellsIconMixin:StyleInterruptSource()
 		return
 	end
 
+	-- pin the justifyH edge to the offset so alignment stays meaningful for auto-sized
+	-- text (LEFT/CENTER/RIGHT double as valid anchor points)
+	local edge = element.justifyH or "CENTER"
 	self.InterruptSource:ClearAllPoints()
-	PixelUtil.SetPoint(self.InterruptSource, "CENTER", self, "CENTER", element.x or 0, element.y or 0)
-	self.InterruptSource:SetJustifyH(element.justifyH or "CENTER")
+	PixelUtil.SetPoint(self.InterruptSource, edge, self, "CENTER", element.x or 0, element.y or 0)
+	self.InterruptSource:SetJustifyH(edge)
 
 	if element.maxWidth ~= nil and element.maxWidth > 0 then
 		self.InterruptSource:SetWidth(element.maxWidth)

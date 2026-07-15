@@ -63,8 +63,10 @@ local barColorModeOptions = {
 
 -- `opts.omitActive` skips the `active` toggle — used for the core element of each
 -- template (Icon / ProgressBar), which is always present by definition and so has
--- no enable/disable widget.
----@param opts table {active, width, height, x, y, omitActive}
+-- no enable/disable widget. `opts.omitOffset` skips x/y — also for the core, which
+-- is the CENTER→CENTER origin every other element offsets from (it sits at 0,0 by
+-- definition and fills the frame, so exposing an offset would be a no-op widget).
+---@param opts table {active, width, height, x, y, omitActive, omitOffset}
 local function nonTextBase(opts)
 	local records = {}
 
@@ -74,8 +76,11 @@ local function nonTextBase(opts)
 
 	records[#records + 1] = { setting = "width", name = "ELEMENT_WIDTH", type = SettingType.Number, min = 1, max = 512, step = 1, default = opts.width }
 	records[#records + 1] = { setting = "height", name = "ELEMENT_HEIGHT", type = SettingType.Number, min = 1, max = 512, step = 1, default = opts.height }
-	records[#records + 1] = { setting = "x", name = "ELEMENT_X", type = SettingType.Number, min = -512, max = 512, step = 1, default = opts.x or 0 }
-	records[#records + 1] = { setting = "y", name = "ELEMENT_Y", type = SettingType.Number, min = -512, max = 512, step = 1, default = opts.y or 0 }
+
+	if not opts.omitOffset then
+		records[#records + 1] = { setting = "x", name = "ELEMENT_X", type = SettingType.Number, min = -512, max = 512, step = 1, default = opts.x or 0 }
+		records[#records + 1] = { setting = "y", name = "ELEMENT_Y", type = SettingType.Number, min = -512, max = 512, step = 1, default = opts.y or 0 }
+	end
 
 	return records
 end
@@ -93,7 +98,7 @@ local function textBase(opts)
 		{ setting = "fontFlags", name = "ELEMENT_FONT_FLAGS", type = SettingType.FontFlags, default = defaultFontFlags() },
 		{ setting = "textColor", name = "ELEMENT_TEXT_COLOR", type = SettingType.Color, default = opts.textColor or "FFFFFFFF" },
 		{ setting = "justifyH", name = "ELEMENT_JUSTIFY_H", type = SettingType.Enum, options = justifyHOptions, default = opts.justifyH or "LEFT" },
-		{ setting = "maxWidth", name = "ELEMENT_MAX_WIDTH", type = SettingType.Number, min = 0, max = 100, step = 1, default = opts.maxWidth or 0 },
+		{ setting = "maxWidth", name = "ELEMENT_MAX_WIDTH", type = SettingType.Number, min = 0, max = 500, step = 1, default = opts.maxWidth or 0 },
 	}
 
 	-- "use class colour" companion toggle, only for elements that can honour it
@@ -131,9 +136,9 @@ end
 local function buildIconSchema()
 	local schema = {}
 
-	-- core: XML-anchored, always active (no enable toggle), sits at x=y=0 by definition
+	-- core: XML-anchored, always active (no enable toggle), the 0,0 origin (no x/y)
 	do
-		local records = nonTextBase({ omitActive = true, width = 48, height = 48, x = 0, y = 0 })
+		local records = nonTextBase({ omitActive = true, omitOffset = true, width = 48, height = 48 })
 		table.insert(records, { setting = "iconZoom", name = "ELEMENT_ICON_ZOOM", type = SettingType.Number, min = 1, max = 2, step = 0.05, default = 1 })
 		schema[Enum.Element.Icon] = records
 	end
@@ -144,10 +149,11 @@ local function buildIconSchema()
 	}
 
 	-- swipe + countdown number; welded to the icon (setAllPoints), so no x/y/size.
-	-- The countdown number always renders (no toggle); only the radial swipe toggles.
+	-- Both the radial swipe and the countdown number toggle independently.
 	do
 		local records = {
 			{ setting = "showSwipe", name = "ELEMENT_SHOW_SWIPE", type = SettingType.Boolean, default = true },
+			{ setting = "showCountdown", name = "ELEMENT_SHOW_COUNTDOWN", type = SettingType.Boolean, default = true },
 		}
 		append(records, countdownTextRecords(20))
 		schema[Enum.Element.Cooldown] = records
@@ -165,9 +171,9 @@ local function buildIconSchema()
 	-- border enabled + texture (LSM) + color + size; anchored to the frame edges
 	schema[Enum.Element.Border] = {
 		{ setting = "active", name = "ELEMENT_ACTIVE", type = SettingType.Boolean, default = true },
-		{ setting = "borderTexture", name = "ELEMENT_BORDER_TEXTURE", type = SettingType.Texture, default = "Blizzard Tooltip Border" },
+		{ setting = "borderTexture", name = "ELEMENT_BORDER_TEXTURE", type = SettingType.Texture, mediaType = "border", default = "Blizzard Tooltip Border" },
 		{ setting = "borderColor", name = "ELEMENT_BORDER_COLOR", type = SettingType.Color, default = "FFFFFFFF" },
-		{ setting = "borderSize", name = "ELEMENT_BORDER_SIZE", type = SettingType.Number, min = 1, max = 32, step = 1, default = 1 },
+		{ setting = "borderSize", name = "ELEMENT_BORDER_SIZE", type = SettingType.Number, min = 1, max = 32, step = 1, default = 8 },
 	}
 
 	return schema
@@ -178,11 +184,12 @@ end
 local function buildBarSchema()
 	local schema = {}
 
-	-- core: the old container Width/Height live here now; always active (no toggle)
+	-- core: the old container Width/Height live here now; always active (no toggle),
+	-- the 0,0 origin every other element offsets from (no x/y)
 	do
-		local records = nonTextBase({ omitActive = true, width = 300, height = 30, x = 0, y = 0 })
+		local records = nonTextBase({ omitActive = true, omitOffset = true, width = 300, height = 30 })
 		append(records, {
-			{ setting = "barTexture", name = "ELEMENT_BAR_TEXTURE", type = SettingType.Texture, default = "Blizzard Raid Bar" },
+			{ setting = "barTexture", name = "ELEMENT_BAR_TEXTURE", type = SettingType.Texture, mediaType = "statusbar", default = "Blizzard Raid Bar" },
 			{ setting = "barColorMode", name = "ELEMENT_BAR_COLOR_MODE", type = SettingType.Enum, options = barColorModeOptions, default = Enum.BarColorMode.Interruptibility },
 			{ setting = "progressBarColor", name = "ELEMENT_BAR_COLOR", type = SettingType.Color, default = "FFFFFF00" },
 			{ setting = "interruptibleColor", name = "ELEMENT_INTERRUPTIBLE_COLOR", type = SettingType.Color, default = "FF44FF44" },
@@ -194,7 +201,7 @@ local function buildBarSchema()
 	-- fill behind the bar; welded to the progress bar, so texture + color only
 	schema[Enum.Element.Background] = {
 		{ setting = "active", name = "ELEMENT_ACTIVE", type = SettingType.Boolean, default = true },
-		{ setting = "backgroundTexture", name = "ELEMENT_BACKGROUND_TEXTURE", type = SettingType.Texture, default = "Solid" },
+		{ setting = "backgroundTexture", name = "ELEMENT_BACKGROUND_TEXTURE", type = SettingType.Texture, mediaType = "background", default = "Solid" },
 		{ setting = "backgroundColor", name = "ELEMENT_BACKGROUND_COLOR", type = SettingType.Color, default = "FF1A1A1A" },
 	}
 
@@ -237,9 +244,10 @@ local function buildBarSchema()
 		useClassColor = true,
 	})
 
-	-- new; `active` is gated on bar color mode TargetClassColor by the renderer,
-	-- so it seeds off (default color mode is Interruptibility)
-	schema[Enum.Element.InterruptShield] = nonTextBase({ active = false, width = 16, height = 16, x = 0, y = 0 })
+	-- native shield shown only while the cast is NOT interruptible (the renderer drives
+	-- its visibility from the secret interruptibility boolean). `active` is the plain
+	-- on/off toggle; seeds off so it's opt-in and doesn't change existing displays.
+	schema[Enum.Element.InterruptShield] = nonTextBase({ active = false, width = 24, height = 24, x = 110, y = 0 })
 
 	return schema
 end
@@ -300,4 +308,32 @@ end
 ---@return table
 function Private.Design.CopyElements(elements)
 	return Private.Utils.DeepCopy(elements)
+end
+
+-- Fills any schema fields missing from a group's `Elements` with the template
+-- default, never overwriting an existing value. Runs on load so groups created
+-- before a field was added — dev iteration, or a future v4.x schema addition —
+-- pick it up (the v3→v4 migration runs only once, so it can't). Idempotent.
+---@param group TargetedSpellsGroup
+function Private.Design.BackfillElements(group)
+	local schema = schemasByTemplate[group.Template]
+	if schema == nil then
+		return
+	end
+
+	group.Elements = group.Elements or {}
+
+	for element, records in pairs(schema) do
+		local values = group.Elements[element]
+		if values == nil then
+			values = {}
+			group.Elements[element] = values
+		end
+
+		for _, record in ipairs(records) do
+			if values[record.setting] == nil then
+				values[record.setting] = Private.Utils.DeepCopy(record.default)
+			end
+		end
+	end
 end

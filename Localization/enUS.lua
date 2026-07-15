@@ -24,6 +24,18 @@ L.Designer.ElementPickerLabel = "Element"
 L.Designer.SelectHint = "Click an element in the preview, or pick one from the Element dropdown."
 L.Designer.ResetElement = "Reset Element"
 
+-- Copy-layout-from-group: fixed action-dropdown prompt + the empty-list message.
+L.Designer.CopyFrom = "Copy layout from…"
+L.Designer.CopyFromEmpty = "No other groups of this type"
+
+-- Scratch-copy lifecycle: the footer Apply/Revert controls, the reminder that edits
+-- are only live once saved, and the unsaved-changes prompt (close / tab-switch).
+L.Designer.Apply = "Save Changes"
+L.Designer.Revert = "Revert"
+L.Designer.Discard = "Discard"
+L.Designer.UnsavedHint = "Changes apply on Save."
+L.Designer.UnsavedPrompt = "You have unsaved layout changes."
+
 -- Widget-row labels, keyed by the schema record's `name`.
 L.Designer.SettingNames = {
 	ELEMENT_ACTIVE = "Enabled",
@@ -40,6 +52,7 @@ L.Designer.SettingNames = {
 	ELEMENT_USE_CLASS_COLOR = "Use Class Color",
 	ELEMENT_ICON_ZOOM = "Icon Zoom",
 	ELEMENT_SHOW_SWIPE = "Show Swipe",
+	ELEMENT_SHOW_COUNTDOWN = "Show Duration",
 	ELEMENT_FRACTION_THRESHOLD = "Fraction Below (s)",
 	ELEMENT_BORDER_TEXTURE = "Border Texture",
 	ELEMENT_BORDER_COLOR = "Border Color",
@@ -62,6 +75,13 @@ L.Designer.Options = {
 	BAR_COLOR_INTERRUPTIBILITY = "Interruptibility",
 	BAR_COLOR_TARGET_CLASS = "Target Class Color",
 }
+
+-- Font-style multi-select labels, keyed by Enum.FontFlags, plus the empty summary.
+L.Designer.FontFlagNames = {
+	[Private.Enum.FontFlags.OUTLINE] = "Outline",
+	[Private.Enum.FontFlags.SHADOW] = "Shadow",
+}
+L.Designer.FontFlagsNone = "None"
 
 -- Friendly names for the configurable elements, shown as the widget-panel header.
 L.Designer.ElementNames = {

@@ -37,6 +37,12 @@ local SettingType = {
 
 local Element = Private.Enum.Element
 
+-- Font-style flags in display order for the multi-select fontFlags widget.
+local FONT_FLAG_ORDER = { Private.Enum.FontFlags.OUTLINE, Private.Enum.FontFlags.SHADOW }
+
+-- Max drop-down popup height before it scrolls; LSM font/texture lists can be long.
+local MEDIA_MENU_MAX_HEIGHT = 400
+
 -- Display order for the element picker (and the fallback core selection). Every
 -- configurable element of each template, including footprint-less ones (Overlay /
 -- Background / Cooldown) that have no canvas marker and are only reachable here.
@@ -98,7 +104,7 @@ function DesignerMixin:RebuildTabs()
 		tab:SetID(id)
 		tab:SetText(group.Name)
 		tab:SetScript("OnClick", function(clickedTab)
-			self:SelectGroup(clickedTab:GetID())
+			self:RequestSelectGroup(clickedTab:GetID())
 		end)
 		tab:Show()
 		PanelTemplates_TabResize(tab, 0)
@@ -145,8 +151,26 @@ function DesignerMixin:SelectGroup(groupId)
 
 	self.scratchTemplate = group.Template
 	self.scratchElements = Private.Design.CopyElements(group.Elements)
+	self.dirty = false
+	self:UpdateApplyState()
 
 	self:RefreshCanvas()
+end
+
+-- Tab-click entry point: if the current group has unsaved scratch edits, prompt
+-- before leaving it; otherwise switch straight away. Programmatic selection
+-- (RebuildTabs → SelectGroup) bypasses this, so a rebuild never prompts.
+---@param groupId integer
+function DesignerMixin:RequestSelectGroup(groupId)
+	if groupId == self.selectedGroupId then
+		return
+	end
+
+	if self.dirty then
+		self:PromptUnsavedSwitch(groupId)
+	else
+		self:SelectGroup(groupId)
+	end
 end
 
 -- The pool a group's demo frame comes from, following its current template.
@@ -261,6 +285,14 @@ function DesignerMixin:PopulateDemoContent()
 		-- bar template
 		self:StyleDemoText(frame.ProgressBar.TargetName, self.scratchElements[Element.TargetName], playerName, classColor)
 		self:StyleDemoText(frame.ProgressBar.InterruptSource, self.scratchElements[Element.InterruptSource], playerName, classColor)
+
+		-- the demo has no real cast, so the secret interruptibility boolean is nil and
+		-- the renderer leaves the shield hidden; force it visible at full alpha when
+		-- active so it can be positioned/sized (in-game it shows only on non-interruptible
+		-- casts, via SetAlphaFromBoolean)
+		local shield = self.scratchElements[Element.InterruptShield]
+		frame.CustomElementsFrame.InterruptShield:SetAlpha(1)
+		frame.CustomElementsFrame.InterruptShield:SetShown(shield ~= nil and shield.active == true)
 	else
 		-- icon template
 		self:StyleDemoText(frame.InterruptSource, self.scratchElements[Element.InterruptSource], playerName, classColor)
@@ -481,6 +513,65 @@ function DesignerMixin:RefreshElementDropdown()
 	end
 end
 
+-- ── Copy layout from another group ───────────────────────────────────────────
+-- Deep-copies a same-template group's Elements into the scratch copy (never the
+-- live group — so it lands in the Apply/Cancel flow, undoable via Revert). Groups
+-- of a different template aren't offered: an icon layout can't map onto a bar.
+
+-- The other groups sharing the current scratch template — the valid copy sources.
+---@return integer[]
+function DesignerMixin:CopyableSourceGroups()
+	local sources = {}
+
+	for _, id in ipairs(self:SortedGroupIds()) do
+		local group = TargetedSpellsSaved.Groups[id]
+		if id ~= self.selectedGroupId and group.Template == self.scratchTemplate then
+			sources[#sources + 1] = id
+		end
+	end
+
+	return sources
+end
+
+-- Installs the copy-from menu. The generator reads the live group list + current
+-- selection each time it opens, so it always reflects the current sources; the
+-- button text stays a fixed prompt (OverrideText ignores selection state).
+function DesignerMixin:SetupCopyFromDropdown()
+	local dropdown = self.Preview.CopyFromDropdown
+
+	dropdown:SetupMenu(function(_, rootDescription)
+		local sources = self:CopyableSourceGroups()
+
+		if #sources == 0 then
+			rootDescription:CreateTitle(Private.L.Designer.CopyFromEmpty)
+			return
+		end
+
+		for _, id in ipairs(sources) do
+			local group = TargetedSpellsSaved.Groups[id]
+			rootDescription:CreateButton(group.Name, function()
+				self:CopyLayoutFromGroup(id)
+			end)
+		end
+	end)
+
+	dropdown:OverrideText(Private.L.Designer.CopyFrom)
+end
+
+-- Copies a source group's layout into the scratch copy and redraws. Same-template
+-- only; the source is already schema-complete (BackfillElements runs on load).
+---@param sourceGroupId integer
+function DesignerMixin:CopyLayoutFromGroup(sourceGroupId)
+	local source = TargetedSpellsSaved.Groups[sourceGroupId]
+	if source == nil or source.Template ~= self.scratchTemplate then
+		return
+	end
+
+	self.scratchElements = Private.Design.CopyElements(source.Elements)
+	self:MarkDirty()
+	self:RefreshCanvas()
+end
+
 -- ── Schema-driven widget panel ───────────────────────────────────────────────
 -- The selected element's schema is walked into a stack of widgets; each edit
 -- mutates the scratch record in place and previews live (the demo frame already
@@ -542,6 +633,7 @@ function DesignerMixin:OnWidgetValueChanged(setting, value)
 	record[setting] = value
 	self:ApplyScratchToDemo()
 	self:UpdateMarkerRects()
+	self:MarkDirty()
 end
 
 -- Boolean → checkbox, label in the left column.
@@ -615,11 +707,16 @@ function DesignerMixin:BuildSlider(record, yOffset)
 	return 52
 end
 
--- Enum → WowStyle1Dropdown of radio options bound to the scratch value.
+-- Acquires a WowStyle1Dropdown from `poolKey` (default the Enum pool) and positions it
+-- with a right-aligned label in the left column. Shared by every dropdown-based row
+-- (enum, texture, font, fontFlags); the caller installs the menu. Returns the dropdown.
+-- fontFlags uses its own pool: OverrideText latches `disableSelectionText`, which would
+-- otherwise leak the summary text onto a reused radio dropdown.
 ---@param record table
 ---@param yOffset number
-function DesignerMixin:BuildDropdown(record, yOffset)
-	local dropdown = self.widgetPools[SettingType.Enum]:Acquire()
+---@param poolKey string?
+function DesignerMixin:AcquireDropdownRow(record, yOffset, poolKey)
+	local dropdown = self.widgetPools[poolKey or SettingType.Enum]:Acquire()
 	local controlX = PANEL_PAD + PANEL_LABEL_WIDTH + 10
 	local controlWidth = self.Panel.Content:GetWidth() - controlX - PANEL_PAD
 
@@ -633,22 +730,226 @@ function DesignerMixin:BuildDropdown(record, yOffset)
 	dropdown:ClearAllPoints()
 	dropdown:SetPoint("TOPLEFT", self.Panel.Content, "TOPLEFT", controlX, -yOffset)
 	dropdown:SetWidth(controlWidth)
+
+	return dropdown
+end
+
+-- Builds a single-select radio menu on `dropdown` from `options` (a value+label list);
+-- long lists (font/texture) scroll. Each pick routes through OnWidgetValueChanged.
+---@param dropdown table
+---@param setting string
+---@param options table[] each { value = any, label = string }
+function DesignerMixin:PopulateRadioMenu(dropdown, setting, options)
 	dropdown:SetupMenu(function(_, rootDescription)
-		for _, option in ipairs(record.options) do
-			rootDescription:CreateRadio(self:OptionLabel(option), function()
-				return self:SelectedScratchRecord()[record.setting] == option.value
+		if #options > 12 then
+			rootDescription:SetScrollMode(MEDIA_MENU_MAX_HEIGHT)
+		end
+
+		for _, option in ipairs(options) do
+			rootDescription:CreateRadio(option.label, function()
+				return self:SelectedScratchRecord()[setting] == option.value
 			end, function()
-				self:OnWidgetValueChanged(record.setting, option.value)
+				self:OnWidgetValueChanged(setting, option.value)
 			end)
 		end
 	end)
+	dropdown:Show()
+end
+
+-- Enum → WowStyle1Dropdown of radio options bound to the scratch value.
+---@param record table
+---@param yOffset number
+function DesignerMixin:BuildDropdown(record, yOffset)
+	local dropdown = self:AcquireDropdownRow(record, yOffset)
+
+	local options = {}
+	for _, option in ipairs(record.options) do
+		options[#options + 1] = { value = option.value, label = self:OptionLabel(option) }
+	end
+
+	self:PopulateRadioMenu(dropdown, record.setting, options)
+
+	return 30
+end
+
+-- Texture → WowStyle1Dropdown of LSM media names for the record's mediaType (statusbar
+-- / background / border). The stored value is the LSM *name*, resolved to a path by the
+-- mixins via LibSharedMedia:Fetch. Media lists come from the existing Settings getters.
+---@param record table
+---@param yOffset number
+function DesignerMixin:BuildTextureDropdown(record, yOffset)
+	local dropdown = self:AcquireDropdownRow(record, yOffset)
+
+	local options = {}
+	for _, name in ipairs(self:MediaNameList(record.mediaType)) do
+		options[#options + 1] = { value = name, label = name }
+	end
+
+	self:PopulateRadioMenu(dropdown, record.setting, options)
+
+	return 30
+end
+
+-- Font → WowStyle1Dropdown of LSM font names. The stored value is the font *path*
+-- (what SafelySetFont / SetFont consume, matching the v3 storage), so each radio's
+-- value is the resolved path while its label is the friendly name.
+---@param record table
+---@param yOffset number
+function DesignerMixin:BuildFontDropdown(record, yOffset)
+	local dropdown = self:AcquireDropdownRow(record, yOffset)
+	local fontInfo = Private.Settings.GetFontOptions()
+
+	local options = {}
+	for _, name in ipairs(fontInfo.fonts) do
+		options[#options + 1] = { value = fontInfo.byLabel[name], label = name }
+	end
+
+	self:PopulateRadioMenu(dropdown, record.setting, options)
+
+	return 30
+end
+
+-- FontFlags → WowStyle1Dropdown of checkboxes (Outline / Shadow). The value is a
+-- nested { [flag] = bool } table mutated in place, so it can't use the value-equality
+-- path in OnWidgetValueChanged; toggles preview + dirty directly (OnFontFlagChanged).
+-- The button text summarises the enabled flags (OverrideText).
+---@param record table
+---@param yOffset number
+function DesignerMixin:BuildFontFlagsDropdown(record, yOffset)
+	local dropdown = self:AcquireDropdownRow(record, yOffset, SettingType.FontFlags)
+	local flags = self:SelectedScratchRecord()[record.setting]
+
+	dropdown:SetupMenu(function(_, rootDescription)
+		for _, flag in ipairs(FONT_FLAG_ORDER) do
+			rootDescription:CreateCheckbox(Private.L.Designer.FontFlagNames[flag], function()
+				return flags[flag] == true
+			end, function()
+				flags[flag] = not flags[flag]
+				self:OnFontFlagChanged(dropdown, record)
+			end)
+		end
+	end)
+
+	dropdown:OverrideText(self:FontFlagsSummary(flags))
 	dropdown:Show()
 
 	return 30
 end
 
--- Color / font / fontFlags / texture: not yet editable — a labelled placeholder row
--- so the setting is visible and clearly pending (color swatch next, rest Phase 6).
+-- Comma-joined names of the enabled font flags (or the "none" label), for the
+-- fontFlags dropdown's summary text.
+---@param flags table<integer, boolean>
+function DesignerMixin:FontFlagsSummary(flags)
+	local parts = {}
+	for _, flag in ipairs(FONT_FLAG_ORDER) do
+		if flags[flag] then
+			parts[#parts + 1] = Private.L.Designer.FontFlagNames[flag]
+		end
+	end
+
+	if #parts == 0 then
+		return Private.L.Designer.FontFlagsNone
+	end
+
+	return table.concat(parts, ", ")
+end
+
+-- Applies a fontFlags toggle: refresh the summary text, preview live, mark dirty.
+-- Bypasses OnWidgetValueChanged because the value is a mutated-in-place table.
+---@param dropdown table
+---@param record table
+function DesignerMixin:OnFontFlagChanged(dropdown, record)
+	if self.buildingPanel then
+		return
+	end
+
+	dropdown:OverrideText(self:FontFlagsSummary(self:SelectedScratchRecord()[record.setting]))
+	self:ApplyScratchToDemo()
+	self:UpdateMarkerRects()
+	self:MarkDirty()
+end
+
+-- LSM media names for a texture record's mediaType, via the existing Settings getters
+-- (no duplication) — the border list includes the synthetic "Solid".
+---@param mediaType string
+---@return string[]
+function DesignerMixin:MediaNameList(mediaType)
+	if mediaType == "statusbar" then
+		return Private.Settings.GetStatusBarOptions()
+	elseif mediaType == "background" then
+		return Private.Settings.GetBackgroundOptions()
+	elseif mediaType == "border" then
+		return Private.Settings.GetBorderOptions()
+	end
+
+	return {}
+end
+
+-- Color → ColorSwatchTemplate; clicking opens the shared ColorPickerFrame. The
+-- stored value is an AARRGGBB hex string (CreateColorFromHexString round-trips with
+-- ColorMixin:GenerateHexColor), the same format the mixins and demo text consume.
+---@param record table
+---@param yOffset number
+function DesignerMixin:BuildColorSwatch(record, yOffset)
+	local swatch = self.widgetPools[SettingType.Color]:Acquire()
+
+	local label = self:WidgetLabel(swatch)
+	label:ClearAllPoints()
+	label:SetPoint("RIGHT", swatch, "LEFT", -6, 0)
+	label:SetWidth(PANEL_LABEL_WIDTH)
+	label:SetJustifyH("RIGHT")
+	label:SetText(self:SettingLabel(record))
+
+	swatch:ClearAllPoints()
+	swatch:SetPoint("TOPLEFT", self.Panel.Content, "TOPLEFT", PANEL_PAD + PANEL_LABEL_WIDTH + 10, -yOffset)
+
+	local color = CreateColorFromHexString(self:SelectedScratchRecord()[record.setting] or record.default)
+	swatch:SetColorRGB(color.r, color.g, color.b)
+
+	swatch:EnableMouse(true)
+	swatch:SetScript("OnMouseUp", function()
+		self:OpenColorPicker(record, swatch)
+	end)
+	swatch:Show()
+
+	return 24
+end
+
+-- Opens the shared color picker seeded from the record's current value. Every change
+-- (live drag, opacity, and the picker's own Cancel) writes the resulting hex back
+-- through OnWidgetValueChanged, so the demo and swatch preview immediately.
+---@param record table
+---@param swatch table
+function DesignerMixin:OpenColorPicker(record, swatch)
+	local startColor = CreateColorFromHexString(self:SelectedScratchRecord()[record.setting] or record.default)
+
+	local function commit()
+		local r, g, b = ColorPickerFrame:GetColorRGB()
+		local a = ColorPickerFrame:GetColorAlpha()
+		swatch:SetColorRGB(r, g, b)
+		self:OnWidgetValueChanged(record.setting, CreateColor(r, g, b, a):GenerateHexColor())
+	end
+
+	ColorPickerFrame:SetupColorPickerAndShow({
+		r = startColor.r,
+		g = startColor.g,
+		b = startColor.b,
+		opacity = startColor.a,
+		hasOpacity = true,
+		swatchFunc = commit,
+		opacityFunc = commit,
+		cancelFunc = function(previous)
+			swatch:SetColorRGB(previous.r, previous.g, previous.b)
+			self:OnWidgetValueChanged(
+				record.setting,
+				CreateColor(previous.r, previous.g, previous.b, previous.a):GenerateHexColor()
+			)
+		end,
+	})
+end
+
+-- Fallback for any setting type without a dedicated widget — a labelled placeholder
+-- row so the setting stays visible. No schema type currently reaches this.
 ---@param record table
 ---@param yOffset number
 function DesignerMixin:BuildPlaceholder(record, yOffset)
@@ -679,6 +980,14 @@ function DesignerMixin:BuildWidget(record, yOffset)
 		return self:BuildSlider(record, yOffset)
 	elseif record.type == SettingType.Enum then
 		return self:BuildDropdown(record, yOffset)
+	elseif record.type == SettingType.Color then
+		return self:BuildColorSwatch(record, yOffset)
+	elseif record.type == SettingType.Texture then
+		return self:BuildTextureDropdown(record, yOffset)
+	elseif record.type == SettingType.Font then
+		return self:BuildFontDropdown(record, yOffset)
+	elseif record.type == SettingType.FontFlags then
+		return self:BuildFontFlagsDropdown(record, yOffset)
 	end
 
 	return self:BuildPlaceholder(record, yOffset)
@@ -735,6 +1044,7 @@ function DesignerMixin:ResetSelectedElement()
 	-- BuildMarkers repositions markers from the reset offsets and re-runs
 	-- SelectElement, which rebuilds the panel widgets with the restored values
 	self:BuildMarkers()
+	self:MarkDirty()
 end
 
 -- Re-renders the demo frame from the (mutated) scratch layout without restarting
@@ -789,13 +1099,133 @@ function DesignerMixin:UpdateMarkerRects()
 	end
 end
 
+-- ── Scratch-copy lifecycle (Apply / Revert / unsaved prompts) ─────────────────
+-- Edits mutate the scratch Elements copy taken on tab-select, never the live group;
+-- the live frames keep showing the last-applied layout until Apply writes the scratch
+-- back and fires GROUP_CHANGED (which drives Driver:RefreshGroup). Revert re-copies
+-- the group, discarding pending edits. `dirty` gates the footer buttons and the
+-- unsaved-changes prompts on close / tab-switch.
+
+-- Flags the scratch copy as diverged from the live group and refreshes button state.
+function DesignerMixin:MarkDirty()
+	self.dirty = true
+	self:UpdateApplyState()
+end
+
+-- Enables the Apply/Revert footer buttons only when there are pending edits.
+function DesignerMixin:UpdateApplyState()
+	if self.ApplyButton == nil then
+		return
+	end
+	self.ApplyButton:SetEnabled(self.dirty == true)
+	self.RevertButton:SetEnabled(self.dirty == true)
+end
+
+-- Writes the scratch layout back to the live group and refreshes its frames. A deep
+-- copy keeps the group's Elements independent of the scratch table, so later edits
+-- don't leak onto live frames before the next Apply.
+function DesignerMixin:ApplyScratch()
+	local group = self.selectedGroupId and TargetedSpellsSaved.Groups[self.selectedGroupId]
+	if group == nil or self.scratchElements == nil then
+		return
+	end
+
+	group.Elements = Private.Design.CopyElements(self.scratchElements)
+	self.dirty = false
+	self:UpdateApplyState()
+
+	Private.EventRegistry:TriggerEvent(Private.Enum.Events.GROUP_CHANGED, self.selectedGroupId)
+end
+
+-- Discards scratch edits by re-copying the live group's layout, then redraws.
+function DesignerMixin:RevertScratch()
+	local group = self.selectedGroupId and TargetedSpellsSaved.Groups[self.selectedGroupId]
+	if group == nil then
+		return
+	end
+
+	self.scratchTemplate = group.Template
+	self.scratchElements = Private.Design.CopyElements(group.Elements)
+	self.dirty = false
+	self:UpdateApplyState()
+	self:RefreshCanvas()
+end
+
+-- Unsaved-changes prompt when switching tabs: Save applies then switches, Discard
+-- switches (SelectGroup re-copies scratch, dropping edits), Cancel stays put — the
+-- current tab keeps its selection because only SelectGroup drives PanelTemplates.
+---@param groupId integer
+function DesignerMixin:PromptUnsavedSwitch(groupId)
+	Private.Utils.ShowStaticPopup({
+		text = Private.L.Designer.UnsavedPrompt,
+		button1 = SAVE,
+		button2 = CANCEL,
+		button3 = Private.L.Designer.Discard,
+		OnAccept = function()
+			self:ApplyScratch()
+			self:SelectGroup(groupId)
+		end,
+		OnAlt = function()
+			self:SelectGroup(groupId)
+		end,
+	})
+end
+
+-- Closing (Esc / close button / Toggle) stops the loop and frees the demo frame; if
+-- scratch edits are pending it prompts to Save or Discard them. The window is already
+-- hidden, so the choice only decides the fate of the pending edits (Discard reverts
+-- the scratch so the next open starts clean).
+function DesignerMixin:OnDesignerHide()
+	self:EndDemo()
+
+	if not self.dirty then
+		return
+	end
+
+	Private.Utils.ShowStaticPopup({
+		text = Private.L.Designer.UnsavedPrompt,
+		button1 = SAVE,
+		button2 = Private.L.Designer.Discard,
+		OnAccept = function()
+			self:ApplyScratch()
+		end,
+		OnCancel = function()
+			self:RevertScratch()
+		end,
+	})
+end
+
 function DesignerMixin:Initialize()
 	-- Canvas: a bordered inset split into a Preview (left, holds the demo frame +
 	-- selection markers) and a Panel (right, the schema-driven widget list in step 7).
 	self.Canvas = CreateFrame("Frame", nil, self, "InsetFrameTemplate")
 	self.Canvas:SetPoint("TOPLEFT", self, "TOPLEFT", 12, -32)
-	self.Canvas:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", -12, 12)
+	-- leave a footer strip for the Apply/Revert controls + unsaved hint
+	self.Canvas:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", -12, 42)
 	self.Canvas:SetFrameLevel(self:GetFrameLevel() + 10)
+
+	-- Footer: Apply writes the scratch layout to the live group, Revert discards it.
+	-- Both stay disabled until an edit dirties the scratch copy (UpdateApplyState).
+	self.ApplyButton = CreateFrame("Button", nil, self, "UIPanelButtonTemplate")
+	self.ApplyButton:SetSize(130, 22)
+	self.ApplyButton:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", -12, 12)
+	self.ApplyButton:SetText(Private.L.Designer.Apply)
+	self.ApplyButton:SetScript("OnClick", function()
+		self:ApplyScratch()
+	end)
+
+	self.RevertButton = CreateFrame("Button", nil, self, "UIPanelButtonTemplate")
+	self.RevertButton:SetSize(100, 22)
+	self.RevertButton:SetPoint("RIGHT", self.ApplyButton, "LEFT", -6, 0)
+	self.RevertButton:SetText(Private.L.Designer.Revert)
+	self.RevertButton:SetScript("OnClick", function()
+		self:RevertScratch()
+	end)
+
+	-- Reminder that live frames keep their last-applied layout while edits are unsaved.
+	self.UnsavedHint = self:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+	self.UnsavedHint:SetPoint("LEFT", self, "BOTTOMLEFT", 14, 23)
+	self.UnsavedHint:SetText(Private.L.Designer.UnsavedHint)
 
 	self.Panel = CreateFrame("Frame", nil, self.Canvas, "InsetFrameTemplate")
 	self.Panel:SetPoint("TOPRIGHT", self.Canvas, "TOPRIGHT", -6, -6)
@@ -850,6 +1280,17 @@ function DesignerMixin:Initialize()
 	self.Preview.Hint:SetPoint("BOTTOM", self.Preview, "BOTTOM", 0, 6)
 	self.Preview.Hint:SetText(Private.L.Designer.SelectHint)
 
+	-- Copy-layout-from-group: an action dropdown (fixed prompt via OverrideText) listing
+	-- every OTHER group of the same template. Picking one deep-copies its Elements into
+	-- the scratch copy, so it flows through Apply/Cancel like any edit — the lightweight
+	-- reuse affordance that replaces shared Designs. Raised above the selection markers
+	-- so a top-left element's marker can't steal its clicks.
+	self.Preview.CopyFromDropdown = CreateFrame("DropdownButton", nil, self.Preview, "WowStyle1DropdownTemplate")
+	self.Preview.CopyFromDropdown:SetPoint("TOPLEFT", self.Preview, "TOPLEFT", 4, -4)
+	self.Preview.CopyFromDropdown:SetWidth(200)
+	self.Preview.CopyFromDropdown:SetFrameLevel(self.Preview:GetFrameLevel() + 500)
+	self:SetupCopyFromDropdown()
+
 	-- Selection markers: mouse-enabled buttons floating over the preview at each
 	-- element's stored offset. Pooled + rebuilt whenever the layout/template changes.
 	self.selectorPool = CreateFramePool("Button", self.Preview, nil, function(_, marker)
@@ -881,6 +1322,10 @@ function DesignerMixin:Initialize()
 		[SettingType.Boolean] = CreateFramePool("CheckButton", self.Panel.Content, "UICheckButtonTemplate", HideWidget),
 		[SettingType.Number] = CreateFramePool("Frame", self.Panel.Content, "MinimalSliderWithSteppersTemplate", HideWidget),
 		[SettingType.Enum] = CreateFramePool("DropdownButton", self.Panel.Content, "WowStyle1DropdownTemplate", HideWidget),
+		-- fontFlags gets its own dropdown pool (its OverrideText must not leak onto a
+		-- reused radio dropdown — see AcquireDropdownRow)
+		[SettingType.FontFlags] = CreateFramePool("DropdownButton", self.Panel.Content, "WowStyle1DropdownTemplate", HideWidget),
+		[SettingType.Color] = CreateFramePool("Frame", self.Panel.Content, "ColorSwatchTemplate", HideWidget),
 		placeholder = CreateFramePool("Frame", self.Panel.Content, nil, HideWidget),
 	}
 
@@ -891,10 +1336,12 @@ function DesignerMixin:Initialize()
 	---@type table<integer, Button>
 	self.tabs = {}
 	self.selectedGroupId = nil
+	self.dirty = false
+	self:UpdateApplyState()
 
 	self:SetScript("OnShow", self.RebuildTabs)
-	-- closing (Esc / close button / Toggle) stops the loop and frees the demo frame
-	self:HookScript("OnHide", self.EndDemo)
+	-- closing stops the demo loop and, if edits are pending, prompts Save/Discard
+	self:HookScript("OnHide", self.OnDesignerHide)
 
 	-- Keep the tab strip current if groups change while the designer is open. A
 	-- rename fires GROUP_CHANGED; create/delete route through PROFILE_IMPORTED.

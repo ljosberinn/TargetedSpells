@@ -40,7 +40,7 @@
                     <Layer level="OVERLAY">
                         <FontString parentKey="SpellName" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE" wordwrap="false" />
                         <FontString parentKey="TargetName" font="GameFontHighlightSmall" justifyH="RIGHT" justifyV="MIDDLE" wordwrap="false" />
-<FontString parentKey="InterruptSource" hidden="true" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE" wordwrap="false">
+                        <FontString parentKey="InterruptSource" hidden="true" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE" wordwrap="false">
                             <Anchors>
                                 <Anchor point="LEFT" relativePoint="LEFT">
                                     <Offset>
@@ -56,6 +56,7 @@
                 <Layers>
                     <Layer level="OVERLAY">
                         <Texture parentKey="TargetMarker" file="Interface/TargetingFrame/UI-RaidTargetingIcons" />
+                        <Texture parentKey="InterruptShield" hidden="true" atlas="nameplates-InterruptShield" />
                     </Layer>
                 </Layers>
             </Frame>
