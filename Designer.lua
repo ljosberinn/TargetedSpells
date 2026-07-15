@@ -189,10 +189,14 @@ function DesignerMixin:StartDemo()
 	self.demoFrame:SetFrameStrata(self.Preview:GetFrameStrata())
 	self.demoFrame:SetFrameLevel(self.Preview:GetFrameLevel() + 5)
 
+	-- a fixed sample raid marker for the run so TargetMarker previews steadily (a
+	-- non-casting unit has none of its own)
+	self.demoMarkerIndex = math.random(1, 8)
+
 	self:PlayDemoCast()
 
-	-- restart the cast a beat after each one finishes, so the preview keeps looping
-	self.demoTicker = C_Timer.NewTicker(DEMO_CAST_TIME + 1, function()
+	-- loop the cast right as it finishes so the preview never dwells on an empty bar
+	self.demoTicker = C_Timer.NewTicker(DEMO_CAST_TIME, function()
 		self:PlayDemoCast()
 	end)
 end
@@ -219,18 +223,80 @@ function DesignerMixin:PlayDemoCast()
 	self.demoFrame:Show()
 	self.demoFrame:SetAlpha(secretwrap(1))
 
-	-- bar demo frames get their preview colour + a random raid marker
 	if self.demoFrame.SetPreviewBarColor then
 		self.demoFrame:SetPreviewBarColor()
-		self.demoFrame:SetTargetMarker(Private.Utils.RollDice() and math.random(1, 8) or nil)
 	end
+
+	-- player-based sample content for the text elements + the raid marker, so they
+	-- preview steadily instead of vanishing when the cast loops (PostCreate resolves
+	-- them from the non-casting "player" unit, which yields nothing)
+	self:PopulateDemoContent()
 
 	local group = self.selectedGroupId and TargetedSpellsSaved.Groups[self.selectedGroupId]
 	if group ~= nil and group.GlowImportant then
-		self.demoFrame:ShowGlow(secretwrap(true))
+		-- randomize importance per cast so the preview shows both the full-alpha
+		-- (important) and reduced-alpha states, like the edit-mode preview does
+		self.demoFrame:ShowGlow(self.demoFrame:IsSpellImportant(Private.Utils.RollDice()))
 	else
 		self.demoFrame:HideGlow()
 	end
+end
+
+-- Fills the demo frame's text elements with the player's own info (name, and class
+-- colour where the element opts in) and re-applies the sample raid marker. Used
+-- both on each cast loop and after a widget edit, so these elements preview
+-- persistently and reflect the player — a real cast on a non-player unit is what
+-- PostCreate expects, and there is none in the designer.
+function DesignerMixin:PopulateDemoContent()
+	local frame = self.demoFrame
+	if frame == nil then
+		return
+	end
+
+	local playerName = UnitName("player")
+	local _, classToken = UnitClass("player")
+	local classColor = classToken and C_ClassColor.GetClassColor(classToken)
+
+	if frame.ProgressBar then
+		-- bar template
+		self:StyleDemoText(frame.ProgressBar.TargetName, self.scratchElements[Element.TargetName], playerName, classColor)
+		self:StyleDemoText(frame.ProgressBar.InterruptSource, self.scratchElements[Element.InterruptSource], playerName, classColor)
+	else
+		-- icon template
+		self:StyleDemoText(frame.InterruptSource, self.scratchElements[Element.InterruptSource], playerName, classColor)
+	end
+
+	if frame.SetTargetMarker then
+		frame:SetTargetMarker(self.demoMarkerIndex)
+	end
+end
+
+-- Sets a demo text region's sample text + colour, honouring the element's `active`
+-- toggle and its class-colour / static-colour choice.
+---@param region FontString?
+---@param element table<string, any>?
+---@param sampleText string
+---@param classColor colorRGB?
+function DesignerMixin:StyleDemoText(region, element, sampleText, classColor)
+	if region == nil then
+		return
+	end
+
+	if element == nil or element.active == false then
+		region:Hide()
+		return
+	end
+
+	region:SetText(sampleText)
+
+	if element.useClassColor and classColor then
+		region:SetTextColor(classColor.r, classColor.g, classColor.b)
+	elseif element.textColor then
+		local color = CreateColorFromHexString(element.textColor)
+		region:SetTextColor(color.r, color.g, color.b, color.a)
+	end
+
+	region:Show()
 end
 
 -- Stops the loop and returns the demo frame to its pool (Reset reparents it to
@@ -254,7 +320,12 @@ end
 -- Overlay / Background / Cooldown) get no marker — they are reachable from the
 -- panel once step 7's element list lands.
 
--- The marker rectangle for an element record, or nil for a footprint-less element.
+-- The marker rectangle for an element, or nil for a footprint-less element. Computed
+-- purely from the stored record — never by querying the demo frame's geometry, whose
+-- sizes are secret-tainted by the cast path and error on arithmetic. Boxed elements
+-- use their stored size/offset; text elements are anchored CENTER→CENTER at (x,y), so
+-- the marker centres there with a width of maxWidth (when capped, matching the
+-- truncation box) or a nominal width otherwise, scaled to the font for height.
 ---@param record table<string, any>
 function DesignerMixin:ElementMarkerRect(record)
 	local x = record.x or 0
@@ -265,8 +336,6 @@ function DesignerMixin:ElementMarkerRect(record)
 	end
 
 	if record.fontSize ~= nil then
-		-- text element: no stored size, so use a nominal clickable box (maxWidth if
-		-- the user has capped it, else a default) scaled to the font.
 		local width = (record.maxWidth ~= nil and record.maxWidth > 0) and record.maxWidth or 120
 		return x, y, width, record.fontSize * 1.8
 	end
@@ -463,6 +532,13 @@ function DesignerMixin:OnWidgetValueChanged(setting, value)
 		return
 	end
 
+	-- no-op if the value is unchanged (a slider reporting the same snapped value, a
+	-- dropdown re-picking the current option) — avoids a needless re-render, which
+	-- would visibly re-roll the demo's random spell icon
+	if record[setting] == value then
+		return
+	end
+
 	record[setting] = value
 	self:ApplyScratchToDemo()
 	self:UpdateMarkerRects()
@@ -641,6 +717,26 @@ function DesignerMixin:BuildPanel()
 	self.buildingPanel = false
 end
 
+-- Restores the selected element's scratch record to the template default and
+-- refreshes the demo, markers and panel. Scoped to one element (GetDefault returns
+-- a fresh deep copy, so the assignment is safe to mutate later).
+function DesignerMixin:ResetSelectedElement()
+	if self.selectedElement == nil or self.scratchElements == nil or self.scratchTemplate == nil then
+		return
+	end
+
+	local defaultRecord = Private.Design.GetDefault(self.scratchTemplate)[self.selectedElement]
+	if defaultRecord == nil then
+		return
+	end
+
+	self.scratchElements[self.selectedElement] = defaultRecord
+	self:ApplyScratchToDemo()
+	-- BuildMarkers repositions markers from the reset offsets and re-runs
+	-- SelectElement, which rebuilds the panel widgets with the restored values
+	self:BuildMarkers()
+end
+
 -- Re-renders the demo frame from the (mutated) scratch layout without restarting
 -- the cast loop. ApplyLayout re-reads the override for size/position/textures/
 -- colours/font; the runtime-visibility setters catch the rest.
@@ -656,15 +752,23 @@ function DesignerMixin:ApplyScratchToDemo()
 	-- when a setting other than width/height was edited.
 	self.demoFrame:OnSizeChanged()
 
+	-- SetSpellId refreshes the SpellName text (bar) but also re-rolls the random demo
+	-- icon when spellId is nil, which makes edits like icon-zoom look like the whole
+	-- icon changed. Preserve the current texture across the refresh so only the edited
+	-- property (e.g. the zoom texcoord) visibly changes.
+	local previousTexture = self.demoFrame.Icon and self.demoFrame.Icon:GetTexture()
 	self.demoFrame:SetSpellId(self.demoFrame:GetSpellId())
+	if previousTexture ~= nil and self.demoFrame.Icon ~= nil then
+		self.demoFrame.Icon:SetTexture(previousTexture)
+	end
 
 	if self.demoFrame.SetPreviewBarColor then
 		self.demoFrame:SetPreviewBarColor()
 	end
 
-	if self.demoFrame.UpdateTargetName then
-		self.demoFrame:UpdateTargetName(UnitName("player"))
-	end
+	-- re-apply the player-based sample text + marker so colour/active/useClassColor
+	-- edits preview immediately
+	self:PopulateDemoContent()
 end
 
 -- Repositions/resizes existing selection markers from the scratch layout (cheaper
@@ -710,11 +814,21 @@ function DesignerMixin:Initialize()
 	self.Panel.ElementDropdown:SetWidth(self.Panel:GetWidth() - 24)
 	self:SetupElementDropdown()
 
+	-- Per-element reset: restores the selected element to its template default.
+	self.Panel.ResetButton = CreateFrame("Button", nil, self.Panel, "UIPanelButtonTemplate")
+	self.Panel.ResetButton:SetSize(140, 22)
+	self.Panel.ResetButton:SetPoint("BOTTOM", self.Panel, "BOTTOM", 0, 8)
+	self.Panel.ResetButton:SetText(Private.L.Designer.ResetElement)
+	self.Panel.ResetButton:SetScript("OnClick", function()
+		self:ResetSelectedElement()
+	end)
+
 	-- Scrollable content region — some elements (ProgressBar, text) carry more rows
-	-- than the panel is tall, so the widget stack lives in a scroll child.
+	-- than the panel is tall, so the widget stack lives in a scroll child. Its bottom
+	-- sits above the reset button.
 	self.Panel.Scroll = CreateFrame("ScrollFrame", nil, self.Panel, "UIPanelScrollFrameTemplate")
 	self.Panel.Scroll:SetPoint("TOPLEFT", self.Panel, "TOPLEFT", 8, -56)
-	self.Panel.Scroll:SetPoint("BOTTOMRIGHT", self.Panel, "BOTTOMRIGHT", -26, 8)
+	self.Panel.Scroll:SetPoint("BOTTOMRIGHT", self.Panel, "BOTTOMRIGHT", -26, 38)
 	self.Panel.Content = CreateFrame("Frame", nil, self.Panel.Scroll)
 	self.Panel.Content:SetSize(1, 1)
 	self.Panel.Scroll:SetScrollChild(self.Panel.Content)

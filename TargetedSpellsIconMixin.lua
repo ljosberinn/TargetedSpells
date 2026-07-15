@@ -18,7 +18,9 @@ function TargetedSpellsIconMixin:OnLoad()
 	-- group-agnostic setup only; OnLoad runs once at pool creation, before the
 	-- Driver assigns a group. All group-dependent styling lives in ApplyLayout.
 	self.Bar:SetStatusBarTexture("")
-	self.Cooldown:SetCountdownFormatter(Private.Utils.Formatter)
+	-- per-frame formatter so each group's fraction threshold is independent
+	self.countdownFormatter = Private.Utils.CreateCountdownFormatter()
+	self.Cooldown:SetCountdownFormatter(self.countdownFormatter)
 	self.Cooldown:SetCountdownFont("GameFontHighlightHugeOutline")
 	self:HideGlow()
 end
@@ -33,14 +35,21 @@ function TargetedSpellsIconMixin:ApplyLayout()
 
 	PixelUtil.SetSize(self, iconElement.width, iconElement.height)
 	self:SetFont()
+	self:StyleInterruptSource()
+
+	-- the cooldown-manager bezel is decorative; its only setting is show/hide
+	local overlay = self:GetElement(Private.Enum.Element.Overlay)
+	self.Overlay:SetShown(overlay == nil or overlay.active ~= false)
 
 	local border = self:GetElement(Private.Enum.Element.Border)
 	self:ApplyBorderStyle(border ~= nil and border.active ~= false and border.borderTexture or "None")
 
 	local cooldown = self:GetElement(Private.Enum.Element.Cooldown)
 	if cooldown ~= nil then
-		self:SetShowDuration(cooldown.showCountdown)
+		-- the countdown number always renders now (no toggle); only the swipe toggles
+		self:SetShowDuration(true)
 		self.Cooldown:SetDrawSwipe(cooldown.showSwipe)
+		Private.Utils.ApplyFractionThreshold(self.countdownFormatter, cooldown.fractionThreshold)
 	end
 end
 
@@ -323,8 +332,8 @@ function TargetedSpellsIconMixin:OnSettingChanged(key, flagIdOrValue, newBool)
 		self:ApplyBorderStyle(border ~= nil and border.active ~= false and border.borderTexture or "None")
 	elseif key == Private.Settings.Keys.Self.FeatureFlags then
 		if flagIdOrValue == Private.Enum.FeatureFlag.ShowDuration then
-			local cooldown = self:GetElement(Private.Enum.Element.Cooldown)
-			self:SetShowDuration(cooldown ~= nil and cooldown.showCountdown)
+			-- icon countdown number is always shown in v4 (no toggle)
+			self:SetShowDuration(true)
 		elseif flagIdOrValue == Private.Enum.FeatureFlag.ShowSwipe then
 			self.Cooldown:SetDrawSwipe(newBool)
 		elseif flagIdOrValue == Private.Enum.FeatureFlag.GlowImportant then
@@ -405,10 +414,53 @@ function TargetedSpellsIconMixin:Reset()
 
 	if cooldown ~= nil then
 		-- important to come last - the cooldown swipe ignores display status of its parent
-		self:SetShowDuration(cooldown.showCountdown)
+		self:SetShowDuration(true)
 		self.Cooldown:SetDrawSwipe(cooldown.showSwipe)
+		Private.Utils.ApplyFractionThreshold(self.countdownFormatter, cooldown.fractionThreshold)
 		-- Cooldown:Clear() re-inherits from SetCountdownFont, overwriting any previously applied font
 		self:SetFont()
+	end
+end
+
+-- Positions and styles the InterruptSource text from its layout element. The XML
+-- anchors it setAllPoints at the top; the layout overrides that with a CENTER→CENTER
+-- offset so x/y, justify, font and maxWidth truncation take effect (matching the bar
+-- template — the interrupter name renders on interrupt via SetInterrupted).
+function TargetedSpellsIconMixin:StyleInterruptSource()
+	local element = self:GetElement(Private.Enum.Element.InterruptSource)
+	if element == nil then
+		return
+	end
+
+	self.InterruptSource:ClearAllPoints()
+	PixelUtil.SetPoint(self.InterruptSource, "CENTER", self, "CENTER", element.x or 0, element.y or 0)
+	self.InterruptSource:SetJustifyH(element.justifyH or "CENTER")
+
+	if element.maxWidth ~= nil and element.maxWidth > 0 then
+		self.InterruptSource:SetWidth(element.maxWidth)
+		self.InterruptSource:SetWordWrap(false)
+	else
+		self.InterruptSource:SetWidth(0)
+	end
+
+	Private.Utils.SafelySetFont(
+		Private.Enum.FrameKind.Self,
+		self.InterruptSource,
+		element.font,
+		element.fontSize,
+		element.fontFlags[Private.Enum.FontFlags.OUTLINE] and "OUTLINE" or ""
+	)
+
+	if element.fontFlags[Private.Enum.FontFlags.SHADOW] then
+		self.InterruptSource:SetShadowOffset(1, -1)
+		self.InterruptSource:SetShadowColor(0, 0, 0, 1)
+	else
+		self.InterruptSource:SetShadowOffset(0, 0)
+	end
+
+	if element.textColor ~= nil then
+		local color = CreateColorFromHexString(element.textColor)
+		self.InterruptSource:SetTextColor(color.r, color.g, color.b, color.a)
 	end
 end
 

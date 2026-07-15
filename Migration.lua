@@ -183,7 +183,7 @@ local function buildIconElements(selfSettings)
 
 	local cooldown = elements[Element.Cooldown]
 	cooldown.showSwipe = flag(flags, V3_FLAG.ShowSwipe)
-	cooldown.showCountdown = flag(flags, V3_FLAG.ShowDuration)
+	-- v4 always renders the icon countdown number; the old ShowDuration toggle is gone
 	cooldown.countdownFontSize = selfSettings.FontSize
 	cooldown.countdownFont = selfSettings.Font
 	cooldown.countdownFontFlags = copy(fontFlags)
@@ -254,8 +254,8 @@ local function buildBarElements(partySettings)
 	elements[Element.TargetMarker].active = flag(flags, V3_FLAG.ShowTargetMarker)
 
 	local duration = elements[Element.DurationCooldown]
+	-- v4: the bar duration's `active` toggle controls both the region and its number
 	duration.active = flag(flags, V3_FLAG.ShowDuration)
-	duration.showCountdown = flag(flags, V3_FLAG.ShowDuration)
 	duration.countdownFontSize = partySettings.FontSize
 	duration.countdownFont = partySettings.Font
 	duration.countdownFontFlags = copy(fontFlags)

@@ -63,58 +63,52 @@ do
 end
 
 do
-	Private.Utils.Formatter = C_StringUtil.CreateNumericRuleFormatter()
+	-- Countdown breakpoints for the numeric rule formatter. `fractionThreshold` is
+	-- the duration (seconds) below which the number shows a decimal fraction
+	-- ("2.3") instead of a whole number ("2"); 0 disables fractions entirely. The
+	-- minutes-and-up rules are fixed. thanks to m33shoq for the original breakpoints.
+	---@param fractionThreshold number?
+	local function buildCountdownBreakpoints(fractionThreshold)
+		local breakpoints = {}
 
-	-- thanks to m33shoq for this
-	Private.Utils.Formatter:SetBreakpoints({
-		{
-			threshold = 0,
-			format = "%.1f",
-		},
-		{
-			threshold = 3.01,
-			format = "%d",
-		},
-		{
-			threshold = 60,
-			format = "%d:%02d",
-			components = {
-				{
-					div = 60,
-				},
-				{
-					mod = 60,
-				},
-			},
-		},
-		{
-			threshold = 600, -- 10 minutes
-			format = "%dm",
-			components = {
-				{
-					div = 60,
-				},
-			},
-		},
-		{
-			threshold = 3600, -- 1 hour
-			format = "%dh",
-			components = {
-				{
-					div = 3600,
-				},
-			},
-		},
-		{
-			threshold = 86400, -- 1 day
-			format = "%dd",
-			components = {
-				{
-					div = 86400,
-				},
-			},
-		},
-	})
+		if fractionThreshold ~= nil and fractionThreshold > 0 then
+			-- clamp below the minutes rule so thresholds stay strictly ascending
+			local cutoff = math.min(fractionThreshold, 59)
+			breakpoints[#breakpoints + 1] = { threshold = 0, format = "%.1f" }
+			breakpoints[#breakpoints + 1] = { threshold = cutoff, format = "%d" }
+		else
+			breakpoints[#breakpoints + 1] = { threshold = 0, format = "%d" }
+		end
+
+		breakpoints[#breakpoints + 1] = { threshold = 60, format = "%d:%02d", components = { { div = 60 }, { mod = 60 } } }
+		breakpoints[#breakpoints + 1] = { threshold = 600, format = "%dm", components = { { div = 60 } } } -- 10 minutes
+		breakpoints[#breakpoints + 1] = { threshold = 3600, format = "%dh", components = { { div = 3600 } } } -- 1 hour
+		breakpoints[#breakpoints + 1] = { threshold = 86400, format = "%dd", components = { { div = 86400 } } } -- 1 day
+
+		return breakpoints
+	end
+
+	-- Reconfigures a countdown formatter's fraction cutoff in place. Each frame owns
+	-- its own formatter (thresholds are a per-element setting), so this is called on
+	-- layout apply rather than once globally.
+	---@param formatter NumericFormatter
+	---@param fractionThreshold number?
+	function Private.Utils.ApplyFractionThreshold(formatter, fractionThreshold)
+		formatter:SetBreakpoints(buildCountdownBreakpoints(fractionThreshold))
+	end
+
+	-- Creates a countdown formatter seeded with the given fraction threshold.
+	---@param fractionThreshold number?
+	---@return NumericFormatter
+	function Private.Utils.CreateCountdownFormatter(fractionThreshold)
+		local formatter = C_StringUtil.CreateNumericRuleFormatter()
+		Private.Utils.ApplyFractionThreshold(formatter, fractionThreshold or 3)
+		return formatter
+	end
+
+	-- Shared default formatter (fallback; frames build their own via
+	-- CreateCountdownFormatter so per-element thresholds don't collide).
+	Private.Utils.Formatter = Private.Utils.CreateCountdownFormatter(3)
 end
 
 -- pools are per-template (Icon / Bar); the old Self/Party names were per-display

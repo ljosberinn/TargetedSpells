@@ -22,6 +22,7 @@ L.Designer.Title = "Targeted Spells - Layout Designer"
 L.Designer.NoElementSelected = "Select an element"
 L.Designer.ElementPickerLabel = "Element"
 L.Designer.SelectHint = "Click an element in the preview, or pick one from the Element dropdown."
+L.Designer.ResetElement = "Reset Element"
 
 -- Widget-row labels, keyed by the schema record's `name`.
 L.Designer.SettingNames = {
@@ -30,7 +31,6 @@ L.Designer.SettingNames = {
 	ELEMENT_HEIGHT = "Height",
 	ELEMENT_X = "X Offset",
 	ELEMENT_Y = "Y Offset",
-	ELEMENT_DRAW_LAYER = "Draw Layer",
 	ELEMENT_FONT_SIZE = "Font Size",
 	ELEMENT_FONT = "Font",
 	ELEMENT_FONT_FLAGS = "Font Style",
@@ -40,7 +40,7 @@ L.Designer.SettingNames = {
 	ELEMENT_USE_CLASS_COLOR = "Use Class Color",
 	ELEMENT_ICON_ZOOM = "Icon Zoom",
 	ELEMENT_SHOW_SWIPE = "Show Swipe",
-	ELEMENT_SHOW_COUNTDOWN = "Show Countdown",
+	ELEMENT_FRACTION_THRESHOLD = "Fraction Below (s)",
 	ELEMENT_BORDER_TEXTURE = "Border Texture",
 	ELEMENT_BORDER_COLOR = "Border Color",
 	ELEMENT_BORDER_SIZE = "Border Size",

@@ -604,8 +604,8 @@ function Private.Settings.CreateGroupView(group)
 
 		if isIcon then
 			if flagId == FeatureFlag.ShowDuration then
-				local elementTable = getElement(Element.Cooldown)
-				return elementTable ~= nil and elementTable.showCountdown
+				-- v4 always renders the icon countdown number (no toggle)
+				return true
 			elseif flagId == FeatureFlag.ShowSwipe then
 				local elementTable = getElement(Element.Cooldown)
 				return elementTable ~= nil and elementTable.showSwipe
@@ -668,10 +668,7 @@ function Private.Settings.CreateGroupView(group)
 		elseif flagId == FeatureFlag.RenderInterruptSourceName then
 			setElementActive(Element.InterruptSource, value)
 		elseif isIcon and flagId == FeatureFlag.ShowDuration then
-			local elementTable = getElement(Element.Cooldown)
-			if elementTable then
-				elementTable.showCountdown = value
-			end
+			-- v4 always renders the icon countdown number; nothing to toggle
 		elseif isIcon and flagId == FeatureFlag.ShowSwipe then
 			local elementTable = getElement(Element.Cooldown)
 			if elementTable then
@@ -681,7 +678,6 @@ function Private.Settings.CreateGroupView(group)
 			local elementTable = getElement(Element.DurationCooldown)
 			if elementTable then
 				elementTable.active = value
-				elementTable.showCountdown = value
 			end
 		elseif flagId == FeatureFlag.ShowIcon then
 			setElementActive(Element.Icon, value)

@@ -61,33 +61,39 @@ local barColorModeOptions = {
 -- element schemas never share mutable record tables. A record lists only fields
 -- the element can actually honour; there are no shown-but-ignored keys.
 
----@param opts table {active, width, height, x, y, drawLayer}
+-- `opts.omitActive` skips the `active` toggle — used for the core element of each
+-- template (Icon / ProgressBar), which is always present by definition and so has
+-- no enable/disable widget.
+---@param opts table {active, width, height, x, y, omitActive}
 local function nonTextBase(opts)
-	return {
-		{ setting = "active", name = "ELEMENT_ACTIVE", type = SettingType.Boolean, default = opts.active },
-		{ setting = "width", name = "ELEMENT_WIDTH", type = SettingType.Number, min = 1, max = 512, step = 1, default = opts.width },
-		{ setting = "height", name = "ELEMENT_HEIGHT", type = SettingType.Number, min = 1, max = 512, step = 1, default = opts.height },
-		{ setting = "x", name = "ELEMENT_X", type = SettingType.Number, min = -512, max = 512, step = 1, default = opts.x or 0 },
-		{ setting = "y", name = "ELEMENT_Y", type = SettingType.Number, min = -512, max = 512, step = 1, default = opts.y or 0 },
-		{ setting = "drawLayer", name = "ELEMENT_DRAW_LAYER", type = SettingType.Number, min = 0, max = 20, step = 1, default = opts.drawLayer },
-	}
+	local records = {}
+
+	if not opts.omitActive then
+		records[#records + 1] = { setting = "active", name = "ELEMENT_ACTIVE", type = SettingType.Boolean, default = opts.active }
+	end
+
+	records[#records + 1] = { setting = "width", name = "ELEMENT_WIDTH", type = SettingType.Number, min = 1, max = 512, step = 1, default = opts.width }
+	records[#records + 1] = { setting = "height", name = "ELEMENT_HEIGHT", type = SettingType.Number, min = 1, max = 512, step = 1, default = opts.height }
+	records[#records + 1] = { setting = "x", name = "ELEMENT_X", type = SettingType.Number, min = -512, max = 512, step = 1, default = opts.x or 0 }
+	records[#records + 1] = { setting = "y", name = "ELEMENT_Y", type = SettingType.Number, min = -512, max = 512, step = 1, default = opts.y or 0 }
+
+	return records
 end
 
 -- Auto-sizing text: no width/height. `maxWidth` (0 = unconstrained) caps
 -- horizontal growth and truncates with a native ellipsis when exceeded.
----@param opts table {active, x, y, drawLayer, fontSize, justifyH, textColor, useClassColor}
+---@param opts table {active, x, y, fontSize, justifyH, textColor, useClassColor}
 local function textBase(opts)
 	local records = {
 		{ setting = "active", name = "ELEMENT_ACTIVE", type = SettingType.Boolean, default = opts.active },
 		{ setting = "x", name = "ELEMENT_X", type = SettingType.Number, min = -512, max = 512, step = 1, default = opts.x or 0 },
 		{ setting = "y", name = "ELEMENT_Y", type = SettingType.Number, min = -512, max = 512, step = 1, default = opts.y or 0 },
-		{ setting = "drawLayer", name = "ELEMENT_DRAW_LAYER", type = SettingType.Number, min = 0, max = 20, step = 1, default = opts.drawLayer },
 		{ setting = "fontSize", name = "ELEMENT_FONT_SIZE", type = SettingType.Number, min = 6, max = 64, step = 1, default = opts.fontSize },
 		{ setting = "font", name = "ELEMENT_FONT", type = SettingType.Font, default = opts.font or FRIZQT },
 		{ setting = "fontFlags", name = "ELEMENT_FONT_FLAGS", type = SettingType.FontFlags, default = defaultFontFlags() },
 		{ setting = "textColor", name = "ELEMENT_TEXT_COLOR", type = SettingType.Color, default = opts.textColor or "FFFFFFFF" },
 		{ setting = "justifyH", name = "ELEMENT_JUSTIFY_H", type = SettingType.Enum, options = justifyHOptions, default = opts.justifyH or "LEFT" },
-		{ setting = "maxWidth", name = "ELEMENT_MAX_WIDTH", type = SettingType.Number, min = 0, max = 1024, step = 1, default = opts.maxWidth or 0 },
+		{ setting = "maxWidth", name = "ELEMENT_MAX_WIDTH", type = SettingType.Number, min = 0, max = 100, step = 1, default = opts.maxWidth or 0 },
 	}
 
 	-- "use class colour" companion toggle, only for elements that can honour it
@@ -98,15 +104,18 @@ local function textBase(opts)
 	return records
 end
 
--- Countdown-number font records shared by both cooldown composites (icon
--- Cooldown and bar DurationCooldown). The number is drawn centered on the
--- cooldown frame, so it gets font styling but no x/y/justifyH.
+-- Countdown-number records shared by both cooldown composites (icon Cooldown and
+-- bar DurationCooldown). The number is drawn centered on the cooldown frame, so it
+-- gets font styling but no x/y/justifyH. `fractionThreshold` is the duration (in
+-- seconds) below which the number is shown with a decimal fraction ("2.3") instead
+-- of a whole number ("2"); 0 disables fractions entirely.
 ---@param fontSize number
 local function countdownTextRecords(fontSize)
 	return {
 		{ setting = "countdownFontSize", name = "ELEMENT_FONT_SIZE", type = SettingType.Number, min = 6, max = 64, step = 1, default = fontSize },
 		{ setting = "countdownFont", name = "ELEMENT_FONT", type = SettingType.Font, default = FRIZQT },
 		{ setting = "countdownFontFlags", name = "ELEMENT_FONT_FLAGS", type = SettingType.FontFlags, default = defaultFontFlags() },
+		{ setting = "fractionThreshold", name = "ELEMENT_FRACTION_THRESHOLD", type = SettingType.Number, min = 0, max = 30, step = 1, default = 3 },
 	}
 end
 
@@ -122,9 +131,9 @@ end
 local function buildIconSchema()
 	local schema = {}
 
-	-- core: XML-anchored, always active, sits at x=y=0 by definition
+	-- core: XML-anchored, always active (no enable toggle), sits at x=y=0 by definition
 	do
-		local records = nonTextBase({ active = true, width = 48, height = 48, x = 0, y = 0, drawLayer = 1 })
+		local records = nonTextBase({ omitActive = true, width = 48, height = 48, x = 0, y = 0 })
 		table.insert(records, { setting = "iconZoom", name = "ELEMENT_ICON_ZOOM", type = SettingType.Number, min = 1, max = 2, step = 0.05, default = 1 })
 		schema[Enum.Element.Icon] = records
 	end
@@ -134,12 +143,11 @@ local function buildIconSchema()
 		{ setting = "active", name = "ELEMENT_ACTIVE", type = SettingType.Boolean, default = true },
 	}
 
-	-- swipe + countdown; welded to the icon (setAllPoints), so no x/y/size
+	-- swipe + countdown number; welded to the icon (setAllPoints), so no x/y/size.
+	-- The countdown number always renders (no toggle); only the radial swipe toggles.
 	do
 		local records = {
 			{ setting = "showSwipe", name = "ELEMENT_SHOW_SWIPE", type = SettingType.Boolean, default = true },
-			{ setting = "showCountdown", name = "ELEMENT_SHOW_COUNTDOWN", type = SettingType.Boolean, default = true },
-			{ setting = "drawLayer", name = "ELEMENT_DRAW_LAYER", type = SettingType.Number, min = 0, max = 20, step = 1, default = 4 },
 		}
 		append(records, countdownTextRecords(20))
 		schema[Enum.Element.Cooldown] = records
@@ -149,7 +157,6 @@ local function buildIconSchema()
 		active = false,
 		x = 0,
 		y = 0,
-		drawLayer = 5,
 		fontSize = 12,
 		justifyH = "CENTER",
 		useClassColor = true,
@@ -161,7 +168,6 @@ local function buildIconSchema()
 		{ setting = "borderTexture", name = "ELEMENT_BORDER_TEXTURE", type = SettingType.Texture, default = "Blizzard Tooltip Border" },
 		{ setting = "borderColor", name = "ELEMENT_BORDER_COLOR", type = SettingType.Color, default = "FFFFFFFF" },
 		{ setting = "borderSize", name = "ELEMENT_BORDER_SIZE", type = SettingType.Number, min = 1, max = 32, step = 1, default = 1 },
-		{ setting = "drawLayer", name = "ELEMENT_DRAW_LAYER", type = SettingType.Number, min = 0, max = 20, step = 1, default = 3 },
 	}
 
 	return schema
@@ -172,9 +178,9 @@ end
 local function buildBarSchema()
 	local schema = {}
 
-	-- core: the old container Width/Height live here now
+	-- core: the old container Width/Height live here now; always active (no toggle)
 	do
-		local records = nonTextBase({ active = true, width = 300, height = 30, x = 0, y = 0, drawLayer = 1 })
+		local records = nonTextBase({ omitActive = true, width = 300, height = 30, x = 0, y = 0 })
 		append(records, {
 			{ setting = "barTexture", name = "ELEMENT_BAR_TEXTURE", type = SettingType.Texture, default = "Blizzard Raid Bar" },
 			{ setting = "barColorMode", name = "ELEMENT_BAR_COLOR_MODE", type = SettingType.Enum, options = barColorModeOptions, default = Enum.BarColorMode.Interruptibility },
@@ -190,17 +196,17 @@ local function buildBarSchema()
 		{ setting = "active", name = "ELEMENT_ACTIVE", type = SettingType.Boolean, default = true },
 		{ setting = "backgroundTexture", name = "ELEMENT_BACKGROUND_TEXTURE", type = SettingType.Texture, default = "Solid" },
 		{ setting = "backgroundColor", name = "ELEMENT_BACKGROUND_COLOR", type = SettingType.Color, default = "FF1A1A1A" },
-		{ setting = "drawLayer", name = "ELEMENT_DRAW_LAYER", type = SettingType.Number, min = 0, max = 20, step = 1, default = 0 },
 	}
 
-	schema[Enum.Element.Icon] = nonTextBase({ active = true, width = 30, height = 30, x = -135, y = 0, drawLayer = 2 })
+	schema[Enum.Element.Icon] = nonTextBase({ active = true, width = 30, height = 30, x = -135, y = 0 })
 
-	schema[Enum.Element.TargetMarker] = nonTextBase({ active = false, width = 20, height = 20, x = 0, y = 0, drawLayer = 4 })
+	schema[Enum.Element.TargetMarker] = nonTextBase({ active = false, width = 20, height = 20, x = 0, y = 0 })
 
-	-- countdown-only cooldown (bar swipe is disabled): position/size + countdown
+	-- countdown-only cooldown (bar swipe is disabled): position/size + countdown.
+	-- The `active` toggle shows/hides the whole region and its number together —
+	-- there is no separate "show countdown" toggle.
 	do
-		local records = nonTextBase({ active = true, width = 30, height = 30, x = 135, y = 0, drawLayer = 3 })
-		table.insert(records, { setting = "showCountdown", name = "ELEMENT_SHOW_COUNTDOWN", type = SettingType.Boolean, default = true })
+		local records = nonTextBase({ active = true, width = 30, height = 30, x = 135, y = 0 })
 		append(records, countdownTextRecords(14))
 		schema[Enum.Element.DurationCooldown] = records
 	end
@@ -209,7 +215,6 @@ local function buildBarSchema()
 		active = true,
 		x = -60,
 		y = 0,
-		drawLayer = 3,
 		fontSize = 14,
 		justifyH = "LEFT",
 	})
@@ -218,7 +223,6 @@ local function buildBarSchema()
 		active = true,
 		x = 60,
 		y = 0,
-		drawLayer = 3,
 		fontSize = 14,
 		justifyH = "RIGHT",
 		useClassColor = true,
@@ -228,7 +232,6 @@ local function buildBarSchema()
 		active = true,
 		x = 0,
 		y = 0,
-		drawLayer = 4,
 		fontSize = 14,
 		justifyH = "LEFT",
 		useClassColor = true,
@@ -236,7 +239,7 @@ local function buildBarSchema()
 
 	-- new; `active` is gated on bar color mode TargetClassColor by the renderer,
 	-- so it seeds off (default color mode is Interruptibility)
-	schema[Enum.Element.InterruptShield] = nonTextBase({ active = false, width = 16, height = 16, x = 0, y = 0, drawLayer = 4 })
+	schema[Enum.Element.InterruptShield] = nonTextBase({ active = false, width = 16, height = 16, x = 0, y = 0 })
 
 	return schema
 end

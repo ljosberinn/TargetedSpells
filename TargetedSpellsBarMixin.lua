@@ -54,7 +54,9 @@ function TargetedSpellsBarMixin:OnLoad()
 	-- group-agnostic setup only; group-dependent styling lives in ApplyLayout,
 	-- which runs on acquire once the Driver has assigned a group
 	self.Bar:SetStatusBarTexture("")
-	self.DurationCooldown:SetCountdownFormatter(Private.Utils.Formatter)
+	-- per-frame formatter so each group's fraction threshold is independent
+	self.countdownFormatter = Private.Utils.CreateCountdownFormatter()
+	self.DurationCooldown:SetCountdownFormatter(self.countdownFormatter)
 end
 
 -- ── Free-positioning renderer (v4 offset consumption) ────────────────────────
@@ -151,7 +153,9 @@ function TargetedSpellsBarMixin:ApplyLayout()
 
 	local duration = self:GetElement(Element.DurationCooldown)
 	if duration ~= nil then
-		self.DurationCooldown:SetHideCountdownNumbers(not duration.showCountdown)
+		-- the region's `active` toggle shows/hides its number too (no separate toggle)
+		self.DurationCooldown:SetHideCountdownNumbers(duration.active == false)
+		Private.Utils.ApplyFractionThreshold(self.countdownFormatter, duration.fractionThreshold)
 	end
 end
 
@@ -452,7 +456,7 @@ end
 
 function TargetedSpellsBarMixin:SetDuration(duration)
 	local element = self:GetElement(Element.DurationCooldown)
-	self:SetShowDuration(element ~= nil and element.showCountdown)
+	self:SetShowDuration(element ~= nil and element.active ~= false)
 	self.DurationCooldown:SetCooldownFromDurationObject(duration)
 	self.ProgressBar:SetTimerDuration(duration)
 
