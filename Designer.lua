@@ -1,6 +1,8 @@
 ---@type string, TargetedSpells
 local _, Private = ...
 
+local LibSharedMedia = LibStub("LibSharedMedia-3.0")
+
 -- Standalone, movable layout designer (Platynator-style). A self-contained
 -- ButtonFrameTemplate dialog on UIParent — NOT an edit-mode overlay, and it does
 -- not touch LibEditMode. This file holds the frame/UI; the model (schemas,
@@ -43,6 +45,54 @@ local FONT_FLAG_ORDER = { Private.Enum.FontFlags.OUTLINE, Private.Enum.FontFlags
 -- Max drop-down popup height before it scrolls; LSM font/texture lists can be long.
 local MEDIA_MENU_MAX_HEIGHT = 400
 
+-- Inline media preview dims for texture dropdown rows (WoW |T escape is
+-- height:width). A wide strip reads a bar/background texture better than a square.
+local TEXTURE_PREVIEW_HEIGHT = 14
+local TEXTURE_PREVIEW_WIDTH = 64
+
+-- Font preview objects (one per font path) so each font's menu row renders its own
+-- name in that font — mirrors AdvancedFocusCastBar. Built as a font *family* so a
+-- non-Latin client still renders the roman label, overriding only the active
+-- locale's alphabet with the previewed file.
+local previewFontCache = {}
+local previewFontCounter = 0
+
+---@param path string
+---@return string globalFontName
+local function previewFontObject(path)
+	if previewFontCache[path] then
+		return previewFontCache[path]
+	end
+
+	previewFontCounter = previewFontCounter + 1
+	local globalName = "TargetedSpellsDesignerPreviewFont" .. previewFontCounter
+
+	local overrideAlphabet = ({
+		koKR = "korean",
+		zhCN = "simplifiedchinese",
+		zhTW = "traditionalchinese",
+		ruRU = "russian",
+	})[GAME_LOCALE or GetLocale()] or "roman"
+
+	---@type CreateFontFamilyMemberInfo[]
+	local members = {}
+	for _, alphabet in ipairs({ "roman", "korean", "simplifiedchinese", "traditionalchinese", "russian" }) do
+		local file, size = GameFontNormal:GetFontObjectForAlphabet(alphabet):GetFont()
+		members[#members + 1] = {
+			alphabet = alphabet,
+			file = alphabet == overrideAlphabet and path or file,
+			height = size,
+			flags = "",
+		}
+	end
+
+	local font = CreateFontFamily(globalName, members)
+	font:SetTextColor(1, 1, 1)
+
+	previewFontCache[path] = globalName
+	return globalName
+end
+
 -- Display order for the element picker (and the fallback core selection). Every
 -- configurable element of each template, including footprint-less ones (Overlay /
 -- Background / Cooldown) that have no canvas marker and are only reachable here.
@@ -64,6 +114,7 @@ local ELEMENT_ORDER = {
 		Element.TargetName,
 		Element.InterruptSource,
 		Element.InterruptShield,
+		Element.Border,
 	},
 }
 
@@ -739,6 +790,10 @@ end
 ---@param dropdown table
 ---@param setting string
 ---@param options table[] each { value = any, label = string }
+-- Builds the radio menu for an enum / texture / font dropdown. An option may carry
+-- an inline preview: `option.texture` (a resolved media path) prefixes the label with
+-- a |T texture escape; `option.font` (a font path) renders that row's label in the
+-- font itself. Both mirror AdvancedFocusCastBar's media pickers.
 function DesignerMixin:PopulateRadioMenu(dropdown, setting, options)
 	dropdown:SetupMenu(function(_, rootDescription)
 		if #options > 12 then
@@ -746,11 +801,22 @@ function DesignerMixin:PopulateRadioMenu(dropdown, setting, options)
 		end
 
 		for _, option in ipairs(options) do
-			rootDescription:CreateRadio(option.label, function()
+			local label = option.label
+			if option.texture then
+				label = string.format("|T%s:%d:%d|t %s", option.texture, TEXTURE_PREVIEW_HEIGHT, TEXTURE_PREVIEW_WIDTH, option.label)
+			end
+
+			local radio = rootDescription:CreateRadio(label, function()
 				return self:SelectedScratchRecord()[setting] == option.value
 			end, function()
 				self:OnWidgetValueChanged(setting, option.value)
 			end)
+
+			if option.font then
+				radio:AddInitializer(function(button)
+					button.fontString:SetFontObject(previewFontObject(option.font))
+				end)
+			end
 		end
 	end)
 	dropdown:Show()
@@ -782,7 +848,9 @@ function DesignerMixin:BuildTextureDropdown(record, yOffset)
 
 	local options = {}
 	for _, name in ipairs(self:MediaNameList(record.mediaType)) do
-		options[#options + 1] = { value = name, label = name }
+		-- inline texture preview: the stored value is the LSM name; Fetch resolves the
+		-- path the |T escape needs (record.mediaType == the LSM MediaType string)
+		options[#options + 1] = { value = name, label = name, texture = LibSharedMedia:Fetch(record.mediaType, name) }
 	end
 
 	self:PopulateRadioMenu(dropdown, record.setting, options)
@@ -792,7 +860,8 @@ end
 
 -- Font → WowStyle1Dropdown of LSM font names. The stored value is the font *path*
 -- (what SafelySetFont / SetFont consume, matching the v3 storage), so each radio's
--- value is the resolved path while its label is the friendly name.
+-- value is the resolved path while its label is the friendly name, rendered in the
+-- font itself as an inline preview.
 ---@param record table
 ---@param yOffset number
 function DesignerMixin:BuildFontDropdown(record, yOffset)
@@ -801,7 +870,8 @@ function DesignerMixin:BuildFontDropdown(record, yOffset)
 
 	local options = {}
 	for _, name in ipairs(fontInfo.fonts) do
-		options[#options + 1] = { value = fontInfo.byLabel[name], label = name }
+		local path = fontInfo.byLabel[name]
+		options[#options + 1] = { value = path, label = name, font = path }
 	end
 
 	self:PopulateRadioMenu(dropdown, record.setting, options)
@@ -1255,19 +1325,20 @@ function DesignerMixin:Initialize()
 
 	-- Scrollable content region — some elements (ProgressBar, text) carry more rows
 	-- than the panel is tall, so the widget stack lives in a scroll child. Its bottom
-	-- sits above the reset button.
-	self.Panel.Scroll = CreateFrame("ScrollFrame", nil, self.Panel, "UIPanelScrollFrameTemplate")
+	-- sits above the reset button. ScrollFrameTemplate (Blizzard_SharedXML) auto-builds
+	-- a modern MinimalScrollBar as `.ScrollBar` and wires mouse-wheel + scroll through
+	-- ScrollFrame_OnLoad -> ScrollUtil.InitScrollFrameWithScrollBar, so no manual
+	-- OnMouseWheel handler is needed. The slim bar is anchored just outside the frame's
+	-- right edge (+6px), so the right inset is tighter than the old fat scrollbar's.
+	self.Panel.Scroll = CreateFrame("ScrollFrame", nil, self.Panel, "ScrollFrameTemplate")
 	self.Panel.Scroll:SetPoint("TOPLEFT", self.Panel, "TOPLEFT", 8, -56)
-	self.Panel.Scroll:SetPoint("BOTTOMRIGHT", self.Panel, "BOTTOMRIGHT", -26, 38)
+	self.Panel.Scroll:SetPoint("BOTTOMRIGHT", self.Panel, "BOTTOMRIGHT", -20, 38)
+	self.Panel.Scroll.ScrollBar:SetHideIfUnscrollable(true)
 	self.Panel.Content = CreateFrame("Frame", nil, self.Panel.Scroll)
 	self.Panel.Content:SetSize(1, 1)
 	self.Panel.Scroll:SetScrollChild(self.Panel.Content)
+	-- ScrollFrame_OnLoad wires the OnMouseWheel script but doesn't enable the wheel.
 	self.Panel.Scroll:EnableMouseWheel(true)
-	self.Panel.Scroll:SetScript("OnMouseWheel", function(scrollFrame, delta)
-		local range = scrollFrame:GetVerticalScrollRange()
-		local target = math.min(range, math.max(0, scrollFrame:GetVerticalScroll() - delta * 30))
-		scrollFrame:SetVerticalScroll(target)
-	end)
 
 	-- Preview holds the demo frame + the selection markers. It stays mouse-passive
 	-- itself (its markers, as mouse-enabled children, still receive clicks) so empty

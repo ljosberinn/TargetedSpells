@@ -220,7 +220,7 @@ local function buildBarSchema()
 
 	schema[Enum.Element.SpellName] = textBase({
 		active = true,
-		x = -60,
+		x = -70,
 		y = 0,
 		fontSize = 14,
 		justifyH = "LEFT",
@@ -236,7 +236,7 @@ local function buildBarSchema()
 	})
 
 	schema[Enum.Element.InterruptSource] = textBase({
-		active = true,
+		active = false,
 		x = 0,
 		y = 0,
 		fontSize = 14,
@@ -248,6 +248,16 @@ local function buildBarSchema()
 	-- its visibility from the secret interruptibility boolean). `active` is the plain
 	-- on/off toggle; seeds off so it's opt-in and doesn't change existing displays.
 	schema[Enum.Element.InterruptShield] = nonTextBase({ active = false, width = 24, height = 24, x = 110, y = 0 })
+
+	-- border wrapping the bar: enabled + texture (LSM) + color + size, same fragment
+	-- as the icon's Border. Seeds off (opt-in) — bars never had a border before, so
+	-- BackfillElements must not add one to existing displays.
+	schema[Enum.Element.Border] = {
+		{ setting = "active", name = "ELEMENT_ACTIVE", type = SettingType.Boolean, default = false },
+		{ setting = "borderTexture", name = "ELEMENT_BORDER_TEXTURE", type = SettingType.Texture, mediaType = "border", default = "Blizzard Tooltip Border" },
+		{ setting = "borderColor", name = "ELEMENT_BORDER_COLOR", type = SettingType.Color, default = "FFFFFFFF" },
+		{ setting = "borderSize", name = "ELEMENT_BORDER_SIZE", type = SettingType.Number, min = 1, max = 32, step = 1, default = 8 },
+	}
 
 	return schema
 end

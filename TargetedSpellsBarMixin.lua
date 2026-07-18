@@ -102,11 +102,12 @@ function TargetedSpellsBarMixin:PositionElements()
 		end
 	end
 
-	-- text elements: the justifyH edge (LEFT/CENTER/RIGHT — all valid anchor points) is
-	-- pinned to the offset, so alignment stays meaningful even for auto-sized text (a
-	-- centered auto-sized string has nothing to justify within). maxWidth caps the width
-	-- and truncates with a native ellipsis. Visibility is driven at runtime (SetSpellId /
-	-- UpdateTargetName / SetInterrupted); here we only place and colour them.
+	-- text elements: anchored CENTER→CENTER like every other element (the plan's
+	-- anchoring model), so the offset positions the text's *centre* and changing justifyH
+	-- never shifts it. justifyH governs only internal justification, which is visible when
+	-- maxWidth constrains the width; an auto-sized string has nothing to justify within.
+	-- maxWidth caps the width and truncates with a native ellipsis. Visibility is driven at
+	-- runtime (SetSpellId / UpdateTargetName / SetInterrupted); here we only place + colour.
 	local texts = {
 		{ region = self.ProgressBar.SpellName,       element = elements[Element.SpellName] },
 		{ region = self.ProgressBar.TargetName,      element = elements[Element.TargetName] },
@@ -118,9 +119,8 @@ function TargetedSpellsBarMixin:PositionElements()
 		entry.region:ClearAllPoints()
 
 		if element ~= nil then
-			local edge = element.justifyH or "LEFT"
-			PixelUtil.SetPoint(entry.region, edge, self.ProgressBar, "CENTER", element.x or 0, element.y or 0)
-			entry.region:SetJustifyH(edge)
+			PixelUtil.SetPoint(entry.region, "CENTER", self.ProgressBar, "CENTER", element.x or 0, element.y or 0)
+			entry.region:SetJustifyH(element.justifyH or "CENTER")
 
 			if element.maxWidth ~= nil and element.maxWidth > 0 then
 				entry.region:SetWidth(element.maxWidth)
@@ -158,6 +158,9 @@ function TargetedSpellsBarMixin:ApplyLayout()
 	self:SetBackgroundBarColor()
 	self:SetProgressBarColor()
 	self:SetFont()
+
+	local border = self:GetElement(Element.Border)
+	self:ApplyBorderStyle(border ~= nil and border.active ~= false and border.borderTexture or "None")
 
 	local duration = self:GetElement(Element.DurationCooldown)
 	if duration ~= nil then
@@ -271,6 +274,30 @@ function TargetedSpellsBarMixin:SetBackgroundBarColor()
 
 	local color = CreateColorFromHexString(background.backgroundColor)
 	self.ProgressBar.Background:SetVertexColor(color.r, color.g, color.b, color.a)
+end
+
+-- The border regions live on the ProgressBar (which fills the frame) so they draw
+-- over the fill; the 8-slice / solid renderer is shared with the icon mixin in
+-- Private.Utils. Rather than wrapping just the ProgressBar, the border encloses the
+-- visual *extent* of the group's active boxed elements (icon, target marker,
+-- duration, shield) unioned with the bar — so an icon or marker sitting outside the
+-- bar still falls inside the border. The extent is in offset space from the core
+-- (ProgressBar) centre, which is the frame centre, so it anchors directly.
+function TargetedSpellsBarMixin:ApplyBorderStyle(styleName)
+	local elements = self:GetElements()
+	if elements == nil then
+		return
+	end
+
+	local border = elements[Element.Border]
+
+	Private.Utils.ApplyBorderStyle(
+		self.ProgressBar --[[@as TargetedSpellsBorderFrame]],
+		styleName,
+		Private.Utils.ComputeElementExtent(elements),
+		border and border.borderSize,
+		border and border.borderColor
+	)
 end
 
 function TargetedSpellsBarMixin:SetShowDuration(showDuration)

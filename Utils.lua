@@ -1,6 +1,8 @@
 ---@type string, TargetedSpells
 local addonName, Private = ...
 
+local LibSharedMedia = LibStub("LibSharedMedia-3.0")
+
 ---@class TargetedSpellsUtils
 Private.Utils = {}
 
@@ -12,6 +14,254 @@ function Private.Utils.SafelySetFont(kind, fontString, font, fontSize, fontFlags
 	if not ok then
 		-- fall back to a known-good font; the invalid one is not persisted anywhere
 		fontString:SetFont("Fonts\\FRIZQT__.TTF", fontSize, fontFlags)
+	end
+end
+
+-- ── Slice / solid border renderer (shared by the icon + bar mixins) ──────────
+-- Both templates carry the same standard border regions (BorderSolid* strips +
+-- Border* 8-slice pieces); this renders `styleName` into them. Kept here rather
+-- than duplicated per mixin — the slice texcoord math is delicate and belongs in
+-- one place (the plan's shared-math discipline). Sizes come from the caller's
+-- known width/height, never GetWidth()/GetHeight(), to avoid secret-value taint.
+do
+	local BACKDROP_COORD_START = 0.0625
+	local BACKDROP_COORD_END = 1 - BACKDROP_COORD_START
+
+	-- natural edge sizes / insets per LSM border, used only as a fallback when the
+	-- element carries no explicit borderSize (post-BackfillElements it always does)
+	local BORDER_EDGE_SIZES = {
+		["Blizzard Tooltip"] = 16,
+		["Blizzard Dialog"] = 8,
+		["Blizzard Dialog Gold"] = 8,
+		["Blizzard Achievement Wood"] = 6,
+		["Blizzard Party"] = 8,
+	}
+
+	local BORDER_INSETS = {
+		["Blizzard Tooltip"] = 3,
+	}
+
+	-- The set of border regions ApplyBorderStyle drives; both templates expose them.
+	---@class TargetedSpellsBorderFrame : Frame
+	---@field BorderSolidTop Texture
+	---@field BorderSolidBottom Texture
+	---@field BorderSolidLeft Texture
+	---@field BorderSolidRight Texture
+	---@field BorderTopLeft Texture
+	---@field BorderTopRight Texture
+	---@field BorderBottomLeft Texture
+	---@field BorderBottomRight Texture
+	---@field BorderTop Texture
+	---@field BorderBottom Texture
+	---@field BorderLeft Texture
+	---@field BorderRight Texture
+
+	---@param frame TargetedSpellsBorderFrame owns the Border* regions and is the anchor origin
+	---@param styleName string LSM border media name, or "Solid" / "None"
+	---@param box { width: number, height: number, offsetX: number, offsetY: number } rectangle to wrap; its centre is offset from frame CENTER (known dims — never GetWidth(), so secret-safe)
+	---@param borderSize number? edge/strip thickness; falls back to the border's natural size
+	---@param borderColorHex string? AARRGGBB tint, or nil for untinted
+	function Private.Utils.ApplyBorderStyle(frame, styleName, box, borderSize, borderColorHex)
+		local borderColor = borderColorHex and CreateColorFromHexString(borderColorHex)
+		-- the border wraps `box`, centred at frame CENTER + (offsetX, offsetY). For the
+		-- icon this is the icon frame itself (offset 0); for the bar it's the union extent
+		-- of the active boxed elements, so the border encloses the icon / target marker /
+		-- duration too, not just the ProgressBar.
+		local width, height = box.width, box.height
+		local offsetX, offsetY = box.offsetX or 0, box.offsetY or 0
+		local halfW, halfH = width / 2, height / 2
+
+		if styleName == "Solid" then
+			frame.BorderTopLeft:Hide()
+			frame.BorderTopRight:Hide()
+			frame.BorderBottomLeft:Hide()
+			frame.BorderBottomRight:Hide()
+			frame.BorderTop:Hide()
+			frame.BorderBottom:Hide()
+			frame.BorderLeft:Hide()
+			frame.BorderRight:Hide()
+
+			-- solid strips: thickness from borderSize, tint from borderColor, spanning the
+			-- box edges (re-anchored to frame CENTER so they follow an offset extent)
+			local size = borderSize or 1
+
+			frame.BorderSolidTop:ClearAllPoints()
+			frame.BorderSolidTop:SetPoint("TOPLEFT", frame, "CENTER", offsetX - halfW, offsetY + halfH)
+			frame.BorderSolidTop:SetPoint("TOPRIGHT", frame, "CENTER", offsetX + halfW, offsetY + halfH)
+			frame.BorderSolidTop:SetHeight(size)
+
+			frame.BorderSolidBottom:ClearAllPoints()
+			frame.BorderSolidBottom:SetPoint("BOTTOMLEFT", frame, "CENTER", offsetX - halfW, offsetY - halfH)
+			frame.BorderSolidBottom:SetPoint("BOTTOMRIGHT", frame, "CENTER", offsetX + halfW, offsetY - halfH)
+			frame.BorderSolidBottom:SetHeight(size)
+
+			frame.BorderSolidLeft:ClearAllPoints()
+			frame.BorderSolidLeft:SetPoint("TOPLEFT", frame, "CENTER", offsetX - halfW, offsetY + halfH)
+			frame.BorderSolidLeft:SetPoint("BOTTOMLEFT", frame, "CENTER", offsetX - halfW, offsetY - halfH)
+			frame.BorderSolidLeft:SetWidth(size)
+
+			frame.BorderSolidRight:ClearAllPoints()
+			frame.BorderSolidRight:SetPoint("TOPRIGHT", frame, "CENTER", offsetX + halfW, offsetY + halfH)
+			frame.BorderSolidRight:SetPoint("BOTTOMRIGHT", frame, "CENTER", offsetX + halfW, offsetY - halfH)
+			frame.BorderSolidRight:SetWidth(size)
+
+			for _, strip in ipairs({ frame.BorderSolidTop, frame.BorderSolidBottom, frame.BorderSolidLeft, frame.BorderSolidRight }) do
+				if borderColor ~= nil then
+					strip:SetVertexColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a)
+				end
+				strip:Show()
+			end
+		elseif styleName == "None" then
+			frame.BorderSolidTop:Hide()
+			frame.BorderSolidBottom:Hide()
+			frame.BorderSolidLeft:Hide()
+			frame.BorderSolidRight:Hide()
+
+			frame.BorderTopLeft:Hide()
+			frame.BorderTopRight:Hide()
+			frame.BorderBottomLeft:Hide()
+			frame.BorderBottomRight:Hide()
+			frame.BorderTop:Hide()
+			frame.BorderBottom:Hide()
+			frame.BorderLeft:Hide()
+			frame.BorderRight:Hide()
+		else
+			frame.BorderSolidTop:Hide()
+			frame.BorderSolidBottom:Hide()
+			frame.BorderSolidLeft:Hide()
+			frame.BorderSolidRight:Hide()
+
+			-- borderSize drives the slice edge thickness (per-texture natural sizes
+			-- are the fallback when no group/border element is set)
+			local edgeSize = borderSize or BORDER_EDGE_SIZES[styleName] or 8
+			local outwardOffset = BORDER_INSETS[styleName] or 0
+			local borderWidth = width + 2 * outwardOffset
+			local borderHeight = height + 2 * outwardOffset
+
+			-- replicates BackdropTemplateMixin:SetupTextureCoordinates using known
+			-- dimensions instead of GetWidth()/GetHeight() to avoid secret errors
+			local edgeRepeatX = math.max(0, borderWidth / edgeSize - 2 - BACKDROP_COORD_START)
+			local edgeRepeatY = math.max(0, borderHeight / edgeSize - 2 - BACKDROP_COORD_START)
+
+			-- corners anchored relative to frame CENTER so the slice follows the box's
+			-- centre offset (outwardOffset pushes them outward for inset styles)
+			frame.BorderTopLeft:ClearAllPoints()
+			frame.BorderTopLeft:SetPoint("TOPLEFT", frame, "CENTER", offsetX - halfW - outwardOffset, offsetY + halfH + outwardOffset)
+			frame.BorderTopLeft:SetSize(edgeSize, edgeSize)
+
+			frame.BorderTopRight:ClearAllPoints()
+			frame.BorderTopRight:SetPoint("TOPRIGHT", frame, "CENTER", offsetX + halfW + outwardOffset, offsetY + halfH + outwardOffset)
+			frame.BorderTopRight:SetSize(edgeSize, edgeSize)
+
+			frame.BorderBottomLeft:ClearAllPoints()
+			frame.BorderBottomLeft:SetPoint("BOTTOMLEFT", frame, "CENTER", offsetX - halfW - outwardOffset, offsetY - halfH - outwardOffset)
+			frame.BorderBottomLeft:SetSize(edgeSize, edgeSize)
+
+			frame.BorderBottomRight:ClearAllPoints()
+			frame.BorderBottomRight:SetPoint("BOTTOMRIGHT", frame, "CENTER", offsetX + halfW + outwardOffset, offsetY - halfH - outwardOffset)
+			frame.BorderBottomRight:SetSize(edgeSize, edgeSize)
+
+			frame.BorderTop:SetHeight(edgeSize)
+			frame.BorderBottom:SetHeight(edgeSize)
+			frame.BorderLeft:SetWidth(edgeSize)
+			frame.BorderRight:SetWidth(edgeSize)
+
+			local sliceTexCoords = {
+				[frame.BorderTopLeft] = {
+					0.5078125,
+					BACKDROP_COORD_START,
+					0.5078125,
+					BACKDROP_COORD_END,
+					0.6171875,
+					BACKDROP_COORD_START,
+					0.6171875,
+					BACKDROP_COORD_END,
+				},
+				[frame.BorderTopRight] = {
+					0.6328125,
+					BACKDROP_COORD_START,
+					0.6328125,
+					BACKDROP_COORD_END,
+					0.7421875,
+					BACKDROP_COORD_START,
+					0.7421875,
+					BACKDROP_COORD_END,
+				},
+				[frame.BorderBottomLeft] = {
+					0.7578125,
+					BACKDROP_COORD_START,
+					0.7578125,
+					BACKDROP_COORD_END,
+					0.8671875,
+					BACKDROP_COORD_START,
+					0.8671875,
+					BACKDROP_COORD_END,
+				},
+				[frame.BorderBottomRight] = {
+					0.8828125,
+					BACKDROP_COORD_START,
+					0.8828125,
+					BACKDROP_COORD_END,
+					0.9921875,
+					BACKDROP_COORD_START,
+					0.9921875,
+					BACKDROP_COORD_END,
+				},
+				[frame.BorderTop] = {
+					0.2578125,
+					edgeRepeatX,
+					0.3671875,
+					edgeRepeatX,
+					0.2578125,
+					BACKDROP_COORD_START,
+					0.3671875,
+					BACKDROP_COORD_START,
+				},
+				[frame.BorderBottom] = {
+					0.3828125,
+					edgeRepeatX,
+					0.4921875,
+					edgeRepeatX,
+					0.3828125,
+					BACKDROP_COORD_START,
+					0.4921875,
+					BACKDROP_COORD_START,
+				},
+				[frame.BorderLeft] = {
+					0.0078125,
+					BACKDROP_COORD_START,
+					0.0078125,
+					edgeRepeatY,
+					0.1171875,
+					BACKDROP_COORD_START,
+					0.1171875,
+					edgeRepeatY,
+				},
+				[frame.BorderRight] = {
+					0.1328125,
+					BACKDROP_COORD_START,
+					0.1328125,
+					edgeRepeatY,
+					0.2421875,
+					BACKDROP_COORD_START,
+					0.2421875,
+					edgeRepeatY,
+				},
+			}
+
+			local path = LibSharedMedia:Fetch(LibSharedMedia.MediaType.BORDER, styleName) or ""
+
+			for tex, entry in pairs(sliceTexCoords) do
+				tex:SetTexture(path, "REPEAT", "REPEAT")
+				tex:SetTexCoord(entry[1], entry[2], entry[3], entry[4], entry[5], entry[6], entry[7], entry[8])
+				if borderColor ~= nil then
+					tex:SetVertexColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a)
+				else
+					tex:SetVertexColor(1, 1, 1, 1)
+				end
+				tex:Show()
+			end
+		end
 	end
 end
 
@@ -163,6 +413,74 @@ function Private.Utils.CollectLayoutingArguments(direction, grow, width, height,
 		y = isHorizontal and height or width,
 		originPoint = isHorizontal and (isGrowEnd and "RIGHT" or "LEFT") or (isGrowEnd and "TOP" or "BOTTOM"),
 		relativePoint = isHorizontal and (isGrowEnd and "LEFT" or "RIGHT") or (isGrowEnd and "BOTTOM" or "TOP"),
+	}
+end
+
+-- Phase 7: the visual extent of a group's active elements, in CENTER→CENTER offset
+-- space relative to the core element (which is the 0,0 origin). Returns the union
+-- bounding box of every active *non-text* box — that includes the core, whose
+-- `active` field is absent (omitActive) and so counts as active — plus any text
+-- element carrying an explicit `maxWidth` cap. Auto-sized (uncapped) text is
+-- deliberately excluded: its runtime width is unbounded, so a long name would
+-- otherwise blow the extent out arbitrarily (Phase 7 step 2). Welded/decorative
+-- elements (Overlay, Cooldown, Border, Background) have no width/height and so
+-- contribute nothing — they draw within the core.
+--
+-- Returns { width, height, offsetX, offsetY } where (offsetX, offsetY) is the
+-- centre of the extent relative to the core centre — usually non-zero, since
+-- elements skew to one side. The edit-mode placeholder uses this so its outline
+-- covers the pixels the display actually draws, not just the narrower core box.
+--
+-- Pure: reads only stored offsets/sizes, no live frame, so it is busted-coverable
+-- like the bar-offset reconstruction.
+---@param elements table<Element, table<string, any>>
+---@return { width: number, height: number, offsetX: number, offsetY: number }
+function Private.Utils.ComputeElementExtent(elements)
+	local hasBox = false
+	local minX, minY, maxX, maxY
+
+	local function include(centerX, centerY, boxWidth, boxHeight)
+		local halfWidth = boxWidth / 2
+		local halfHeight = boxHeight / 2
+		local left, right = centerX - halfWidth, centerX + halfWidth
+		local bottom, top = centerY - halfHeight, centerY + halfHeight
+
+		if not hasBox then
+			minX, maxX, minY, maxY = left, right, bottom, top
+			hasBox = true
+		else
+			minX = math.min(minX, left)
+			maxX = math.max(maxX, right)
+			minY = math.min(minY, bottom)
+			maxY = math.max(maxY, top)
+		end
+	end
+
+	for _, values in pairs(elements) do
+		-- the core has no `active` field (omitActive) → nil counts as active
+		if values.active ~= false then
+			local centerX = values.x or 0
+			local centerY = values.y or 0
+
+			if values.width and values.height then
+				-- non-text box (includes the core element)
+				include(centerX, centerY, values.width, values.height)
+			elseif values.maxWidth and values.maxWidth > 0 then
+				-- capped text: width is bounded by maxWidth, height ≈ its font size
+				include(centerX, centerY, values.maxWidth, values.fontSize or 0)
+			end
+		end
+	end
+
+	if not hasBox then
+		return { width = 0, height = 0, offsetX = 0, offsetY = 0 }
+	end
+
+	return {
+		width = maxX - minX,
+		height = maxY - minY,
+		offsetX = (minX + maxX) / 2,
+		offsetY = (minY + maxY) / 2,
 	}
 end
 

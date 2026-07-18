@@ -36,6 +36,7 @@
 ---@class TargetedSpellsUtils
 ---@field DeepCopy fun(source: any): any
 ---@field CollectLayoutingArguments fun(direction: Direction, grow: Grow, width: number, height: number, gap: number): CollectLayoutingArguments
+---@field ComputeElementExtent fun(elements: table<Element, table<string, any>>): { width: number, height: number, offsetX: number, offsetY: number }
 ---@field AdjustLayout fun(frames: TargetedSpellsIconMixin[], geo: CollectLayoutingArguments, barParent: Frame, firstAnchorPoint: FramePoint, firstOffsetX: number, firstOffsetY: number, isEditMode: boolean)
 ---@field SortFrames fun(frames: TargetedSpellsIconMixin[], sortOrder: SortOrder)
 ---@field RollDice fun(): boolean

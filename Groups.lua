@@ -79,10 +79,11 @@ end
 -- because a new v4 group has no v3 ancestor.
 ---@param id integer
 ---@param template TargetedSpellsTemplate
-local function buildDefaultGroup(id, template)
+---@param name string
+local function buildDefaultGroup(id, template, name)
 	return {
 		Id = id,
-		Name = "Group " .. id,
+		Name = name,
 		Enabled = true,
 		-- a fresh group sees every cast until the user narrows the filter
 		Filter = {
@@ -118,8 +119,32 @@ local function buildDefaultGroup(id, template)
 	}
 end
 
+-- A friendly default name: the lowest "Group N" not already taken. Names are not
+-- identity (ids are), but naming off the raw NextGroupId produces an ugly label like
+-- "Group 10" once groups have been created and deleted in a session, since ids are
+-- never reused. Picking the smallest free N keeps the label sequential and fills gaps
+-- left by deletions.
+---@param saved table
+---@return string
+local function nextGroupName(saved)
+	local taken = {}
+	for _, group in pairs(saved.Groups) do
+		if group.Name then
+			taken[group.Name] = true
+		end
+	end
+
+	local n = 1
+	while taken["Group " .. n] do
+		n = n + 1
+	end
+
+	return "Group " .. n
+end
+
 -- Creates a group of `template`, seeded from the built-in element defaults, with a
--- freshly allocated id (persisted in NextGroupId so ids are never reused).
+-- freshly allocated id (persisted in NextGroupId so ids are never reused) and a
+-- sequential "Group N" display name (independent of the id — see nextGroupName).
 ---@param template TargetedSpellsTemplate
 ---@param saved table?
 ---@return integer id, TargetedSpellsGroup group
@@ -129,7 +154,7 @@ function Private.Groups.Create(template, saved)
 	local id = saved.NextGroupId or 1
 	saved.NextGroupId = id + 1
 
-	local group = buildDefaultGroup(id, template)
+	local group = buildDefaultGroup(id, template, nextGroupName(saved))
 	saved.Groups[id] = group
 
 	return id, group

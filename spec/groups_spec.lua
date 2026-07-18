@@ -115,6 +115,21 @@ describe("Groups.Create / Delete / SetTemplate / Count", function()
 		assert.equals(3, reusedId)
 	end)
 
+	it("names are sequential 'Group N', independent of the never-reused id", function()
+		local saved = newSaved()
+		local _, first = Private.Groups.Create(Template.Icon, saved)
+		local _, second = Private.Groups.Create(Template.Icon, saved)
+		assert.equals("Group 1", first.Name)
+		assert.equals("Group 2", second.Name)
+
+		-- delete "Group 1" then create again: the id climbs (3) but the name refills
+		-- the freed slot rather than following the raw NextGroupId
+		Private.Groups.Delete(first.Id, saved)
+		local newId, third = Private.Groups.Create(Template.Icon, saved)
+		assert.equals(3, newId)
+		assert.equals("Group 1", third.Name)
+	end)
+
 	it("Delete refuses to remove the last remaining group", function()
 		local saved = newSaved()
 		Private.Groups.Create(Template.Icon, saved)
@@ -129,12 +144,12 @@ describe("Groups.Create / Delete / SetTemplate / Count", function()
 	it("SetTemplate swaps template and reseeds Elements", function()
 		local saved = newSaved()
 		local _, group = Private.Groups.Create(Template.Icon, saved)
-		assert.is_table(group.Elements[Element.Border]) -- icon-only element
+		assert.is_table(group.Elements[Element.Overlay]) -- icon-only element (Border is now shared)
 
 		Private.Groups.SetTemplate(group, Template.Bar)
 		assert.equals(Template.Bar, group.Template)
 		assert.is_table(group.Elements[Element.ProgressBar])
-		assert.is_nil(group.Elements[Element.Border]) -- gone: bar has no Border
+		assert.is_nil(group.Elements[Element.Overlay]) -- gone: bar has no Overlay
 	end)
 
 	it("Count reflects the number of groups", function()

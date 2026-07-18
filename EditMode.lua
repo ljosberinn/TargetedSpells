@@ -545,15 +545,23 @@ function TargetedSpellsEditModeMixin:CoreElement()
 	return self.group.Elements[coreTag]
 end
 
+-- Phase 7: size the placeholder to the group's full *visual extent*, not just its
+-- core box, so free-positioned elements sitting outside the core (e.g. the bar's
+-- icon/duration boxes flanking the narrower ProgressBar) fall inside the grab
+-- target. The layout *footprint* — the frame-to-frame stride when MaxItems > 1 —
+-- deliberately stays core-based (free positioning does not reflow); only the last
+-- cell and the cross-axis span grow to the extent. When extent == core this is
+-- byte-identical to the old core-based sizing.
 function TargetedSpellsEditModeMixin:ResizeEditModeFrame()
 	local core = self:CoreElement()
+	local extent = Private.Utils.ComputeElementExtent(self.group.Elements)
 
 	if self.group.Direction == Private.Enum.Direction.Horizontal then
-		local totalWidth = (self.maxFrames * core.width) + (self.maxFrames - 1) * self.group.Gap
-		PixelUtil.SetSize(self.editModeFrame, totalWidth, core.height)
+		local totalWidth = (self.maxFrames - 1) * (core.width + self.group.Gap) + extent.width
+		PixelUtil.SetSize(self.editModeFrame, totalWidth, extent.height)
 	else
-		local totalHeight = (self.maxFrames * core.height) + (self.maxFrames - 1) * self.group.Gap
-		PixelUtil.SetSize(self.editModeFrame, core.width, totalHeight)
+		local totalHeight = (self.maxFrames - 1) * (core.height + self.group.Gap) + extent.height
+		PixelUtil.SetSize(self.editModeFrame, extent.width, totalHeight)
 	end
 end
 
@@ -689,13 +697,22 @@ function TargetedSpellsEditModeMixin:RepositionPreviewFrames()
 	local parentDimension = layouting.isHorizontal and self.editModeFrame:GetWidth() or self.editModeFrame:GetHeight()
 	local offset = layouting.isGrowEnd and (parentDimension / 2 - self.group.Gap) or (-parentDimension / 2)
 
+	-- The placeholder is sized to the element extent, whose centre is offset from the
+	-- core centre when the active elements skew to one side (e.g. the migrated bar's
+	-- icon reaches further left than its duration reaches right → extent.offsetX < 0).
+	-- The content anchors on the *core* centre, so without correction it sits off-centre
+	-- inside the box — bleeding past one edge with padding on the other. Shift it by
+	-- -extent.offset on the CROSS axis so the content's extent centres in the box. The
+	-- grow axis keeps its stacking offset (multi-frame spacing stays core-based).
+	local extent = Private.Utils.ComputeElementExtent(self.group.Elements)
+
 	Private.Utils.AdjustLayout(
 		activeFrames,
 		layouting,
 		self.editModeFrame,
 		"CENTER",
-		layouting.isHorizontal and offset or 0,
-		(not layouting.isHorizontal) and offset or 0,
+		layouting.isHorizontal and offset or -extent.offsetX,
+		(not layouting.isHorizontal) and offset or -extent.offsetY,
 		true
 	)
 end

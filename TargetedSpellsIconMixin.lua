@@ -1,10 +1,6 @@
 ---@type string, TargetedSpells
 local _, Private = ...
 local LibEditMode = LibStub("LibEditMode")
-local LibSharedMedia = LibStub("LibSharedMedia-3.0")
-
-local BACKDROP_COORD_START = 0.0625
-local BACKDROP_COORD_END = 1 - BACKDROP_COORD_START
 
 ---@class TargetedSpellsIconMixin : TargetedSpellsMixin
 TargetedSpellsIconMixin = CreateFromMixins(TargetedSpellsMixin)
@@ -53,197 +49,24 @@ function TargetedSpellsIconMixin:ApplyLayout()
 	end
 end
 
-do
-	local BORDER_EDGE_SIZES = {
-		["Blizzard Tooltip"] = 16,
-		["Blizzard Dialog"] = 8,
-		["Blizzard Dialog Gold"] = 8,
-		["Blizzard Achievement Wood"] = 6,
-		["Blizzard Party"] = 8,
-	}
-
-	local BORDER_INSETS = {
-		["Blizzard Tooltip"] = 3,
-	}
-
-	function TargetedSpellsIconMixin:ApplyBorderStyle(styleName)
-		local border = self:GetElement(Private.Enum.Element.Border)
-		local borderColor = border and border.borderColor and CreateColorFromHexString(border.borderColor)
-
-		if styleName == "Solid" then
-			self.BorderTopLeft:Hide()
-			self.BorderTopRight:Hide()
-			self.BorderBottomLeft:Hide()
-			self.BorderBottomRight:Hide()
-			self.BorderTop:Hide()
-			self.BorderBottom:Hide()
-			self.BorderLeft:Hide()
-			self.BorderRight:Hide()
-
-			-- solid strips: thickness from borderSize, tint from borderColor
-			local size = (border and border.borderSize) or 1
-			self.BorderSolidTop:SetHeight(size)
-			self.BorderSolidBottom:SetHeight(size)
-			self.BorderSolidLeft:SetWidth(size)
-			self.BorderSolidRight:SetWidth(size)
-
-			for _, strip in ipairs({ self.BorderSolidTop, self.BorderSolidBottom, self.BorderSolidLeft, self.BorderSolidRight }) do
-				if borderColor ~= nil then
-					strip:SetVertexColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a)
-				end
-				strip:Show()
-			end
-		elseif styleName == "None" then
-			self.BorderSolidTop:Hide()
-			self.BorderSolidBottom:Hide()
-			self.BorderSolidLeft:Hide()
-			self.BorderSolidRight:Hide()
-
-			self.BorderTopLeft:Hide()
-			self.BorderTopRight:Hide()
-			self.BorderBottomLeft:Hide()
-			self.BorderBottomRight:Hide()
-			self.BorderTop:Hide()
-			self.BorderBottom:Hide()
-			self.BorderLeft:Hide()
-			self.BorderRight:Hide()
-		else
-			self.BorderSolidTop:Hide()
-			self.BorderSolidBottom:Hide()
-			self.BorderSolidLeft:Hide()
-			self.BorderSolidRight:Hide()
-
-			-- borderSize drives the slice edge thickness (per-texture natural sizes
-			-- are the fallback when no group/border element is set)
-			local edgeSize = (border and border.borderSize) or BORDER_EDGE_SIZES[styleName] or 8
-			local outwardOffset = BORDER_INSETS[styleName] or 0
-			local iconElement = self:GetElement(Private.Enum.Element.Icon)
-			local borderWidth = iconElement.width + 2 * outwardOffset
-			local borderHeight = iconElement.height + 2 * outwardOffset
-
-			-- replicates BackdropTemplateMixin:SetupTextureCoordinates using known
-			-- dimensions instead of GetWidth()/GetHeight() to avoid secret errors
-			local edgeRepeatX = math.max(0, borderWidth / edgeSize - 2 - BACKDROP_COORD_START)
-			local edgeRepeatY = math.max(0, borderHeight / edgeSize - 2 - BACKDROP_COORD_START)
-
-			self.BorderTopLeft:ClearAllPoints()
-			self.BorderTopLeft:SetPoint("TOPLEFT", self, "TOPLEFT", -outwardOffset, outwardOffset)
-			self.BorderTopLeft:SetSize(edgeSize, edgeSize)
-
-			self.BorderTopRight:ClearAllPoints()
-			self.BorderTopRight:SetPoint("TOPRIGHT", self, "TOPRIGHT", outwardOffset, outwardOffset)
-			self.BorderTopRight:SetSize(edgeSize, edgeSize)
-
-			self.BorderBottomLeft:ClearAllPoints()
-			self.BorderBottomLeft:SetPoint("BOTTOMLEFT", self, "BOTTOMLEFT", -outwardOffset, -outwardOffset)
-			self.BorderBottomLeft:SetSize(edgeSize, edgeSize)
-
-			self.BorderBottomRight:ClearAllPoints()
-			self.BorderBottomRight:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", outwardOffset, -outwardOffset)
-			self.BorderBottomRight:SetSize(edgeSize, edgeSize)
-
-			self.BorderTop:SetHeight(edgeSize)
-			self.BorderBottom:SetHeight(edgeSize)
-			self.BorderLeft:SetWidth(edgeSize)
-			self.BorderRight:SetWidth(edgeSize)
-
-			local sliceTexCoords = {
-				[self.BorderTopLeft] = {
-					0.5078125,
-					BACKDROP_COORD_START,
-					0.5078125,
-					BACKDROP_COORD_END,
-					0.6171875,
-					BACKDROP_COORD_START,
-					0.6171875,
-					BACKDROP_COORD_END,
-				},
-				[self.BorderTopRight] = {
-					0.6328125,
-					BACKDROP_COORD_START,
-					0.6328125,
-					BACKDROP_COORD_END,
-					0.7421875,
-					BACKDROP_COORD_START,
-					0.7421875,
-					BACKDROP_COORD_END,
-				},
-				[self.BorderBottomLeft] = {
-					0.7578125,
-					BACKDROP_COORD_START,
-					0.7578125,
-					BACKDROP_COORD_END,
-					0.8671875,
-					BACKDROP_COORD_START,
-					0.8671875,
-					BACKDROP_COORD_END,
-				},
-				[self.BorderBottomRight] = {
-					0.8828125,
-					BACKDROP_COORD_START,
-					0.8828125,
-					BACKDROP_COORD_END,
-					0.9921875,
-					BACKDROP_COORD_START,
-					0.9921875,
-					BACKDROP_COORD_END,
-				},
-				[self.BorderTop] = {
-					0.2578125,
-					edgeRepeatX,
-					0.3671875,
-					edgeRepeatX,
-					0.2578125,
-					BACKDROP_COORD_START,
-					0.3671875,
-					BACKDROP_COORD_START,
-				},
-				[self.BorderBottom] = {
-					0.3828125,
-					edgeRepeatX,
-					0.4921875,
-					edgeRepeatX,
-					0.3828125,
-					BACKDROP_COORD_START,
-					0.4921875,
-					BACKDROP_COORD_START,
-				},
-				[self.BorderLeft] = {
-					0.0078125,
-					BACKDROP_COORD_START,
-					0.0078125,
-					edgeRepeatY,
-					0.1171875,
-					BACKDROP_COORD_START,
-					0.1171875,
-					edgeRepeatY,
-				},
-				[self.BorderRight] = {
-					0.1328125,
-					BACKDROP_COORD_START,
-					0.1328125,
-					edgeRepeatY,
-					0.2421875,
-					BACKDROP_COORD_START,
-					0.2421875,
-					edgeRepeatY,
-				},
-			}
-
-			local path = LibSharedMedia:Fetch(LibSharedMedia.MediaType.BORDER, styleName) or ""
-
-			for tex, entry in pairs(sliceTexCoords) do
-				tex:SetTexture(path, "REPEAT", "REPEAT")
-				tex:SetTexCoord(entry[1], entry[2], entry[3], entry[4], entry[5], entry[6], entry[7], entry[8])
-				if borderColor ~= nil then
-					tex:SetVertexColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a)
-				else
-					tex:SetVertexColor(1, 1, 1, 1)
-				end
-				tex:Show()
-			end
-		end
+-- The 8-slice / solid border renderer lives in Private.Utils (shared with the bar
+-- mixin). The icon's border wraps the frame itself, sized from the Icon element.
+function TargetedSpellsIconMixin:ApplyBorderStyle(styleName)
+	local border = self:GetElement(Private.Enum.Element.Border)
+	local iconElement = self:GetElement(Private.Enum.Element.Icon)
+	if iconElement == nil then
+		return
 	end
+
+	-- the icon border wraps the icon frame itself (no extent union — the icon has a
+	-- single box; its InterruptSource is text and never grows the border)
+	Private.Utils.ApplyBorderStyle(
+		self --[[@as TargetedSpellsBorderFrame]],
+		styleName,
+		{ width = iconElement.width, height = iconElement.height, offsetX = 0, offsetY = 0 },
+		border and border.borderSize,
+		border and border.borderColor
+	)
 end
 
 function TargetedSpellsIconMixin:SetInterrupted(name, color)
@@ -450,12 +273,12 @@ function TargetedSpellsIconMixin:StyleInterruptSource()
 		return
 	end
 
-	-- pin the justifyH edge to the offset so alignment stays meaningful for auto-sized
-	-- text (LEFT/CENTER/RIGHT double as valid anchor points)
-	local edge = element.justifyH or "CENTER"
+	-- CENTER→CENTER like every other element (the plan's anchoring model): the offset
+	-- positions the text's centre, so changing justifyH never shifts it. justifyH governs
+	-- only internal justification, visible when maxWidth constrains the width.
 	self.InterruptSource:ClearAllPoints()
-	PixelUtil.SetPoint(self.InterruptSource, edge, self, "CENTER", element.x or 0, element.y or 0)
-	self.InterruptSource:SetJustifyH(edge)
+	PixelUtil.SetPoint(self.InterruptSource, "CENTER", self, "CENTER", element.x or 0, element.y or 0)
+	self.InterruptSource:SetJustifyH(element.justifyH or "CENTER")
 
 	if element.maxWidth ~= nil and element.maxWidth > 0 then
 		self.InterruptSource:SetWidth(element.maxWidth)
