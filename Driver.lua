@@ -25,6 +25,10 @@ end
 function TargetedSpellsDriver:Init()
 	self.delay = 0.2
 	self.frames = {}
+	-- reusable scratch for RepositionFrames (wiped + refilled per pass, never reallocated)
+	self.repositionByGroup = {}
+	self.layoutScratch = {}
+	self.dirtyGroups = {}
 	---@type table<integer, Frame>
 	self.containers = {}
 	self.role = Private.Enum.Role.Damager
@@ -60,60 +64,62 @@ function TargetedSpellsDriver:GetContainer(groupId)
 	return self.containers[groupId]
 end
 
--- the edit-mode frame anchors via its own position.point, but the container always
--- anchors via CENTER, so the offset compensates for the difference in origins
----@param group TargetedSpellsGroup
-function TargetedSpellsDriver:PositionFrame(group)
-	local container = self:GetContainer(group.Id)
+do
+	local ANCHOR_SIGN = {
+		[Private.Enum.Anchor.Center] = { x = 0, y = 0 },
+		[Private.Enum.Anchor.Top] = { x = 0, y = 1 },
+		[Private.Enum.Anchor.Bottom] = { x = 0, y = -1 },
+		[Private.Enum.Anchor.Left] = { x = -1, y = 0 },
+		[Private.Enum.Anchor.Right] = { x = 1, y = 0 },
+		[Private.Enum.Anchor.TopLeft] = { x = -1, y = 1 },
+		[Private.Enum.Anchor.TopRight] = { x = 1, y = 1 },
+		[Private.Enum.Anchor.BottomLeft] = { x = -1, y = -1 },
+		[Private.Enum.Anchor.BottomRight] = { x = 1, y = -1 },
+	}
 
-	local offsetX = 0
-	local offsetY = 0
+	local GROW_TARGET = {
+		[Private.Enum.Direction.Horizontal] = {
+			[Private.Enum.Grow.Start] = { x = -1, y = 0 },
+			[Private.Enum.Grow.End] = { x = 1, y = 0 },
+		},
+		[Private.Enum.Direction.Vertical] = {
+			[Private.Enum.Grow.Start] = { x = 0, y = -1 },
+			[Private.Enum.Grow.End] = { x = 0, y = 1 },
+		},
+	}
 
-	local editModeFrame = Private.Utils.GetEditModeFrame(group.Id)
+	-- the edit-mode frame anchors via its own position.point, but the container always
+	-- anchors via CENTER, so the offset compensates for the difference in origins
+	---@param group TargetedSpellsGroup
+	function TargetedSpellsDriver:PositionFrame(group)
+		local container = self:GetContainer(group.Id)
 
-	if editModeFrame ~= nil then
-		local width, height = editModeFrame:GetSize()
+		local offsetX = 0
+		local offsetY = 0
 
-		local AnchorSign = {
-			[Private.Enum.Anchor.Center] = { x = 0, y = 0 },
-			[Private.Enum.Anchor.Top] = { x = 0, y = 1 },
-			[Private.Enum.Anchor.Bottom] = { x = 0, y = -1 },
-			[Private.Enum.Anchor.Left] = { x = -1, y = 0 },
-			[Private.Enum.Anchor.Right] = { x = 1, y = 0 },
-			[Private.Enum.Anchor.TopLeft] = { x = -1, y = 1 },
-			[Private.Enum.Anchor.TopRight] = { x = 1, y = 1 },
-			[Private.Enum.Anchor.BottomLeft] = { x = -1, y = -1 },
-			[Private.Enum.Anchor.BottomRight] = { x = 1, y = -1 },
-		}
+		local editModeFrame = Private.Utils.GetEditModeFrame(group.Id)
 
-		local GrowTarget = {
-			[Private.Enum.Direction.Horizontal] = {
-				[Private.Enum.Grow.Start] = { x = -1, y = 0 },
-				[Private.Enum.Grow.End] = { x = 1, y = 0 },
-			},
-			[Private.Enum.Direction.Vertical] = {
-				[Private.Enum.Grow.Start] = { x = 0, y = -1 },
-				[Private.Enum.Grow.End] = { x = 0, y = 1 },
-			},
-		}
+		if editModeFrame ~= nil then
+			local width, height = editModeFrame:GetSize()
 
-		local anchor = AnchorSign[group.Position.point]
-		local target = GrowTarget[group.Direction][group.Grow]
+			local anchor = ANCHOR_SIGN[group.Position.point]
+			local target = GROW_TARGET[group.Direction][group.Grow]
 
-		offsetX = (target.x - anchor.x) * (width / 2)
-		offsetY = (target.y - anchor.y) * (height / 2)
+			offsetX = (target.x - anchor.x) * (width / 2)
+			offsetY = (target.y - anchor.y) * (height / 2)
+		end
+
+		container:ClearAllPoints()
+		PixelUtil.SetPoint(
+			container,
+			"CENTER",
+			UIParent,
+			group.Position.point,
+			group.Position.x + offsetX,
+			group.Position.y + offsetY
+		)
+		container:Show()
 	end
-
-	container:ClearAllPoints()
-	PixelUtil.SetPoint(
-		container,
-		"CENTER",
-		UIParent,
-		group.Position.point,
-		group.Position.x + offsetX,
-		group.Position.y + offsetY
-	)
-	container:Show()
 end
 
 -- ── Cross-group setting queries (event registration decisions) ───────────────
@@ -134,6 +140,20 @@ function TargetedSpellsDriver:AnyGroupUsesInterruptibility()
 			local core = group.Elements[Private.Enum.Element.ProgressBar]
 
 			if core ~= nil and core.barColorMode == Private.Enum.BarColorMode.Interruptibility then
+				return true
+			end
+		end
+	end
+
+	return false
+end
+
+function TargetedSpellsDriver:AnyGroupUsesShield()
+	for _, group in pairs(TargetedSpellsSaved.Groups) do
+		if group.Enabled and group.Template == Private.Enum.Template.Bar then
+			local shield = group.Elements[Private.Enum.Element.InterruptShield]
+
+			if shield ~= nil and shield.active then
 				return true
 			end
 		end
@@ -212,8 +232,7 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 		self.frame:SetScript("OnEvent", GenerateClosure(self.OnFrameEvent, self))
 	end
 
-	-- conditional events: a group edit may have toggled either since the last call
-	if self:AnyGroupUsesInterruptibility() then
+	if self:AnyGroupUsesInterruptibility() or self:AnyGroupUsesShield() then
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTIBLE")
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE")
 	else
@@ -263,24 +282,14 @@ function TargetedSpellsDriver:GroupLoadConditionsProhibit(group)
 	return false
 end
 
----@param group TargetedSpellsGroup
-function TargetedSpellsDriver:CountActiveFramesForGroup(group)
-	local count = 0
-
-	for frame in self:PoolForGroup(group):EnumerateActive() do
-		if frame:GetGroup() == group then
-			count = count + 1
-		end
-	end
-
-	return count
-end
-
 function TargetedSpellsDriver:ProcessInfo(info)
+	local dirtyGroups = self.dirtyGroups
+	table.wipe(dirtyGroups)
+
 	if self.frames[info.unit] == nil then
 		self.frames[info.unit] = {}
 	else
-		self:ReleaseFrameForUnit(info.unit, false)
+		self:ReleaseFrameForUnit(info.unit, false, nil, dirtyGroups)
 	end
 
 	info.targetClasses = self:GetTargetClasses(info)
@@ -288,23 +297,21 @@ function TargetedSpellsDriver:ProcessInfo(info)
 	local count = 0
 
 	for _, group in ipairs(Private.Groups.GetMatching(info, TargetedSpellsSaved.Groups)) do
-		if
-			not self:GroupLoadConditionsProhibit(group)
-			and self:CountActiveFramesForGroup(group) < (group.MaxItems or 10)
-		then
+		if not self:GroupLoadConditionsProhibit(group) then
 			local frame = self:PoolForGroup(group):Acquire()
 			frame:SetGroup(group)
 			frame:PostCreate(info, self.OnCooldownDoneClosure)
 			table.insert(self.frames[info.unit], frame)
+			dirtyGroups[group.Id] = true
 			count = count + 1
 		end
 	end
 
 	if count == 0 then
-		self:ReleaseFrameForUnit(info.unit, true)
+		self:ReleaseFrameForUnit(info.unit, true, nil, dirtyGroups)
 	end
 
-	self:RepositionFrames()
+	self:RepositionFrames(dirtyGroups)
 end
 
 ---@param frame TargetedSpellsIconMixin|TargetedSpellsBarMixin
@@ -323,44 +330,75 @@ function TargetedSpellsDriver:ReleaseFrame(frame)
 	end
 end
 
-function TargetedSpellsDriver:RepositionFrames()
-	---@type table<integer, { group: TargetedSpellsGroup, frames: table }>
-	local byGroup = {}
+-- Relayouts group containers. With no argument, every group with live frames is
+-- rebuilt (global refreshes: dangling cleanup, container moves). With a dirtyGroups
+-- set {[groupId]=true}, only those groups are bucketed and relayouted — a group's
+-- layout is self-contained (AdjustLayout chains its frames under its own container),
+-- so a lifecycle event that changed one group's membership must not pay the ~12 C-side
+-- frame ops per frame to re-anchor every *other* group. See sprint-3.
+---@param dirtyGroups table<integer, boolean>? nil = all groups; otherwise the set to scope to
+function TargetedSpellsDriver:RepositionFrames(dirtyGroups)
+	-- Reuse persistent scratch across passes: the per-group buckets and their frame
+	-- lists (self.repositionByGroup) and the single layouting table (self.layoutScratch)
+	-- are wiped and refilled rather than reallocated. Reposition runs on the cast path,
+	-- so this keeps it allocation-free in steady state. Entries persist keyed by group
+	-- id; a bucket left with group == nil (its group produced no frames this pass, was
+	-- deleted, or is out of scope this pass) is skipped and simply lingers empty.
+	local byGroup = self.repositionByGroup
+
+	for _, entry in pairs(byGroup) do
+		entry.group = nil
+		table.wipe(entry.frames)
+	end
 
 	for _, frames in pairs(self.frames) do
 		for _, frame in pairs(frames) do
 			if frame ~= nil then
 				local group = frame:GetGroup()
 
-				if group ~= nil then
-					if byGroup[group.Id] == nil then
-						byGroup[group.Id] = { group = group, frames = {} }
+				if group ~= nil and (dirtyGroups == nil or dirtyGroups[group.Id]) then
+					local entry = byGroup[group.Id]
+
+					if entry == nil then
+						entry = { group = group, frames = {} }
+						byGroup[group.Id] = entry
+					else
+						entry.group = group
 					end
 
-					table.insert(byGroup[group.Id].frames, frame)
+					table.insert(entry.frames, frame)
 				end
 			end
 		end
 	end
 
 	for groupId, entry in pairs(byGroup) do
-		local group = entry.group
-		local core = group.Elements[self:GroupCoreElement(group)]
+		if entry.group ~= nil then
+			local core = entry.group.Elements[self:GroupCoreElement(entry.group)]
 
-		Private.Utils.SortFrames(entry.frames, group.SortOrder)
-		Private.Utils.AdjustLayout(
-			entry.frames,
-			Private.Utils.CollectLayoutingArguments(group.Direction, group.Grow, core.width, core.height, group.Gap),
-			self:GetContainer(groupId),
-			"CENTER",
-			0,
-			0,
-			false
-		)
+			Private.Utils.SortFrames(entry.frames, entry.group.SortOrder)
+			Private.Utils.AdjustLayout(
+				entry.frames,
+				Private.Utils.CollectLayoutingArguments(
+					entry.group.Direction,
+					entry.group.Grow,
+					core.width,
+					core.height,
+					entry.group.Gap,
+					self.layoutScratch
+				),
+				self:GetContainer(groupId),
+				"CENTER",
+				0,
+				0,
+				false
+			)
+		end
 	end
 end
 
-function TargetedSpellsDriver:ReleaseFrameForUnit(unit, removeUnit, id)
+---@param dirtyGroups table<integer, boolean>? if given, records the group id of every released frame
+function TargetedSpellsDriver:ReleaseFrameForUnit(unit, removeUnit, id, dirtyGroups)
 	local frames = self.frames[unit]
 
 	if frames == nil then
@@ -375,6 +413,14 @@ function TargetedSpellsDriver:ReleaseFrameForUnit(unit, removeUnit, id)
 
 		if frame then
 			if frame:CanBeHidden(id) then
+				if dirtyGroups ~= nil then
+					local group = frame:GetGroup()
+
+					if group ~= nil then
+						dirtyGroups[group.Id] = true
+					end
+				end
+
 				self:ReleaseFrame(frame)
 				table.remove(frames, i)
 				cleanedSomethingUp = true
@@ -514,9 +560,9 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 
 		if name == "nameplateShowEnemies" then
 			if value == 0 or value == "0" then
-				Private.Utils.Pools.Bar:ReleaseAll()
-				Private.Utils.Pools.Icon:ReleaseAll()
-				table.wipe(self.frames)
+				-- release only the Driver's own frames; the pools are shared with demo
+				-- frames a config UI may still own (see ReleaseAllOwnFrames).
+				self:ReleaseAllOwnFrames()
 			end
 		elseif name == "nameplateShowOffscreen" then
 			if value == "1" or value == 1 then
@@ -567,8 +613,11 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 
 		self:MaybeMarkAsInterruptedAndDelay(unit, id, interruptedBy)
 
-		if self:ReleaseFrameForUnit(unit, true, id) then
-			self:RepositionFrames()
+		local dirtyGroups = self.dirtyGroups
+		table.wipe(dirtyGroups)
+
+		if self:ReleaseFrameForUnit(unit, true, id, dirtyGroups) then
+			self:RepositionFrames(dirtyGroups)
 		end
 	elseif event == Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START then
 		---@type SpellCastInfo
@@ -588,8 +637,11 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		---@type DelayInfo
 		local delayInfo = ...
 
-		if self:ReleaseFrameForUnit(delayInfo.unit, true, delayInfo.id) then
-			self:RepositionFrames()
+		local dirtyGroups = self.dirtyGroups
+		table.wipe(dirtyGroups)
+
+		if self:ReleaseFrameForUnit(delayInfo.unit, true, delayInfo.id, dirtyGroups) then
+			self:RepositionFrames(dirtyGroups)
 		end
 	elseif
 		event == "ZONE_CHANGED_NEW_AREA"
@@ -672,6 +724,7 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		for _, frame in ipairs(frames) do
 			if frame.AdjustInterruptibleColor then
 				frame:AdjustInterruptibleColor(isInterruptible)
+				frame:AdjustInterruptShield(isInterruptible)
 			end
 		end
 	elseif event == "RAID_TARGET_UPDATE" then
@@ -705,12 +758,12 @@ function TargetedSpellsDriver:CleanupDanglingFrames()
 	end
 end
 
--- A v4 profile import updates the group tables in place (Utils.ImportV4Profile),
--- so refs stay valid; here we drop live frames (they re-acquire with the new
--- settings), reposition every container, and re-evaluate event registration.
-function TargetedSpellsDriver:OnProfileImported()
-	-- Release only the Driver's own frames — NOT Pools:ReleaseAll, which would also
-	-- release the edit-mode demo frames sharing these pools (double-release error).
+-- Releases every frame the Driver itself acquired and clears the live frame set.
+-- Deliberately NOT Pools:ReleaseAll — the Bar/Icon pools are shared with the EditMode
+-- and Designer demo frames, which the Driver does not own; releasing those out from
+-- under a live demo double-releases (assertsafe error) and can alias a demo frame onto
+-- a live cast.
+function TargetedSpellsDriver:ReleaseAllOwnFrames()
 	for _, frames in pairs(self.frames) do
 		for _, frame in ipairs(frames) do
 			self:ReleaseFrame(frame)
@@ -718,6 +771,13 @@ function TargetedSpellsDriver:OnProfileImported()
 	end
 
 	table.wipe(self.frames)
+end
+
+-- A v4 profile import updates the group tables in place (Utils.ImportV4Profile),
+-- so refs stay valid; here we drop live frames (they re-acquire with the new
+-- settings), reposition every container, and re-evaluate event registration.
+function TargetedSpellsDriver:OnProfileImported()
+	self:ReleaseAllOwnFrames()
 
 	for _, group in pairs(TargetedSpellsSaved.Groups) do
 		self:PositionFrame(group)
@@ -755,7 +815,12 @@ function TargetedSpellsDriver:OnGroupChanged(groupId)
 
 	self:RefreshGroup(group)
 	self:SetupFrame(false)
-	self:RepositionFrames()
+
+	-- only this group's frames/container changed; other groups are untouched
+	local dirtyGroups = self.dirtyGroups
+	table.wipe(dirtyGroups)
+	dirtyGroups[groupId] = true
+	self:RepositionFrames(dirtyGroups)
 end
 
 function TargetedSpellsDriver:OnGroupPositionChanged(groupId)
@@ -819,8 +884,11 @@ function TargetedSpellsDriver:MaybeMarkAsInterruptedAndDelay(unit, id, interrupt
 end
 
 function TargetedSpellsDriver:OnCooldownDone(info)
-	if self:ReleaseFrameForUnit(info.unit, true, info.id) then
-		self:RepositionFrames()
+	local dirtyGroups = self.dirtyGroups
+	table.wipe(dirtyGroups)
+
+	if self:ReleaseFrameForUnit(info.unit, true, info.id, dirtyGroups) then
+		self:RepositionFrames(dirtyGroups)
 	end
 end
 

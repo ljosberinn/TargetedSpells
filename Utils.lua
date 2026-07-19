@@ -401,19 +401,23 @@ function Private.Utils.RollDice()
 	return math.random(1, 6) == 6
 end
 
-function Private.Utils.CollectLayoutingArguments(direction, grow, width, height, gap)
+-- `out`, if given, is filled and returned instead of allocating a fresh table —
+-- every field is overwritten unconditionally, so reusing a scratch table is safe.
+-- AdjustLayout consumes the result synchronously and never retains it, which lets
+-- the reposition hot path pass one reused table per pass (Driver.RepositionFrames).
+function Private.Utils.CollectLayoutingArguments(direction, grow, width, height, gap, out)
 	local isHorizontal = direction == Private.Enum.Direction.Horizontal
 	local isGrowEnd = grow == Private.Enum.Grow.End
 
-	return {
-		isHorizontal = isHorizontal,
-		isGrowEnd = isGrowEnd,
-		orientation = isHorizontal and "HORIZONTAL" or "VERTICAL",
-		x = (isHorizontal and width or height) + gap,
-		y = isHorizontal and height or width,
-		originPoint = isHorizontal and (isGrowEnd and "RIGHT" or "LEFT") or (isGrowEnd and "TOP" or "BOTTOM"),
-		relativePoint = isHorizontal and (isGrowEnd and "LEFT" or "RIGHT") or (isGrowEnd and "BOTTOM" or "TOP"),
-	}
+	out = out or {}
+	out.isHorizontal = isHorizontal
+	out.isGrowEnd = isGrowEnd
+	out.orientation = isHorizontal and "HORIZONTAL" or "VERTICAL"
+	out.x = (isHorizontal and width or height) + gap
+	out.y = isHorizontal and height or width
+	out.originPoint = isHorizontal and (isGrowEnd and "RIGHT" or "LEFT") or (isGrowEnd and "TOP" or "BOTTOM")
+	out.relativePoint = isHorizontal and (isGrowEnd and "LEFT" or "RIGHT") or (isGrowEnd and "BOTTOM" or "TOP")
+	return out
 end
 
 -- Phase 7: the visual extent of a group's active elements, in CENTER→CENTER offset
@@ -711,6 +715,9 @@ do
 
 				TargetedSpellsSaved.Groups[id].Id = id
 			end
+
+			-- ids were added/removed in place above; drop the cached sort order
+			Private.Groups.InvalidateOrder(TargetedSpellsSaved.Groups)
 
 			TargetedSpellsSaved.TextToSpeech = Private.Utils.DeepCopy(payload.TextToSpeech)
 			if payload.NextGroupId ~= nil then

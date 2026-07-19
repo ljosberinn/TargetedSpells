@@ -329,9 +329,6 @@ L.Settings.TargetClassLabels = {
 	[Private.Enum.TargetClass.Nobody] = "Nobody (untargeted)",
 }
 
-L.Settings.MaxItemsLabel = "Max Items"
-L.Settings.MaxItemsTooltip = "Maximum number of simultaneous casts this group shows."
-
 L.Settings.CreateGroup = "Create Group"
 L.Settings.DeleteGroup = "Delete Group"
 L.Settings.DeleteGroupConfirm = "Delete this group? This cannot be undone."

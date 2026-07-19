@@ -416,8 +416,6 @@ function TargetedSpellsEditModeMixin:CreateSetting(base)
 		)
 	elseif base == "Gap" then
 		return Slider(Private.L.Settings.FrameGapLabel, Private.L.Settings.FrameGapTooltip, "Gap", 0, 100, 1, 2)
-	elseif base == "MaxItems" then
-		return Slider(Private.L.Settings.MaxItemsLabel, Private.L.Settings.MaxItemsTooltip, "MaxItems", 1, 20, 1, 10)
 	elseif base == "Direction" then
 		return RadioDropdown(
 			Private.L.Settings.FrameDirectionLabel,
@@ -548,10 +546,10 @@ end
 -- Phase 7: size the placeholder to the group's full *visual extent*, not just its
 -- core box, so free-positioned elements sitting outside the core (e.g. the bar's
 -- icon/duration boxes flanking the narrower ProgressBar) fall inside the grab
--- target. The layout *footprint* — the frame-to-frame stride when MaxItems > 1 —
--- deliberately stays core-based (free positioning does not reflow); only the last
--- cell and the cross-axis span grow to the extent. When extent == core this is
--- byte-identical to the old core-based sizing.
+-- target. The layout *footprint* — the frame-to-frame stride across the preview's
+-- maxFrames cells — deliberately stays core-based (free positioning does not reflow);
+-- only the last cell and the cross-axis span grow to the extent. When extent == core
+-- this is byte-identical to the old core-based sizing.
 function TargetedSpellsEditModeMixin:ResizeEditModeFrame()
 	local core = self:CoreElement()
 	local extent = Private.Utils.ComputeElementExtent(self.group.Elements)
@@ -625,7 +623,6 @@ local SETTINGS_ORDER = {
 	"Direction",
 	"SortOrder",
 	"Grow",
-	"MaxItems",
 	"GlowType",
 	"Behaviour",
 	"AnnounceUntargetedSpells",

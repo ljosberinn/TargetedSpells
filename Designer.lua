@@ -128,14 +128,12 @@ local CORE_ELEMENT = {
 local DesignerMixin = {}
 
 -- Group ids in ascending order — the tab order and the "first group" fallback.
+-- Shares the cached order from Groups (invalidated on create/delete/import), so
+-- reopening the designer or rebuilding tabs does no fresh sort. Read-only: callers
+-- iterate the result and must not mutate it.
 ---@return integer[]
 function DesignerMixin:SortedGroupIds()
-	local ids = {}
-	for id in pairs(TargetedSpellsSaved.Groups) do
-		ids[#ids + 1] = id
-	end
-	table.sort(ids)
-	return ids
+	return Private.Groups.SortedIds(TargetedSpellsSaved.Groups)
 end
 
 -- Rebuilds the tab strip from the current group list. Called on show and whenever
@@ -335,15 +333,12 @@ function DesignerMixin:PopulateDemoContent()
 	if frame.ProgressBar then
 		-- bar template
 		self:StyleDemoText(frame.ProgressBar.TargetName, self.scratchElements[Element.TargetName], playerName, classColor)
-		self:StyleDemoText(frame.ProgressBar.InterruptSource, self.scratchElements[Element.InterruptSource], playerName, classColor)
+		self:StyleDemoText(frame.ProgressBar.InterruptSource, self.scratchElements[Element.InterruptSource], playerName,
+			classColor)
 
-		-- the demo has no real cast, so the secret interruptibility boolean is nil and
-		-- the renderer leaves the shield hidden; force it visible at full alpha when
-		-- active so it can be positioned/sized (in-game it shows only on non-interruptible
-		-- casts, via SetAlphaFromBoolean)
 		local shield = self.scratchElements[Element.InterruptShield]
-		frame.CustomElementsFrame.InterruptShield:SetAlpha(1)
-		frame.CustomElementsFrame.InterruptShield:SetShown(shield ~= nil and shield.active == true)
+		frame.CustomElementsFrame.InterruptShield:Show()
+		frame.CustomElementsFrame.InterruptShield:SetAlphaFromBoolean(secretwrap(shield ~= nil and shield.active == true))
 	else
 		-- icon template
 		self:StyleDemoText(frame.InterruptSource, self.scratchElements[Element.InterruptSource], playerName, classColor)
@@ -443,10 +438,10 @@ function DesignerMixin:EnsureMarkerVisuals(marker)
 
 	marker.SelectedBorder = {}
 	local edges = {
-		{ points = { "TOPLEFT", "TOPRIGHT" }, height = 2 },
+		{ points = { "TOPLEFT", "TOPRIGHT" },       height = 2 },
 		{ points = { "BOTTOMLEFT", "BOTTOMRIGHT" }, height = 2 },
-		{ points = { "TOPLEFT", "BOTTOMLEFT" }, width = 2 },
-		{ points = { "TOPRIGHT", "BOTTOMRIGHT" }, width = 2 },
+		{ points = { "TOPLEFT", "BOTTOMLEFT" },     width = 2 },
+		{ points = { "TOPRIGHT", "BOTTOMRIGHT" },   width = 2 },
 	}
 
 	for _, edge in ipairs(edges) do
@@ -803,7 +798,8 @@ function DesignerMixin:PopulateRadioMenu(dropdown, setting, options)
 		for _, option in ipairs(options) do
 			local label = option.label
 			if option.texture then
-				label = string.format("|T%s:%d:%d|t %s", option.texture, TEXTURE_PREVIEW_HEIGHT, TEXTURE_PREVIEW_WIDTH, option.label)
+				label = string.format("|T%s:%d:%d|t %s", option.texture, TEXTURE_PREVIEW_HEIGHT, TEXTURE_PREVIEW_WIDTH,
+					option.label)
 			end
 
 			local radio = rootDescription:CreateRadio(label, function()
@@ -1391,11 +1387,14 @@ function DesignerMixin:Initialize()
 	end
 	self.widgetPools = {
 		[SettingType.Boolean] = CreateFramePool("CheckButton", self.Panel.Content, "UICheckButtonTemplate", HideWidget),
-		[SettingType.Number] = CreateFramePool("Frame", self.Panel.Content, "MinimalSliderWithSteppersTemplate", HideWidget),
-		[SettingType.Enum] = CreateFramePool("DropdownButton", self.Panel.Content, "WowStyle1DropdownTemplate", HideWidget),
+		[SettingType.Number] = CreateFramePool("Frame", self.Panel.Content, "MinimalSliderWithSteppersTemplate",
+			HideWidget),
+		[SettingType.Enum] = CreateFramePool("DropdownButton", self.Panel.Content, "WowStyle1DropdownTemplate",
+			HideWidget),
 		-- fontFlags gets its own dropdown pool (its OverrideText must not leak onto a
 		-- reused radio dropdown — see AcquireDropdownRow)
-		[SettingType.FontFlags] = CreateFramePool("DropdownButton", self.Panel.Content, "WowStyle1DropdownTemplate", HideWidget),
+		[SettingType.FontFlags] = CreateFramePool("DropdownButton", self.Panel.Content, "WowStyle1DropdownTemplate",
+			HideWidget),
 		[SettingType.Color] = CreateFramePool("Frame", self.Panel.Content, "ColorSwatchTemplate", HideWidget),
 		placeholder = CreateFramePool("Frame", self.Panel.Content, nil, HideWidget),
 	}

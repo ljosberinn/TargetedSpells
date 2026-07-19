@@ -35,7 +35,7 @@
 
 ---@class TargetedSpellsUtils
 ---@field DeepCopy fun(source: any): any
----@field CollectLayoutingArguments fun(direction: Direction, grow: Grow, width: number, height: number, gap: number): CollectLayoutingArguments
+---@field CollectLayoutingArguments fun(direction: Direction, grow: Grow, width: number, height: number, gap: number, out?: CollectLayoutingArguments): CollectLayoutingArguments
 ---@field ComputeElementExtent fun(elements: table<Element, table<string, any>>): { width: number, height: number, offsetX: number, offsetY: number }
 ---@field AdjustLayout fun(frames: TargetedSpellsIconMixin[], geo: CollectLayoutingArguments, barParent: Frame, firstAnchorPoint: FramePoint, firstOffsetX: number, firstOffsetY: number, isEditMode: boolean)
 ---@field SortFrames fun(frames: TargetedSpellsIconMixin[], sortOrder: SortOrder)
@@ -81,7 +81,6 @@
 ---@field Grow Grow
 ---@field Direction Direction
 ---@field SortOrder SortOrder
----@field MaxItems number
 ---@field LoadConditionContentType table<number, boolean>
 ---@field LoadConditionRole table<number, boolean>
 ---@field GlowType GlowType
@@ -101,6 +100,8 @@
 ---@field Delete fun(id: integer, saved: table?): boolean
 ---@field SetTemplate fun(group: TargetedSpellsGroup, template: TargetedSpellsTemplate)
 ---@field Count fun(saved: table?): number
+---@field SortedIds fun(groups: table): integer[]
+---@field InvalidateOrder fun(groups: table)
 
 ---@class TargetedSpellsTextToSpeech
 ---@field AnnounceUntargetedSpells table<NpcType, boolean>
@@ -346,6 +347,7 @@
 
 ---@class TargetedSpellsBarCustomElementsFrame : Frame
 ---@field TargetMarker Texture
+---@field InterruptShield Texture
 
 ---@class TargetedSpellsBarMixin : TargetedSpellsMixin
 ---@field unit string?
@@ -365,6 +367,7 @@
 ---@field SetProgressBarColor fun(self: TargetedSpellsBarMixin)
 ---@field SetPreviewBarColor fun(self: TargetedSpellsBarMixin)
 ---@field AdjustInterruptibleColor fun(self: TargetedSpellsBarMixin, isInterruptible: boolean)
+---@field AdjustInterruptShield fun(self: TargetedSpellsBarMixin, isInterruptible: boolean)
 ---@field SetTargetMarker fun(self: TargetedSpellsBarMixin, raidTargetIndex: number?)
 
 ---@class EditModeFrame : Frame
@@ -414,6 +417,8 @@
 ---@field private ttsAnnouncementCache table<string, number>
 ---@field private activeEncounterId number?
 ---@field frames table<string, (TargetedSpellsIconMixin|TargetedSpellsBarMixin)[]>
+---@field repositionByGroup table<integer, { group: TargetedSpellsGroup?, frames: table }>
+---@field layoutScratch CollectLayoutingArguments
 ---@field private containers table<integer, Frame>
 ---@field OnGroupPositionChanged fun(self: TargetedSpellsDriver, groupId: integer)
 ---@field PoolForGroup fun(self: TargetedSpellsDriver, group: TargetedSpellsGroup): FramePool<TargetedSpellsIconMixin|TargetedSpellsBarMixin>
@@ -423,16 +428,17 @@
 ---@field SetupFrame fun(self: TargetedSpellsDriver, isBoot: boolean)
 ---@field AnyGroupEnabled fun(self: TargetedSpellsDriver): boolean
 ---@field AnyGroupUsesInterruptibility fun(self: TargetedSpellsDriver): boolean
+---@field AnyGroupUsesShield fun(self: TargetedSpellsDriver): boolean
 ---@field AnyGroupShowsTargetMarker fun(self: TargetedSpellsDriver): boolean
 ---@field AnyGroupIndicatesInterrupts fun(self: TargetedSpellsDriver): boolean
 ---@field AnyGroupLoadConditionsAllow fun(self: TargetedSpellsDriver): boolean
 ---@field GetTargetClasses fun(self: TargetedSpellsDriver, info: SpellCastInfo): table<TargetClass, boolean>
 ---@field GroupLoadConditionsProhibit fun(self: TargetedSpellsDriver, group: TargetedSpellsGroup): boolean
----@field CountActiveFramesForGroup fun(self: TargetedSpellsDriver, group: TargetedSpellsGroup): number
 ---@field ProcessInfo fun(self: TargetedSpellsDriver, info: SpellCastInfo)
 ---@field ReleaseFrame fun(self: TargetedSpellsDriver, frame: TargetedSpellsIconMixin|TargetedSpellsBarMixin)
----@field RepositionFrames fun(self: TargetedSpellsDriver)
----@field ReleaseFrameForUnit fun(self: TargetedSpellsDriver, unit: string, removeUnit: boolean, id?: number): boolean
+---@field ReleaseAllOwnFrames fun(self: TargetedSpellsDriver)
+---@field RepositionFrames fun(self: TargetedSpellsDriver, dirtyGroups?: table<integer, boolean>)
+---@field ReleaseFrameForUnit fun(self: TargetedSpellsDriver, unit: string, removeUnit: boolean, id?: number, dirtyGroups?: table<integer, boolean>): boolean
 ---@field UnitIsIrrelevant fun(self: TargetedSpellsDriver, unit: string, skipTargetCheck?: boolean): boolean
 ---@field OnFrameEvent fun(self: TargetedSpellsDriver, listenerFrame: Frame, event: WowEvent, ...)
 ---@field OnProfileImported fun(self: TargetedSpellsDriver)

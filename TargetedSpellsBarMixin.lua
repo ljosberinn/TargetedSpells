@@ -50,13 +50,7 @@ end
 
 function TargetedSpellsBarMixin:OnLoad()
 	TargetedSpellsMixin.OnLoad(self)
-	-- group-agnostic setup only; group-dependent styling lives in ApplyLayout,
-	-- which runs on acquire once the Driver has assigned a group
 	self.Bar:SetStatusBarTexture("")
-	-- native non-interruptible shield atlas (no new art). useAtlasSize omitted → keeps
-	-- our own size, which PositionElements sets from the element's width/height.
-	-- self.CustomElementsFrame.InterruptShield:SetAtlas("nameplates-InterruptShield")
-	-- per-frame formatter so each group's fraction threshold is independent
 	self.countdownFormatter = Private.Utils.CreateCountdownFormatter()
 	self.DurationCooldown:SetCountdownFormatter(self.countdownFormatter)
 end
@@ -225,7 +219,8 @@ end
 
 function TargetedSpellsBarMixin:AdjustInterruptibleColor(isInterruptible)
 	local core = self:GetElement(Element.ProgressBar)
-	if core == nil then
+
+	if core == nil or core.barColorMode ~= BarColorMode.Interruptibility then
 		return
 	end
 
@@ -233,6 +228,17 @@ function TargetedSpellsBarMixin:AdjustInterruptibleColor(isInterruptible)
 	local color = CreateColorFromHexString(hex)
 
 	self.ProgressBar:SetStatusBarColor(color.r, color.g, color.b, color.a)
+end
+
+function TargetedSpellsBarMixin:AdjustInterruptShield(isInterruptible)
+	local shield = self:GetElement(Element.InterruptShield)
+
+	if shield == nil or not shield.active then
+		return
+	end
+
+	self.CustomElementsFrame.InterruptShield:Show()
+	self.CustomElementsFrame.InterruptShield:SetAlphaFromBoolean(secretwrap(not isInterruptible))
 end
 
 function TargetedSpellsBarMixin:SetBackgroundBarColor()
@@ -283,9 +289,7 @@ function TargetedSpellsBarMixin:Reset()
 	self.ProgressBar.InterruptSource:Hide()
 	self.ProgressBar.InterruptSource:SetTextColor(1, 1, 1)
 	self.CustomElementsFrame.TargetMarker:Hide()
-	-- SetAlpha(1) clears the secret alpha aspect left by SetAlphaFromBoolean before the
-	-- pooled frame is reused; Hide() keeps it invisible until the next active cast
-	self.CustomElementsFrame.InterruptShield:SetAlpha(1)
+	self.CustomElementsFrame.InterruptShield:SetAlpha(secretwrap(1))
 	self.CustomElementsFrame.InterruptShield:Hide()
 	self.ProgressBar.TargetName:Hide()
 	self.DurationCooldown:Clear()

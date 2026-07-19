@@ -160,3 +160,64 @@ describe("Groups.Create / Delete / SetTemplate / Count", function()
 		assert.equals(2, Private.Groups.Count(saved))
 	end)
 end)
+
+describe("Groups.SortedIds cache + invalidation", function()
+	local Template = Enum.Template
+
+	local function newSaved()
+		return { NextGroupId = 1, Groups = {} }
+	end
+
+	it("returns ids in ascending order", function()
+		assert.same({ 1, 2, 3, 4, 5 }, Private.Groups.SortedIds(makeGroups()))
+	end)
+
+	it("hands back the same cached array until invalidated, a fresh one after", function()
+		local groups = makeGroups()
+		local first = Private.Groups.SortedIds(groups)
+		-- second call must reuse the cached instance (no per-call sort/allocation)
+		assert.equals(first, Private.Groups.SortedIds(groups))
+
+		Private.Groups.InvalidateOrder(groups)
+		local rebuilt = Private.Groups.SortedIds(groups)
+		assert(first ~= rebuilt, "expected a rebuilt array after invalidation")
+		assert.same({ 1, 2, 3, 4, 5 }, rebuilt)
+	end)
+
+	it("Create invalidates so GetMatching sees the new group", function()
+		local saved = newSaved()
+		Private.Groups.Create(Template.Icon, saved) -- id 1
+		-- prime the cache before the second create
+		Private.Groups.GetMatching({ targetClasses = { [TargetClass.Player] = true } }, saved.Groups)
+
+		local newId = Private.Groups.Create(Template.Icon, saved) -- id 2
+		assert.same({ 1, newId }, Private.Groups.SortedIds(saved.Groups))
+
+		-- default filter includes Player, so both groups match now
+		local matches = Private.Groups.GetMatching({ targetClasses = { [TargetClass.Player] = true } }, saved.Groups)
+		assert.equals(2, #matches)
+	end)
+
+	it("Delete invalidates so GetMatching drops the removed group", function()
+		local saved = newSaved()
+		Private.Groups.Create(Template.Icon, saved) -- id 1
+		local id2 = Private.Groups.Create(Template.Icon, saved) -- id 2
+		Private.Groups.SortedIds(saved.Groups) -- prime
+
+		assert.is_true(Private.Groups.Delete(1, saved))
+		assert.same({ id2 }, Private.Groups.SortedIds(saved.Groups))
+
+		local matches = Private.Groups.GetMatching({ targetClasses = { [TargetClass.Player] = true } }, saved.Groups)
+		assert.equals(1, #matches)
+		assert.equals(id2, matches[1].Id)
+	end)
+
+	it("GetMatching is stable (byte-identical) across cached calls", function()
+		local groups = makeGroups()
+		local info = { targetClasses = { [TargetClass.Player] = true, [TargetClass.PartyMember] = true } }
+		assert.same(
+			names(Private.Groups.GetMatching(info, groups)),
+			names(Private.Groups.GetMatching(info, groups))
+		)
+	end)
+end)

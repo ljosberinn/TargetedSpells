@@ -18,6 +18,47 @@ local addonName, Private = ...
 ---@class TargetedSpellsGroups
 Private.Groups = {}
 
+-- Ascending group-id order is needed on every cast (GetMatching) and by the
+-- Designer's tab strip, but the id set changes only on create / delete / import.
+-- Cache the sorted array per groups-map so the steady-state cast path does no
+-- sort or table allocation; rebuild only when the set changes. The cache is
+-- weak-keyed on the groups map, so a dropped map (e.g. a spec's throwaway table,
+-- or the pre-migration table replaced wholesale) GCs its entry away on its own.
+---@type table<table, integer[]>
+local sortedIdCache = setmetatable({}, { __mode = "k" })
+
+-- Ascending list of the ids present in `groups`. The returned array is shared and
+-- cached — callers must treat it as read-only and must not hold it across a
+-- create/delete/import (which invalidate it).
+---@param groups table
+---@return integer[]
+function Private.Groups.SortedIds(groups)
+	local cached = sortedIdCache[groups]
+
+	if cached then
+		return cached
+	end
+
+	local ids = {}
+	for id in pairs(groups) do
+		ids[#ids + 1] = id
+	end
+
+	table.sort(ids)
+
+	sortedIdCache[groups] = ids
+
+	return ids
+end
+
+-- Drops the cached order for a groups map. Must be called after any mutation that
+-- adds or removes an id (create / delete / in-place import); pure field edits
+-- (rename, layout changes) keep the id set and need no invalidation.
+---@param groups table
+function Private.Groups.InvalidateOrder(groups)
+	sortedIdCache[groups] = nil
+end
+
 -- Returns every enabled group whose Filter overlaps the cast's target classes,
 -- in ascending group-id order. One cast can feed several groups; each match is a
 -- separate frame downstream. No arbitration when filters overlap.
@@ -37,14 +78,9 @@ function Private.Groups.GetMatching(info, groups)
 		return matching
 	end
 
-	-- deterministic order so overlapping matches are stable across calls
-	local ids = {}
-	for id in pairs(groups) do
-		ids[#ids + 1] = id
-	end
-	table.sort(ids)
-
-	for _, id in ipairs(ids) do
+	-- deterministic order so overlapping matches are stable across calls (cached;
+	-- rebuilt only when the group set changes — see SortedIds)
+	for _, id in ipairs(Private.Groups.SortedIds(groups)) do
 		local group = groups[id]
 		if group and group.Enabled ~= false and group.Filter then
 			for targetClass, enabled in pairs(group.Filter) do
@@ -98,7 +134,6 @@ local function buildDefaultGroup(id, template, name)
 		Grow = Private.Enum.Grow.Start,
 		Direction = Private.Enum.Direction.Horizontal,
 		SortOrder = Private.Enum.SortOrder.Ascending,
-		MaxItems = 10,
 		LoadConditionContentType = {
 			[Private.Enum.ContentType.OpenWorld] = false,
 			[Private.Enum.ContentType.Delve] = true,
@@ -156,6 +191,7 @@ function Private.Groups.Create(template, saved)
 
 	local group = buildDefaultGroup(id, template, nextGroupName(saved))
 	saved.Groups[id] = group
+	Private.Groups.InvalidateOrder(saved.Groups)
 
 	return id, group
 end
@@ -175,6 +211,7 @@ function Private.Groups.Delete(id, saved)
 	end
 
 	saved.Groups[id] = nil
+	Private.Groups.InvalidateOrder(saved.Groups)
 	return true
 end
 

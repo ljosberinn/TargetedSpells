@@ -309,7 +309,6 @@ local function buildSelfGroup(selfSettings)
 		Grow = selfSettings.Grow,
 		Direction = selfSettings.Direction,
 		SortOrder = selfSettings.SortOrder,
-		MaxItems = 10,
 		LoadConditionContentType = copy(selfSettings.LoadConditionContentType),
 		LoadConditionRole = copy(selfSettings.LoadConditionRole),
 		GlowType = selfSettings.GlowType,
@@ -334,7 +333,6 @@ local function buildPartyGroup(partySettings)
 		-- v3 forced the party display to vertical; keep that as a plain setting
 		Direction = Enum.Direction.Vertical,
 		SortOrder = partySettings.SortOrder,
-		MaxItems = 10,
 		LoadConditionContentType = copy(partySettings.LoadConditionContentType),
 		LoadConditionRole = copy(partySettings.LoadConditionRole),
 		GlowType = partySettings.GlowType,
