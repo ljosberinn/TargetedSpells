@@ -30,7 +30,6 @@ function TargetedSpellsDriver:Init()
 	self.role = Private.Enum.Role.Damager
 	self.contentType = Private.Enum.ContentType.OpenWorld
 	self.OnCooldownDoneClosure = GenerateClosure(self.OnCooldownDone, self)
-	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingsChanged, self)
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.PROFILE_IMPORTED, self.OnProfileImported, self)
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.GROUP_CHANGED, self.OnGroupChanged, self)
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.GROUP_POSITION_CHANGED, self.OnGroupPositionChanged, self)
@@ -167,6 +166,12 @@ function TargetedSpellsDriver:AnyGroupIndicatesInterrupts()
 	return false
 end
 
+-- Ensures the driver frame exists and its event registration matches the current
+-- group state. Safe to call repeatedly: the core spellcast/nameplate events wire a
+-- single time (they never change while any display is active), while the enabled/
+-- disabled teardown and the conditional events (interruptibility colours, target
+-- marker) are reconciled on every call — so a group edit that toggles them takes
+-- effect live rather than at the next reload.
 function TargetedSpellsDriver:SetupFrame(isBoot)
 	if isBoot then
 		self.frame = CreateFrame("Frame", "TargetedSpellsDriverFrame", UIParent)
@@ -175,25 +180,17 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 		for _, group in pairs(TargetedSpellsSaved.Groups) do
 			self:PositionFrame(group)
 		end
-
-		Private.EventRegistry:RegisterCallback(
-			Private.Enum.Events.EDIT_MODE_SELF_POSITION_CHANGED,
-			self.OnFrameEvent,
-			self,
-			self.frame,
-			Private.Enum.Events.EDIT_MODE_SELF_POSITION_CHANGED
-		)
-
-		Private.EventRegistry:RegisterCallback(
-			Private.Enum.Events.EDIT_MODE_PARTY_POSITION_CHANGED,
-			self.OnFrameEvent,
-			self,
-			self.frame,
-			Private.Enum.Events.EDIT_MODE_PARTY_POSITION_CHANGED
-		)
 	end
 
-	if self:AnyGroupEnabled() and not self.frame:IsEventRegistered("UNIT_SPELLCAST_START") then
+	if not self:AnyGroupEnabled() then
+		-- no display active: stop listening entirely until a group is re-enabled
+		self.frame:UnregisterAllEvents()
+		self.frame:SetScript("OnEvent", nil)
+		return
+	end
+
+	-- core events are the same for any active display; register them once
+	if not self.frame:IsEventRegistered("UNIT_SPELLCAST_START") then
 		self.frame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 		self.frame:RegisterEvent("LOADING_SCREEN_DISABLED")
 		self.frame:RegisterEvent("UPDATE_INSTANCE_INFO")
@@ -212,16 +209,22 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 		self.frame:RegisterEvent("ENCOUNTER_START")
 		self.frame:RegisterEvent("ENCOUNTER_END")
 
-		if self:AnyGroupUsesInterruptibility() then
-			self.frame:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTIBLE")
-			self.frame:RegisterUnitEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE")
-		end
-
-		if self:AnyGroupShowsTargetMarker() then
-			self.frame:RegisterEvent("RAID_TARGET_UPDATE")
-		end
-
 		self.frame:SetScript("OnEvent", GenerateClosure(self.OnFrameEvent, self))
+	end
+
+	-- conditional events: a group edit may have toggled either since the last call
+	if self:AnyGroupUsesInterruptibility() then
+		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTIBLE")
+		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE")
+	else
+		self.frame:UnregisterEvent("UNIT_SPELLCAST_INTERRUPTIBLE")
+		self.frame:UnregisterEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE")
+	end
+
+	if self:AnyGroupShowsTargetMarker() then
+		self.frame:RegisterEvent("RAID_TARGET_UPDATE")
+	else
+		self.frame:UnregisterEvent("RAID_TARGET_UPDATE")
 	end
 end
 
@@ -684,16 +687,6 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		self.activeEncounterId = encounterId
 	elseif event == "ENCOUNTER_END" then
 		self.activeEncounterId = nil
-	elseif event == Private.Enum.Events.EDIT_MODE_SELF_POSITION_CHANGED then
-		local group = TargetedSpellsSaved.Groups[1]
-		if group ~= nil then
-			self:PositionFrame(group)
-		end
-	elseif event == Private.Enum.Events.EDIT_MODE_PARTY_POSITION_CHANGED then
-		local group = TargetedSpellsSaved.Groups[2]
-		if group ~= nil then
-			self:PositionFrame(group)
-		end
 	end
 end
 
@@ -770,57 +763,6 @@ function TargetedSpellsDriver:OnGroupPositionChanged(groupId)
 
 	if group ~= nil then
 		self:PositionFrame(group)
-	end
-end
-
-function TargetedSpellsDriver:OnSettingsChanged(key, value)
-	local Keys = Private.Settings.Keys
-
-	if key == Keys.Self.Enabled or key == Keys.Party.Enabled then
-		if not self:AnyGroupEnabled() then
-			self.frame:UnregisterAllEvents()
-			self.frame:SetScript("OnEvent", nil)
-		else
-			self:SetupFrame(false)
-		end
-	elseif
-		key == Keys.Self.Grow
-		or key == Keys.Self.Direction
-		or key == Keys.Self.Width
-		or key == Keys.Self.Height
-		or key == Keys.Self.Gap
-	then
-		local group = TargetedSpellsSaved.Groups[1]
-		if group ~= nil then
-			self:PositionFrame(group)
-		end
-	elseif
-		key == Keys.Party.Grow
-		or key == Keys.Party.Direction
-		or key == Keys.Party.Width
-		or key == Keys.Party.Height
-		or key == Keys.Party.Gap
-	then
-		local group = TargetedSpellsSaved.Groups[2]
-		if group ~= nil then
-			self:PositionFrame(group)
-		end
-	elseif key == Keys.Party.UseInterruptabilityColors then
-		if self:AnyGroupUsesInterruptibility() then
-			self.frame:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTIBLE")
-			self.frame:RegisterUnitEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE")
-		else
-			self.frame:UnregisterEvent("UNIT_SPELLCAST_INTERRUPTIBLE")
-			self.frame:UnregisterEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE")
-		end
-	elseif key == Keys.Party.FeatureFlags then
-		if value == Private.Enum.FeatureFlag.ShowTargetMarker then
-			if self:AnyGroupShowsTargetMarker() then
-				self.frame:RegisterEvent("RAID_TARGET_UPDATE")
-			else
-				self.frame:UnregisterEvent("RAID_TARGET_UPDATE")
-			end
-		end
 	end
 end
 

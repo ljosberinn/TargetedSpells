@@ -60,14 +60,9 @@ end
 TargetedSpellsMixin = {}
 
 function TargetedSpellsMixin:OnLoad()
-	Private.EventRegistry:RegisterCallback(Private.Enum.Events.SETTING_CHANGED, self.OnSettingChanged, self)
 	self.wasInterrupted = false
 	self.doNotHideBefore = nil
 	self.elapsed = 0
-end
-
-function TargetedSpellsMixin:OnSettingChanged()
-	-- Implement in your derived mixin.
 end
 
 function TargetedSpellsMixin:SetId(id)

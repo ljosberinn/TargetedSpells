@@ -191,6 +191,18 @@ describe("v3 -> v4 transform", function()
 		Private.Migration.Apply(saved)
 		assert.is_true(Private.Utils.DeepEqual(before, saved))
 	end)
+
+	it("a migrated Self/Party slot is freely deletable (only the last group is protected)", function()
+		local saved = migratedDefaults()
+
+		-- Deleting the Self slot (id 1) is allowed while the Party slot remains.
+		assert.is_true(Private.Groups.Delete(1, saved))
+		assert.is_nil(saved.Groups[1])
+		assert.is_not_nil(saved.Groups[2])
+
+		-- The one surviving group is now the last, so it cannot be deleted.
+		assert.is_false(Private.Groups.Delete(2, saved))
+	end)
 end)
 
 describe("Import accepts v3 and v4 profile strings", function()

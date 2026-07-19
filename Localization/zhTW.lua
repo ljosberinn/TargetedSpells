@@ -16,7 +16,7 @@ L.Functionality = {}
 L.Settings = {}
 
 L.Settings.EditModeReminder =
-	"建議使用編輯模式，它包含所有設定的即時預覽。\n這些設定僅在此處提供，以便在戰鬥中也能編輯。"
+	"所有設定均可透過編輯模式和 \"/targetedspells design\" 進行調整。"
 L.EditMode.TargetedSpellsSelfLabel = "目標法術 - 自身"
 L.EditMode.TargetedSpellsPartyLabel = "目標法術 - 小隊"
 

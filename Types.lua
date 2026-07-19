@@ -183,15 +183,11 @@
 
 ---@class TargetedSpellsSettings
 ---@field Keys table<'Self' | 'Party', table<string, string>>
----@field GetSettingsDisplayOrder fun(kind: FrameKind): string[]
 ---@field GetDefaultEditModeFramePosition fun(kind: FrameKind): FramePosition
----@field GetSliderSettingsForOption fun(key: string): SliderSettings
 ---@field GetSelfDefaultSettings fun(): SavedVariablesSettingsSelf
 ---@field GetPartyDefaultSettings fun(): SavedVariablesSettingsParty
----@field GetContentTypesForKind fun(kind: FrameKind): table<string, ContentType>
 ---@field GetGlowTypesForKind fun(kind: FrameKind): GlowType[]
 ---@field GetFontOptions fun(): FontInfo
----@field GetFeatureFlagsForKind fun(kind: FrameKind): FeatureFlag[]
 
 ---@class SavedVariables
 ---@field Settings SavedVariablesSettings
@@ -338,7 +334,6 @@
 ---@field SetShowDuration fun(self: TargetedSpellsIconMixin, showDuration: boolean)
 ---@field ApplyBorderStyle fun(self: TargetedSpellsIconMixin, styleName: string)
 ---@field OnSizeChanged fun(self: TargetedSpellsIconMixin)
----@field OnSettingChanged fun(self: TargetedSpellsIconMixin, key: string, flagIdOrValue: number|string|boolean|table, newBool: boolean?)
 ---@field PostCreate fun(self: TargetedSpellsIconMixin, info: SpellCastInfo?, OnCooldownDoneCallback: fun(info: SpellCastInfo))
 ---@field Reset fun(self: TargetedSpellsIconMixin)
 ---@field SetFont fun(self: TargetedSpellsIconMixin)
@@ -440,7 +435,6 @@
 ---@field ReleaseFrameForUnit fun(self: TargetedSpellsDriver, unit: string, removeUnit: boolean, id?: number): boolean
 ---@field UnitIsIrrelevant fun(self: TargetedSpellsDriver, unit: string, skipTargetCheck?: boolean): boolean
 ---@field OnFrameEvent fun(self: TargetedSpellsDriver, listenerFrame: Frame, event: WowEvent, ...)
----@field OnSettingsChanged fun(self: TargetedSpellsDriver, key: string, value: number|string|boolean|table)
 ---@field OnProfileImported fun(self: TargetedSpellsDriver)
 ---@field MaybeMarkAsInterruptedAndDelay fun(self: TargetedSpellsDriver, unit: string, id: number|string|nil, interruptedBy: string?)
 ---@field CleanupDanglingFrames fun(self: TargetedSpellsDriver)

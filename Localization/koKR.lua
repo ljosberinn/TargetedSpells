@@ -16,7 +16,7 @@ L.Functionality = {}
 L.Settings = {}
 
 L.Settings.EditModeReminder =
-	"편집 모드를 사용하는 것을 권장합니다. 모든 설정의 실시간 미리보기가 포함되어 있습니다.\n여기 있는 설정은 전투 중에도 편집할 수 있도록 제공됩니다."
+	"모든 설정은 편집 모드와 \"/targetedspells design\"에서 조정할 수 있습니다."
 L.EditMode.TargetedSpellsSelfLabel = "대상 지정 주문 - 자신"
 L.EditMode.TargetedSpellsPartyLabel = "대상 지정 주문 - 파티"
 

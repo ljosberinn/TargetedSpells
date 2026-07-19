@@ -16,7 +16,7 @@ L.Functionality = {}
 L.Settings = {}
 
 L.Settings.EditModeReminder =
-	"Der Bearbeitungsmodus beinhaltet eine Echtzeitvorschau aller Einstellungen.\nDiese Einstellungen sind hier nur damit man sie auch im Kampf bearbeiten kann."
+	"Alle Einstellungen sind über den Bearbeitungsmodus und \"/targetedspells design\" erreichbar."
 L.EditMode.TargetedSpellsSelfLabel = "Targeted Spells - Spieler"
 L.EditMode.TargetedSpellsPartyLabel = "Targeted Spells - Gruppe"
 

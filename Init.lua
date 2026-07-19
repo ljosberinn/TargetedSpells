@@ -93,19 +93,14 @@ EventUtil.ContinueOnAddOnLoaded(addonName, function()
 	-- Phase-3 go-live flip: the Phase-2 gate was "not wired into ADDON_LOADED".
 	Private.Migration.Apply(TargetedSpellsSaved)
 
-	-- denormalise the group id onto each group, then replace Settings.Self/.Party
-	-- with transitional proxy views over the groups (Groups[1]=Self, Groups[2]=Party).
-	-- Edit mode and the settings UI read these; the group model stays authoritative.
+	-- The group model is authoritative post-migration; the v3 Settings tree is gone
+	-- (migrationSteps[3] nils it out). Denormalise the group id onto each group so
+	-- frames can find their container, and backfill any element fields added to the
+	-- schema after a group was created.
 	for id, group in pairs(TargetedSpellsSaved.Groups) do
 		group.Id = id
-		-- backfill element fields added to the schema after this group was created
-		-- (dev iteration / future schema additions); the once-only migration can't
 		Private.Design.BackfillElements(group)
 	end
-	TargetedSpellsSaved.Settings = {
-		Self = Private.Settings.CreateGroupView(TargetedSpellsSaved.Groups[1]),
-		Party = Private.Settings.CreateGroupView(TargetedSpellsSaved.Groups[2]),
-	}
 
 	for i = 1, #Private.LoginFnQueue do
 		local fn = Private.LoginFnQueue[i]

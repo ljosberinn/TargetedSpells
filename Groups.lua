@@ -161,7 +161,9 @@ function Private.Groups.Create(template, saved)
 end
 
 -- Deletes a group by id. Refuses to remove the last remaining group (there must
--- always be at least one). Returns whether it deleted anything.
+-- always be at least one) — any other group, including the two migrated Self/Party
+-- slots, is freely deletable. The transitional v3 surfaces that read Groups[1]/[2]
+-- tolerate a missing slot rather than pinning them. Returns whether it deleted anything.
 ---@param id integer
 ---@param saved table?
 ---@return boolean

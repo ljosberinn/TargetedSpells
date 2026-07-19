@@ -1,6 +1,5 @@
 ---@type string, TargetedSpells
 local _, Private = ...
-local LibEditMode = LibStub("LibEditMode")
 
 ---@class TargetedSpellsIconMixin : TargetedSpellsMixin
 TargetedSpellsIconMixin = CreateFromMixins(TargetedSpellsMixin)
@@ -140,48 +139,6 @@ function TargetedSpellsIconMixin:OnSizeChanged()
 			fifteenPercent,
 			-fifteenPercent
 		)
-	end
-end
-
-function TargetedSpellsIconMixin:OnSettingChanged(key, flagIdOrValue, newBool)
-	local iconElement = self:GetElement(Private.Enum.Element.Icon)
-	-- an unassigned/pooled frame has no group yet; nothing to restyle
-	if iconElement == nil then
-		return
-	end
-
-	if key == Private.Settings.Keys.Self.Width then
-		PixelUtil.SetSize(self, flagIdOrValue, iconElement.height)
-	elseif key == Private.Settings.Keys.Self.Height then
-		PixelUtil.SetSize(self, iconElement.width, flagIdOrValue)
-	elseif
-		key == Private.Settings.Keys.Self.FontSize
-		or key == Private.Settings.Keys.Self.Font
-		or key == Private.Settings.Keys.Self.FontFlags
-	then
-		self:SetFont()
-	elseif key == Private.Settings.Keys.Self.IconZoom then
-		self:OnSizeChanged()
-	elseif key == Private.Settings.Keys.Self.GlowType then
-		self:HideGlow()
-
-		local group = self:GetGroup()
-		if group ~= nil and group.GlowImportant then
-			self:ShowGlow(self:IsSpellImportant(LibEditMode:IsInEditMode() and Private.Utils.RollDice()))
-		end
-	elseif key == Private.Settings.Keys.Self.BorderStyle then
-		local border = self:GetElement(Private.Enum.Element.Border)
-		self:ApplyBorderStyle(border ~= nil and border.active ~= false and border.borderTexture or "None")
-	elseif key == Private.Settings.Keys.Self.FeatureFlags then
-		if flagIdOrValue == Private.Enum.FeatureFlag.ShowDuration then
-			self:SetShowDuration(newBool)
-		elseif flagIdOrValue == Private.Enum.FeatureFlag.ShowSwipe then
-			self.Cooldown:SetDrawSwipe(newBool)
-		elseif flagIdOrValue == Private.Enum.FeatureFlag.GlowImportant then
-			self:ShowGlow(self:IsSpellImportant(LibEditMode:IsInEditMode() and Private.Utils.RollDice()))
-		elseif flagIdOrValue == Private.Enum.FeatureFlag.OnlyImportant then
-			self:SetAlphaFromBoolean(not newBool or self:IsSpellImportant())
-		end
 	end
 end
 

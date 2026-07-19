@@ -16,7 +16,7 @@ L.Functionality = {}
 L.Settings = {}
 
 L.Settings.EditModeReminder =
-	"Рекомендуем использовать Режим редактирования — он включает предварительный просмотр всех настроек в реальном времени.\nЗдесь настройки представлены только для возможности изменения в бою."
+	"Все настройки доступны через Режим редактирования и \"/targetedspells design\"."
 L.EditMode.TargetedSpellsSelfLabel = "Targeted Spells - Свой"
 L.EditMode.TargetedSpellsPartyLabel = "Targeted Spells - Группа"
 

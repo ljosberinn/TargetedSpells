@@ -1,6 +1,5 @@
 ---@type string, TargetedSpells
 local addonName, Private = ...
-local LibEditMode = LibStub("LibEditMode")
 local LibSharedMedia = LibStub("LibSharedMedia-3.0")
 
 local Element = Private.Enum.Element
@@ -167,36 +166,6 @@ function TargetedSpellsBarMixin:ApplyLayout()
 		-- the region's `active` toggle shows/hides its number too (no separate toggle)
 		self.DurationCooldown:SetHideCountdownNumbers(duration.active == false)
 		Private.Utils.ApplyFractionThreshold(self.countdownFormatter, duration.fractionThreshold)
-	end
-end
-
-function TargetedSpellsBarMixin:OnSettingChanged(key, flagIdOrValue, newBool)
-	if self:GetElements() == nil then
-		return
-	end
-
-	local Keys = Private.Settings.Keys.Party
-
-	if key == Keys.Width or key == Keys.Height then
-		self:ApplyLayout()
-	elseif key == Keys.FeatureFlags then
-		-- Show* toggles all reduce to element.active / layout in v4; reapply
-		self:ApplyLayout()
-		self:SetSpellId(self:GetSpellId())
-		self:SetTargetMarker()
-	elseif key == Keys.Font or key == Keys.FontSize or key == Keys.FontFlags then
-		self:SetFont()
-	elseif key == Keys.ForegroundBarTexture then
-		self:SetForegroundBarTexture()
-	elseif key == Keys.BackgroundBarTexture then
-		self:SetBackgroundBarTexture()
-	elseif key == Keys.GlowType then
-		self:HideGlow()
-
-		local group = self:GetGroup()
-		if group ~= nil and group.GlowImportant then
-			self:ShowGlow(self:IsSpellImportant(LibEditMode:IsInEditMode() and Private.Utils.RollDice()))
-		end
 	end
 end
 

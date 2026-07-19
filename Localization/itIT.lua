@@ -16,7 +16,7 @@ L.Functionality = {}
 L.Settings = {}
 
 L.Settings.EditModeReminder =
-	"Considera di usare la Modalità Modifica, include un'anteprima in diretta di tutte le impostazioni.\nQueste sono presenti solo per consentire la modifica in combattimento."
+	"Tutte le impostazioni sono disponibili tramite la Modalità Modifica e \"/targetedspells design\"."
 L.EditMode.TargetedSpellsSelfLabel = "Targeted Spells - Sé"
 L.EditMode.TargetedSpellsPartyLabel = "Targeted Spells - Gruppo"
 
