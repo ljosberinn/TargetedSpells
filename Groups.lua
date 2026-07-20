@@ -132,7 +132,9 @@ local function buildDefaultGroup(id, template, name)
 		Position = { point = "CENTER", x = 0, y = 0 },
 		Gap = 2,
 		Grow = Private.Enum.Grow.Start,
-		Direction = Private.Enum.Direction.Horizontal,
+		-- bars read best stacked vertically (one cast bar per row); icons flow in a row
+		Direction = template == Private.Enum.Template.Bar and Private.Enum.Direction.Vertical
+			or Private.Enum.Direction.Horizontal,
 		SortOrder = Private.Enum.SortOrder.Ascending,
 		LoadConditionContentType = {
 			[Private.Enum.ContentType.OpenWorld] = false,
@@ -194,6 +196,22 @@ function Private.Groups.Create(template, saved)
 	Private.Groups.InvalidateOrder(saved.Groups)
 
 	return id, group
+end
+
+-- The starter groups seeded on a brand-new install (no SavedVariables yet). Built from
+-- the live v4 element defaults (Design.GetDefault, via buildDefaultGroup) so a fresh
+-- bar/icon matches exactly what "Reset Element" produces — unlike the v3→v4 migration,
+-- which reconstructs geometry from legacy settings. Ids 1/2 mirror the migration layout
+-- (Self icon, then bar), each pre-filtered to its role.
+---@return table<integer, TargetedSpellsGroup>
+function Private.Groups.CreateStarterGroups()
+	local selfGroup = buildDefaultGroup(1, Private.Enum.Template.Icon, "Self - Icon")
+	selfGroup.Filter = { [Private.Enum.TargetClass.Player] = true }
+
+	local barGroup = buildDefaultGroup(2, Private.Enum.Template.Bar, "Untargeted AoE - Bar")
+	barGroup.Filter = { [Private.Enum.TargetClass.Nobody] = true }
+
+	return { [1] = selfGroup, [2] = barGroup }
 end
 
 -- Deletes a group by id. Refuses to remove the last remaining group (there must

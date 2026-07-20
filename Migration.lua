@@ -399,6 +399,22 @@ function Private.Migration.Apply(saved)
 	return saved
 end
 
+-- Fresh-install seed (no prior SavedVariables). A brand-new config gets its groups
+-- straight from the v4 schema defaults via Groups.CreateStarterGroups — NOT the v3
+-- reconstruction that Apply uses — and is stamped at the current schema version so a
+-- following Migration.Apply is a no-op. Schema version + the TTS shape live here beside
+-- the migration steps; TTS is seeded from the Self setting defaults.
+---@param saved table
+---@return table saved
+function Private.Migration.SeedFreshInstall(saved)
+	saved.Groups = Private.Groups.CreateStarterGroups()
+	saved.NextGroupId = 3
+	saved.TextToSpeech = buildTextToSpeech(Private.Settings.GetSelfDefaultSettings())
+	saved.SchemaVersion = CURRENT_SCHEMA_VERSION
+
+	return saved
+end
+
 -- Gated test-only internals (never ships behaviour): the pure reconstruction and
 -- filter derivation the snapshot / transform specs pin directly.
 Private.__test = Private.__test or {}

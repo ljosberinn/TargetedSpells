@@ -241,3 +241,50 @@ describe("Import accepts v3 and v4 profile strings", function()
 		assert.equals(2, b.savedVars().Groups[2].Gap)
 	end)
 end)
+
+describe("fresh-install seed", function()
+	local function seeded()
+		local saved = {}
+		Private.Migration.SeedFreshInstall(saved)
+		return saved
+	end
+
+	it("stamps the current schema, two groups, and TextToSpeech", function()
+		local saved = seeded()
+		assert.equals(4, saved.SchemaVersion)
+		assert.equals(3, saved.NextGroupId)
+		assert.is_table(saved.TextToSpeech)
+		assert.equals(Template.Icon, saved.Groups[1].Template)
+		assert.equals(Template.Bar, saved.Groups[2].Template)
+	end)
+
+	it("names and filters the starter groups as designed", function()
+		local saved = seeded()
+		assert.equals("Self - Icon", saved.Groups[1].Name)
+		assert.same({ [TargetClass.Player] = true }, saved.Groups[1].Filter)
+		assert.equals("Untargeted AoE - Bar", saved.Groups[2].Name)
+		assert.same({ [TargetClass.Nobody] = true }, saved.Groups[2].Filter)
+	end)
+
+	it("seeds bar elements from the v4 schema defaults, not the v3 reconstruction", function()
+		-- the reported bug: a freshly seeded bar must equal what "Reset Element" gives
+		-- (Design.GetDefault), so the SpellName offset matches the schema, not x≈70.
+		local barElements = seeded().Groups[2].Elements
+		local defaults = Private.Design.GetDefault(Template.Bar)
+		assert.equals(defaults[Element.SpellName].x, barElements[Element.SpellName].x)
+		assert.equals(defaults[Element.TargetName].x, barElements[Element.TargetName].x)
+		assert.equals(defaults[Element.SpellName].maxWidth, barElements[Element.SpellName].maxWidth)
+	end)
+
+	it("bars default to vertical grow direction", function()
+		assert.equals(Enum.Direction.Vertical, seeded().Groups[2].Direction)
+	end)
+
+	it("leaves Migration.Apply a no-op (already at the current version)", function()
+		local saved = seeded()
+		local spellNameX = saved.Groups[2].Elements[Element.SpellName].x
+		Private.Migration.Apply(saved)
+		assert.equals(3, saved.NextGroupId) -- unchanged: no migration step ran
+		assert.equals(spellNameX, saved.Groups[2].Elements[Element.SpellName].x)
+	end)
+end)

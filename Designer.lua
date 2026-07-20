@@ -398,14 +398,41 @@ end
 -- Overlay / Background / Cooldown) get no marker — they are reachable from the
 -- panel once step 7's element list lands.
 
--- The marker rectangle for an element, or nil for a footprint-less element. Computed
--- purely from the stored record — never by querying the demo frame's geometry, whose
--- sizes are secret-tainted by the cast path and error on arithmetic. Boxed elements
--- use their stored size/offset; text elements are anchored CENTER→CENTER at (x,y), so
--- the marker centres there with a width of maxWidth (when capped, matching the
--- truncation box) or a nominal width otherwise, scaled to the font for height.
+-- The marker rectangle (centre x/y, width, height in preview-centre coords) for an
+-- element, or nil for a footprint-less element / an inactive gutter slot. Computed purely
+-- from the stored record (never by querying the demo frame — its sizes are secret-tainted
+-- by the cast path and error on arithmetic).
+--
+-- The bar template reflows, so its geometry comes from the shared Private.Utils.
+-- ComputeBarLayout (passed in as `barLayout`) rather than the raw record, keeping the
+-- markers on top of what the preview actually draws. The icon template has no reflow and
+-- uses the record directly: boxes use their stored size/offset; text is edge-anchored by
+-- justifyH, so the CENTER-placed marker is shifted half its nominal width to put the
+-- justify edge on x.
 ---@param record table<string, any>
-function DesignerMixin:ElementMarkerRect(record)
+---@param tag Element?
+---@param barLayout table?
+function DesignerMixin:ElementMarkerRect(record, tag, barLayout)
+	if barLayout ~= nil then
+		local geom = barLayout[tag]
+		if geom == nil then
+			return nil -- footprint-less element, or an inactive gutter slot (no marker)
+		end
+
+		if geom.text then
+			local width = (geom.maxWidth ~= nil and geom.maxWidth > 0) and geom.maxWidth or 120
+			local x = geom.edgeX
+			if geom.justifyH == "LEFT" then
+				x = x + width / 2
+			elseif geom.justifyH == "RIGHT" then
+				x = x - width / 2
+			end
+			return x, geom.centerY, width, (geom.fontSize or record.fontSize or 0) * 1.8
+		end
+
+		return geom.centerX, geom.centerY, geom.width, geom.height
+	end
+
 	local x = record.x or 0
 	local y = record.y or 0
 
@@ -414,11 +441,30 @@ function DesignerMixin:ElementMarkerRect(record)
 	end
 
 	if record.fontSize ~= nil then
-		local width = (record.maxWidth ~= nil and record.maxWidth > 0) and record.maxWidth or 120
+		local capped = record.maxWidth ~= nil and record.maxWidth > 0
+		local width = capped and record.maxWidth or 120
+
+		local justifyH = record.justifyH or "CENTER"
+		if justifyH == "LEFT" then
+			x = x + width / 2
+		elseif justifyH == "RIGHT" then
+			x = x - width / 2
+		end
+
 		return x, y, width, record.fontSize * 1.8
 	end
 
 	return nil
+end
+
+-- The reflow layout for the current scratch bar, or nil for the icon template (which does
+-- not reflow). Markers derive their positions from this so they track ComputeBarLayout.
+function DesignerMixin:ScratchBarLayout()
+	if self.scratchTemplate ~= Private.Enum.Template.Bar or self.scratchElements == nil then
+		return nil
+	end
+
+	return Private.Utils.ComputeBarLayout(self.scratchElements)
 end
 
 -- Lazily builds a marker's visuals on first acquire: a mouseover fill (auto-shown
@@ -471,12 +517,14 @@ function DesignerMixin:BuildMarkers()
 		return
 	end
 
+	local barLayout = self:ScratchBarLayout()
+
 	for elementTag in pairs(Private.Design.GetSchema(self.scratchTemplate)) do
 		local record = self.scratchElements[elementTag]
 		local x, y, width, height = nil, nil, nil, nil
 
 		if record ~= nil then
-			x, y, width, height = self:ElementMarkerRect(record)
+			x, y, width, height = self:ElementMarkerRect(record, elementTag, barLayout)
 		end
 
 		if width ~= nil then
@@ -678,7 +726,15 @@ function DesignerMixin:OnWidgetValueChanged(setting, value)
 
 	record[setting] = value
 	self:ApplyScratchToDemo()
-	self:UpdateMarkerRects()
+
+	-- toggling `active` changes the bar's reflow gutter set, which adds/removes a marker
+	-- (and shifts the others) — a full rebuild; any other edit just repositions.
+	if setting == "active" and self.scratchTemplate == Private.Enum.Template.Bar then
+		self:BuildMarkers()
+	else
+		self:UpdateMarkerRects()
+	end
+
 	self:MarkDirty()
 end
 
@@ -740,11 +796,12 @@ function DesignerMixin:BuildSlider(record, yOffset)
 
 	slider:Init(self:SelectedScratchRecord()[record.setting] or record.default, record.min, record.max, steps, formatters)
 
-	-- Init installs its own OnValueChanged on the inner slider; override it so edits
-	-- flow to the scratch record (replicating the visual refresh Init did).
+	-- Init installs its own OnValueChanged on the inner slider (it calls FormatValue then
+	-- fires Event.OnValueChanged); override it so edits also flow to the scratch record.
+	-- We replicate FormatValue here — that is the entirety of Init's visual refresh; there
+	-- is no stepper-state hook to replay (MinimalSliderWithSteppersMixin has none).
 	slider.Slider:SetScript("OnValueChanged", function(_, value)
 		slider:FormatValue(value)
-		slider:UpdateStepperStates()
 		self:OnWidgetValueChanged(record.setting, math.floor(value / record.step + 0.5) * record.step)
 	end)
 
@@ -1150,16 +1207,22 @@ end
 -- Repositions/resizes existing selection markers from the scratch layout (cheaper
 -- than a full BuildMarkers rebuild for a value edit).
 function DesignerMixin:UpdateMarkerRects()
+	local barLayout = self:ScratchBarLayout()
+
 	for elementTag, marker in pairs(self.markers) do
 		local record = self.scratchElements[elementTag]
 
 		if record ~= nil then
-			local x, y, width, height = self:ElementMarkerRect(record)
+			local x, y, width, height = self:ElementMarkerRect(record, elementTag, barLayout)
 
 			if width ~= nil then
+				marker:Show()
 				PixelUtil.SetSize(marker, width, height)
 				marker:ClearAllPoints()
 				PixelUtil.SetPoint(marker, "CENTER", self.Preview, "CENTER", x, y)
+			else
+				-- lost its slot (a gutter element toggled off) → no marker this reflow
+				marker:Hide()
 			end
 		end
 	end

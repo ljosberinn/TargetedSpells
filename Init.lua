@@ -28,9 +28,16 @@ EventUtil.ContinueOnAddOnLoaded(addonName, function()
 		C_CVar.SetCVar("nameplateShowOffscreen", 1)
 	end
 
-	-- Bring a pre-v4 (or fresh) config up to the complete v3 shape first, so the
-	-- v4 migration has full data to convert. A config already at SchemaVersion 4
-	-- skips this entirely (its Settings tree is gone).
+	-- A brand-new install skips the v3 seed + migration entirely: it seeds groups from
+	-- the current v4 schema defaults and stamps SchemaVersion, so the block below and
+	-- Migration.Apply both no-op. (Only a real pre-v4 config takes the migration path.)
+	if isFirstRun then
+		Private.Migration.SeedFreshInstall(TargetedSpellsSaved)
+	end
+
+	-- Bring a pre-v4 config up to the complete v3 shape first, so the v4 migration has
+	-- full data to convert. A config already at SchemaVersion 4 (including a fresh install
+	-- just seeded above) skips this entirely (its Settings tree is gone).
 	if TargetedSpellsSaved.SchemaVersion == nil then
 		---@class TargetedSpellsSettings
 		TargetedSpellsSaved.Settings = TargetedSpellsSaved.Settings or {}

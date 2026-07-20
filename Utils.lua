@@ -470,8 +470,17 @@ function Private.Utils.ComputeElementExtent(elements)
 				-- non-text box (includes the core element)
 				include(centerX, centerY, values.width, values.height)
 			elseif values.maxWidth and values.maxWidth > 0 then
-				-- capped text: width is bounded by maxWidth, height ≈ its font size
-				include(centerX, centerY, values.maxWidth, values.fontSize or 0)
+				-- capped text: width is bounded by maxWidth, height ≈ its font size. The
+				-- renderer edge-anchors by justifyH (x pins the LEFT/RIGHT/CENTER edge), so
+				-- shift to the box centre before unioning. Nil justifyH → CENTER (no shift).
+				local justifyH = values.justifyH or "CENTER"
+				local boxCenterX = centerX
+				if justifyH == "LEFT" then
+					boxCenterX = centerX + values.maxWidth / 2
+				elseif justifyH == "RIGHT" then
+					boxCenterX = centerX - values.maxWidth / 2
+				end
+				include(boxCenterX, centerY, values.maxWidth, values.fontSize or 0)
 			end
 		end
 	end
@@ -486,6 +495,120 @@ function Private.Utils.ComputeElementExtent(elements)
 		offsetX = (minX + maxX) / 2,
 		offsetY = (minY + maxY) / 2,
 	}
+end
+
+-- Bar reflow layout. TargetMarker + Icon form a left "gutter": the *active* ones pack
+-- against the frame's left edge (TargetMarker first, then Icon), and the ProgressBar fills
+-- the remaining width to the right. So the bar's right edge is fixed at the frame's right
+-- edge; its left edge and width reflow as the gutter grows/shrinks. Everything else hangs
+-- off the bar — text pinned by its justifyH edge, Duration/InterruptShield off the (fixed)
+-- right edge. `x`/`y` on those elements are insets from their anchor, not absolute offsets.
+--
+-- Pure: geometry only, in frame-CENTRE coordinates, shared by the renderer and the
+-- designer markers so both agree. Returns a table keyed by Element, plus string keys
+-- `gutterWidth` and `barWidth`:
+--   box elements → { centerX, centerY, width, height }
+--   text elements → { text = true, justifyH, edgeX, centerY, maxWidth, fontSize }
+--                    (edgeX = frame-centre X of the justifyH-pinned edge; width auto-sizes)
+local BAR_GUTTER_ORDER = { Private.Enum.Element.TargetMarker, Private.Enum.Element.Icon }
+local BAR_RIGHT_BOXES = { Private.Enum.Element.DurationCooldown, Private.Enum.Element.InterruptShield }
+local BAR_TEXTS = { Private.Enum.Element.SpellName, Private.Enum.Element.TargetName, Private.Enum.Element.InterruptSource }
+
+---@param elements table<Element, table<string, any>>
+---@return table<any, any> layout keyed by Element plus `gutterWidth`/`barWidth`
+function Private.Utils.ComputeBarLayout(elements)
+	local core = elements[Private.Enum.Element.ProgressBar]
+	local total = (core and core.width) or 0
+	local height = (core and core.height) or 0
+	local halfTotal = total / 2
+
+	local gutterWidth = 0
+	for _, tag in ipairs(BAR_GUTTER_ORDER) do
+		local element = elements[tag]
+		if element ~= nil and element.active ~= false then
+			gutterWidth = gutterWidth + (element.width or 0)
+		end
+	end
+
+	local barLeft = -halfTotal + gutterWidth
+	local barRight = halfTotal
+	local barCenter = (barLeft + barRight) / 2
+
+	local layout = { gutterWidth = gutterWidth, barWidth = total - gutterWidth }
+
+	layout[Private.Enum.Element.ProgressBar] =
+		{ centerX = barCenter, centerY = 0, width = total - gutterWidth, height = height }
+
+	-- gutter elements packed from the frame's left edge; only active ones occupy a slot
+	local cursorLeft = -halfTotal
+	for _, tag in ipairs(BAR_GUTTER_ORDER) do
+		local element = elements[tag]
+		if element ~= nil and element.active ~= false then
+			local width = element.width or 0
+			layout[tag] = {
+				centerX = cursorLeft + width / 2 + (element.x or 0),
+				centerY = element.y or 0,
+				width = width,
+				height = element.height or 0,
+			}
+			cursorLeft = cursorLeft + width
+		end
+	end
+
+	-- right-hugging boxes: their right edge sits at the (fixed) bar right + x inset
+	for _, tag in ipairs(BAR_RIGHT_BOXES) do
+		local element = elements[tag]
+		if element ~= nil then
+			local width = element.width or 0
+			layout[tag] = {
+				centerX = barRight + (element.x or 0) - width / 2,
+				centerY = element.y or 0,
+				width = width,
+				height = element.height or 0,
+			}
+		end
+	end
+
+	-- text: pinned by justifyH to the matching bar edge, x an inset from that edge
+	for _, tag in ipairs(BAR_TEXTS) do
+		local element = elements[tag]
+		if element ~= nil then
+			local justifyH = element.justifyH or "CENTER"
+			local edgeX
+			if justifyH == "LEFT" then
+				edgeX = barLeft + (element.x or 0)
+			elseif justifyH == "RIGHT" then
+				edgeX = barRight + (element.x or 0)
+			else
+				edgeX = barCenter + (element.x or 0)
+			end
+
+			layout[tag] = {
+				text = true,
+				justifyH = justifyH,
+				edgeX = edgeX,
+				centerY = element.y or 0,
+				maxWidth = element.maxWidth,
+				fontSize = element.fontSize,
+			}
+		end
+	end
+
+	return layout
+end
+
+-- Visual extent of a group's layout, for the edit-mode placeholder outline. A bar's
+-- gutter + bar fill the full frame, so its extent is simply the core box; an icon group
+-- has no ProgressBar and falls back to the free-positioned union.
+---@param elements table<Element, table<string, any>>
+---@return { width: number, height: number, offsetX: number, offsetY: number }
+function Private.Utils.ComputeGroupExtent(elements)
+	local core = elements[Private.Enum.Element.ProgressBar]
+	if core ~= nil then
+		return { width = core.width or 0, height = core.height or 0, offsetX = 0, offsetY = 0 }
+	end
+
+	return Private.Utils.ComputeElementExtent(elements)
 end
 
 function Private.Utils.ShowMigrationPopup()

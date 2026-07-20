@@ -10,6 +10,7 @@
 ---@field Utils TargetedSpellsUtils
 ---@field Design TargetedSpellsDesign
 ---@field Groups TargetedSpellsGroups
+---@field GroupController TargetedSpellsGroupController
 ---@field Migration TargetedSpellsMigration
 ---@field EditMode TargetedSpellsEditModeManager
 ---@field SlashCommands TargetedSpellsSlashCommands
@@ -37,6 +38,8 @@
 ---@field DeepCopy fun(source: any): any
 ---@field CollectLayoutingArguments fun(direction: Direction, grow: Grow, width: number, height: number, gap: number, out?: CollectLayoutingArguments): CollectLayoutingArguments
 ---@field ComputeElementExtent fun(elements: table<Element, table<string, any>>): { width: number, height: number, offsetX: number, offsetY: number }
+---@field ComputeGroupExtent fun(elements: table<Element, table<string, any>>): { width: number, height: number, offsetX: number, offsetY: number }
+---@field ComputeBarLayout fun(elements: table<Element, table<string, any>>): table<any, any>
 ---@field AdjustLayout fun(frames: TargetedSpellsIconMixin[], geo: CollectLayoutingArguments, barParent: Frame, firstAnchorPoint: FramePoint, firstOffsetX: number, firstOffsetY: number, isEditMode: boolean)
 ---@field SortFrames fun(frames: TargetedSpellsIconMixin[], sortOrder: SortOrder)
 ---@field RollDice fun(): boolean
@@ -177,6 +180,7 @@
 ---@field isChannel boolean
 ---@field isRetarget boolean?
 ---@field targetClasses table<TargetClass, boolean>?
+---@field dueAt number?
 
 ---@class FontInfo
 ---@field fonts table<string, string>
@@ -408,23 +412,39 @@
 ---@field OnImportConfirmation fun(self: TargetedSpellsEditModeMixin, encodedString: string)
 ---@field IsPastLoadingScreen fun(self: TargetedSpellsEditModeMixin): boolean
 
+---@class TargetedSpellsGroupController
+---@field group TargetedSpellsGroup
+---@field container Frame?
+---@field pool FramePool<TargetedSpellsIconMixin|TargetedSpellsBarMixin>
+---@field coreElement Element
+---@field frames (TargetedSpellsIconMixin|TargetedSpellsBarMixin)[]
+---@field layoutScratch CollectLayoutingArguments
+---@field New fun(group: TargetedSpellsGroup): TargetedSpellsGroupController
+---@field GetContainer fun(self: TargetedSpellsGroupController): Frame
+---@field Position fun(self: TargetedSpellsGroupController)
+---@field Acquire fun(self: TargetedSpellsGroupController, info: SpellCastInfo, onCooldownClosure: fun(info: SpellCastInfo)): TargetedSpellsIconMixin|TargetedSpellsBarMixin
+---@field Release fun(self: TargetedSpellsGroupController, frame: TargetedSpellsIconMixin|TargetedSpellsBarMixin)
+---@field Relayout fun(self: TargetedSpellsGroupController)
+---@field Reconfigure fun(self: TargetedSpellsGroupController, group: TargetedSpellsGroup)
+
 ---@class TargetedSpellsDriver
 ---@field private frame Frame
 ---@field private role Role
 ---@field private contentType ContentType
 ---@field private delay number
+---@field private pendingCasts table<integer, SpellCastInfo>
+---@field private pendingHead integer
+---@field private pendingTail integer
+---@field private drainScheduled boolean
+---@field private DrainPendingCastsClosure fun()
+---@field private DrainPendingCasts fun(self: TargetedSpellsDriver)
 ---@field private OnCooldownDoneClosure fun(info: SpellCastInfo)
 ---@field private ttsAnnouncementCache table<string, number>
 ---@field private activeEncounterId number?
 ---@field frames table<string, (TargetedSpellsIconMixin|TargetedSpellsBarMixin)[]>
----@field repositionByGroup table<integer, { group: TargetedSpellsGroup?, frames: table }>
----@field layoutScratch CollectLayoutingArguments
----@field private containers table<integer, Frame>
+---@field controllers table<integer, TargetedSpellsGroupController>
 ---@field OnGroupPositionChanged fun(self: TargetedSpellsDriver, groupId: integer)
----@field PoolForGroup fun(self: TargetedSpellsDriver, group: TargetedSpellsGroup): FramePool<TargetedSpellsIconMixin|TargetedSpellsBarMixin>
----@field GroupCoreElement fun(self: TargetedSpellsDriver, group: TargetedSpellsGroup): Element
----@field GetContainer fun(self: TargetedSpellsDriver, groupId: integer): Frame
----@field PositionFrame fun(self: TargetedSpellsDriver, group: TargetedSpellsGroup)
+---@field GetController fun(self: TargetedSpellsDriver, group: TargetedSpellsGroup): TargetedSpellsGroupController
 ---@field SetupFrame fun(self: TargetedSpellsDriver, isBoot: boolean)
 ---@field AnyGroupEnabled fun(self: TargetedSpellsDriver): boolean
 ---@field AnyGroupUsesInterruptibility fun(self: TargetedSpellsDriver): boolean

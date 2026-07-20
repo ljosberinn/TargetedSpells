@@ -28,15 +28,13 @@ loadfile("Driver.lua")("TargetedSpells", Private)
 local driver = capturedDriver
 
 -- Minimal state RepositionFrames/ReleaseFrameForUnit read, seeded fresh per test.
+-- self.frames is the Driver's release-by-unit index (read by ReleaseFrameForUnit /
+-- ReleaseAllOwnFrames); self.controllers is the per-group ownership RepositionFrames
+-- now routes to.
 local function resetDriver()
 	driver.frames = {}
-	driver.repositionByGroup = {}
-	driver.layoutScratch = {}
 	driver.dirtyGroups = {}
-	-- container identity is all the AdjustLayout spy needs to name the group
-	driver.GetContainer = function(_, groupId)
-		return { id = groupId }
-	end
+	driver.controllers = {}
 end
 
 local function makeGroup(id)
@@ -65,78 +63,46 @@ local function makeFrame(group, startTime, canBeHidden)
 	}
 end
 
--- Runs fn with AdjustLayout replaced by a recorder, then restores it (the shim's
--- after_each is a no-op, so restore inline to avoid leaking into other specs).
--- Returns the set of group ids whose container was relayouted.
-local function relayoutedGroups(fn)
-	local seen = {}
-	local original = Private.Utils.AdjustLayout
-	Private.Utils.AdjustLayout = function(_, _, barParent)
-		seen[barParent.id] = true
-	end
-	local ok, err = pcall(fn)
-	Private.Utils.AdjustLayout = original
-	if not ok then
-		error(err)
-	end
-	return seen
+-- A stand-in controller that records how many times the router relayouts it. The
+-- controller owns its own frame list now, so the router's whole job is "call Relayout
+-- on the right controllers"; these counts are all the scoping spec needs to observe.
+local function makeController(id, seen)
+	return {
+		Relayout = function()
+			seen[id] = (seen[id] or 0) + 1
+		end,
+	}
 end
 
 describe("RepositionFrames scoping", function()
-	local groupA, groupB
+	local seen
 
 	before_each(function()
 		resetDriver()
-		groupA, groupB = makeGroup(1), makeGroup(2)
+		seen = {}
+		driver.controllers = { [1] = makeController(1, seen), [2] = makeController(2, seen) }
 	end)
 
-	it("no argument relayouts every group with live frames", function()
-		driver.frames = {
-			nameplate1 = { makeFrame(groupA, 10) },
-			nameplate2 = { makeFrame(groupB, 20) },
-		}
+	it("no argument relayouts every controller", function()
+		driver:RepositionFrames()
 
-		local seen = relayoutedGroups(function()
-			driver:RepositionFrames()
-		end)
-
-		assert.is_true(seen[1])
-		assert.is_true(seen[2])
+		assert.equals(1, seen[1])
+		assert.equals(1, seen[2])
 	end)
 
 	it("a dirty set of one group leaves the other untouched", function()
-		driver.frames = {
-			nameplate1 = { makeFrame(groupA, 10) },
-			nameplate2 = { makeFrame(groupB, 20) },
-		}
+		driver:RepositionFrames({ [1] = true })
 
-		local seen = relayoutedGroups(function()
-			driver:RepositionFrames({ [1] = true })
-		end)
-
-		assert.is_true(seen[1])
+		assert.equals(1, seen[1])
 		assert.is_nil(seen[2]) -- group B never re-anchored
 	end)
 
-	it("still gathers a scoped group's frames from every unit", function()
-		-- group A has two frames spread across two nameplates; scoping to A must
-		-- collect both so the whole group re-tightens, not just one unit's frame.
-		local collected
-		driver.frames = {
-			nameplate1 = { makeFrame(groupA, 10) },
-			nameplate2 = { makeFrame(groupA, 20), makeFrame(groupB, 5) },
-		}
-
-		local original = Private.Utils.AdjustLayout
-		Private.Utils.AdjustLayout = function(frames, _, barParent)
-			if barParent.id == 1 then
-				collected = #frames
-			end
-		end
+	it("relayouts a dirty controller exactly once, not once per frame", function()
+		-- frame spread across units is no longer the router's concern: the controller
+		-- owns its frame list, so scoping to a group is a single Relayout call.
 		driver:RepositionFrames({ [1] = true })
-		Private.Utils.AdjustLayout = original
 
-		assert.equals(2, collected)
+		assert.equals(1, seen[1])
 	end)
 end)
 

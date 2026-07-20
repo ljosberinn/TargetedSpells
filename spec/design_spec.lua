@@ -20,7 +20,7 @@ describe("Design.GetDefault", function()
 		local first = Private.Design.GetDefault(Enum.Template.Bar)
 		first[Enum.Element.ProgressBar].width = 999
 		local second = Private.Design.GetDefault(Enum.Template.Bar)
-		assert.equals(300, second[Enum.Element.ProgressBar].width)
+		assert.equals(300, second[Enum.Element.ProgressBar].width) -- reflow total footprint
 	end)
 
 	it("seeds the core element as the origin (no x/y) with its size", function()
@@ -33,7 +33,7 @@ describe("Design.GetDefault", function()
 
 		local barElements = Private.Design.GetDefault(Enum.Template.Bar)
 		assert.is_nil(barElements[Enum.Element.ProgressBar].x)
-		assert.equals(300, barElements[Enum.Element.ProgressBar].width)
+		assert.equals(300, barElements[Enum.Element.ProgressBar].width) -- reflow total footprint
 		assert.equals(30, barElements[Enum.Element.ProgressBar].height)
 	end)
 

@@ -37,5 +37,6 @@ TargetedSpellsMixin.lua
 TargetedSpellsIconMixin.lua
 TargetedSpellsBarMixin.lua
 EditMode.lua
+GroupController.lua
 Driver.lua
 Designer.lua

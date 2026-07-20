@@ -45,7 +45,9 @@ function TargetedSpellsBarMixin:GetGlowTarget()
 		return self.ProgressBar
 	end
 
-	return self.ProgressBar, core.width, core.height
+	-- the bar reflows narrower when a gutter is present; glow the actual bar width
+	local layout = Private.Utils.ComputeBarLayout(self:GetElements())
+	return self.ProgressBar, layout.barWidth, core.height
 end
 
 function TargetedSpellsBarMixin:OnLoad()
@@ -55,73 +57,86 @@ function TargetedSpellsBarMixin:OnLoad()
 	self.DurationCooldown:SetCountdownFormatter(self.countdownFormatter)
 end
 
--- ── Free-positioning renderer (v4 offset consumption) ────────────────────────
--- The ProgressBar is the core: it fills the frame, and every other element is
--- placed at its stored CENTER→CENTER offset from it (see Migration's
--- reconstruction). This replaces the old flag-driven OnSizeChanged anchoring.
+-- ── Gutter-reflow renderer ───────────────────────────────────────────────────
+-- Layout is [TargetMarker][Icon][ProgressBar]: the active gutter elements pack against
+-- the frame's left edge and the ProgressBar fills the rest, so the bar's right edge is
+-- fixed and its left edge reflows with the gutter. Private.Utils.ComputeBarLayout is the
+-- single source of truth for the geometry (also drives the designer markers); here we just
+-- apply it to the live regions, all anchored to the FRAME centre. Text is pinned by its
+-- justifyH edge (so LEFT text follows the reflowing left edge, RIGHT stays put); every box
+-- is centre-placed at its computed centre. Runtime toggles/values re-run PositionElements,
+-- so the static computed positions stay correct.
 function TargetedSpellsBarMixin:PositionElements()
 	local elements = self:GetElements()
 	if elements == nil then
 		return
 	end
 
+	local layout = Private.Utils.ComputeBarLayout(elements)
+
+	local core = layout[Element.ProgressBar]
 	self.ProgressBar:ClearAllPoints()
-	self.ProgressBar:SetAllPoints(self)
+	PixelUtil.SetPoint(self.ProgressBar, "CENTER", self, "CENTER", core.centerX, core.centerY)
+	PixelUtil.SetSize(self.ProgressBar, core.width, core.height)
 
 	local background = elements[Element.Background]
 	self.ProgressBar.Background:SetShown(background == nil or background.active ~= false)
 
-	-- boxed elements: centered on the core, explicit size. TargetMarker and
-	-- InterruptShield manage their own visibility (raid-icon presence / the secret
-	-- interruptibility boolean, driven in PostCreate), so they only get positioned here.
+	-- boxes: gutter (Icon/TargetMarker, present in the layout only when active) + the
+	-- right-hugging Duration/InterruptShield. Icon/Duration toggle their own visibility;
+	-- TargetMarker/InterruptShield are only placed (visibility is driven elsewhere by the
+	-- raid-icon presence / the secret interruptibility boolean).
 	local boxes = {
-		{ region = self.Icon,                                element = elements[Element.Icon],             applyShown = true },
-		{ region = self.CustomElementsFrame.TargetMarker,    element = elements[Element.TargetMarker],     applyShown = false },
-		{ region = self.CustomElementsFrame.InterruptShield, element = elements[Element.InterruptShield],  applyShown = false },
-		{ region = self.DurationCooldown,                    element = elements[Element.DurationCooldown], applyShown = true },
+		{ region = self.Icon,                                tag = Element.Icon,             applyShown = true },
+		{ region = self.CustomElementsFrame.TargetMarker,    tag = Element.TargetMarker,     applyShown = false },
+		{ region = self.CustomElementsFrame.InterruptShield, tag = Element.InterruptShield,  applyShown = false },
+		{ region = self.DurationCooldown,                    tag = Element.DurationCooldown, applyShown = true },
 	}
 
 	for _, entry in ipairs(boxes) do
-		local element = entry.element
 		entry.region:ClearAllPoints()
+		local geom = layout[entry.tag]
 
-		if element ~= nil then
-			PixelUtil.SetPoint(entry.region, "CENTER", self.ProgressBar, "CENTER", element.x or 0, element.y or 0)
-			PixelUtil.SetSize(entry.region, element.width, element.height)
+		if geom ~= nil then
+			PixelUtil.SetPoint(entry.region, "CENTER", self, "CENTER", geom.centerX, geom.centerY)
+			PixelUtil.SetSize(entry.region, geom.width, geom.height)
 
 			if entry.applyShown then
-				entry.region:SetShown(element.active ~= false)
+				entry.region:SetShown(elements[entry.tag].active ~= false)
 			end
+		elseif entry.applyShown then
+			-- no layout slot (an inactive gutter element) → hidden
+			entry.region:SetShown(false)
 		end
 	end
 
-	-- text elements: anchored CENTER→CENTER like every other element (the plan's
-	-- anchoring model), so the offset positions the text's *centre* and changing justifyH
-	-- never shifts it. justifyH governs only internal justification, which is visible when
-	-- maxWidth constrains the width; an auto-sized string has nothing to justify within.
-	-- maxWidth caps the width and truncates with a native ellipsis. Visibility is driven at
-	-- runtime (SetSpellId / UpdateTargetName / SetInterrupted); here we only place + colour.
+	-- text: anchored by its justifyH edge to the bar edge the layout computed, so the
+	-- pinned edge lands exactly where ComputeBarLayout placed it and reflows with the bar.
+	-- maxWidth caps the box (truncation + internal justification); uncapped sizes to text.
+	-- Visibility is driven at runtime (SetSpellId / UpdateTargetName / SetInterrupted).
 	local texts = {
-		{ region = self.ProgressBar.SpellName,       element = elements[Element.SpellName] },
-		{ region = self.ProgressBar.TargetName,      element = elements[Element.TargetName] },
-		{ region = self.ProgressBar.InterruptSource, element = elements[Element.InterruptSource] },
+		{ region = self.ProgressBar.SpellName,       tag = Element.SpellName },
+		{ region = self.ProgressBar.TargetName,      tag = Element.TargetName },
+		{ region = self.ProgressBar.InterruptSource, tag = Element.InterruptSource },
 	}
 
 	for _, entry in ipairs(texts) do
-		local element = entry.element
 		entry.region:ClearAllPoints()
+		local geom = layout[entry.tag]
 
-		if element ~= nil then
-			PixelUtil.SetPoint(entry.region, "CENTER", self.ProgressBar, "CENTER", element.x or 0, element.y or 0)
-			entry.region:SetJustifyH(element.justifyH or "CENTER")
+		if geom ~= nil then
+			entry.region:SetJustifyH(geom.justifyH)
 
-			if element.maxWidth ~= nil and element.maxWidth > 0 then
-				entry.region:SetWidth(element.maxWidth)
+			if geom.maxWidth ~= nil and geom.maxWidth > 0 then
+				entry.region:SetWidth(geom.maxWidth)
 				entry.region:SetWordWrap(false)
 			else
 				entry.region:SetWidth(0)
 			end
 
+			PixelUtil.SetPoint(entry.region, geom.justifyH, self, "CENTER", geom.edgeX, geom.centerY)
+
+			local element = elements[entry.tag]
 			if element.textColor ~= nil then
 				local color = CreateColorFromHexString(element.textColor)
 				entry.region:SetTextColor(color.r, color.g, color.b, color.a)
@@ -251,13 +266,10 @@ function TargetedSpellsBarMixin:SetBackgroundBarColor()
 	self.ProgressBar.Background:SetVertexColor(color.r, color.g, color.b, color.a)
 end
 
--- The border regions live on the ProgressBar (which fills the frame) so they draw
--- over the fill; the 8-slice / solid renderer is shared with the icon mixin in
--- Private.Utils. Rather than wrapping just the ProgressBar, the border encloses the
--- visual *extent* of the group's active boxed elements (icon, target marker,
--- duration, shield) unioned with the bar — so an icon or marker sitting outside the
--- bar still falls inside the border. The extent is in offset space from the core
--- (ProgressBar) centre, which is the frame centre, so it anchors directly.
+-- The border regions live on the ProgressBar, so the border wraps the bar itself (the
+-- gutter icon/marker sit outside it). The bar reflows, so its extent is the computed bar
+-- width centred on the ProgressBar; the 8-slice / solid renderer is shared with the icon
+-- mixin in Private.Utils.
 function TargetedSpellsBarMixin:ApplyBorderStyle(styleName)
 	local elements = self:GetElements()
 	if elements == nil then
@@ -265,11 +277,13 @@ function TargetedSpellsBarMixin:ApplyBorderStyle(styleName)
 	end
 
 	local border = elements[Element.Border]
+	local core = elements[Element.ProgressBar]
+	local layout = Private.Utils.ComputeBarLayout(elements)
 
 	Private.Utils.ApplyBorderStyle(
 		self.ProgressBar --[[@as TargetedSpellsBorderFrame]],
 		styleName,
-		Private.Utils.ComputeElementExtent(elements),
+		{ width = layout.barWidth, height = (core and core.height) or 0, offsetX = 0, offsetY = 0 },
 		border and border.borderSize,
 		border and border.borderColor
 	)

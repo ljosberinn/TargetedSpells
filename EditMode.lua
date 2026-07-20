@@ -552,7 +552,7 @@ end
 -- this is byte-identical to the old core-based sizing.
 function TargetedSpellsEditModeMixin:ResizeEditModeFrame()
 	local core = self:CoreElement()
-	local extent = Private.Utils.ComputeElementExtent(self.group.Elements)
+	local extent = Private.Utils.ComputeGroupExtent(self.group.Elements)
 
 	if self.group.Direction == Private.Enum.Direction.Horizontal then
 		local totalWidth = (self.maxFrames - 1) * (core.width + self.group.Gap) + extent.width
@@ -701,7 +701,7 @@ function TargetedSpellsEditModeMixin:RepositionPreviewFrames()
 	-- inside the box — bleeding past one edge with padding on the other. Shift it by
 	-- -extent.offset on the CROSS axis so the content's extent centres in the box. The
 	-- grow axis keeps its stacking offset (multi-frame spacing stays core-based).
-	local extent = Private.Utils.ComputeElementExtent(self.group.Elements)
+	local extent = Private.Utils.ComputeGroupExtent(self.group.Elements)
 
 	Private.Utils.AdjustLayout(
 		activeFrames,

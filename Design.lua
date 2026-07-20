@@ -184,8 +184,10 @@ end
 local function buildBarSchema()
 	local schema = {}
 
-	-- core: the old container Width/Height live here now; always active (no toggle),
-	-- the 0,0 origin every other element offsets from (no x/y)
+	-- core: the total footprint (marker + icon gutter + bar). Always active (no toggle),
+	-- no x/y. The renderer (ComputeBarLayout) packs the active gutter elements against the
+	-- left and lets the ProgressBar fill the rest, so this width is the whole 300 assembly
+	-- and the visible bar is 300 − gutter (270 with the default icon, 240 with the marker too).
 	do
 		local records = nonTextBase({ omitActive = true, omitOffset = true, width = 300, height = 30 })
 		append(records, {
@@ -205,49 +207,67 @@ local function buildBarSchema()
 		{ setting = "backgroundColor", name = "ELEMENT_BACKGROUND_COLOR", type = SettingType.Color, default = "FF1A1A1A" },
 	}
 
-	schema[Enum.Element.Icon] = nonTextBase({ active = true, width = 30, height = 30, x = -135, y = 0 })
+	-- gutter elements: packed against the frame's left edge in the order [TargetMarker][Icon]
+	-- (the renderer, not x, decides the slot; x/y here are just a fine nudge). 30 wide each,
+	-- so an active one carves 30 off the bar's left. TargetMarker seeds off (opt-in).
+	schema[Enum.Element.Icon] = nonTextBase({ active = true, width = 30, height = 30, x = 0, y = 0 })
 
-	schema[Enum.Element.TargetMarker] = nonTextBase({ active = false, width = 20, height = 20, x = 0, y = 0 })
+	schema[Enum.Element.TargetMarker] = nonTextBase({ active = false, width = 30, height = 30, x = 0, y = 0 })
 
-	-- countdown-only cooldown (bar swipe is disabled): position/size + countdown.
-	-- The `active` toggle shows/hides the whole region and its number together —
-	-- there is no separate "show countdown" toggle.
+	-- countdown-only cooldown (bar swipe is disabled): position/size + countdown. Right-hugging
+	-- box: x is an inset from the bar's (fixed) right edge, 0 = flush. The `active` toggle
+	-- shows/hides the whole region and its number together — no separate "show countdown".
 	do
-		local records = nonTextBase({ active = true, width = 30, height = 30, x = 135, y = 0 })
+		local records = nonTextBase({ active = true, width = 30, height = 30, x = 0, y = 0 })
 		append(records, countdownTextRecords(14))
 		schema[Enum.Element.DurationCooldown] = records
 	end
 
+	-- Text hangs off the reflowing bar: x is an inset from the justifyH-pinned edge (LEFT →
+	-- from the bar's left edge, which moves with the gutter; RIGHT → from the fixed right
+	-- edge). maxWidths are sized so SpellName and TargetName never meet even in the narrowest
+	-- (both-gutter, 240-wide) bar: SpellName's right reaches at most +25, TargetName's left is
+	-- a fixed +35. TargetName also stops left of the Duration (~+120).
+
+	-- LEFT: left edge 5px inside the bar's left edge; grows right toward the target name.
 	schema[Enum.Element.SpellName] = textBase({
 		active = true,
-		x = -70,
+		x = 5,
 		y = 0,
 		fontSize = 14,
 		justifyH = "LEFT",
+		maxWidth = 110,
 	})
 
+	-- RIGHT: right edge 40px inside the bar's right edge (clearing the Duration); grows left.
 	schema[Enum.Element.TargetName] = textBase({
 		active = true,
-		x = 60,
+		x = -40,
 		y = 0,
 		fontSize = 14,
 		justifyH = "RIGHT",
 		useClassColor = true,
+		maxWidth = 75,
 	})
 
+	-- On interrupt the duration is cleared and SpellName is hidden, freeing the whole bar,
+	-- so the interrupter name right-aligns near the bar's end (5px inside) and grows left.
+	-- maxWidth clamps it so a long name can't run onto the gutter.
 	schema[Enum.Element.InterruptSource] = textBase({
 		active = false,
-		x = 0,
+		x = -5,
 		y = 0,
 		fontSize = 14,
-		justifyH = "LEFT",
+		justifyH = "RIGHT",
 		useClassColor = true,
+		maxWidth = 200,
 	})
 
 	-- native shield shown only while the cast is NOT interruptible (the renderer drives
-	-- its visibility from the secret interruptibility boolean). `active` is the plain
-	-- on/off toggle; seeds off so it's opt-in and doesn't change existing displays.
-	schema[Enum.Element.InterruptShield] = nonTextBase({ active = false, width = 24, height = 24, x = 110, y = 0 })
+	-- its visibility from the secret interruptibility boolean). Right-hugging box: x is an
+	-- inset from the bar's right edge, seated just left of the Duration. `active` is the
+	-- plain on/off toggle; seeds off so it's opt-in and doesn't change existing displays.
+	schema[Enum.Element.InterruptShield] = nonTextBase({ active = false, width = 24, height = 24, x = -35, y = 0 })
 
 	-- border wrapping the bar: enabled + texture (LSM) + color + size, same fragment
 	-- as the icon's Border. Seeds off (opt-in) — bars never had a border before, so

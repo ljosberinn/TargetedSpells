@@ -230,12 +230,12 @@ function TargetedSpellsIconMixin:StyleInterruptSource()
 		return
 	end
 
-	-- CENTER→CENTER like every other element (the plan's anchoring model): the offset
-	-- positions the text's centre, so changing justifyH never shifts it. justifyH governs
-	-- only internal justification, visible when maxWidth constrains the width.
+	-- Edge-anchored by justifyH (matching the bar renderer): x pins the text's LEFT/
+	-- CENTER/RIGHT edge, so adding a maxWidth caps growth without shifting the text. The
+	-- default justifyH is CENTER, for which this is identical to the old centre anchor.
+	local justifyH = element.justifyH or "CENTER"
 	self.InterruptSource:ClearAllPoints()
-	PixelUtil.SetPoint(self.InterruptSource, "CENTER", self, "CENTER", element.x or 0, element.y or 0)
-	self.InterruptSource:SetJustifyH(element.justifyH or "CENTER")
+	self.InterruptSource:SetJustifyH(justifyH)
 
 	if element.maxWidth ~= nil and element.maxWidth > 0 then
 		self.InterruptSource:SetWidth(element.maxWidth)
@@ -243,6 +243,8 @@ function TargetedSpellsIconMixin:StyleInterruptSource()
 	else
 		self.InterruptSource:SetWidth(0)
 	end
+
+	PixelUtil.SetPoint(self.InterruptSource, justifyH, self, "CENTER", element.x or 0, element.y or 0)
 
 	Private.Utils.SafelySetFont(
 		Private.Enum.FrameKind.Self,

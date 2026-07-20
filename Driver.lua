@@ -4,36 +4,27 @@ local addonName, Private = ...
 ---@class TargetedSpellsDriver
 local TargetedSpellsDriver = {}
 
----@param group TargetedSpellsGroup
-function TargetedSpellsDriver:PoolForGroup(group)
-	if group.Template == Private.Enum.Template.Icon then
-		return Private.Utils.Pools.Icon
-	end
-
-	return Private.Utils.Pools.Bar
-end
-
----@param group TargetedSpellsGroup
-function TargetedSpellsDriver:GroupCoreElement(group)
-	if group.Template == Private.Enum.Template.Icon then
-		return Private.Enum.Element.Icon
-	end
-
-	return Private.Enum.Element.ProgressBar
-end
-
 function TargetedSpellsDriver:Init()
 	self.delay = 0.2
+	-- secondary index: unit -> its live frames, for release-by-unit (events arrive
+	-- keyed by unit). Primary frame ownership lives on each group's controller.
 	self.frames = {}
-	-- reusable scratch for RepositionFrames (wiped + refilled per pass, never reallocated)
-	self.repositionByGroup = {}
-	self.layoutScratch = {}
 	self.dirtyGroups = {}
-	---@type table<integer, Frame>
-	self.containers = {}
+	---@type table<integer, TargetedSpellsGroupController>
+	self.controllers = {}
 	self.role = Private.Enum.Role.Damager
 	self.contentType = Private.Enum.ContentType.OpenWorld
 	self.OnCooldownDoneClosure = GenerateClosure(self.OnCooldownDone, self)
+	-- delayed cast dispatch: one growing queue drained by a single self-rescheduling
+	-- timer, so a spellcast start allocates neither a per-cast closure nor a per-cast
+	-- Ticker. head/tail cursors give O(1) enqueue/dequeue without shifting; because
+	-- the front is nil'd on dequeue the table is not a sequence, so `#` must never be
+	-- used on it — pendingTail is the authority. Cursors reset on full drain.
+	self.pendingCasts = {}
+	self.pendingHead = 1
+	self.pendingTail = 0
+	self.drainScheduled = false
+	self.DrainPendingCastsClosure = GenerateClosure(self.DrainPendingCasts, self)
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.PROFILE_IMPORTED, self.OnProfileImported, self)
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.GROUP_CHANGED, self.OnGroupChanged, self)
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.GROUP_POSITION_CHANGED, self.OnGroupPositionChanged, self)
@@ -48,78 +39,22 @@ function TargetedSpellsDriver:Init()
 	self:SetupFrame(true)
 end
 
--- ── Group containers ─────────────────────────────────────────────────────────
--- Each group anchors its frames to a 1x1 container placed at the group's saved
--- Position. Created lazily; positions itself relative to the group's edit-mode
--- frame so the growth direction stays visually anchored.
+-- ── Group controllers ────────────────────────────────────────────────────────
+-- Per-group display state (container, pool, active frames, layout) lives on a
+-- TargetedSpellsGroupController, created lazily on first use. Takes the group table
+-- (not just an id) so callers that already hold it skip a TargetedSpellsSaved lookup
+-- that would return nil for a group deleted mid-flight — the ReleaseFrame path can
+-- outlive the group.
+---@param group TargetedSpellsGroup
+---@return TargetedSpellsGroupController
+function TargetedSpellsDriver:GetController(group)
+	local id = group.Id
 
----@param groupId integer
-function TargetedSpellsDriver:GetContainer(groupId)
-	if self.containers[groupId] == nil then
-		local frame = CreateFrame("Frame", "TargetedSpellsGroupContainer" .. groupId, UIParent)
-		frame:SetSize(1, 1)
-		self.containers[groupId] = frame
+	if self.controllers[id] == nil then
+		self.controllers[id] = Private.GroupController.New(group)
 	end
 
-	return self.containers[groupId]
-end
-
-do
-	local ANCHOR_SIGN = {
-		[Private.Enum.Anchor.Center] = { x = 0, y = 0 },
-		[Private.Enum.Anchor.Top] = { x = 0, y = 1 },
-		[Private.Enum.Anchor.Bottom] = { x = 0, y = -1 },
-		[Private.Enum.Anchor.Left] = { x = -1, y = 0 },
-		[Private.Enum.Anchor.Right] = { x = 1, y = 0 },
-		[Private.Enum.Anchor.TopLeft] = { x = -1, y = 1 },
-		[Private.Enum.Anchor.TopRight] = { x = 1, y = 1 },
-		[Private.Enum.Anchor.BottomLeft] = { x = -1, y = -1 },
-		[Private.Enum.Anchor.BottomRight] = { x = 1, y = -1 },
-	}
-
-	local GROW_TARGET = {
-		[Private.Enum.Direction.Horizontal] = {
-			[Private.Enum.Grow.Start] = { x = -1, y = 0 },
-			[Private.Enum.Grow.End] = { x = 1, y = 0 },
-		},
-		[Private.Enum.Direction.Vertical] = {
-			[Private.Enum.Grow.Start] = { x = 0, y = -1 },
-			[Private.Enum.Grow.End] = { x = 0, y = 1 },
-		},
-	}
-
-	-- the edit-mode frame anchors via its own position.point, but the container always
-	-- anchors via CENTER, so the offset compensates for the difference in origins
-	---@param group TargetedSpellsGroup
-	function TargetedSpellsDriver:PositionFrame(group)
-		local container = self:GetContainer(group.Id)
-
-		local offsetX = 0
-		local offsetY = 0
-
-		local editModeFrame = Private.Utils.GetEditModeFrame(group.Id)
-
-		if editModeFrame ~= nil then
-			local width, height = editModeFrame:GetSize()
-
-			local anchor = ANCHOR_SIGN[group.Position.point]
-			local target = GROW_TARGET[group.Direction][group.Grow]
-
-			offsetX = (target.x - anchor.x) * (width / 2)
-			offsetY = (target.y - anchor.y) * (height / 2)
-		end
-
-		container:ClearAllPoints()
-		PixelUtil.SetPoint(
-			container,
-			"CENTER",
-			UIParent,
-			group.Position.point,
-			group.Position.x + offsetX,
-			group.Position.y + offsetY
-		)
-		container:Show()
-	end
+	return self.controllers[id]
 end
 
 -- ── Cross-group setting queries (event registration decisions) ───────────────
@@ -198,7 +133,7 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 		self.frame:SetSize(1, 1)
 
 		for _, group in pairs(TargetedSpellsSaved.Groups) do
-			self:PositionFrame(group)
+			self:GetController(group):Position()
 		end
 	end
 
@@ -298,9 +233,7 @@ function TargetedSpellsDriver:ProcessInfo(info)
 
 	for _, group in ipairs(Private.Groups.GetMatching(info, TargetedSpellsSaved.Groups)) do
 		if not self:GroupLoadConditionsProhibit(group) then
-			local frame = self:PoolForGroup(group):Acquire()
-			frame:SetGroup(group)
-			frame:PostCreate(info, self.OnCooldownDoneClosure)
+			local frame = self:GetController(group):Acquire(info, self.OnCooldownDoneClosure)
 			table.insert(self.frames[info.unit], frame)
 			dirtyGroups[group.Id] = true
 			count = count + 1
@@ -319,9 +252,14 @@ function TargetedSpellsDriver:ReleaseFrame(frame)
 	local group = frame:GetGroup()
 
 	if group ~= nil then
-		self:PoolForGroup(group):Release(frame)
+		-- clears the controller's frame list and returns the frame to the pool together
+		self:GetController(group):Release(frame)
 	else
-		-- fall back on the XML kind if the group tag was lost
+		-- Fall back on the XML kind if the group tag was lost. By the controller-list
+		-- invariant (a live frame keeps its group from SetGroup at acquire until it
+		-- leaves the list at release; Reset no longer nils it) this branch never runs
+		-- for a frame that is in a controller list, so it cannot strand a released
+		-- frame there. (architecture-3 tracks removing this fallback outright.)
 		if frame:GetKind() == Private.Enum.FrameKind.Self then
 			Private.Utils.Pools.Icon:Release(frame)
 		else
@@ -330,69 +268,31 @@ function TargetedSpellsDriver:ReleaseFrame(frame)
 	end
 end
 
--- Relayouts group containers. With no argument, every group with live frames is
--- rebuilt (global refreshes: dangling cleanup, container moves). With a dirtyGroups
--- set {[groupId]=true}, only those groups are bucketed and relayouted — a group's
--- layout is self-contained (AdjustLayout chains its frames under its own container),
--- so a lifecycle event that changed one group's membership must not pay the ~12 C-side
--- frame ops per frame to re-anchor every *other* group. See sprint-3.
----@param dirtyGroups table<integer, boolean>? nil = all groups; otherwise the set to scope to
+-- Relayouts group controllers. With no argument, every controller relayouts (global
+-- refreshes: dangling cleanup, container moves; empty controllers no-op). With a
+-- dirtyGroups set {[groupId]=true}, only those controllers relayout — a group's layout
+-- is self-contained (the controller chains its frames under its own container), so a
+-- lifecycle event that changed one group's membership must not pay the ~12 C-side frame
+-- ops per frame to re-anchor every *other* group. See sprint-3.
+---@param dirtyGroups table<integer, boolean>? nil = all controllers; otherwise the set to scope to
 function TargetedSpellsDriver:RepositionFrames(dirtyGroups)
-	-- Reuse persistent scratch across passes: the per-group buckets and their frame
-	-- lists (self.repositionByGroup) and the single layouting table (self.layoutScratch)
-	-- are wiped and refilled rather than reallocated. Reposition runs on the cast path,
-	-- so this keeps it allocation-free in steady state. Entries persist keyed by group
-	-- id; a bucket left with group == nil (its group produced no frames this pass, was
-	-- deleted, or is out of scope this pass) is skipped and simply lingers empty.
-	local byGroup = self.repositionByGroup
-
-	for _, entry in pairs(byGroup) do
-		entry.group = nil
-		table.wipe(entry.frames)
-	end
-
-	for _, frames in pairs(self.frames) do
-		for _, frame in pairs(frames) do
-			if frame ~= nil then
-				local group = frame:GetGroup()
-
-				if group ~= nil and (dirtyGroups == nil or dirtyGroups[group.Id]) then
-					local entry = byGroup[group.Id]
-
-					if entry == nil then
-						entry = { group = group, frames = {} }
-						byGroup[group.Id] = entry
-					else
-						entry.group = group
-					end
-
-					table.insert(entry.frames, frame)
-				end
-			end
+	if dirtyGroups == nil then
+		for _, controller in pairs(self.controllers) do
+			controller:Relayout()
 		end
+
+		return
 	end
 
-	for groupId, entry in pairs(byGroup) do
-		if entry.group ~= nil then
-			local core = entry.group.Elements[self:GroupCoreElement(entry.group)]
+	-- A dirty group was always dirtied by an Acquire/Release, so its controller already
+	-- exists: index self.controllers directly (no lazy-create, no saved-vars lookup).
+	-- Iterating all controllers here would re-sort/re-anchor non-dirty groups and break
+	-- the scoping guarantee (spec/reposition_scope_spec.lua: "group B never re-anchored").
+	for groupId in pairs(dirtyGroups) do
+		local controller = self.controllers[groupId]
 
-			Private.Utils.SortFrames(entry.frames, entry.group.SortOrder)
-			Private.Utils.AdjustLayout(
-				entry.frames,
-				Private.Utils.CollectLayoutingArguments(
-					entry.group.Direction,
-					entry.group.Grow,
-					core.width,
-					core.height,
-					entry.group.Gap,
-					self.layoutScratch
-				),
-				self:GetContainer(groupId),
-				"CENTER",
-				0,
-				0,
-				false
-			)
+		if controller then
+			controller:Relayout()
 		end
 	end
 end
@@ -481,6 +381,38 @@ function TargetedSpellsDriver:GetCastInformation(unit)
 	return isChannel, spellId, castId
 end
 
+-- Drains every pending cast that has come due, dispatching each through the
+-- DELAYED_UNIT_SPELLCAST_START branch (which recomputes duration and self-cancels
+-- stale casts). Entries carry their own dueAt, so this stays correct if self.delay
+-- ever becomes per-cast; with the constant delay the queue is already in dueAt order.
+-- OnFrameEvent's delayed branch never enqueues, so mutating the queue mid-loop is safe.
+function TargetedSpellsDriver:DrainPendingCasts()
+	self.drainScheduled = false
+
+	local pending = self.pendingCasts
+	local now = GetTime()
+	local head = self.pendingHead
+	local tail = self.pendingTail
+
+	while head <= tail and pending[head].dueAt <= now do
+		local info = pending[head]
+		pending[head] = nil
+		head = head + 1
+		self:OnFrameEvent(self.frame, Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START, info)
+	end
+
+	if head > tail then
+		-- fully drained: reset cursors so indices don't climb forever
+		self.pendingHead = 1
+		self.pendingTail = 0
+	else
+		-- next entry isn't due yet; reschedule the single timer for it
+		self.pendingHead = head
+		self.drainScheduled = true
+		C_Timer.After(pending[head].dueAt - now, self.DrainPendingCastsClosure)
+	end
+end
+
 ---@param _ Frame -- identical to self.frame
 ---@param event string
 function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
@@ -503,16 +435,24 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 			isChannel = true
 		end
 
-		C_Timer.After(
-			self.delay,
-			GenerateClosure(self.OnFrameEvent, self, self.frame, Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START, {
-				unit = unit,
-				spellId = spellId,
-				startTime = GetTime(),
-				id = id,
-				isChannel = isChannel,
-			})
-		)
+		local now = GetTime()
+		local tail = self.pendingTail + 1
+
+		self.pendingCasts[tail] = {
+			unit = unit,
+			spellId = spellId,
+			startTime = now,
+			id = id,
+			isChannel = isChannel,
+			dueAt = now + self.delay,
+		}
+		self.pendingTail = tail
+
+		-- one timer serves the whole queue; only (re)start it when nothing is scheduled
+		if not self.drainScheduled then
+			self.drainScheduled = true
+			C_Timer.After(self.delay, self.DrainPendingCastsClosure)
+		end
 	elseif event == "UNIT_TARGET" then
 		---@type string
 		local unit = ...
@@ -775,12 +715,16 @@ end
 
 -- A v4 profile import updates the group tables in place (Utils.ImportV4Profile),
 -- so refs stay valid; here we drop live frames (they re-acquire with the new
--- settings), reposition every container, and re-evaluate event registration.
+-- settings), reconfigure + reposition every controller (a v4 import can change a
+-- group's Template in place), and re-evaluate event registration. Reconfigure is
+-- safe here because ReleaseAllOwnFrames just cleared every live frame.
 function TargetedSpellsDriver:OnProfileImported()
 	self:ReleaseAllOwnFrames()
 
 	for _, group in pairs(TargetedSpellsSaved.Groups) do
-		self:PositionFrame(group)
+		local controller = self:GetController(group)
+		controller:Reconfigure(group)
+		controller:Position()
 	end
 
 	self:SetupFrame(false)
@@ -799,7 +743,7 @@ function TargetedSpellsDriver:RefreshGroup(group)
 		end
 	end
 
-	self:PositionFrame(group)
+	self:GetController(group):Position()
 end
 
 -- Fired when an edit-mode setting changes a group's container/behaviour. Refreshes
@@ -814,6 +758,7 @@ function TargetedSpellsDriver:OnGroupChanged(groupId)
 	end
 
 	self:RefreshGroup(group)
+	self:GetController(group):Reconfigure(group)
 	self:SetupFrame(false)
 
 	-- only this group's frames/container changed; other groups are untouched
@@ -827,7 +772,7 @@ function TargetedSpellsDriver:OnGroupPositionChanged(groupId)
 	local group = TargetedSpellsSaved.Groups[groupId]
 
 	if group ~= nil then
-		self:PositionFrame(group)
+		self:GetController(group):Position()
 	end
 end
 
