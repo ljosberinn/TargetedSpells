@@ -247,7 +247,6 @@ function TargetedSpellsIconMixin:StyleInterruptSource()
 	PixelUtil.SetPoint(self.InterruptSource, justifyH, self, "CENTER", element.x or 0, element.y or 0)
 
 	Private.Utils.SafelySetFont(
-		Private.Enum.FrameKind.Self,
 		self.InterruptSource,
 		element.font,
 		element.fontSize,
@@ -276,7 +275,6 @@ function TargetedSpellsIconMixin:SetFont()
 	local fontString = self.Cooldown:GetCountdownFontString()
 
 	Private.Utils.SafelySetFont(
-		Private.Enum.FrameKind.Self,
 		fontString,
 		cooldown.countdownFont,
 		cooldown.countdownFontSize,

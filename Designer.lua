@@ -1533,8 +1533,6 @@ function Private.Designer.Toggle()
 	designerFrame:SetShown(not designerFrame:IsShown())
 end
 
--- The `design` subcommand routes here. SlashCommands.lua and the localization
--- files both load before this one, so the registry and the string are ready.
-Private.SlashCommands.Register("design", Private.L.SlashCommands.DesignDescription, function()
+Private.Utils.RegisterSlashCommand("design", Private.L.SlashCommands.DesignDescription, function()
 	Private.Designer.Toggle()
 end)

@@ -114,17 +114,17 @@ do
 	end
 end
 
--- Acquires a frame for this cast, tags it with the group, styles it, and takes
--- ownership of it in the controller's frame list. Returns the frame so the Driver
--- can also record it in its unit index (self.frames[unit]).
 ---@param info SpellCastInfo
 ---@param onCooldownClosure fun(info: SpellCastInfo)
 ---@return TargetedSpellsIconMixin|TargetedSpellsBarMixin
 function GroupController:Acquire(info, onCooldownClosure)
 	local frame = self.pool:Acquire()
+
 	frame:SetGroup(self.group)
 	frame:PostCreate(info, onCooldownClosure)
+
 	table.insert(self.frames, frame)
+
 	return frame
 end
 
@@ -170,8 +170,7 @@ function GroupController:Relayout()
 		self:GetContainer(),
 		"CENTER",
 		0,
-		0,
-		false
+		0
 	)
 end
 
@@ -183,4 +182,16 @@ end
 function GroupController:Reconfigure(group)
 	self.group = group
 	DeriveFromTemplate(self, group)
+end
+
+function GroupController:LoadConditionsApply(role, contentType)
+	if not self.group.LoadConditionRole[role] then
+		return false
+	end
+
+	if not self.group.LoadConditionContentType[contentType] then
+		return false
+	end
+
+	return true
 end

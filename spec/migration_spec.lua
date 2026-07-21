@@ -8,90 +8,8 @@ local Template = Enum.Template
 local TargetClass = Enum.TargetClass
 local BarColorMode = Enum.BarColorMode
 
-local snapshot = require("spec.fixtures.bar_geometry_snapshot")
-local reconstruct = Private.__test.Migration.reconstructBarGeometry
 local derivePartyFilter = Private.__test.Migration.derivePartyFilter
 local V3_FLAG = Private.__test.Migration.V3_FLAG
-
--- same flag order + default size the fixture was generated with
-local flagOrder = {
-	"showIcon",
-	"showTargetMarker",
-	"showDuration",
-	"inlineDuration",
-	"mirrored",
-	"showSpellName",
-	"showTargetName",
-}
-
-local function comboOpts(combo)
-	local opts = { width = 300, height = 30, fontSize = 14 }
-	local key = {}
-	for index, name in ipairs(flagOrder) do
-		local bit = math.floor(combo / (2 ^ (7 - index))) % 2
-		opts[name] = (bit == 1)
-		key[index] = tostring(bit)
-	end
-	return opts, table.concat(key)
-end
-
-describe("bar-offset reconstruction", function()
-	it("matches the committed snapshot across every flag combination", function()
-		for combo = 0, 127 do
-			local opts, key = comboOpts(combo)
-			local geometry = reconstruct(opts)
-			assert.is_true(
-				Private.Utils.DeepEqual(geometry, snapshot[key]),
-				"geometry drift at flag combo " .. key
-			)
-		end
-	end)
-
-	it("insets the non-text boxes exactly like v3 (icon + inline duration)", function()
-		-- default party layout: icon on, target marker off, duration inline
-		local geometry = reconstruct({
-			width = 300,
-			height = 30,
-			fontSize = 14,
-			showIcon = true,
-			showTargetMarker = false,
-			showDuration = true,
-			inlineDuration = true,
-			mirrored = false,
-			showSpellName = true,
-			showTargetName = true,
-		})
-		-- progress bar loses the icon's 30px; inline duration does not inset it
-		assert.equals(270, geometry[Element.ProgressBar].width)
-		assert.equals(0, geometry[Element.ProgressBar].x)
-		-- icon centered in the leftmost 30px: center -150 relative to the bar center
-		assert.equals(-150, geometry[Element.Icon].x)
-		assert.equals(30, geometry[Element.Icon].width)
-	end)
-
-	it("mirror flips every non-text box x offset", function()
-		local base = {
-			width = 300,
-			height = 30,
-			fontSize = 14,
-			showIcon = true,
-			showTargetMarker = true,
-			showDuration = true,
-			inlineDuration = false,
-			showSpellName = false,
-			showTargetName = false,
-		}
-		base.mirrored = false
-		local normal = reconstruct(base)
-		base.mirrored = true
-		local mirrored = reconstruct(base)
-
-		for _, element in ipairs({ Element.Icon, Element.TargetMarker, Element.DurationCooldown }) do
-			assert.equals(-normal[element].x, mirrored[element].x)
-			assert.equals(normal[element].width, mirrored[element].width)
-		end
-	end)
-end)
 
 describe("derivePartyFilter", function()
 	it("no flags: all three target classes", function()
@@ -142,7 +60,8 @@ describe("v3 -> v4 transform", function()
 	it("produces the v4 container and drops Settings", function()
 		local saved = migratedDefaults()
 		assert.equals(4, saved.SchemaVersion)
-		assert.equals(3, saved.NextGroupId)
+		-- ids are allocated at runtime (Groups.Create), never persisted
+		assert.is_nil(saved.NextGroupId)
 		assert.is_nil(saved.Settings)
 		assert.is_table(saved.Groups)
 		assert.is_table(saved.TextToSpeech)
@@ -159,15 +78,32 @@ describe("v3 -> v4 transform", function()
 		assert.is_nil(group.Elements[Element.Icon].x)
 	end)
 
-	it("Party settings become a Bar group with reconstructed geometry", function()
+	it("Party settings become a Bar group keeping the v4 template layout", function()
 		local group = migratedDefaults().Groups[2]
+		local barDefaults = Private.Design.GetDefault(Template.Bar)
 		assert.equals(Template.Bar, group.Template)
 		assert.equals(Enum.Direction.Vertical, group.Direction)
-		-- default party has icon + inline duration -> core bar is 270 wide
-		assert.equals(270, group.Elements[Element.ProgressBar].width)
+		-- bar geometry is NOT migrated: it stays at the v4 template default (see
+		-- buildBarElements), so the old free per-element layout can't spread it apart.
+		assert.equals(barDefaults[Element.ProgressBar].width, group.Elements[Element.ProgressBar].width)
+		assert.equals(barDefaults[Element.SpellName].x, group.Elements[Element.SpellName].x)
+		assert.equals(barDefaults[Element.TargetName].x, group.Elements[Element.TargetName].x)
+		-- appearance + active toggles still carry over
 		assert.equals(BarColorMode.Interruptibility, group.Elements[Element.ProgressBar].barColorMode)
 		assert.is_true(group.Elements[Element.Icon].active)
 		assert.is_false(group.Elements[Element.TargetMarker].active)
+	end)
+
+	it("preserves the party group's edit-mode Position through migration", function()
+		local saved = {
+			Settings = {
+				Self = Private.Settings.GetSelfDefaultSettings(),
+				Party = Private.Settings.GetPartyDefaultSettings(),
+			},
+		}
+		saved.Settings.Party.Position = { point = "CENTER", x = 123, y = -456 }
+		Private.Migration.Apply(saved)
+		assert.same({ point = "CENTER", x = 123, y = -456 }, saved.Groups[2].Position)
 	end)
 
 	it("maps the party color settings onto the ProgressBar element", function()
@@ -252,7 +188,8 @@ describe("fresh-install seed", function()
 	it("stamps the current schema, two groups, and TextToSpeech", function()
 		local saved = seeded()
 		assert.equals(4, saved.SchemaVersion)
-		assert.equals(3, saved.NextGroupId)
+		-- ids are allocated at runtime (Groups.Create), never persisted
+		assert.is_nil(saved.NextGroupId)
 		assert.is_table(saved.TextToSpeech)
 		assert.equals(Template.Icon, saved.Groups[1].Template)
 		assert.equals(Template.Bar, saved.Groups[2].Template)
@@ -284,7 +221,7 @@ describe("fresh-install seed", function()
 		local saved = seeded()
 		local spellNameX = saved.Groups[2].Elements[Element.SpellName].x
 		Private.Migration.Apply(saved)
-		assert.equals(3, saved.NextGroupId) -- unchanged: no migration step ran
+		assert.equals(4, saved.SchemaVersion) -- unchanged: no migration step ran
 		assert.equals(spellNameX, saved.Groups[2].Elements[Element.SpellName].x)
 	end)
 end)

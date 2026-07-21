@@ -709,8 +709,7 @@ function TargetedSpellsEditModeMixin:RepositionPreviewFrames()
 		self.editModeFrame,
 		"CENTER",
 		layouting.isHorizontal and offset or -extent.offsetX,
-		(not layouting.isHorizontal) and offset or -extent.offsetY,
-		true
+		(not layouting.isHorizontal) and offset or -extent.offsetY
 	)
 end
 
@@ -827,13 +826,16 @@ function Private.EditMode.CreateInstance(group)
 	return instance
 end
 
--- New group (defaults to a Bar) + its instance; position its container and, if
--- edit mode is open, start its demo.
+-- New group (defaults to a Bar) + its instance; refresh its container and, if edit
+-- mode is open, start its demo. Fires GROUP_CHANGED (not the lighter GROUP_POSITION_
+-- CHANGED) because a fresh group is Enabled and may add capabilities, so the Driver
+-- must invalidate its capability cache and re-run SetupFrame — GROUP_CHANGED does both
+-- and still positions the container (via RefreshGroup); GROUP_POSITION_CHANGED does not.
 function Private.EditMode.CreateGroup()
 	local id, group = Private.Groups.Create(Private.Enum.Template.Bar)
 	local instance = Private.EditMode.CreateInstance(group)
 
-	Private.EventRegistry:TriggerEvent(Private.Enum.Events.GROUP_POSITION_CHANGED, id)
+	Private.EventRegistry:TriggerEvent(Private.Enum.Events.GROUP_CHANGED, id)
 
 	if LibEditMode:IsInEditMode() then
 		instance:StartDemo()

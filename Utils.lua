@@ -6,7 +6,7 @@ local LibSharedMedia = LibStub("LibSharedMedia-3.0")
 ---@class TargetedSpellsUtils
 Private.Utils = {}
 
-function Private.Utils.SafelySetFont(kind, fontString, font, fontSize, fontFlags)
+function Private.Utils.SafelySetFont(fontString, font, fontSize, fontFlags)
 	local ok = pcall(function()
 		fontString:SetFont(font, fontSize, fontFlags)
 	end)
@@ -146,19 +146,23 @@ do
 			-- corners anchored relative to frame CENTER so the slice follows the box's
 			-- centre offset (outwardOffset pushes them outward for inset styles)
 			frame.BorderTopLeft:ClearAllPoints()
-			frame.BorderTopLeft:SetPoint("TOPLEFT", frame, "CENTER", offsetX - halfW - outwardOffset, offsetY + halfH + outwardOffset)
+			frame.BorderTopLeft:SetPoint("TOPLEFT", frame, "CENTER", offsetX - halfW - outwardOffset,
+				offsetY + halfH + outwardOffset)
 			frame.BorderTopLeft:SetSize(edgeSize, edgeSize)
 
 			frame.BorderTopRight:ClearAllPoints()
-			frame.BorderTopRight:SetPoint("TOPRIGHT", frame, "CENTER", offsetX + halfW + outwardOffset, offsetY + halfH + outwardOffset)
+			frame.BorderTopRight:SetPoint("TOPRIGHT", frame, "CENTER", offsetX + halfW + outwardOffset,
+				offsetY + halfH + outwardOffset)
 			frame.BorderTopRight:SetSize(edgeSize, edgeSize)
 
 			frame.BorderBottomLeft:ClearAllPoints()
-			frame.BorderBottomLeft:SetPoint("BOTTOMLEFT", frame, "CENTER", offsetX - halfW - outwardOffset, offsetY - halfH - outwardOffset)
+			frame.BorderBottomLeft:SetPoint("BOTTOMLEFT", frame, "CENTER", offsetX - halfW - outwardOffset,
+				offsetY - halfH - outwardOffset)
 			frame.BorderBottomLeft:SetSize(edgeSize, edgeSize)
 
 			frame.BorderBottomRight:ClearAllPoints()
-			frame.BorderBottomRight:SetPoint("BOTTOMRIGHT", frame, "CENTER", offsetX + halfW + outwardOffset, offsetY - halfH - outwardOffset)
+			frame.BorderBottomRight:SetPoint("BOTTOMRIGHT", frame, "CENTER", offsetX + halfW + outwardOffset,
+				offsetY - halfH - outwardOffset)
 			frame.BorderBottomRight:SetSize(edgeSize, edgeSize)
 
 			frame.BorderTop:SetHeight(edgeSize)
@@ -313,12 +317,8 @@ do
 end
 
 do
-	-- Countdown breakpoints for the numeric rule formatter. `fractionThreshold` is
-	-- the duration (seconds) below which the number shows a decimal fraction
-	-- ("2.3") instead of a whole number ("2"); 0 disables fractions entirely. The
-	-- minutes-and-up rules are fixed. thanks to m33shoq for the original breakpoints.
 	---@param fractionThreshold number?
-	local function buildCountdownBreakpoints(fractionThreshold)
+	local function BuildCountdownBreakpoints(fractionThreshold)
 		local breakpoints = {}
 
 		if fractionThreshold ~= nil and fractionThreshold > 0 then
@@ -344,20 +344,19 @@ do
 	---@param formatter NumericFormatter
 	---@param fractionThreshold number?
 	function Private.Utils.ApplyFractionThreshold(formatter, fractionThreshold)
-		formatter:SetBreakpoints(buildCountdownBreakpoints(fractionThreshold))
+		formatter:SetBreakpoints(BuildCountdownBreakpoints(fractionThreshold))
 	end
 
-	-- Creates a countdown formatter seeded with the given fraction threshold.
-	---@param fractionThreshold number?
 	---@return NumericFormatter
-	function Private.Utils.CreateCountdownFormatter(fractionThreshold)
+	function Private.Utils.CreateCountdownFormatter()
 		local formatter = C_StringUtil.CreateNumericRuleFormatter()
-		Private.Utils.ApplyFractionThreshold(formatter, fractionThreshold or 3)
+
+		Private.Utils.ApplyFractionThreshold(formatter, 3)
+
 		return formatter
 	end
 end
 
--- pools are per-template (Icon / Bar); the old Self/Party names were per-display
 Private.Utils.Pools = {
 	Icon = CreateFramePool(
 		"Frame",
@@ -437,13 +436,15 @@ end
 --
 -- Pure: reads only stored offsets/sizes, no live frame, so it is busted-coverable
 -- like the bar-offset reconstruction.
----@param elements table<Element, table<string, any>>
----@return { width: number, height: number, offsetX: number, offsetY: number }
 function Private.Utils.ComputeElementExtent(elements)
 	local hasBox = false
 	local minX, minY, maxX, maxY
 
-	local function include(centerX, centerY, boxWidth, boxHeight)
+	---@param centerX number
+	---@param centerY number
+	---@param boxWidth number
+	---@param boxHeight number
+	local function Include(centerX, centerY, boxWidth, boxHeight)
 		local halfWidth = boxWidth / 2
 		local halfHeight = boxHeight / 2
 		local left, right = centerX - halfWidth, centerX + halfWidth
@@ -468,7 +469,7 @@ function Private.Utils.ComputeElementExtent(elements)
 
 			if values.width and values.height then
 				-- non-text box (includes the core element)
-				include(centerX, centerY, values.width, values.height)
+				Include(centerX, centerY, values.width, values.height)
 			elseif values.maxWidth and values.maxWidth > 0 then
 				-- capped text: width is bounded by maxWidth, height ≈ its font size. The
 				-- renderer edge-anchors by justifyH (x pins the LEFT/RIGHT/CENTER edge), so
@@ -480,7 +481,7 @@ function Private.Utils.ComputeElementExtent(elements)
 				elseif justifyH == "RIGHT" then
 					boxCenterX = centerX - values.maxWidth / 2
 				end
-				include(boxCenterX, centerY, values.maxWidth, values.fontSize or 0)
+				Include(boxCenterX, centerY, values.maxWidth, values.fontSize or 0)
 			end
 		end
 	end
@@ -510,9 +511,20 @@ end
 --   box elements → { centerX, centerY, width, height }
 --   text elements → { text = true, justifyH, edgeX, centerY, maxWidth, fontSize }
 --                    (edgeX = frame-centre X of the justifyH-pinned edge; width auto-sizes)
-local BAR_GUTTER_ORDER = { Private.Enum.Element.TargetMarker, Private.Enum.Element.Icon }
-local BAR_RIGHT_BOXES = { Private.Enum.Element.DurationCooldown, Private.Enum.Element.InterruptShield }
-local BAR_TEXTS = { Private.Enum.Element.SpellName, Private.Enum.Element.TargetName, Private.Enum.Element.InterruptSource }
+local BAR_GUTTER_ORDER = {
+	Private.Enum.Element.TargetMarker,
+	Private.Enum.Element.Icon
+}
+local BAR_RIGHT_BOXES = {
+	Private.Enum.Element.DurationCooldown,
+	Private.Enum.Element.InterruptShield
+}
+local BAR_TEXTS = {
+	Private.Enum.Element.SpellName,
+	Private.Enum.Element.TargetName,
+	Private.Enum.Element
+		.InterruptSource
+}
 
 ---@param elements table<Element, table<string, any>>
 ---@return table<any, any> layout keyed by Element plus `gutterWidth`/`barWidth`
@@ -534,10 +546,17 @@ function Private.Utils.ComputeBarLayout(elements)
 	local barRight = halfTotal
 	local barCenter = (barLeft + barRight) / 2
 
-	local layout = { gutterWidth = gutterWidth, barWidth = total - gutterWidth }
+	local layout = {
+		gutterWidth = gutterWidth,
+		barWidth = total - gutterWidth
+	}
 
-	layout[Private.Enum.Element.ProgressBar] =
-		{ centerX = barCenter, centerY = 0, width = total - gutterWidth, height = height }
+	layout[Private.Enum.Element.ProgressBar] = {
+		centerX = barCenter,
+		centerY = 0,
+		width = total - gutterWidth,
+		height = height
+	}
 
 	-- gutter elements packed from the frame's left edge; only active ones occupy a slot
 	local cursorLeft = -halfTotal
@@ -604,6 +623,7 @@ end
 ---@return { width: number, height: number, offsetX: number, offsetY: number }
 function Private.Utils.ComputeGroupExtent(elements)
 	local core = elements[Private.Enum.Element.ProgressBar]
+
 	if core ~= nil then
 		return { width = core.width or 0, height = core.height or 0, offsetX = 0, offsetY = 0 }
 	end
@@ -673,8 +693,7 @@ function Private.Utils.AdjustLayout(
 	barParent,
 	firstAnchorPoint,
 	firstOffsetX,
-	firstOffsetY,
-	isEditMode
+	firstOffsetY
 )
 	---@type Texture?
 	local prevStatusBarTexture = nil
@@ -696,10 +715,7 @@ function Private.Utils.AdjustLayout(
 		frame:SetParent(frame.Bar)
 		frame:SetFrameLevel(frame.Bar:GetFrameLevel() + 10)
 		frame.Bar:ClearAllPoints()
-
-		if isEditMode then
-			frame.Bar:SetValue(frame:GetAlpha())
-		end
+		frame.Bar:SetValue(frame:GetAlpha())
 
 		if prevStatusBarTexture == nil then
 			frame.Bar:SetPoint(layouting.originPoint, barParent, firstAnchorPoint, firstOffsetX, firstOffsetY)
@@ -843,9 +859,6 @@ do
 			Private.Groups.InvalidateOrder(TargetedSpellsSaved.Groups)
 
 			TargetedSpellsSaved.TextToSpeech = Private.Utils.DeepCopy(payload.TextToSpeech)
-			if payload.NextGroupId ~= nil then
-				TargetedSpellsSaved.NextGroupId = payload.NextGroupId
-			end
 
 			Private.EventRegistry:TriggerEvent(Private.Enum.Events.PROFILE_IMPORTED)
 		end
@@ -1013,7 +1026,6 @@ do
 			-- v4: serialise the group model + hoisted TTS, not the old Settings tree
 			payload = {
 				SchemaVersion = TargetedSpellsSaved.SchemaVersion,
-				NextGroupId = TargetedSpellsSaved.NextGroupId,
 				Groups = TargetedSpellsSaved.Groups,
 				TextToSpeech = TargetedSpellsSaved.TextToSpeech,
 			}
@@ -1026,14 +1038,71 @@ do
 end
 
 do
+	---@class SlashCommandEntry
+	---@field name string
+	---@field description string
+	---@field handler fun(rest: string)
+
+	---@type SlashCommandEntry[]
+	local commands = {}
+	---@type table<string, SlashCommandEntry>
+	local byName = {}
+
+	function Private.Utils.RegisterSlashCommand(name, description, handler)
+		name = string.lower(name)
+		local entry = byName[name]
+
+		if entry then
+			entry.description = description
+			entry.handler = handler
+			return
+		end
+
+		entry = { name = name, description = description, handler = handler }
+		byName[name] = entry
+		commands[#commands + 1] = entry
+	end
+
+	local key = string.upper(addonName)
+	local slashToken = "targetedspells"
+
+	_G[string.format("SLASH_%s1", key)] = "/" .. slashToken
+
+	SlashCmdList[key] = function(message)
+		local command, args = (message or ""):match("^%s*(%S*)%s*(.-)%s*$")
+
+		if not command then
+			return
+		end
+
+		command = string.lower(command)
+		args = args or ""
+
+		local entry = byName[command]
+
+		if entry == nil then
+			print(Private.L.SlashCommands.Header)
+
+			for index = 1, #commands do
+				local cmd = commands[index]
+
+				print(string.format("  /%s %s - %s", slashToken, cmd.name, cmd.description))
+			end
+
+			return
+		end
+
+		entry.handler(args)
+	end
+end
+
+do
 	local function noop() end
 
 	_G.TargetedSpellsAPI = {
 		Import = Private.Utils.Import,
 		Export = Private.Utils.Export,
 		DecodeProfileString = DecodeProfileString,
-		RegisterFrameByName = noop,
-		UnregisterFrameByName = noop,
 		SetProfile = noop,
 		GetProfileKeys = function()
 			return { "Global" }

@@ -347,8 +347,6 @@ table.insert(Private.LoginFnQueue, function()
 		end,
 	})
 
-	-- The single /<addon> entry is owned by Private.SlashCommands (installed at
-	-- login); here we only contribute the two settings subcommands.
-	Private.SlashCommands.Register("options", L.SlashCommands.OptionsDescription, OpenSettings)
-	Private.SlashCommands.Register("settings", L.SlashCommands.SettingsDescription, OpenSettings)
+	Private.Utils.RegisterSlashCommand("options", L.SlashCommands.OptionsDescription, OpenSettings)
+	Private.Utils.RegisterSlashCommand("settings", L.SlashCommands.SettingsDescription, OpenSettings)
 end)

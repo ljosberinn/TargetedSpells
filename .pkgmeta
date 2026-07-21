@@ -7,6 +7,8 @@ ignore:
   - .github
   - spec
   - .busted
+  - AGENTS.md
+  - CLAUDE.md
 manual-changelog:
   filename: CHANGELOG.md
   markuptype: markdown

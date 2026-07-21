@@ -29,7 +29,6 @@ Localization\enUS.lua
 Localization\[TextLocale].lua [AllowLoadTextLocale deDE, frFR, zhCN, esES, esMX, koKR, ruRU, itIT, ptBR, zhTW]
 
 Settings.lua
-SlashCommands.lua
 Design.lua
 Groups.lua
 Migration.lua
@@ -38,5 +37,6 @@ TargetedSpellsIconMixin.lua
 TargetedSpellsBarMixin.lua
 EditMode.lua
 GroupController.lua
+TextToSpeech.lua
 Driver.lua
 Designer.lua

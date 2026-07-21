@@ -100,14 +100,12 @@ Private.L = setmetatable({}, {
 
 TargetedSpellsSaved = {}
 
+SlashCmdList = {}
 loadfile("Utils.lua")(addonName, Private)
 loadfile("Design.lua")(addonName, Private)
 loadfile("Groups.lua")(addonName, Private)
 loadfile("Migration.lua")(addonName, Private)
 
--- SlashCommands.lua registers its SlashCmdList entry at file load.
-SlashCmdList = {}
-loadfile("SlashCommands.lua")(addonName, Private)
 
 -- ── State kept in bootstrap's own _G (shared with Utils.lua loaded here) ──────
 -- Busted uses setfenv() to sandbox spec files in Lua 5.1, so assignments to

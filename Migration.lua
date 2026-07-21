@@ -8,9 +8,15 @@ local addonName, Private = ...
 --
 -- Public surface:
 --   Private.Migration.Apply(saved) -- migrate a saved table in place to v4
--- Everything else stays file-local. The bar-offset reconstruction and the
--- filter derivation are additionally exposed under Private.__test for the
--- (gated, spec-only) snapshot + transform tests; they ship no behaviour.
+-- Everything else stays file-local. The filter derivation is additionally exposed
+-- under Private.__test for the (gated, spec-only) transform tests; it ships no
+-- behaviour.
+--
+-- NOTE: bar element *layout* is intentionally NOT migrated. v3's free per-element
+-- pixel layout has no faithful mapping onto v4's bar reflow model, so bars adopt the
+-- v4 template defaults for geometry and only carry over v4-representable appearance
+-- (colours/textures/fonts/toggles/filter). Group Position IS migrated, so a user's
+-- placement survives; only bar appearance needs re-tuning. See buildBarElements.
 --
 -- PHASE-2 GATE (challenge #1): this module is NOT wired into ADDON_LOADED yet.
 -- The Driver still reads Settings.Self/Party until Phase 3, and there is no
@@ -61,78 +67,6 @@ end
 
 local function flag(featureFlags, id)
 	return featureFlags and featureFlags[id] == true
-end
-
--- ── Bar-offset reconstruction (challenge #2's input; the riskiest piece) ──────
--- Replays TargetedSpellsBarMixin:OnSizeChanged against a user's saved
--- Width/Height/FontSize + flag combination to produce explicit CENTER→CENTER
--- offsets from the ProgressBar (the bar's core element), with no live frame.
---
--- Pure: reads only the geometry inputs, exactly like the old OnSizeChanged and
--- its width helpers (GetProgressBarWidth / GetDurationWidth). The non-text boxes
--- (ProgressBar, Icon, TargetMarker, DurationCooldown) are reconstructed
--- pixel-faithfully; text elements (SpellName/TargetName/InterruptSource) get a
--- best-effort center only — v4 text auto-sizes and cannot reproduce v3's
--- edge-anchored, width-split boxes (decided). Mirror flips every x offset.
---
----@param opts { width:number, height:number, fontSize:number, showIcon:boolean, showTargetMarker:boolean, showDuration:boolean, inlineDuration:boolean, mirrored:boolean, showSpellName:boolean, showTargetName:boolean }
----@return table<Element, table<string, number>>
-local function reconstructBarGeometry(opts)
-	local width = opts.width
-	local height = opts.height
-	local durationWidth = opts.fontSize * 2
-
-	local markerInset = opts.showTargetMarker and height or 0
-	local iconInset = opts.showIcon and height or 0
-	local durationInset = (opts.showDuration and not opts.inlineDuration) and durationWidth or 0
-
-	local progressBarWidth = width - markerInset - iconInset - durationInset
-
-	-- fromLeft coordinates: 0 at the bar's left edge, `width` at its right edge.
-	local progressBarLeft = markerInset + iconInset
-	local progressBarRight = width - durationInset
-	local progressBarCenter = (progressBarLeft + progressBarRight) / 2
-
-	-- non-text box centers, laid out left→right: [marker][icon][progressbar][dur]
-	local markerCenter = height / 2
-	local iconCenter = markerInset + height / 2
-
-	local durationCenter
-	if opts.inlineDuration then
-		-- inline duration sits inside the bar's right edge (x = -4), width unchanged
-		durationCenter = (width - 4) - durationWidth / 2
-	else
-		durationCenter = width - durationWidth / 2
-	end
-
-	-- best-effort text-box centers (v3 width-split; not pixel-guaranteed in v4)
-	local textWidth = (opts.showDuration and opts.inlineDuration) and (progressBarWidth - durationWidth) or progressBarWidth
-	local spellCenter, targetCenter
-	if opts.showSpellName and opts.showTargetName then
-		spellCenter = progressBarLeft + 4 + textWidth / 4
-		local targetRight = opts.inlineDuration and (progressBarRight - 4 - durationWidth) or (progressBarRight - 4)
-		targetCenter = targetRight - textWidth / 4
-	else
-		spellCenter = progressBarLeft + 4 + textWidth / 2
-		targetCenter = progressBarLeft + 4 + textWidth / 2
-	end
-	-- interrupt source was left-anchored and variable-length; center it on the bar
-	local interruptCenter = progressBarCenter
-
-	local sign = opts.mirrored and -1 or 1
-	local function offsetX(center)
-		return sign * (center - progressBarCenter)
-	end
-
-	return {
-		[Element.ProgressBar] = { x = 0, y = 0, width = progressBarWidth, height = height },
-		[Element.Icon] = { x = offsetX(iconCenter), y = 0, width = height, height = height },
-		[Element.TargetMarker] = { x = offsetX(markerCenter), y = 0, width = height, height = height },
-		[Element.DurationCooldown] = { x = offsetX(durationCenter), y = 0, width = durationWidth, height = height },
-		[Element.SpellName] = { x = offsetX(spellCenter), y = 0 },
-		[Element.TargetName] = { x = offsetX(targetCenter), y = 0 },
-		[Element.InterruptSource] = { x = offsetX(interruptCenter), y = 0 },
-	}
 end
 
 -- ── v3 party filter → v4 multi-select TargetClass set ─────────────────────────
@@ -208,30 +142,19 @@ end
 
 ---@param partySettings SavedVariablesSettingsParty
 local function buildBarElements(partySettings)
+	-- LAYOUT IS NOT MIGRATED for bars. v3 stored a free per-element pixel layout
+	-- (Width/Height + edge-anchored, width-split boxes); v4's bar is a reflow model
+	-- (Private.Utils.ComputeBarLayout) where element x/y are small insets and
+	-- ProgressBar.width is the *total* frame width with the gutter subtracted
+	-- internally. There is no faithful mapping between the two: any reconstructed
+	-- absolute offset is re-interpreted as an inset and the elements fly apart. So we
+	-- keep the v4 template's default geometry verbatim and only carry over the settings
+	-- that ARE representable in v4 (colours, textures, fonts, active toggles, filter).
+	-- Positioning is preserved at the group level via Position; users re-tune bar
+	-- appearance with the new designer. See buildPartyGroup / derivePartyFilter.
 	local elements = Private.Design.GetDefault(Template.Bar)
 	local flags = partySettings.FeatureFlags
 	local fontFlags = copy(partySettings.FontFlags)
-	local mirrored = flag(flags, V3_FLAG.MirrorLayout)
-
-	local geometry = reconstructBarGeometry({
-		width = partySettings.Width,
-		height = partySettings.Height,
-		fontSize = partySettings.FontSize,
-		showIcon = flag(flags, V3_FLAG.ShowIcon),
-		showTargetMarker = flag(flags, V3_FLAG.ShowTargetMarker),
-		showDuration = flag(flags, V3_FLAG.ShowDuration),
-		inlineDuration = flag(flags, V3_FLAG.InlineDuration),
-		mirrored = mirrored,
-		showSpellName = flag(flags, V3_FLAG.ShowSpellName),
-		showTargetName = flag(flags, V3_FLAG.ShowTargetName),
-	})
-
-	-- fold the reconstructed geometry onto the default elements
-	for element, values in pairs(geometry) do
-		for key, value in pairs(values) do
-			elements[element][key] = value
-		end
-	end
 
 	local progressBar = elements[Element.ProgressBar]
 	progressBar.barTexture = partySettings.ForegroundBarTexture
@@ -265,7 +188,6 @@ local function buildBarElements(partySettings)
 	spellName.fontSize = partySettings.FontSize
 	spellName.font = partySettings.Font
 	spellName.fontFlags = copy(fontFlags)
-	spellName.justifyH = mirrored and "RIGHT" or "LEFT"
 
 	local targetName = elements[Element.TargetName]
 	targetName.active = flag(flags, V3_FLAG.ShowTargetName)
@@ -273,7 +195,6 @@ local function buildBarElements(partySettings)
 	targetName.fontSize = partySettings.FontSize
 	targetName.font = partySettings.Font
 	targetName.fontFlags = copy(fontFlags)
-	targetName.justifyH = mirrored and "LEFT" or "RIGHT"
 
 	local interruptSource = elements[Element.InterruptSource]
 	interruptSource.active = flag(flags, V3_FLAG.RenderInterruptSourceName)
@@ -369,7 +290,6 @@ local migrationSteps = {
 			[1] = buildSelfGroup(selfSettings),
 			[2] = buildPartyGroup(partySettings),
 		}
-		saved.NextGroupId = 3
 		saved.TextToSpeech = buildTextToSpeech(selfSettings)
 		saved.Settings = nil
 		saved.SchemaVersion = 4
@@ -399,16 +319,10 @@ function Private.Migration.Apply(saved)
 	return saved
 end
 
--- Fresh-install seed (no prior SavedVariables). A brand-new config gets its groups
--- straight from the v4 schema defaults via Groups.CreateStarterGroups — NOT the v3
--- reconstruction that Apply uses — and is stamped at the current schema version so a
--- following Migration.Apply is a no-op. Schema version + the TTS shape live here beside
--- the migration steps; TTS is seeded from the Self setting defaults.
 ---@param saved table
 ---@return table saved
 function Private.Migration.SeedFreshInstall(saved)
 	saved.Groups = Private.Groups.CreateStarterGroups()
-	saved.NextGroupId = 3
 	saved.TextToSpeech = buildTextToSpeech(Private.Settings.GetSelfDefaultSettings())
 	saved.SchemaVersion = CURRENT_SCHEMA_VERSION
 
@@ -420,7 +334,6 @@ end
 Private.__test = Private.__test or {}
 Private.__test.Migration = {
 	CURRENT_SCHEMA_VERSION = CURRENT_SCHEMA_VERSION,
-	reconstructBarGeometry = reconstructBarGeometry,
 	derivePartyFilter = derivePartyFilter,
 	V3_FLAG = V3_FLAG,
 	V3_FONT_FLAG = V3_FONT_FLAG,

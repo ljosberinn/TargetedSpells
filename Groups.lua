@@ -1,35 +1,12 @@
 ---@type string, TargetedSpells
-local addonName, Private = ...
-
--- Groups.lua ──────────────────────────────────────────────────────────────────
--- Group-filter matching + group lifecycle (create / delete / template swap).
--- Groups are independent: a cast is offered to every group whose multi-select
--- Filter matches, and may render in several at once. No priority, no arbitration,
--- no enforced-disjoint filters — overlap is intended.
---
--- Public surface:
---   Private.Groups.GetMatching(info, groups) -> array of matching groups
---   Private.Groups.Create(template, saved)   -> id, group   (fresh id, seeded)
---   Private.Groups.Delete(id, saved)         -> boolean      (refuses the last)
---   Private.Groups.SetTemplate(group, template)              (reseeds Elements)
---   Private.Groups.Count(saved)              -> number
--- Helpers stay file-local.
+local _, Private = ...
 
 ---@class TargetedSpellsGroups
 Private.Groups = {}
 
--- Ascending group-id order is needed on every cast (GetMatching) and by the
--- Designer's tab strip, but the id set changes only on create / delete / import.
--- Cache the sorted array per groups-map so the steady-state cast path does no
--- sort or table allocation; rebuild only when the set changes. The cache is
--- weak-keyed on the groups map, so a dropped map (e.g. a spec's throwaway table,
--- or the pre-migration table replaced wholesale) GCs its entry away on its own.
 ---@type table<table, integer[]>
 local sortedIdCache = setmetatable({}, { __mode = "k" })
 
--- Ascending list of the ids present in `groups`. The returned array is shared and
--- cached — callers must treat it as read-only and must not hold it across a
--- create/delete/import (which invalidate it).
 ---@param groups table
 ---@return integer[]
 function Private.Groups.SortedIds(groups)
@@ -51,21 +28,50 @@ function Private.Groups.SortedIds(groups)
 	return ids
 end
 
--- Drops the cached order for a groups map. Must be called after any mutation that
--- adds or removes an id (create / delete / in-place import); pure field edits
--- (rename, layout changes) keep the id set and need no invalidation.
 ---@param groups table
 function Private.Groups.InvalidateOrder(groups)
 	sortedIdCache[groups] = nil
 end
 
--- Returns every enabled group whose Filter overlaps the cast's target classes,
--- in ascending group-id order. One cast can feed several groups; each match is a
--- separate frame downstream. No arbitration when filters overlap.
---
--- `info.targetClasses` is a set `{ [Enum.TargetClass.X] = true }` of the classes
--- the cast satisfies (the caller classifies the cast). `groups` defaults to the
--- live SavedVariables map; specs pass one explicitly.
+---@param groups table<integer, TargetedSpellsGroup>
+---@return TargetedSpellsGroupCapabilities
+function Private.Groups.ComputeCapabilities(groups)
+	local capabilities = {
+		enabled = false,
+		usesInterruptibility = false,
+		usesShield = false,
+		showsTargetMarker = false,
+		indicatesInterrupts = false,
+	}
+
+	for _, group in pairs(groups) do
+		if group.Enabled then
+			capabilities.enabled = true
+
+			if group.Template == Private.Enum.Template.Bar then
+				local elements = group.Elements
+				if elements[Private.Enum.Element.ProgressBar] and elements[Private.Enum.Element.ProgressBar].barColorMode == Private.Enum.BarColorMode.Interruptibility then
+					capabilities.usesInterruptibility = true
+				end
+
+				if elements[Private.Enum.Element.InterruptShield] and elements[Private.Enum.Element.InterruptShield].active then
+					capabilities.usesShield = true
+				end
+
+				if elements[Private.Enum.Element.TargetMarker] and elements[Private.Enum.Element.TargetMarker].active then
+					capabilities.showsTargetMarker = true
+				end
+			end
+		end
+
+		if group.IndicateInterrupts then
+			capabilities.indicatesInterrupts = true
+		end
+	end
+
+	return capabilities
+end
+
 ---@param info { targetClasses: table<TargetClass, boolean> }
 ---@param groups table<any, table>?
 ---@return table[]
@@ -95,7 +101,7 @@ function Private.Groups.GetMatching(info, groups)
 	return matching
 end
 
-local function savedOrGlobal(saved)
+local function SavedOrGlobal(saved)
 	return saved or TargetedSpellsSaved
 end
 
@@ -104,9 +110,11 @@ end
 ---@return number
 function Private.Groups.Count(saved)
 	local count = 0
-	for _ in pairs(savedOrGlobal(saved).Groups) do
+
+	for _ in pairs(SavedOrGlobal(saved).Groups) do
 		count = count + 1
 	end
+
 	return count
 end
 
@@ -116,12 +124,11 @@ end
 ---@param id integer
 ---@param template TargetedSpellsTemplate
 ---@param name string
-local function buildDefaultGroup(id, template, name)
+local function BuildDefaultGroup(id, template, name)
 	return {
 		Id = id,
 		Name = name,
 		Enabled = true,
-		-- a fresh group sees every cast until the user narrows the filter
 		Filter = {
 			[Private.Enum.TargetClass.Player] = true,
 			[Private.Enum.TargetClass.PartyMember] = true,
@@ -132,7 +139,6 @@ local function buildDefaultGroup(id, template, name)
 		Position = { point = "CENTER", x = 0, y = 0 },
 		Gap = 2,
 		Grow = Private.Enum.Grow.Start,
-		-- bars read best stacked vertically (one cast bar per row); icons flow in a row
 		Direction = template == Private.Enum.Template.Bar and Private.Enum.Direction.Vertical
 			or Private.Enum.Direction.Horizontal,
 		SortOrder = Private.Enum.SortOrder.Ascending,
@@ -156,14 +162,43 @@ local function buildDefaultGroup(id, template, name)
 	}
 end
 
+-- Runtime (non-persisted) id allocator. Ids must be unique among currently-live
+-- groups AND must not collide with an edit-mode frame that a within-session delete
+-- left lingering: LibEditMode has no RemoveFrame, so a deleted group's named frame
+-- (TargetedSpellsGroupEditMode<id>) survives until the next reload — see
+-- Private.EditMode.DeleteGroup. A per-session high-water mark satisfies both without
+-- persisting anything: it only ever climbs within a session, so an id freed this
+-- session is never handed back while its frame is still around. Across reloads the
+-- lingering frames are gone and the mark reseeds from the highest saved id, so
+-- reusing a since-freed top id is safe. Keyed weakly by the config table so the live
+-- config and each spec's fixture stay isolated (and are collected with it).
+local highWaterByConfig = setmetatable({}, { __mode = "k" })
+
+---@param saved table
+---@return integer
+local function AllocateId(saved)
+	local water = highWaterByConfig[saved] or 0
+
+	for id in pairs(saved.Groups) do
+		if id > water then
+			water = id
+		end
+	end
+
+	local id = water + 1
+	highWaterByConfig[saved] = id
+
+	return id
+end
+
 -- A friendly default name: the lowest "Group N" not already taken. Names are not
--- identity (ids are), but naming off the raw NextGroupId produces an ugly label like
--- "Group 10" once groups have been created and deleted in a session, since ids are
--- never reused. Picking the smallest free N keeps the label sequential and fills gaps
--- left by deletions.
+-- identity (ids are), but naming off the raw allocated id produces an ugly label like
+-- "Group 10" once groups have been created and deleted in a session, since ids only
+-- climb. Picking the smallest free N keeps the label sequential and fills gaps left by
+-- deletions.
 ---@param saved table
 ---@return string
-local function nextGroupName(saved)
+local function NextGroupName(saved)
 	local taken = {}
 	for _, group in pairs(saved.Groups) do
 		if group.Name then
@@ -180,18 +215,18 @@ local function nextGroupName(saved)
 end
 
 -- Creates a group of `template`, seeded from the built-in element defaults, with a
--- freshly allocated id (persisted in NextGroupId so ids are never reused) and a
--- sequential "Group N" display name (independent of the id — see nextGroupName).
+-- freshly allocated id (see AllocateId — a runtime high-water mark, never reused within
+-- a session) and a sequential "Group N" display name (independent of the id — see
+-- NextGroupName).
 ---@param template TargetedSpellsTemplate
 ---@param saved table?
 ---@return integer id, TargetedSpellsGroup group
 function Private.Groups.Create(template, saved)
-	saved = savedOrGlobal(saved)
+	saved = SavedOrGlobal(saved)
 
-	local id = saved.NextGroupId or 1
-	saved.NextGroupId = id + 1
+	local id = AllocateId(saved)
 
-	local group = buildDefaultGroup(id, template, nextGroupName(saved))
+	local group = BuildDefaultGroup(id, template, NextGroupName(saved))
 	saved.Groups[id] = group
 	Private.Groups.InvalidateOrder(saved.Groups)
 
@@ -199,30 +234,26 @@ function Private.Groups.Create(template, saved)
 end
 
 -- The starter groups seeded on a brand-new install (no SavedVariables yet). Built from
--- the live v4 element defaults (Design.GetDefault, via buildDefaultGroup) so a fresh
+-- the live v4 element defaults (Design.GetDefault, via BuildDefaultGroup) so a fresh
 -- bar/icon matches exactly what "Reset Element" produces — unlike the v3→v4 migration,
 -- which reconstructs geometry from legacy settings. Ids 1/2 mirror the migration layout
 -- (Self icon, then bar), each pre-filtered to its role.
 ---@return table<integer, TargetedSpellsGroup>
 function Private.Groups.CreateStarterGroups()
-	local selfGroup = buildDefaultGroup(1, Private.Enum.Template.Icon, "Self - Icon")
+	local selfGroup = BuildDefaultGroup(1, Private.Enum.Template.Icon, "Self - Icon")
 	selfGroup.Filter = { [Private.Enum.TargetClass.Player] = true }
 
-	local barGroup = buildDefaultGroup(2, Private.Enum.Template.Bar, "Untargeted AoE - Bar")
+	local barGroup = BuildDefaultGroup(2, Private.Enum.Template.Bar, "Untargeted AoE - Bar")
 	barGroup.Filter = { [Private.Enum.TargetClass.Nobody] = true }
 
 	return { [1] = selfGroup, [2] = barGroup }
 end
 
--- Deletes a group by id. Refuses to remove the last remaining group (there must
--- always be at least one) — any other group, including the two migrated Self/Party
--- slots, is freely deletable. The transitional v3 surfaces that read Groups[1]/[2]
--- tolerate a missing slot rather than pinning them. Returns whether it deleted anything.
 ---@param id integer
 ---@param saved table?
 ---@return boolean
 function Private.Groups.Delete(id, saved)
-	saved = savedOrGlobal(saved)
+	saved = SavedOrGlobal(saved)
 
 	if saved.Groups[id] == nil or Private.Groups.Count(saved) <= 1 then
 		return false
@@ -233,9 +264,6 @@ function Private.Groups.Delete(id, saved)
 	return true
 end
 
--- Swaps a group's template and reseeds its Elements from the new template's
--- built-in defaults (the old template's element values can't map onto a different
--- element set). No-op if the template is unchanged.
 ---@param group TargetedSpellsGroup
 ---@param template TargetedSpellsTemplate
 function Private.Groups.SetTemplate(group, template)

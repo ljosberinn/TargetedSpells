@@ -73,13 +73,6 @@ function TargetedSpellsMixin:GetId()
 	return self.id
 end
 
--- `kind` (the XML KeyValue, "self"/"party") survives in v4 only as "which pool
--- do I return to". Settings resolution goes through GetGroup / the element layout
--- below, not through kind.
-function TargetedSpellsMixin:GetKind()
-	return self.kind
-end
-
 -- ── Group + layout resolution (Phase 3 seam) ─────────────────────────────────
 -- A frame belongs to a group (assigned by the Driver on acquire). It renders its
 -- element layout from that group — unless a scratch layout is injected, which is

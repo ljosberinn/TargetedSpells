@@ -534,7 +534,6 @@ function TargetedSpellsBarMixin:SetFont()
 			local fontFlags = target.countdown and element.countdownFontFlags or element.fontFlags
 
 			Private.Utils.SafelySetFont(
-				Private.Enum.FrameKind.Party,
 				target.fontString,
 				font,
 				fontSize,

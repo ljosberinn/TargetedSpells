@@ -15,11 +15,6 @@ function TargetedSpellsDriver:Init()
 	self.role = Private.Enum.Role.Damager
 	self.contentType = Private.Enum.ContentType.OpenWorld
 	self.OnCooldownDoneClosure = GenerateClosure(self.OnCooldownDone, self)
-	-- delayed cast dispatch: one growing queue drained by a single self-rescheduling
-	-- timer, so a spellcast start allocates neither a per-cast closure nor a per-cast
-	-- Ticker. head/tail cursors give O(1) enqueue/dequeue without shifting; because
-	-- the front is nil'd on dequeue the table is not a sequence, so `#` must never be
-	-- used on it — pendingTail is the authority. Cursors reset on full drain.
 	self.pendingCasts = {}
 	self.pendingHead = 1
 	self.pendingTail = 0
@@ -28,8 +23,8 @@ function TargetedSpellsDriver:Init()
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.PROFILE_IMPORTED, self.OnProfileImported, self)
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.GROUP_CHANGED, self.OnGroupChanged, self)
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.GROUP_POSITION_CHANGED, self.OnGroupPositionChanged, self)
-	self.ttsAnnouncementCache = {}
 	self.activeEncounterId = nil
+	self.capabilities = nil
 
 	-- denormalise the id onto each group so frames can find their container
 	for id, group in pairs(TargetedSpellsSaved.Groups) do
@@ -57,68 +52,16 @@ function TargetedSpellsDriver:GetController(group)
 	return self.controllers[id]
 end
 
--- ── Cross-group setting queries (event registration decisions) ───────────────
-
-function TargetedSpellsDriver:AnyGroupEnabled()
-	for _, group in pairs(TargetedSpellsSaved.Groups) do
-		if group.Enabled then
-			return true
-		end
+function TargetedSpellsDriver:GetCapabilities()
+	if self.capabilities == nil then
+		self.capabilities = Private.Groups.ComputeCapabilities(TargetedSpellsSaved.Groups)
 	end
 
-	return false
+	return self.capabilities
 end
 
-function TargetedSpellsDriver:AnyGroupUsesInterruptibility()
-	for _, group in pairs(TargetedSpellsSaved.Groups) do
-		if group.Enabled and group.Template == Private.Enum.Template.Bar then
-			local core = group.Elements[Private.Enum.Element.ProgressBar]
-
-			if core ~= nil and core.barColorMode == Private.Enum.BarColorMode.Interruptibility then
-				return true
-			end
-		end
-	end
-
-	return false
-end
-
-function TargetedSpellsDriver:AnyGroupUsesShield()
-	for _, group in pairs(TargetedSpellsSaved.Groups) do
-		if group.Enabled and group.Template == Private.Enum.Template.Bar then
-			local shield = group.Elements[Private.Enum.Element.InterruptShield]
-
-			if shield ~= nil and shield.active then
-				return true
-			end
-		end
-	end
-
-	return false
-end
-
-function TargetedSpellsDriver:AnyGroupShowsTargetMarker()
-	for _, group in pairs(TargetedSpellsSaved.Groups) do
-		if group.Enabled and group.Template == Private.Enum.Template.Bar then
-			local marker = group.Elements[Private.Enum.Element.TargetMarker]
-
-			if marker ~= nil and marker.active then
-				return true
-			end
-		end
-	end
-
-	return false
-end
-
-function TargetedSpellsDriver:AnyGroupIndicatesInterrupts()
-	for _, group in pairs(TargetedSpellsSaved.Groups) do
-		if group.IndicateInterrupts then
-			return true
-		end
-	end
-
-	return false
+function TargetedSpellsDriver:InvalidateCapabilities()
+	self.capabilities = nil
 end
 
 -- Ensures the driver frame exists and its event registration matches the current
@@ -137,7 +80,9 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 		end
 	end
 
-	if not self:AnyGroupEnabled() then
+	local capabilities = self:GetCapabilities()
+
+	if not capabilities.enabled then
 		-- no display active: stop listening entirely until a group is re-enabled
 		self.frame:UnregisterAllEvents()
 		self.frame:SetScript("OnEvent", nil)
@@ -167,7 +112,7 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 		self.frame:SetScript("OnEvent", GenerateClosure(self.OnFrameEvent, self))
 	end
 
-	if self:AnyGroupUsesInterruptibility() or self:AnyGroupUsesShield() then
+	if capabilities.usesInterruptibility or capabilities.usesShield then
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTIBLE")
 		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE")
 	else
@@ -175,46 +120,32 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 		self.frame:UnregisterEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE")
 	end
 
-	if self:AnyGroupShowsTargetMarker() then
+	if capabilities.showsTargetMarker then
 		self.frame:RegisterEvent("RAID_TARGET_UPDATE")
 	else
 		self.frame:UnregisterEvent("RAID_TARGET_UPDATE")
 	end
 end
 
--- ── Frame lifecycle ──────────────────────────────────────────────────────────
+do
+	local nobody = {
+		[Private.Enum.TargetClass.Nobody] = true
+	}
 
----@param info SpellCastInfo
----@return table<TargetClass, boolean>
-function TargetedSpellsDriver:GetTargetClasses(info)
-	local targetName = UnitSpellTargetName(info.unit)
-
-	if targetName == nil then
-		return {
-			[Private.Enum.TargetClass.Nobody] = true
-		}
-	end
-
-	-- A targeted cast is Player or PartyMember, but PlayerIsSpellTarget is a *secret*
-	-- boolean that cannot be branched on here. Offer the cast to both classes; each
-	-- acquired frame resolves the distinction secret-safely (mixin:ApplyCastAlpha).
-	return {
+	local everyone = {
 		[Private.Enum.TargetClass.Player] = true,
 		[Private.Enum.TargetClass.PartyMember] = true
 	}
-end
 
----@param group TargetedSpellsGroup
-function TargetedSpellsDriver:GroupLoadConditionsProhibit(group)
-	if not group.LoadConditionRole[self.role] then
-		return true
+	function TargetedSpellsDriver:GetTargetClasses(info)
+		local targetName = UnitSpellTargetName(info.unit)
+
+		if targetName == nil then
+			return nobody
+		end
+
+		return everyone
 	end
-
-	if not group.LoadConditionContentType[self.contentType] then
-		return true
-	end
-
-	return false
 end
 
 function TargetedSpellsDriver:ProcessInfo(info)
@@ -232,8 +163,10 @@ function TargetedSpellsDriver:ProcessInfo(info)
 	local count = 0
 
 	for _, group in ipairs(Private.Groups.GetMatching(info, TargetedSpellsSaved.Groups)) do
-		if not self:GroupLoadConditionsProhibit(group) then
-			local frame = self:GetController(group):Acquire(info, self.OnCooldownDoneClosure)
+		local controller = self:GetController(group)
+
+		if controller:LoadConditionsApply(self.role, self.contentType) then
+			local frame = controller:Acquire(info, self.OnCooldownDoneClosure)
 			table.insert(self.frames[info.unit], frame)
 			dirtyGroups[group.Id] = true
 			count = count + 1
@@ -249,23 +182,7 @@ end
 
 ---@param frame TargetedSpellsIconMixin|TargetedSpellsBarMixin
 function TargetedSpellsDriver:ReleaseFrame(frame)
-	local group = frame:GetGroup()
-
-	if group ~= nil then
-		-- clears the controller's frame list and returns the frame to the pool together
-		self:GetController(group):Release(frame)
-	else
-		-- Fall back on the XML kind if the group tag was lost. By the controller-list
-		-- invariant (a live frame keeps its group from SetGroup at acquire until it
-		-- leaves the list at release; Reset no longer nils it) this branch never runs
-		-- for a frame that is in a controller list, so it cannot strand a released
-		-- frame there. (architecture-3 tracks removing this fallback outright.)
-		if frame:GetKind() == Private.Enum.FrameKind.Self then
-			Private.Utils.Pools.Icon:Release(frame)
-		else
-			Private.Utils.Pools.Bar:Release(frame)
-		end
-	end
+	self:GetController(frame:GetGroup()):Release(frame)
 end
 
 -- Relayouts group controllers. With no argument, every controller relayouts (global
@@ -500,8 +417,6 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 
 		if name == "nameplateShowEnemies" then
 			if value == 0 or value == "0" then
-				-- release only the Driver's own frames; the pools are shared with demo
-				-- frames a config UI may still own (see ReleaseAllOwnFrames).
 				self:ReleaseAllOwnFrames()
 			end
 		elseif name == "nameplateShowOffscreen" then
@@ -532,7 +447,7 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		end
 
 		local frames = self.frames[unit]
-		self:ClearAnnouncementCacheForUnit(unit)
+		Private.TextToSpeechUtil.ClearAnnouncementCacheForUnit(unit)
 
 		if frames == nil or #frames == 0 then
 			return
@@ -572,7 +487,12 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		end
 
 		self:ProcessInfo(info)
-		self:MaybeAnnounceSpell(info)
+
+		if info.isRetarget or not self:AnyGroupLoadConditionsAllow() then
+			return
+		end
+
+		Private.TextToSpeechUtil.MaybeAnnounceSpell(info, self.contentType, self.activeEncounterId)
 	elseif event == Private.Enum.Events.DELAYED_FRAME_CLEANUP then
 		---@type DelayInfo
 		local delayInfo = ...
@@ -623,25 +543,13 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		self.contentType = nextContentType
 
 		local specId = PlayerUtil.GetCurrentSpecID()
+		local role = GetSpecializationRoleByID(specId)
 
 		if
-			specId == 105 -- restoration druid
-			or specId == 1468 -- preservation evoker
-			or specId == 270 -- mistweaver monk
-			or specId == 65 -- holy paladin
-			or specId == 256 -- discipline priest
-			or specId == 257 -- holy priest
-			or specId == 264 -- restoration shaman
+			role == "HEALER"
 		then
 			self.role = Private.Enum.Role.Healer
-		elseif
-			specId == 250 -- blood death knight
-			or specId == 581 -- vengeance demon hunter
-			or specId == 104 -- guardian druid
-			or specId == 268 -- brewmaster monk
-			or specId == 66 -- protection paladin
-			or specId == 73 -- protection warrior
-		then
+		elseif role == "TANK" then
 			self.role = Private.Enum.Role.Tank
 		else
 			self.role = Private.Enum.Role.Damager
@@ -688,7 +596,8 @@ function TargetedSpellsDriver:CleanupDanglingFrames()
 
 	for unit in pairs(self.frames) do
 		local thisUnitWasCleanedUp = self:ReleaseFrameForUnit(unit, true)
-		self:ClearAnnouncementCacheForUnit(unit)
+
+		Private.TextToSpeechUtil.ClearAnnouncementCacheForUnit(unit)
 
 		cleanedSomethingUp = cleanedSomethingUp or thisUnitWasCleanedUp
 	end
@@ -727,6 +636,7 @@ function TargetedSpellsDriver:OnProfileImported()
 		controller:Position()
 	end
 
+	self:InvalidateCapabilities()
 	self:SetupFrame(false)
 end
 
@@ -759,6 +669,7 @@ function TargetedSpellsDriver:OnGroupChanged(groupId)
 
 	self:RefreshGroup(group)
 	self:GetController(group):Reconfigure(group)
+	self:InvalidateCapabilities()
 	self:SetupFrame(false)
 
 	-- only this group's frames/container changed; other groups are untouched
@@ -768,6 +679,9 @@ function TargetedSpellsDriver:OnGroupChanged(groupId)
 	self:RepositionFrames(dirtyGroups)
 end
 
+-- Position-only refresh (a drag): the container moves but capabilities are unchanged,
+-- so the cache is left intact. Group *create* deliberately goes through GROUP_CHANGED,
+-- not this event, precisely because it does change capabilities (see EditMode.CreateGroup).
 function TargetedSpellsDriver:OnGroupPositionChanged(groupId)
 	local group = TargetedSpellsSaved.Groups[groupId]
 
@@ -777,7 +691,7 @@ function TargetedSpellsDriver:OnGroupPositionChanged(groupId)
 end
 
 function TargetedSpellsDriver:MaybeMarkAsInterruptedAndDelay(unit, id, interruptedBy)
-	if not self:AnyGroupIndicatesInterrupts() then
+	if not self:GetCapabilities().indicatesInterrupts then
 		return
 	end
 
@@ -837,103 +751,18 @@ function TargetedSpellsDriver:OnCooldownDone(info)
 	end
 end
 
-function TargetedSpellsDriver:ClearAnnouncementCacheForUnit(unit)
-	self.ttsAnnouncementCache[unit] = nil
-end
-
-function TargetedSpellsDriver:GetDefaultVoiceId()
-	return C_TTSSettings.GetVoiceOptionID(Enum.TtsVoiceType.Standard)
-end
-
-function TargetedSpellsDriver:UnitMatchesTTSCriteria(unit)
-	local settings = UnitSpellTargetName(unit) == nil and TargetedSpellsSaved.TextToSpeech.AnnounceUntargetedSpells or
-		TargetedSpellsSaved.TextToSpeech.AnnounceTargetedSpells
-	local classification = UnitClassification(unit)
-
-	if UnitIsMinion(unit) or classification == "normal" or classification == "trivial" or classification == "minus" then
-		return settings[Private.Enum.NpcType.Minion]
-	end
-
-	if UnitIsLieutenant(unit) or UnitLevel(unit) - 1 == UnitLevel("player") then
-		return settings[Private.Enum.NpcType.Lieutenant]
-	end
-
-	if UnitIsBossMob(unit) or UnitLevel(unit) - 2 == UnitLevel("player") then
-		return settings[Private.Enum.NpcType.Boss]
-	end
-
-	local class = UnitClassBase(unit)
-
-	if class == "PALADIN" or class == "MAGE" or class == "PRIEST" then
-		return settings[Private.Enum.NpcType.Caster]
-	end
-
-	return settings[Private.Enum.NpcType.Melee]
-end
-
-function TargetedSpellsDriver:EncounterPreventsTTSExecution(unit)
-	if self.activeEncounterId == 3333 then -- Lothraxion, Nexus-Point Xenas
-		if UnitLevel(unit) == -1 then
-			local id = string.gsub(unit, "nameplate", "")
-			-- ignores casts by a boss unit if the nameplateN id is greater than 1
-			return tonumber(id) > 1
-		end
-
-		return false
-	elseif self.activeEncounterId == 2001 then -- Ick and Krick, Pit of Saron
-		return UnitLevel(unit) == 91 and UnitIsLieutenant(unit)
-	elseif self.activeEncounterId == 2067 then -- Viceroy Nezhar, Seat of the Triumvirate
-		return UnitLevel(unit) == 90
-	end
-
-	return false
-end
-
 function TargetedSpellsDriver:AnyGroupLoadConditionsAllow()
 	for _, group in pairs(TargetedSpellsSaved.Groups) do
-		if group.Enabled and not self:GroupLoadConditionsProhibit(group) then
-			return true
+		if group.Enabled then
+			local controller = self:GetController(group)
+
+			if controller:LoadConditionsApply(self.role, self.contentType) then
+				return true
+			end
 		end
 	end
 
 	return false
-end
-
-function TargetedSpellsDriver:MaybeAnnounceSpell(info)
-	if
-		info.isRetarget
-		or not self:AnyGroupLoadConditionsAllow()
-		-- don't execute in open world if outside of combat, otherwise there's stray TTS from people casting stuff in town
-		or (self.contentType == Private.Enum.ContentType.OpenWorld and (not InCombatLockdown() or not UnitAffectingCombat(
-			info.unit
-		)))
-		or self:EncounterPreventsTTSExecution(info.unit)
-	then
-		return
-	end
-
-	local now = GetTime()
-
-	if
-		self.ttsAnnouncementCache[info.unit] ~= nil and now - self.ttsAnnouncementCache[info.unit] < 3
-		or not self:UnitMatchesTTSCriteria(info.unit)
-	then
-		return
-	end
-
-	local spellName = C_Spell.GetSpellName(info.spellId)
-
-	if spellName == nil then
-		return
-	end
-
-	self.ttsAnnouncementCache[info.unit] = now
-
-	local configuredVoice = TargetedSpellsSaved.TextToSpeech.TextToSpeechVoice
-	local voiceId = configuredVoice ~= nil and configuredVoice > -1 and configuredVoice
-		or C_TTSSettings.GetVoiceOptionID(Enum.TtsVoiceType.Standard)
-
-	C_VoiceChat.SpeakText(voiceId, spellName, 2, C_TTSSettings.GetSpeechVolume(), true)
 end
 
 table.insert(Private.LoginFnQueue, GenerateClosure(TargetedSpellsDriver.Init, TargetedSpellsDriver))

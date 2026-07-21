@@ -13,14 +13,14 @@
 ---@field GroupController TargetedSpellsGroupController
 ---@field Migration TargetedSpellsMigration
 ---@field EditMode TargetedSpellsEditModeManager
----@field SlashCommands TargetedSpellsSlashCommands
 ---@field Designer TargetedSpellsDesigner
 ---@field __test table?
 ---@field Glows GlowFunctions
+---@field TextToSpeechUtil TargetedSpellsTextToSpeechUtil
 
----@class TargetedSpellsSlashCommands
----@field Register fun(name: string, description: string, handler: fun(rest: string))
----@field Dispatch fun(message: string?)
+---@class TargetedSpellsTextToSpeechUtil
+---@field MaybeAnnounceSpell fun(info: SpellCastInfo, contentType: ContentType, activeEncounterId: number)
+---@field ClearAnnouncementCacheForUnit fun(unit: string)
 
 ---@class TargetedSpellsDesigner
 ---@field Toggle fun()
@@ -40,7 +40,7 @@
 ---@field ComputeElementExtent fun(elements: table<Element, table<string, any>>): { width: number, height: number, offsetX: number, offsetY: number }
 ---@field ComputeGroupExtent fun(elements: table<Element, table<string, any>>): { width: number, height: number, offsetX: number, offsetY: number }
 ---@field ComputeBarLayout fun(elements: table<Element, table<string, any>>): table<any, any>
----@field AdjustLayout fun(frames: TargetedSpellsIconMixin[], geo: CollectLayoutingArguments, barParent: Frame, firstAnchorPoint: FramePoint, firstOffsetX: number, firstOffsetY: number, isEditMode: boolean)
+---@field AdjustLayout fun(frames: TargetedSpellsIconMixin[], geo: CollectLayoutingArguments, barParent: Frame, firstAnchorPoint: FramePoint, firstOffsetX: number, firstOffsetY: number)
 ---@field SortFrames fun(frames: TargetedSpellsIconMixin[], sortOrder: SortOrder)
 ---@field RollDice fun(): boolean
 ---@field ShowStaticPopup fun(args: StaticPopupDialogsArgs)
@@ -53,9 +53,12 @@
 ---@field ShowMigrationPopup fun()
 ---@field MigratePartySettingsToV3 fun(existing: table): SavedVariablesSettingsParty
 ---@field ApplyMigration fun(key: string, kind: FrameKind, defaults: SavedVariablesSettingsSelf|SavedVariablesSettingsParty)
----@field SafelySetFont fun(kind: FrameKind, fontString: FontString, font: string, fontSize: number, fontFlags: string)
+---@field SafelySetFont fun(fontString: FontString, font: string, fontSize: number, fontFlags: string)
+---@field CreateCountdownFormatter fun(): NumericFormatter
+---@field ApplyFractionThreshold fun(formatter: NumericFormatter, fractionThreshold: number?)
+---@field RegisterSlashCommand fun(name: string, description: string, handler: fun(rest: string))
 
--- ── v4 model (Phase 1) ───────────────────────────────────────────────────────
+-- ── v4 model ───────────────────────────────────────────────────────
 
 -- One schema record: mirrors Blizzard's systemSettingDisplayInfo shape. `type`
 -- selects the designer widget (boolean/number/color/enum/font/fontFlags/texture).
@@ -105,6 +108,15 @@
 ---@field Count fun(saved: table?): number
 ---@field SortedIds fun(groups: table): integer[]
 ---@field InvalidateOrder fun(groups: table)
+---@field ComputeCapabilities fun(groups: table<integer, TargetedSpellsGroup>): TargetedSpellsGroupCapabilities
+---@field LoadConditionsApply fun(self: TargetedSpellsGroups, role: Role, contentType: ContentType): boolean
+
+---@class TargetedSpellsGroupCapabilities
+---@field enabled boolean -- any group Enabled
+---@field usesInterruptibility boolean -- any enabled Bar group colouring by interruptibility
+---@field usesShield boolean -- any enabled Bar group with an active InterruptShield
+---@field showsTargetMarker boolean -- any enabled Bar group with an active TargetMarker
+---@field indicatesInterrupts boolean -- any group with IndicateInterrupts (independent of Enabled)
 
 ---@class TargetedSpellsTextToSpeech
 ---@field AnnounceUntargetedSpells table<NpcType, boolean>
@@ -115,7 +127,6 @@
 -- trees; TTS is hoisted to one global table. No `Designs` map (layout is 1:1).
 ---@class SavedVariablesV4
 ---@field SchemaVersion integer
----@field NextGroupId integer
 ---@field Groups table<integer, TargetedSpellsGroup>
 ---@field TextToSpeech TargetedSpellsTextToSpeech
 
@@ -198,7 +209,6 @@
 ---@field Settings SavedVariablesSettings
 ---@field nameplateShowOffscreenWasInitialized boolean
 ---@field SchemaVersion integer?
----@field NextGroupId integer?
 ---@field Groups table<integer, TargetedSpellsGroup>?
 ---@field TextToSpeech TargetedSpellsTextToSpeech?
 
@@ -275,7 +285,6 @@
 ---@field Animation AnimationGroup
 
 ---@class TargetedSpellsMixin : Frame
----@field private kind FrameKind?
 ---@field private startTime number?
 ---@field private spellId number?
 ---@field private id number?
@@ -289,7 +298,6 @@
 ---@field OnLoad fun(self: TargetedSpellsMixin)
 ---@field SetId fun(self: TargetedSpellsMixin, id: number?)
 ---@field GetId fun(self: TargetedSpellsMixin): number?
----@field GetKind fun(self: TargetedSpellsMixin): FrameKind?
 ---@field private group TargetedSpellsGroup?
 ---@field private layoutOverride table<Element, table<string, any>>?
 ---@field SetGroup fun(self: TargetedSpellsMixin, group: TargetedSpellsGroup?)
@@ -439,21 +447,17 @@
 ---@field private DrainPendingCastsClosure fun()
 ---@field private DrainPendingCasts fun(self: TargetedSpellsDriver)
 ---@field private OnCooldownDoneClosure fun(info: SpellCastInfo)
----@field private ttsAnnouncementCache table<string, number>
 ---@field private activeEncounterId number?
 ---@field frames table<string, (TargetedSpellsIconMixin|TargetedSpellsBarMixin)[]>
 ---@field controllers table<integer, TargetedSpellsGroupController>
 ---@field OnGroupPositionChanged fun(self: TargetedSpellsDriver, groupId: integer)
 ---@field GetController fun(self: TargetedSpellsDriver, group: TargetedSpellsGroup): TargetedSpellsGroupController
 ---@field SetupFrame fun(self: TargetedSpellsDriver, isBoot: boolean)
----@field AnyGroupEnabled fun(self: TargetedSpellsDriver): boolean
----@field AnyGroupUsesInterruptibility fun(self: TargetedSpellsDriver): boolean
----@field AnyGroupUsesShield fun(self: TargetedSpellsDriver): boolean
----@field AnyGroupShowsTargetMarker fun(self: TargetedSpellsDriver): boolean
----@field AnyGroupIndicatesInterrupts fun(self: TargetedSpellsDriver): boolean
+---@field capabilities TargetedSpellsGroupCapabilities? -- cached summary; nil = dirty
+---@field GetCapabilities fun(self: TargetedSpellsDriver): TargetedSpellsGroupCapabilities
+---@field InvalidateCapabilities fun(self: TargetedSpellsDriver)
 ---@field AnyGroupLoadConditionsAllow fun(self: TargetedSpellsDriver): boolean
 ---@field GetTargetClasses fun(self: TargetedSpellsDriver, info: SpellCastInfo): table<TargetClass, boolean>
----@field GroupLoadConditionsProhibit fun(self: TargetedSpellsDriver, group: TargetedSpellsGroup): boolean
 ---@field ProcessInfo fun(self: TargetedSpellsDriver, info: SpellCastInfo)
 ---@field ReleaseFrame fun(self: TargetedSpellsDriver, frame: TargetedSpellsIconMixin|TargetedSpellsBarMixin)
 ---@field ReleaseAllOwnFrames fun(self: TargetedSpellsDriver)
@@ -464,11 +468,7 @@
 ---@field OnProfileImported fun(self: TargetedSpellsDriver)
 ---@field MaybeMarkAsInterruptedAndDelay fun(self: TargetedSpellsDriver, unit: string, id: number|string|nil, interruptedBy: string?)
 ---@field CleanupDanglingFrames fun(self: TargetedSpellsDriver)
----@field EncounterPreventsTTSExecution fun(self: TargetedSpellsDriver, unit: string): boolean
----@field MaybeAnnounceSpell fun(self: TargetedSpellsDriver, info: SpellCastInfo)
 ---@field GetCastInformation fun(self: TargetedSpellsDriver, unit: string): boolean, number, number
----@field ClearAnnouncementCacheForUnit fun(self: TargetedSpellsDriver, unit: string)
----@field UnitMatchesTTSCriteria fun(self: TargetedSpellsDriver, unit: string): boolean
 
 ---@class NumericFormatter
 ---@field SetBreakpoints fun(self: NumericFormatter, breakpoints: table)

@@ -87,7 +87,7 @@ describe("Groups.Create / Delete / SetTemplate / Count", function()
 	local Element = Enum.Element
 
 	local function newSaved()
-		return { NextGroupId = 1, Groups = {} }
+		return { Groups = {} }
 	end
 
 	it("Create seeds a group from the template defaults with a fresh id", function()
@@ -95,7 +95,6 @@ describe("Groups.Create / Delete / SetTemplate / Count", function()
 		local id, group = Private.Groups.Create(Template.Bar, saved)
 
 		assert.equals(1, id)
-		assert.equals(2, saved.NextGroupId)
 		assert.equals(group, saved.Groups[1])
 		assert.equals(Template.Bar, group.Template)
 		assert.equals(1, group.Id)
@@ -106,13 +105,27 @@ describe("Groups.Create / Delete / SetTemplate / Count", function()
 		assert.is_true(group.Filter[Enum.TargetClass.Nobody])
 	end)
 
-	it("never reuses ids across delete/create", function()
+	it("never reuses ids across delete/create within a session", function()
 		local saved = newSaved()
 		local firstId = Private.Groups.Create(Template.Icon, saved)
 		Private.Groups.Create(Template.Icon, saved)
 		assert.is_true(Private.Groups.Delete(firstId, saved))
 		local reusedId = Private.Groups.Create(Template.Icon, saved)
 		assert.equals(3, reusedId)
+	end)
+
+	it("does not reuse the top id after deleting the highest group (high-water mark)", function()
+		-- the runtime allocator must climb even when the largest id is freed: a lingering
+		-- edit-mode frame keeps that id live for the session (a naive max+1 would collide)
+		local saved = newSaved()
+		Private.Groups.Create(Template.Icon, saved) -- 1
+		Private.Groups.Create(Template.Icon, saved) -- 2
+		local topId = Private.Groups.Create(Template.Icon, saved) -- 3
+		assert.equals(3, topId)
+
+		assert.is_true(Private.Groups.Delete(topId, saved))
+		local nextId = Private.Groups.Create(Template.Icon, saved)
+		assert.equals(4, nextId)
 	end)
 
 	it("names are sequential 'Group N', independent of the never-reused id", function()
@@ -123,7 +136,7 @@ describe("Groups.Create / Delete / SetTemplate / Count", function()
 		assert.equals("Group 2", second.Name)
 
 		-- delete "Group 1" then create again: the id climbs (3) but the name refills
-		-- the freed slot rather than following the raw NextGroupId
+		-- the freed slot rather than following the raw allocated id
 		Private.Groups.Delete(first.Id, saved)
 		local newId, third = Private.Groups.Create(Template.Icon, saved)
 		assert.equals(3, newId)
@@ -165,7 +178,7 @@ describe("Groups.SortedIds cache + invalidation", function()
 	local Template = Enum.Template
 
 	local function newSaved()
-		return { NextGroupId = 1, Groups = {} }
+		return { Groups = {} }
 	end
 
 	it("returns ids in ascending order", function()
