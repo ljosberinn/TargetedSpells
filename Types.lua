@@ -14,7 +14,6 @@
 ---@field Migration TargetedSpellsMigration
 ---@field EditMode TargetedSpellsEditModeManager
 ---@field Designer TargetedSpellsDesigner
----@field __test table?
 ---@field Glows GlowFunctions
 ---@field TextToSpeechUtil TargetedSpellsTextToSpeechUtil
 

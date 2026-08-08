@@ -476,12 +476,3 @@ function Private.Migration.Apply(saved)
 	end
 end
 
-Private.__test = Private.__test or {}
-Private.__test.Migration = {
-	CURRENT_SCHEMA_VERSION = CURRENT_SCHEMA_VERSION,
-	derivePartyFilter = DerivePartyFilter,
-	foldNpcTypes = FoldNpcTypes,
-	FoldNpcTypes = FoldNpcTypes,
-	V3_FLAG = V3_FLAG,
-	V3_NPC_TYPE = V3_NPC_TYPE,
-}
