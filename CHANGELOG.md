@@ -33,6 +33,6 @@ NEW: a third template
 
 ### Other
 
-Significantly improved performance. This was not an issue before but well, now its even faster. Laughably fast even, I want to say.
+Significantly improved performance. This was not an issue at all before but well, now its even faster. Laughably fast even, I want to say.
 
-A lot of optimization were made, leading an additional improvement of 75-90% depending on machine and ongoing casts, measured in Cinderbrew Meadery pulling the entire room and running in circles for two minutes.
+A lot of optimization was made, leading an additional improvement of 75-90% depending on machine and ongoing casts, measured in Cinderbrew Meadery pulling the entire room and running in circles for two minutes.
