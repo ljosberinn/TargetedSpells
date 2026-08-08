@@ -14,6 +14,29 @@ local L = Private.L
 L.EditMode = {}
 L.Functionality = {}
 L.Settings = {}
+L.Migration = {}
+L.SlashCommands = {}
+L.Designer = {}
+L.Designer.Title = "Targeted Spells - Concepteur de mise en page"
+L.Designer.ElementPickerLabel = "Élément"
+L.Designer.SelectHint = "Cliquez sur un élément dans l'aperçu ou sélectionnez-en un dans la liste des éléments."
+L.Designer.ResetElement = "Réinitialiser l'élément"
+L.Designer.CopyFrom = "Copier la mise en page depuis…"
+L.Designer.CopyFromEmpty = "Aucun autre groupe de ce type"
+L.Designer.Apply = "Enregistrer les modifications"
+L.Designer.Revert = "Rétablir"
+L.Designer.Discard = "Abandonner"
+L.Designer.UnsavedHint = "Les modifications s'appliquent lors de l'enregistrement."
+L.Designer.UnsavedPrompt = "Vous avez des modifications de mise en page non enregistrées."
+L.Designer.SettingNames = { ELEMENT_ACTIVE = "Activé", ELEMENT_WIDTH = "Largeur", ELEMENT_HEIGHT = "Hauteur", ELEMENT_X = "Décalage X", ELEMENT_Y = "Décalage Y", ELEMENT_FONT_SIZE = "Taille de police", ELEMENT_FONT = "Police", ELEMENT_FONT_FLAGS = "Style de police", ELEMENT_TEXT_COLOR = "Couleur du texte", ELEMENT_JUSTIFY_H = "Alignement", ELEMENT_MAX_WIDTH = "Largeur maximale", ELEMENT_GAP = "Écart", ELEMENT_USE_CLASS_COLOR = "Utiliser la couleur de classe", ELEMENT_ICON_ZOOM = "Zoom de l'icône", ELEMENT_SHOW_SWIPE = "Afficher l'animation de balayage", ELEMENT_SHOW_COUNTDOWN = "Afficher la durée", ELEMENT_FRACTION_THRESHOLD = "Fraction sous (s)", ELEMENT_BORDER_TEXTURE = "Texture de bordure", ELEMENT_BORDER_COLOR = "Couleur de bordure", ELEMENT_BORDER_SIZE = "Taille de bordure", ELEMENT_BAR_TEXTURE = "Texture de barre", ELEMENT_BAR_COLOR_MODE = "Mode de couleur", ELEMENT_BAR_COLOR = "Couleur de barre", ELEMENT_INTERRUPTIBLE_COLOR = "Couleur interruptible", ELEMENT_UNINTERRUPTIBLE_COLOR = "Couleur non interruptible", ELEMENT_BACKGROUND_TEXTURE = "Texture d'arrière-plan", ELEMENT_BACKGROUND_COLOR = "Couleur d'arrière-plan" }
+L.Designer.Options = { JUSTIFY_LEFT = "Gauche", JUSTIFY_CENTER = "Centre", JUSTIFY_RIGHT = "Droite", BAR_COLOR_STATIC = "Statique", BAR_COLOR_INTERRUPTIBILITY = "Interruptibilité", BAR_COLOR_TARGET_CLASS = "Couleur de classe de la cible" }
+L.Designer.FontFlagNames = { [Private.Enum.FontFlags.OUTLINE] = "Contour", [Private.Enum.FontFlags.SHADOW] = "Ombre" }
+L.Designer.FontFlagsNone = "Aucun"
+L.Designer.ElementNames = { [Private.Enum.Element.Icon] = "Icône", [Private.Enum.Element.Overlay] = "Cadre du gestionnaire de temps de recharge", [Private.Enum.Element.Cooldown] = "Temps de recharge", [Private.Enum.Element.Border] = "Bordure", [Private.Enum.Element.InterruptSource] = "Nom de l'interrupteur", [Private.Enum.Element.ProgressBar] = "Barre de progression", [Private.Enum.Element.Background] = "Arrière-plan", [Private.Enum.Element.TargetMarker] = "Marqueur de cible", [Private.Enum.Element.DurationCooldown] = "Durée", [Private.Enum.Element.SpellName] = "Nom du sort", [Private.Enum.Element.TargetName] = "Nom de la cible", [Private.Enum.Element.InterruptShield] = "Bouclier d'interruption", [Private.Enum.Element.Duration] = "Durée" }
+L.SlashCommands.Header = "Commandes de Targeted Spells :"
+L.SlashCommands.OptionsDescription = "Ouvrir le panneau des paramètres"
+L.SlashCommands.SettingsDescription = "Ouvrir le panneau des paramètres"
+L.SlashCommands.DesignDescription = "Ouvrir le concepteur de mise en page"
 
 L.Settings.EditModeReminder =
 	"Tous les paramètres sont accessibles via le Mode Édition et \"/targetedspells design\"."
@@ -125,3 +148,15 @@ L.Settings.Export = "Exporter"
 
 L.Settings.FeatureFlagsLabel = "Fonctionnalités"
 L.Settings.FeatureFlagsTooltip = nil
+L.Settings.GroupNameLabel = "Renommer le groupe"
+L.Settings.GroupNamePrompt = "Saisissez un nom pour ce groupe :"
+L.Settings.TemplateLabel = "Modèle"
+L.Settings.TemplateTooltip = "Changer de modèle réinitialise la mise en page des éléments de ce groupe au modèle par défaut."
+L.Settings.TemplateLabels = { [Private.Enum.Template.Icon] = "Icône", [Private.Enum.Template.Bar] = "Barre", [Private.Enum.Template.IconDuration] = "Icône + durée" }
+L.Settings.FilterLabel = "Afficher les sorts ciblant"
+L.Settings.FilterTooltip = "Les cibles des sorts que ce groupe affiche."
+L.Settings.TargetClassLabels = { [Private.Enum.TargetClass.Player] = "vous", [Private.Enum.TargetClass.PartyMember] = "les membres du groupe", [Private.Enum.TargetClass.Nobody] = "personne (sans cible)" }
+L.Settings.CreateGroup = "Créer un groupe"
+L.Settings.DeleteGroup = "Supprimer le groupe"
+L.Settings.DeleteGroupConfirm = "Supprimer ce groupe ? Cette action est irréversible."
+L.Settings.CannotDeleteLastGroup = "Vous ne pouvez pas supprimer le dernier groupe restant."

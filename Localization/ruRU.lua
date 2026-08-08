@@ -14,6 +14,29 @@ local L = Private.L
 L.EditMode = {}
 L.Functionality = {}
 L.Settings = {}
+L.Migration = {}
+L.SlashCommands = {}
+L.Designer = {}
+L.Designer.Title = "Targeted Spells — Редактор раскладки"
+L.Designer.ElementPickerLabel = "Элемент"
+L.Designer.SelectHint = "Нажмите на элемент в окне предварительного просмотра или выберите его в списке элементов."
+L.Designer.ResetElement = "Сбросить элемент"
+L.Designer.CopyFrom = "Копировать раскладку из…"
+L.Designer.CopyFromEmpty = "Нет других групп этого типа"
+L.Designer.Apply = "Сохранить изменения"
+L.Designer.Revert = "Отменить"
+L.Designer.Discard = "Отбросить"
+L.Designer.UnsavedHint = "Изменения применяются после сохранения."
+L.Designer.UnsavedPrompt = "У вас есть несохранённые изменения раскладки."
+L.Designer.SettingNames = { ELEMENT_ACTIVE = "Включено", ELEMENT_WIDTH = "Ширина", ELEMENT_HEIGHT = "Высота", ELEMENT_X = "Смещение по X", ELEMENT_Y = "Смещение по Y", ELEMENT_FONT_SIZE = "Размер шрифта", ELEMENT_FONT = "Шрифт", ELEMENT_FONT_FLAGS = "Стиль шрифта", ELEMENT_TEXT_COLOR = "Цвет текста", ELEMENT_JUSTIFY_H = "Выравнивание", ELEMENT_MAX_WIDTH = "Максимальная ширина", ELEMENT_GAP = "Отступ", ELEMENT_USE_CLASS_COLOR = "Использовать цвет класса", ELEMENT_ICON_ZOOM = "Масштаб значка", ELEMENT_SHOW_SWIPE = "Показывать анимацию", ELEMENT_SHOW_COUNTDOWN = "Показывать длительность", ELEMENT_FRACTION_THRESHOLD = "Дробная часть ниже (с)", ELEMENT_BORDER_TEXTURE = "Текстура рамки", ELEMENT_BORDER_COLOR = "Цвет рамки", ELEMENT_BORDER_SIZE = "Размер рамки", ELEMENT_BAR_TEXTURE = "Текстура полосы", ELEMENT_BAR_COLOR_MODE = "Режим цвета", ELEMENT_BAR_COLOR = "Цвет полосы", ELEMENT_INTERRUPTIBLE_COLOR = "Цвет прерываемого", ELEMENT_UNINTERRUPTIBLE_COLOR = "Цвет непрерываемого", ELEMENT_BACKGROUND_TEXTURE = "Текстура фона", ELEMENT_BACKGROUND_COLOR = "Цвет фона" }
+L.Designer.Options = { JUSTIFY_LEFT = "Слева", JUSTIFY_CENTER = "По центру", JUSTIFY_RIGHT = "Справа", BAR_COLOR_STATIC = "Статический", BAR_COLOR_INTERRUPTIBILITY = "Прерываемость", BAR_COLOR_TARGET_CLASS = "Цвет класса цели" }
+L.Designer.FontFlagNames = { [Private.Enum.FontFlags.OUTLINE] = "Контур", [Private.Enum.FontFlags.SHADOW] = "Тень" }
+L.Designer.FontFlagsNone = "Нет"
+L.Designer.ElementNames = { [Private.Enum.Element.Icon] = "Значок", [Private.Enum.Element.Overlay] = "Рамка менеджера восстановления", [Private.Enum.Element.Cooldown] = "Восстановление", [Private.Enum.Element.Border] = "Рамка", [Private.Enum.Element.InterruptSource] = "Имя прерывающего", [Private.Enum.Element.ProgressBar] = "Индикатор прогресса", [Private.Enum.Element.Background] = "Фон", [Private.Enum.Element.TargetMarker] = "Метка цели", [Private.Enum.Element.DurationCooldown] = "Длительность", [Private.Enum.Element.SpellName] = "Название заклинания", [Private.Enum.Element.TargetName] = "Имя цели", [Private.Enum.Element.InterruptShield] = "Щит прерывания", [Private.Enum.Element.Duration] = "Длительность" }
+L.SlashCommands.Header = "Команды Targeted Spells:"
+L.SlashCommands.OptionsDescription = "Открыть панель настроек"
+L.SlashCommands.SettingsDescription = "Открыть панель настроек"
+L.SlashCommands.DesignDescription = "Открыть редактор раскладки"
 
 L.Settings.EditModeReminder =
 	"Все настройки доступны через Режим редактирования и \"/targetedspells design\"."
@@ -125,3 +148,15 @@ L.Settings.Export = "Экспорт"
 
 L.Settings.FeatureFlagsLabel = "Функции"
 L.Settings.FeatureFlagsTooltip = nil
+L.Settings.GroupNameLabel = "Переименовать группу"
+L.Settings.GroupNamePrompt = "Введите название этой группы:"
+L.Settings.TemplateLabel = "Шаблон"
+L.Settings.TemplateTooltip = "Смена шаблона сбрасывает раскладку элементов этой группы к настройкам шаблона по умолчанию."
+L.Settings.TemplateLabels = { [Private.Enum.Template.Icon] = "Значок", [Private.Enum.Template.Bar] = "Полоса", [Private.Enum.Template.IconDuration] = "Значок + длительность" }
+L.Settings.FilterLabel = "Показывать заклинания, нацеленные на"
+L.Settings.FilterTooltip = "Цели заклинаний, которые показывает эта группа."
+L.Settings.TargetClassLabels = { [Private.Enum.TargetClass.Player] = "вас", [Private.Enum.TargetClass.PartyMember] = "членов группы", [Private.Enum.TargetClass.Nobody] = "никого (без цели)" }
+L.Settings.CreateGroup = "Создать группу"
+L.Settings.DeleteGroup = "Удалить группу"
+L.Settings.DeleteGroupConfirm = "Удалить эту группу? Это действие нельзя отменить."
+L.Settings.CannotDeleteLastGroup = "Нельзя удалить последнюю оставшуюся группу."

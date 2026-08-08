@@ -14,6 +14,83 @@ local L = Private.L
 L.EditMode = {}
 L.Functionality = {}
 L.Settings = {}
+L.Migration = {}
+L.SlashCommands = {}
+L.Designer = {}
+
+L.Designer.Title = "Targeted Spells - Layout-Designer"
+L.Designer.ElementPickerLabel = "Element"
+L.Designer.SelectHint = "Klicke ein Element in der Vorschau an oder wähle eines aus dem Element-Dropdown aus."
+L.Designer.ResetElement = "Element zurücksetzen"
+L.Designer.CopyFrom = "Layout kopieren von…"
+L.Designer.CopyFromEmpty = "Keine anderen Gruppen dieses Typs"
+L.Designer.Apply = "Änderungen speichern"
+L.Designer.Revert = "Zurücksetzen"
+L.Designer.Discard = "Verwerfen"
+L.Designer.UnsavedHint = "Änderungen werden beim Speichern angewendet."
+L.Designer.UnsavedPrompt = "Du hast ungespeicherte Layoutänderungen."
+L.Designer.SettingNames = {
+	ELEMENT_ACTIVE = "Aktiviert",
+	ELEMENT_WIDTH = "Breite",
+	ELEMENT_HEIGHT = "Höhe",
+	ELEMENT_X = "X-Versatz",
+	ELEMENT_Y = "Y-Versatz",
+	ELEMENT_FONT_SIZE = "Schriftgröße",
+	ELEMENT_FONT = "Schriftart",
+	ELEMENT_FONT_FLAGS = "Schriftstil",
+	ELEMENT_TEXT_COLOR = "Textfarbe",
+	ELEMENT_JUSTIFY_H = "Ausrichtung",
+	ELEMENT_MAX_WIDTH = "Maximale Breite",
+	ELEMENT_GAP = "Abstand",
+	ELEMENT_USE_CLASS_COLOR = "Klassenfarbe verwenden",
+	ELEMENT_ICON_ZOOM = "Symbolzoom",
+	ELEMENT_SHOW_SWIPE = "Wischanimation anzeigen",
+	ELEMENT_SHOW_COUNTDOWN = "Dauer anzeigen",
+	ELEMENT_FRACTION_THRESHOLD = "Bruchwert unter (s)",
+	ELEMENT_BORDER_TEXTURE = "Rahmentextur",
+	ELEMENT_BORDER_COLOR = "Rahmenfarbe",
+	ELEMENT_BORDER_SIZE = "Rahmenbreite",
+	ELEMENT_BAR_TEXTURE = "Balkentextur",
+	ELEMENT_BAR_COLOR_MODE = "Farbmodus",
+	ELEMENT_BAR_COLOR = "Balkenfarbe",
+	ELEMENT_INTERRUPTIBLE_COLOR = "Unterbrechbare Farbe",
+	ELEMENT_UNINTERRUPTIBLE_COLOR = "Nicht unterbrechbare Farbe",
+	ELEMENT_BACKGROUND_TEXTURE = "Hintergrundtextur",
+	ELEMENT_BACKGROUND_COLOR = "Hintergrundfarbe",
+}
+L.Designer.Options = {
+	JUSTIFY_LEFT = "Links",
+	JUSTIFY_CENTER = "Mittig",
+	JUSTIFY_RIGHT = "Rechts",
+	BAR_COLOR_STATIC = "Statisch",
+	BAR_COLOR_INTERRUPTIBILITY = "Unterbrechbarkeit",
+	BAR_COLOR_TARGET_CLASS = "Zielklassenfarbe",
+}
+L.Designer.FontFlagNames = {
+	[Private.Enum.FontFlags.OUTLINE] = "Kontur",
+	[Private.Enum.FontFlags.SHADOW] = "Schatten",
+}
+L.Designer.FontFlagsNone = "Keine"
+L.Designer.ElementNames = {
+	[Private.Enum.Element.Icon] = "Symbol",
+	[Private.Enum.Element.Overlay] = "Cooldown-Manager-Rahmen",
+	[Private.Enum.Element.Cooldown] = "Abklingzeit",
+	[Private.Enum.Element.Border] = "Rahmen",
+	[Private.Enum.Element.InterruptSource] = "Unterbrechername",
+	[Private.Enum.Element.ProgressBar] = "Fortschrittsbalken",
+	[Private.Enum.Element.Background] = "Hintergrund",
+	[Private.Enum.Element.TargetMarker] = "Zielmarkierung",
+	[Private.Enum.Element.DurationCooldown] = "Dauer",
+	[Private.Enum.Element.SpellName] = "Zaubername",
+	[Private.Enum.Element.TargetName] = "Zielname",
+	[Private.Enum.Element.InterruptShield] = "Unterbrechungsschild",
+	[Private.Enum.Element.Duration] = "Dauer",
+}
+
+L.SlashCommands.Header = "Targeted-Spells-Befehle:"
+L.SlashCommands.OptionsDescription = "Einstellungsfenster öffnen"
+L.SlashCommands.SettingsDescription = "Einstellungsfenster öffnen"
+L.SlashCommands.DesignDescription = "Layout-Designer öffnen"
 
 L.Settings.EditModeReminder =
 "Alle Einstellungen sind über den Bearbeitungsmodus und \"/targetedspells design\" erreichbar."
@@ -125,4 +202,24 @@ L.Settings.Export = "Exportieren"
 
 L.Settings.FeatureFlagsLabel = "Features"
 L.Settings.FeatureFlagsTooltip = nil
+L.Settings.GroupNameLabel = "Gruppe umbenennen"
+L.Settings.GroupNamePrompt = "Gib einen Namen für diese Gruppe ein:"
+L.Settings.TemplateLabel = "Vorlage"
+L.Settings.TemplateTooltip = "Der Wechsel der Vorlage setzt das Element-Layout dieser Gruppe auf die Standardvorlage zurück."
+L.Settings.TemplateLabels = {
+	[Private.Enum.Template.Icon] = "Symbol",
+	[Private.Enum.Template.Bar] = "Balken",
+	[Private.Enum.Template.IconDuration] = "Symbol + Dauer",
+}
+L.Settings.FilterLabel = "Zauber anzeigen, die auf"
+L.Settings.FilterTooltip = "Welche Ziele dieser Gruppe angezeigte Zauber haben."
+L.Settings.TargetClassLabels = {
+	[Private.Enum.TargetClass.Player] = "dich",
+	[Private.Enum.TargetClass.PartyMember] = "Gruppenmitglieder",
+	[Private.Enum.TargetClass.Nobody] = "niemanden (ohne Ziel)",
+}
+L.Settings.CreateGroup = "Gruppe erstellen"
+L.Settings.DeleteGroup = "Gruppe löschen"
+L.Settings.DeleteGroupConfirm = "Diese Gruppe löschen? Dies kann nicht rückgängig gemacht werden."
+L.Settings.CannotDeleteLastGroup = "Die letzte verbleibende Gruppe kann nicht gelöscht werden."
 
