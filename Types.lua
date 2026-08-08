@@ -115,10 +115,6 @@
 ---@field RegisterSlashCommand fun(name: string, description: string, handler: fun(rest: string))
 ---@field ComputeElementExtent fun(elements: table<Element, table<string, any>>): { width: number, height: number, offsetX: number, offsetY: number }
 
--- ── v4 model ───────────────────────────────────────────────────────
-
--- One schema record: mirrors Blizzard's systemSettingDisplayInfo shape. `type`
--- selects the designer widget (boolean/number/color/enum/font/fontFlags/texture).
 ---@class TargetedSpellsElementRecord
 ---@field setting string
 ---@field name string
@@ -130,8 +126,6 @@
 ---@field options table[]?
 ---@field mediaType string? -- for texture records: "statusbar" | "background" | "border"
 
--- A group owns its Template + Elements 1:1 (no shared Design). Core element's
--- width/height live in Elements[core]; there is no top-level Width/Height.
 ---@class TargetedSpellsGroup
 ---@field Id integer -- denormalised from the Groups map key at load (Driver)
 ---@field Name string
@@ -181,8 +175,6 @@
 ---@field AnnounceTargetedSpells table<NpcType, boolean>
 ---@field TextToSpeechVoice integer|nil
 
--- v4 SavedVariables container. Groups replace the fixed Settings.Self/Party
--- trees; TTS is hoisted to one global table. No `Designs` map (layout is 1:1).
 ---@class SavedVariablesV4
 ---@field SchemaVersion integer
 ---@field Groups table<integer, TargetedSpellsGroup>
@@ -327,9 +319,6 @@
 ---@class TargetedSpellsSelfPreviewFrame: Frame
 ---@field GetChildren fun(self: TargetedSpellsSelfPreviewFrame): TargetedSpellsIconMixin
 
--- A FontString carrying the (font, size, flags) triple last applied to it, so
--- Utils.SetFontIfChanged can skip an unchanged re-apply. Not valid for a cooldown's
--- countdown FontString — Cooldown:Clear() re-inherits the font behind the stamp's back.
 ---@class TargetedSpellsStampedFontString : FontString
 ---@field appliedFont string?
 ---@field appliedFontSize number?
@@ -572,8 +561,6 @@
 ---@field Discard fun(self: TargetedSpellsGroupController)
 ---@field LoadConditionsApply fun(self: TargetedSpellsGroupController, role: Role, contentType: ContentType): boolean
 
--- A nameplate event shard: a frame listening to the unit events for one contiguous slice
--- of nameplate tokens, which it carries on itself. See Driver.lua's shard section.
 ---@class TargetedSpellsShardFrame : Frame
 ---@field units string[]
 
@@ -760,7 +747,6 @@ local s_passThroughClosureGenerators = {
 	end,
 }
 
--- Syntactic sugar for function(...) return f(a, b, c, ...); end
 function GenerateClosure(f, ...)
 	return GenerateClosureInternal(s_passThroughClosureGenerators, f, ...)
 end

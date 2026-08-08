@@ -10,18 +10,13 @@ end
 
 function TargetedSpellsIconMixin:OnLoad()
 	TargetedSpellsMixin.OnLoad(self)
-	-- group-agnostic setup only; OnLoad runs once at pool creation, before the
-	-- Driver assigns a group. All group-dependent styling lives in ApplyLayout.
 	self.Bar:SetStatusBarTexture("")
-	-- per-frame formatter so each group's fraction threshold is independent
 	self.countdownFormatter = Private.Utils.CreateCountdownFormatter()
 	self.Cooldown:SetCountdownFormatter(self.countdownFormatter)
 	self.Cooldown:SetCountdownFont("GameFontHighlightHugeOutline")
 	self:HideGlow()
 end
 
--- Sizes and styles the frame from its assigned group's Icon layout. Runs on
--- acquire (PostCreate), once the group is set — SetSize here drives OnSizeChanged.
 function TargetedSpellsIconMixin:ApplyLayout()
 	local iconElement = self:GetElement(Private.Enum.Element.Icon)
 	if iconElement == nil then
@@ -32,7 +27,6 @@ function TargetedSpellsIconMixin:ApplyLayout()
 	self:SetFont()
 	self:StyleInterruptSource()
 
-	-- the cooldown-manager bezel is decorative; its only setting is show/hide
 	local overlay = self:GetElement(Private.Enum.Element.Overlay)
 	self.Overlay:SetShown(overlay == nil or overlay.active ~= false)
 
@@ -41,15 +35,12 @@ function TargetedSpellsIconMixin:ApplyLayout()
 
 	local cooldown = self:GetElement(Private.Enum.Element.Cooldown)
 	if cooldown ~= nil then
-		-- swipe and countdown number toggle independently
 		self:SetShowDuration(cooldown.showCountdown ~= false)
 		self.Cooldown:SetDrawSwipe(cooldown.showSwipe)
 		Private.Utils.ApplyFractionThreshold(self.countdownFormatter, cooldown.fractionThreshold)
 	end
 end
 
--- The 8-slice / solid border renderer lives in Private.Utils (shared with the bar
--- mixin). The icon's border wraps the frame itself, sized from the Icon element.
 function TargetedSpellsIconMixin:ApplyBorderStyle(styleName)
 	local border = self:GetElement(Private.Enum.Element.Border)
 	local iconElement = self:GetElement(Private.Enum.Element.Icon)
@@ -57,8 +48,6 @@ function TargetedSpellsIconMixin:ApplyBorderStyle(styleName)
 		return
 	end
 
-	-- the icon border wraps the icon frame itself (no extent union — the icon has a
-	-- single box; its InterruptSource is text and never grows the border)
 	Private.Utils.ApplyBorderStyle(
 		self --[[@as TargetedSpellsBorderFrame]],
 		styleName,
@@ -147,7 +136,6 @@ function TargetedSpellsIconMixin:PostCreate(info, OnCooldownDoneCallback)
 		return
 	end
 
-	-- the Driver assigns the group before PostCreate; size/style from it now
 	self:ApplyLayout()
 
 	local group = self:GetGroup()
@@ -176,48 +164,29 @@ function TargetedSpellsIconMixin:PostCreate(info, OnCooldownDoneCallback)
 	end
 end
 
--- See the pool contract on TargetedSpellsMixin:Reset for what belongs here. The spell id,
--- the font, the formatter threshold and the interrupt text colour are all re-applied
--- unconditionally on acquire and so are deliberately absent.
 function TargetedSpellsIconMixin:Reset()
-	-- (1) stops the countdown, and (3) drops the closure bound to the cast that just ended:
-	-- PostCreate rebinds it only when handed a callback, and neither preview path passes one.
 	self.Cooldown:Clear()
 	self.Cooldown:SetScript("OnCooldownDone", nil)
 
-	-- (2) the interrupter's name. Only SetInterrupted writes or shows it, and
-	-- StyleInterruptSource styles it without ever showing or hiding it. Its *colour* needs no
-	-- reset — the schema always carries a textColor default, so StyleInterruptSource re-applies.
 	self.InterruptSource:SetText()
 	self.InterruptSource:Hide()
 
-	-- group is retained through Reset (base Reset no longer nils it)
 	local cooldown = self:GetElement(Private.Enum.Element.Cooldown)
 
 	TargetedSpellsMixin.Reset(self)
 
 	if cooldown ~= nil then
-		-- (1) has to come last: the cooldown swipe ignores the display status of its parent,
-		-- so this runs after the base Reset hides the frame. ApplyLayout re-applies both on
-		-- the next acquire — these exist for the window the frame spends in the pool.
 		self:SetShowDuration(cooldown.showCountdown ~= false)
 		self.Cooldown:SetDrawSwipe(cooldown.showSwipe)
 	end
 end
 
--- Positions and styles the InterruptSource text from its layout element. The XML
--- anchors it setAllPoints at the top; the layout overrides that with a CENTER→CENTER
--- offset so x/y, justify, font and maxWidth truncation take effect (matching the bar
--- template — the interrupter name renders on interrupt via SetInterrupted).
 function TargetedSpellsIconMixin:StyleInterruptSource()
 	local element = self:GetElement(Private.Enum.Element.InterruptSource)
 	if element == nil then
 		return
 	end
 
-	-- Edge-anchored by justifyH (matching the bar renderer): x pins the text's LEFT/
-	-- CENTER/RIGHT edge, so adding a maxWidth caps growth without shifting the text. The
-	-- default justifyH is CENTER, for which this is identical to the old centre anchor.
 	local justifyH = element.justifyH or "CENTER"
 	self.InterruptSource:ClearAllPoints()
 	self.InterruptSource:SetJustifyH(justifyH)

@@ -6,14 +6,9 @@ local TargetedSpellsDriver = {}
 
 function TargetedSpellsDriver:Init()
 	self.delay = 0.2
-	-- Routing index: unit -> the set of group ids currently displaying that unit. Holds
-	-- ids, never frames — frame ownership is the controllers' alone. Events arrive keyed
-	-- by unit, so this is what turns a unit into the (usually one or two) controllers
-	-- that have anything to say about it, without fanning out over every group.
 	---@type table<string, table<integer, boolean>>
 	self.unitGroups = {}
 	self.dirtyGroups = {}
-	-- scratch for Groups.GetMatching, reused per cast (ProcessInfo iterates it and drops it)
 	---@type TargetedSpellsGroup[]
 	self.matchingGroups = {}
 	---@type table<integer, TargetedSpellsGroupController>
@@ -26,7 +21,6 @@ function TargetedSpellsDriver:Init()
 	self.pendingTail = 0
 	self.drainScheduled = false
 	self.DrainPendingCastsClosure = GenerateClosure(self.DrainPendingCasts, self)
-	-- OnFrameEvent ignores the frame it was invoked for, so the driver frame and every shard share this one closure
 	self.OnFrameEventClosure = GenerateClosure(self.OnFrameEvent, self)
 	---@type table<integer, TargetedSpellsShardFrame>
 	self.shards = {}
@@ -107,12 +101,7 @@ do
 		end
 	end
 
-	-- Being driven from NAME_PLATE_UNIT_ADDED is what makes creating these lazily safe: a cast
-	-- starting after this point reaches the shard normally, and one already running when the
-	-- nameplate appeared is picked up by HandleNameplateAdded itself. The only window a fresh
-	-- shard can miss is the one that handler already covers.
 	function TargetedSpellsDriver:EnsureShardForUnit(unit)
-		-- `unit` is always a nameplate token, so the suffix past "nameplate" is always numeric
 		local tokenIndex = tonumber(string.sub(unit, 10))
 		local shardIndex = math.floor((tokenIndex - 1) / Constants.UnitEventConstants.MAX_UNIT_TOKENS_IN_EVENT) + 1
 
@@ -120,8 +109,6 @@ do
 			return
 		end
 
-		-- the whole slice is registered now, so the other tokens in it cost nothing when their
-		-- nameplates show up later
 		local firstToken = (shardIndex - 1) * Constants.UnitEventConstants.MAX_UNIT_TOKENS_IN_EVENT + 1
 		local units = {}
 
@@ -138,14 +125,6 @@ do
 	end
 end
 
--- Ensures the driver frame exists and its event registration matches the current
--- group state. Safe to call repeatedly: the driver frame's own events wire a single time
--- (they never change while any display is active), while the enabled/disabled teardown and
--- the conditional events (interruptibility colours, target marker) are reconciled on every
--- call — so a group edit that toggles them takes effect live rather than at the next reload.
---
--- Carries only what is not per-unit; the spellcast events live on the shards.
--- PLAYER_SPECIALIZATION_CHANGED stays here because "player" needs no shard.
 function TargetedSpellsDriver:SetupFrame(isBoot)
 	if isBoot then
 		self.frame = CreateFrame("Frame", "TargetedSpellsDriverFrame", UIParent)
@@ -159,12 +138,9 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 	local capabilities = self:GetCapabilities()
 
 	if not capabilities.enabled then
-		-- no display active: stop listening entirely until a group is re-enabled
 		self.frame:UnregisterAllEvents()
 		self.frame:SetScript("OnEvent", nil)
 
-		-- the CVar callbacks live outside the frame, so UnregisterAllEvents above does not
-		-- reach them the way it used to reach the CVAR_UPDATE registration
 		CVarCallbackRegistry:UnregisterCallback("nameplateShowEnemies", self)
 		CVarCallbackRegistry:UnregisterCallback("nameplateShowOffscreen", self)
 
@@ -197,8 +173,6 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 		self.frame:UnregisterEvent("RAID_TARGET_UPDATE")
 	end
 
-	-- shards that already exist follow the new capabilities; later ones pick them up on
-	-- creation, from the same function
 	for _, shard in pairs(self.shards) do
 		self:ConfigureShard(shard)
 	end
@@ -225,9 +199,6 @@ do
 	end
 end
 
--- Classifies a cast and hands it to every matching, loaded group. Returns how many groups
--- acquired a frame for it — a non-zero count means at least one group's load conditions
--- allowed, which is what the TTS gate in HandleDelayedStart needs to know.
 ---@param info SpellCastInfo
 ---@return integer acquired
 function TargetedSpellsDriver:ProcessInfo(info)
@@ -241,9 +212,6 @@ function TargetedSpellsDriver:ProcessInfo(info)
 		groups = {}
 		self.unitGroups[unit] = groups
 	else
-		-- the unit was already displayed (a retarget, or a new cast replacing the old);
-		-- drop what it had before re-classifying. removeUnit is false: we are about to
-		-- write into `groups`, so the entry must survive even if it empties out here.
 		self:ReleaseFrameForUnit(unit, false, nil, dirtyGroups)
 	end
 
@@ -271,11 +239,6 @@ function TargetedSpellsDriver:ProcessInfo(info)
 	return count
 end
 
--- Relayouts group controllers. With no argument, every controller relayouts (global
--- refreshes: dangling cleanup, container moves; empty controllers no-op). With a
--- dirtyGroups set {[groupId]=true}, only those controllers relayout — a group's layout
--- is self-contained (the controller chains its frames under its own container), so a
--- lifecycle event that changed one group's membership must not pay the ~12 C-side frame
 ---@param dirtyGroups table<integer, boolean>? nil = all controllers; otherwise the set to scope to
 function TargetedSpellsDriver:RepositionFrames(dirtyGroups)
 	if dirtyGroups == nil then
@@ -286,10 +249,6 @@ function TargetedSpellsDriver:RepositionFrames(dirtyGroups)
 		return
 	end
 
-	-- A dirty group was always dirtied by an Acquire/Release, so its controller already
-	-- exists: index self.controllers directly (no lazy-create, no saved-vars lookup).
-	-- Iterating all controllers here would re-sort/re-anchor non-dirty groups and break
-	-- the scoping guarantee (spec/reposition_scope_spec.lua: "group B never re-anchored").
 	for groupId in pairs(dirtyGroups) do
 		local controller = self.controllers[groupId]
 
@@ -299,10 +258,6 @@ function TargetedSpellsDriver:RepositionFrames(dirtyGroups)
 	end
 end
 
--- Asks every controller currently displaying `unit` to drop its frames for it. The
--- routing entry is pruned as controllers report themselves empty, so it stays an exact
--- description of who holds what — a controller that still has a lingering interrupt
--- frame keeps its id in the set and will be revisited by the delayed cleanup.
 ---@param dirtyGroups table<integer, boolean>? if given, records the id of every group that released something
 ---@return boolean
 function TargetedSpellsDriver:ReleaseFrameForUnit(unit, removeUnit, id, dirtyGroups)
@@ -315,8 +270,6 @@ function TargetedSpellsDriver:ReleaseFrameForUnit(unit, removeUnit, id, dirtyGro
 	local cleanedSomethingUp = false
 	local cleanedEverythingUp = true
 
-	-- clearing keys of the table being traversed is well-defined in Lua, so pruning
-	-- the routing set as we go is safe here
 	for groupId in pairs(groups) do
 		local released, remaining = self.controllers[groupId]:ReleaseForUnit(unit, id)
 
@@ -401,11 +354,9 @@ function TargetedSpellsDriver:DrainPendingCasts()
 	end
 
 	if head > tail then
-		-- fully drained: reset cursors so indices don't climb forever
 		self.pendingHead = 1
 		self.pendingTail = 0
 	else
-		-- next entry isn't due yet; reschedule the single timer for it
 		self.pendingHead = head
 		self.drainScheduled = true
 		C_Timer.After(pending[head].dueAt - now, self.DrainPendingCastsClosure)
@@ -443,7 +394,6 @@ local function ResolveContentType(instanceType, difficultyId)
 		return Private.Enum.ContentType.Delve
 	end
 
-	-- equivalent to `instanceType == "none"`
 	return Private.Enum.ContentType.OpenWorld
 end
 
@@ -498,8 +448,6 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 	end
 end
 
--- Queues the cast rather than acting on it: the target is not reliable this early, so
--- everything real happens once the drain timer fires HandleDelayedStart.
 function TargetedSpellsDriver:HandleCastStart(unit)
 	if self:UnitIsIrrelevant(unit) then
 		return
@@ -508,18 +456,6 @@ function TargetedSpellsDriver:HandleCastStart(unit)
 	local now = GetTime()
 	local tail = self.pendingTail + 1
 
-	-- Only what the drain cannot read back off the unit: which unit, when the cast actually
-	-- began, and when to look. spellId/castId/isChannel/duration are all re-derived in
-	-- HandleDelayedStart, so nothing queued here can go stale.
-	--
-	-- `startTime` is the exception and has to be captured now. The real value is available as
-	-- UnitCastingInfo's startTimeMs, but that call is SecretWhenUnitSpellCastRestricted, so the
-	-- value is a plain number in most content and secret in PvP — and Utils.SortFrames orders
-	-- frames with `<` on it. A sort key that works everywhere except arenas is worse than an
-	-- approximate one, which is what the `startTime is wrong` note in HandleNameplateAdded is about.
-	--
-	-- Deliberately partial: the four missing fields are what `reverify` exists to fill, and
-	-- nothing reads them before HandleDelayedStart has.
 	---@diagnostic disable-next-line: missing-fields
 	self.pendingCasts[tail] = {
 		unit = unit,
@@ -528,7 +464,6 @@ function TargetedSpellsDriver:HandleCastStart(unit)
 	}
 	self.pendingTail = tail
 
-	-- one timer serves the whole queue; only (re)start it when nothing is scheduled
 	if not self.drainScheduled then
 		self.drainScheduled = true
 		C_Timer.After(self.delay, self.DrainPendingCastsClosure)
@@ -582,16 +517,12 @@ function TargetedSpellsDriver:HandleNameplateAdded(unit)
 	})
 end
 
--- Enemy nameplates off means every tracked unit's plate is gone, so nothing we are showing
--- can still be valid.
 function TargetedSpellsDriver:HandleShowEnemiesChanged(value)
 	if value == 0 or value == "0" then
 		self:ReleaseAllOwnFrames()
 	end
 end
 
--- Without this one, casts from units the camera cannot see never get a duration, so
--- HandleDelayedStart drops them (see its `info.duration == nil` guard).
 function TargetedSpellsDriver:HandleShowOffscreenChanged(value)
 	if value ~= "1" and value ~= 1 then
 		Private.Utils.ShowStaticPopup({
@@ -616,8 +547,6 @@ function TargetedSpellsDriver:HandleCastStop(event, ...)
 	local groups = self.unitGroups[unit]
 	Private.TextToSpeechUtil.ClearAnnouncementCacheForUnit(unit)
 
-	-- nothing on screen for this unit: the single hash lookup that keeps the stop
-	-- events of every non-matching cast in a pull off the rest of this path
 	if groups == nil or next(groups) == nil then
 		return
 	end
@@ -645,14 +574,6 @@ function TargetedSpellsDriver:HandleCastStop(event, ...)
 	end
 end
 
--- `reverify` means "this info was captured earlier and anything in it may be stale": read the
--- cast back off the unit. Only the queue takes it — a caller that has just read the unit itself
--- passes false and keeps what it found.
---
--- Re-reading everything rather than just the duration is what makes the queue entry a note
--- ("look at this unit at time T") instead of a snapshot. It also means no caller has to map an
--- event name onto isChannel, which is what used to drop empowered casts: GetCastInformation is
--- the single thing that knows an empower is served by the channel APIs.
 function TargetedSpellsDriver:HandleDelayedStart(info, reverify)
 	if reverify then
 		local isChannel, spellId, castId, duration = self:GetCastInformation(info.unit)
@@ -675,9 +596,6 @@ function TargetedSpellsDriver:HandleDelayedStart(info, reverify)
 		return
 	end
 
-	-- ProcessInfo has just tested LoadConditionsApply for every group this cast matched, so
-	-- anything it acquired already answers the gate; only a cast that matched nothing (or
-	-- matched only unloaded groups) has to pay for the full walk over every group.
 	if acquired == 0 and not self:AnyGroupLoadConditionsAllow() then
 		return
 	end
@@ -715,8 +633,6 @@ function TargetedSpellsDriver:HandleInterruptibleChanged(event, unit)
 end
 
 function TargetedSpellsDriver:HandleRaidTargetUpdate()
-	-- global event: every group's frames may need a new marker, so this is the one
-	-- path that legitimately visits all controllers rather than routing by unit
 	for _, controller in pairs(self.controllers) do
 		controller:UpdateTargetMarkers()
 	end
@@ -746,12 +662,7 @@ function TargetedSpellsDriver:CleanupDanglingFrames()
 	end
 end
 
--- Releases every frame the Driver itself acquired and clears the routing index.
--- Deliberately NOT Pools:ReleaseAll — the Bar/Icon pools are shared with the EditMode
--- and Designer demo frames, which the Driver does not own; releasing those out from
--- under a live demo double-releases (assertsafe error) and can alias a demo frame onto
--- a live cast. Going through the controllers satisfies that by construction: a
--- controller only ever holds frames it acquired for a live cast.
+-- Release through controllers; pools are shared with preview frames.
 function TargetedSpellsDriver:ReleaseAllOwnFrames()
 	for _, controller in pairs(self.controllers) do
 		controller:ReleaseAll()
@@ -760,18 +671,10 @@ function TargetedSpellsDriver:ReleaseAllOwnFrames()
 	table.wipe(self.unitGroups)
 end
 
--- A v4 profile import updates the group tables in place (Utils.ImportV4Profile),
--- so refs stay valid; here we drop live frames (they re-acquire with the new
--- settings), reconfigure + reposition every controller (a v4 import can change a
--- group's Template in place), and re-evaluate event registration. Reconfigure is
--- safe here because ReleaseAllOwnFrames just cleared every live frame.
 function TargetedSpellsDriver:OnProfileImported()
 	self:ReleaseAllOwnFrames()
 
-	-- a delete (EditMode.DeleteGroup routes here) or an import can drop a group
-	-- outright; its controller would otherwise linger holding a stale group ref and a
-	-- shown, empty container. Safe after ReleaseAllOwnFrames: the routing index is wiped,
-	-- so no unit can still name a controller we drop here.
+	-- The routing index is already empty after ReleaseAllOwnFrames.
 	for id, controller in pairs(self.controllers) do
 		if TargetedSpellsSaved.Groups[id] == nil then
 			controller:Discard()
@@ -789,8 +692,6 @@ function TargetedSpellsDriver:OnProfileImported()
 	self:SetupFrame(false)
 end
 
--- Releases just one group's live frames (they re-acquire with the current settings
--- on the next cast) and repositions its container. Shared by the group-change refresh.
 ---@param group TargetedSpellsGroup
 function TargetedSpellsDriver:RefreshGroup(group)
 	local groupId = group.Id
@@ -798,9 +699,6 @@ function TargetedSpellsDriver:RefreshGroup(group)
 
 	controller:ReleaseAll()
 
-	-- the group no longer displays anything, so drop it from every unit's routing set.
-	-- Units left with an empty set are harmless (they fall out on the next cast or
-	-- CleanupDanglingFrames) and the unit key space is bounded by the nameplate count.
 	for _, groups in pairs(self.unitGroups) do
 		groups[groupId] = nil
 	end
@@ -808,10 +706,6 @@ function TargetedSpellsDriver:RefreshGroup(group)
 	controller:Position()
 end
 
--- Fired when an edit-mode setting changes a group's container/behaviour. Refreshes
--- that group's live frames + container and re-evaluates event registration (marker /
--- interruptibility / enabled may have changed). The group's edit-mode instance
--- handles its own demo refresh.
 ---@param groupId integer
 function TargetedSpellsDriver:OnGroupChanged(groupId)
 	local group = TargetedSpellsSaved.Groups[groupId]
@@ -824,16 +718,12 @@ function TargetedSpellsDriver:OnGroupChanged(groupId)
 	self:InvalidateCapabilities()
 	self:SetupFrame(false)
 
-	-- only this group's frames/container changed; other groups are untouched
 	local dirtyGroups = self.dirtyGroups
 	table.wipe(dirtyGroups)
 	dirtyGroups[groupId] = true
 	self:RepositionFrames(dirtyGroups)
 end
 
--- Position-only refresh (a drag): the container moves but capabilities are unchanged,
--- so the cache is left intact. Group *create* deliberately goes through GROUP_CHANGED,
--- not this event, precisely because it does change capabilities (see EditMode.CreateGroup).
 function TargetedSpellsDriver:OnGroupPositionChanged(groupId)
 	local group = TargetedSpellsSaved.Groups[groupId]
 
@@ -874,7 +764,6 @@ function TargetedSpellsDriver:MaybeMarkAsInterruptedAndDelay(unit, id, interrupt
 
 	local anyIndicated = false
 
-	-- each controller decides for itself whether its group indicates interrupts
 	for groupId in pairs(groups) do
 		if self.controllers[groupId]:MarkInterruptedForUnit(unit, interruptName, interruptColor) then
 			anyIndicated = true
@@ -894,9 +783,6 @@ function TargetedSpellsDriver:MaybeMarkAsInterruptedAndDelay(unit, id, interrupt
 	C_Timer.After(1, GenerateClosure(self.ReleaseCastFrames, self, delayInfo))
 end
 
--- A cast is finished with, by whichever route: its cooldown ran out, or the interrupt
--- indication above finished lingering. Both callers hand over something carrying the
--- unit and the cast id, which is all the release needs.
 function TargetedSpellsDriver:ReleaseCastFrames(info)
 	local dirtyGroups = self.dirtyGroups
 	table.wipe(dirtyGroups)

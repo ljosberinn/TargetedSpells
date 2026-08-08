@@ -16,13 +16,6 @@ function Private.Utils.SafelySetFont(fontString, font, fontSize, fontFlags)
 	end
 end
 
--- SafelySetFont, skipped when the same triple is already stamped on the region. A pooled
--- frame is usually re-acquired into the group it came from, so the font being applied is
--- normally the one already there — and this is the addon's highest-frequency call.
---
--- Deliberately NOT used for a cooldown's countdown FontString: Cooldown:Clear() silently
--- re-inherits the font from SetCountdownFont, which the stamp cannot observe, so those
--- keep going through SafelySetFont unconditionally.
 ---@param fontString TargetedSpellsStampedFontString
 ---@param font string
 ---@param fontSize number
@@ -43,18 +36,10 @@ function Private.Utils.SetFontIfChanged(fontString, font, fontSize, fontFlags)
 	fontString.appliedFontFlags = fontFlags
 end
 
--- ── Slice / solid border renderer (shared by the icon + bar mixins) ──────────
--- Both templates carry the same standard border regions (BorderSolid* strips +
--- Border* 8-slice pieces); this renders `styleName` into them. Kept here rather
--- than duplicated per mixin — the slice texcoord math is delicate and belongs in
--- one place (the plan's shared-math discipline). Sizes come from the caller's
--- known width/height, never GetWidth()/GetHeight(), to avoid secret-value taint.
 do
 	local BACKDROP_COORD_START = 0.0625
 	local BACKDROP_COORD_END = 1 - BACKDROP_COORD_START
 
-	-- natural edge sizes / insets per LSM border, used only as a fallback when the
-	-- element carries no explicit borderSize (post-BackfillElements it always does)
 	local BORDER_EDGE_SIZES = {
 		["Blizzard Tooltip"] = 16,
 		["Blizzard Dialog"] = 8,
@@ -67,7 +52,6 @@ do
 		["Blizzard Tooltip"] = 3,
 	}
 
-	-- The set of border regions ApplyBorderStyle drives; both templates expose them.
 	---@class TargetedSpellsBorderFrame : Frame
 	---@field BorderSolidTop Texture
 	---@field BorderSolidBottom Texture
@@ -91,10 +75,6 @@ do
 	---@field appliedBorderSize number?
 	---@field appliedBorderColor string?
 
-	-- 8-slice texcoords keyed by region name, hoisted and mutated in place rather than
-	-- rebuilt per call: only the four edge strips' repeat slots follow the box size (they
-	-- are written just before the loop below), the other 48 numbers are constants. The
-	-- loop consumes them synchronously, so sharing one table across every caller is safe.
 	local SLICE_TEXCOORDS = {
 		BorderTopLeft = {
 			0.5078125,
@@ -184,18 +164,9 @@ do
 	---@param borderSize number? edge/strip thickness; falls back to the border's natural size
 	---@param borderColorHex string? AARRGGBB tint, or nil for untinted
 	function Private.Utils.ApplyBorderStyle(frame, styleName, box, borderSize, borderColorHex)
-		-- the border wraps `box`, centred at frame CENTER + (offsetX, offsetY). For the
-		-- icon this is the icon frame itself (offset 0); for the bar it's the union extent
-		-- of the active boxed elements, so the border encloses the icon / target marker /
-		-- duration too, not just the ProgressBar.
 		local width, height = box.width, box.height
 		local offsetX, offsetY = box.offsetX or 0, box.offsetY or 0
 
-		-- What the border renders is a pure function of style, box and tint, and a pooled
-		-- frame is normally re-acquired into the group it came from — so the whole 12-region
-		-- reapply (and, for "None", 12 redundant Hide()s) is skipped when nothing changed.
-		-- Anything that touches these regions behind our back must clear the stamp;
-		-- currently nothing does.
 		if
 			frame.appliedBorderStyle == styleName
 			and frame.appliedBorderWidth == width
@@ -229,8 +200,6 @@ do
 			frame.BorderLeft:Hide()
 			frame.BorderRight:Hide()
 
-			-- solid strips: thickness from borderSize, tint from borderColor, spanning the
-			-- box edges (re-anchored to frame CENTER so they follow an offset extent)
 			local size = borderSize or 1
 
 			frame.BorderSolidTop:ClearAllPoints()
@@ -284,20 +253,14 @@ do
 			frame.BorderSolidLeft:Hide()
 			frame.BorderSolidRight:Hide()
 
-			-- borderSize drives the slice edge thickness (per-texture natural sizes
-			-- are the fallback when no group/border element is set)
 			local edgeSize = borderSize or BORDER_EDGE_SIZES[styleName] or 8
 			local outwardOffset = BORDER_INSETS[styleName] or 0
 			local borderWidth = width + 2 * outwardOffset
 			local borderHeight = height + 2 * outwardOffset
 
-			-- replicates BackdropTemplateMixin:SetupTextureCoordinates using known
-			-- dimensions instead of GetWidth()/GetHeight() to avoid secret errors
 			local edgeRepeatX = math.max(0, borderWidth / edgeSize - 2 - BACKDROP_COORD_START)
 			local edgeRepeatY = math.max(0, borderHeight / edgeSize - 2 - BACKDROP_COORD_START)
 
-			-- corners anchored relative to frame CENTER so the slice follows the box's
-			-- centre offset (outwardOffset pushes them outward for inset styles)
 			frame.BorderTopLeft:ClearAllPoints()
 			frame.BorderTopLeft:SetPoint("TOPLEFT", frame, "CENTER", offsetX - halfW - outwardOffset,
 				offsetY + halfH + outwardOffset)
@@ -323,7 +286,6 @@ do
 			frame.BorderLeft:SetWidth(edgeSize)
 			frame.BorderRight:SetWidth(edgeSize)
 
-			-- the only size-dependent numbers in the whole slice map
 			SLICE_TEXCOORDS.BorderTop[2] = edgeRepeatX
 			SLICE_TEXCOORDS.BorderTop[4] = edgeRepeatX
 			SLICE_TEXCOORDS.BorderBottom[2] = edgeRepeatX
@@ -362,9 +324,6 @@ do
 	end
 end
 
--- Recursive deep copy of a (possibly nested) table. Backs the designer's scratch
--- copy and the "copy layout from group" action; also used by Design.GetDefault so
--- callers can mutate the returned Elements without touching the code constant.
 function Private.Utils.DeepCopy(source)
 	if type(source) ~= "table" then
 		return source
@@ -377,8 +336,6 @@ function Private.Utils.DeepCopy(source)
 	return copy
 end
 
--- Structural equality of two values (tables compared recursively). Used by the
--- v4 profile import to decide whether an imported config actually differs.
 function Private.Utils.DeepEqual(left, right)
 	if left == right then
 		return true
@@ -416,7 +373,6 @@ do
 		local breakpoints = {}
 
 		if fractionThreshold ~= nil and fractionThreshold > 0 then
-			-- clamp below the minutes rule so thresholds stay strictly ascending
 			local cutoff = math.min(fractionThreshold, 59)
 			breakpoints[#breakpoints + 1] = { threshold = 0, format = "%.1f" }
 			breakpoints[#breakpoints + 1] = { threshold = cutoff, format = "%d" }
@@ -520,10 +476,6 @@ function Private.Utils.RollDice()
 	return math.random(1, 6) == 6
 end
 
--- `out`, if given, is filled and returned instead of allocating a fresh table —
--- every field is overwritten unconditionally, so reusing a scratch table is safe.
--- AdjustLayout consumes the result synchronously and never retains it, which lets
--- the reposition hot path pass one reused table per pass (Driver.RepositionFrames).
 function Private.Utils.CollectLayoutingArguments(direction, grow, width, height, gap, out)
 	local isHorizontal = direction == Private.Enum.Direction.Horizontal
 	local isGrowEnd = grow == Private.Enum.Grow.End
@@ -539,21 +491,6 @@ function Private.Utils.CollectLayoutingArguments(direction, grow, width, height,
 	return out
 end
 
--- space relative to the core element (which is the 0,0 origin). Returns the union
--- bounding box of every active *non-text* box — that includes the core, whose
--- `active` field is absent (omitActive) and so counts as active — plus any text
--- element carrying an explicit `maxWidth` cap. Auto-sized (uncapped) text is
--- deliberately excluded: its runtime width is unbounded, so a long name would
--- elements (Overlay, Cooldown, Border, Background) have no width/height and so
--- contribute nothing — they draw within the core.
---
--- Returns { width, height, offsetX, offsetY } where (offsetX, offsetY) is the
--- centre of the extent relative to the core centre — usually non-zero, since
--- elements skew to one side. The edit-mode placeholder uses this so its outline
--- covers the pixels the display actually draws, not just the narrower core box.
---
--- Pure: reads only stored offsets/sizes, no live frame, so it is busted-coverable
--- like the bar-offset reconstruction.
 function Private.Utils.ComputeElementExtent(elements)
 	local hasBox = false
 	local minX, minY, maxX, maxY
@@ -580,18 +517,13 @@ function Private.Utils.ComputeElementExtent(elements)
 	end
 
 	for _, values in pairs(elements) do
-		-- the core has no `active` field (omitActive) → nil counts as active
 		if values.active ~= false then
 			local centerX = values.x or 0
 			local centerY = values.y or 0
 
 			if values.width and values.height then
-				-- non-text box (includes the core element)
 				Include(centerX, centerY, values.width, values.height)
 			elseif values.maxWidth and values.maxWidth > 0 then
-				-- capped text: width is bounded by maxWidth, height ≈ its font size. The
-				-- renderer edge-anchors by justifyH (x pins the LEFT/RIGHT/CENTER edge), so
-				-- shift to the box centre before unioning. Nil justifyH → CENTER (no shift).
 				local justifyH = values.justifyH or "CENTER"
 				local boxCenterX = centerX
 				if justifyH == "LEFT" then
@@ -616,19 +548,6 @@ function Private.Utils.ComputeElementExtent(elements)
 	}
 end
 
--- Bar reflow layout. TargetMarker + Icon form a left "gutter": the *active* ones pack
--- against the frame's left edge (TargetMarker first, then Icon), and the ProgressBar fills
--- the remaining width to the right. So the bar's right edge is fixed at the frame's right
--- edge; its left edge and width reflow as the gutter grows/shrinks. Everything else hangs
--- off the bar — text pinned by its justifyH edge, Duration/InterruptShield off the (fixed)
--- right edge. `x`/`y` on those elements are insets from their anchor, not absolute offsets.
---
--- Pure: geometry only, in frame-CENTRE coordinates, shared by the renderer and the
--- designer markers so both agree. Returns a table keyed by Element, plus string keys
--- `gutterWidth` and `barWidth`:
---   box elements → { centerX, centerY, width, height }
---   text elements → { text = true, justifyH, edgeX, centerY, maxWidth, fontSize }
---                    (edgeX = frame-centre X of the justifyH-pinned edge; width auto-sizes)
 local BAR_GUTTER_ORDER = {
 	Private.Enum.Element.TargetMarker,
 	Private.Enum.Element.Icon
@@ -644,25 +563,9 @@ local BAR_TEXTS = {
 		.InterruptSource
 }
 
--- Memo for the reflow layouts (ComputeBarLayout / ComputeIconDurationLayout), keyed by the
--- Elements table it was computed from and weak so a discarded group/scratch table takes its
--- layout with it (same shape as Groups' sortedIdCache). A frame acquire computes the same
--- layout three to four times over — renderer, border, glow width — from a table that is not
--- mutated in between.
---
--- One cache serves both functions: an Elements table belongs to exactly one template, and a
--- template swap replaces it wholesale (Groups.SetTemplate) rather than mutating it, so the two
--- can never collide on a key.
---
--- The layout is only ever read, never mutated, so handing every caller the same table is
--- safe. Elements tables ARE mutated in place in two places (the Designer's live scratch
--- and Design.BackfillElements), and both call InvalidateLayout.
 ---@type table<table, table<any, any>>
 local layoutCache = setmetatable({}, { __mode = "k" })
 
--- Drops the memoised layout for an Elements table. Must be called by anything that
--- mutates one in place; replacing the table wholesale needs no call (the new table simply
--- has no entry).
 ---@param elements table<Element, table<string, any>>?
 function Private.Utils.InvalidateLayout(elements)
 	if elements ~= nil then
@@ -708,7 +611,6 @@ function Private.Utils.ComputeBarLayout(elements)
 		height = height
 	}
 
-	-- gutter elements packed from the frame's left edge; only active ones occupy a slot
 	local cursorLeft = -halfTotal
 	for _, tag in ipairs(BAR_GUTTER_ORDER) do
 		local element = elements[tag]
@@ -724,7 +626,6 @@ function Private.Utils.ComputeBarLayout(elements)
 		end
 	end
 
-	-- right-hugging boxes: their right edge sits at the (fixed) bar right + x inset
 	for _, tag in ipairs(BAR_RIGHT_BOXES) do
 		local element = elements[tag]
 		if element ~= nil then
@@ -738,7 +639,6 @@ function Private.Utils.ComputeBarLayout(elements)
 		end
 	end
 
-	-- text: pinned by justifyH to the matching bar edge, x an inset from that edge
 	for _, tag in ipairs(BAR_TEXTS) do
 		local element = elements[tag]
 		if element ~= nil then
@@ -789,7 +689,6 @@ function Private.Utils.ComputeIconDurationLayout(elements)
 	local durationWidth = fontSize * DURATION_WIDTH_RATIO
 	local totalWidth = iconWidth * 2 + gap * 2 + durationWidth
 
-	-- each cell's centre sits half an icon in from its own edge of the assembly
 	local cellOffset = totalWidth / 2 - iconWidth / 2
 
 	local layout = {
@@ -805,7 +704,6 @@ function Private.Utils.ComputeIconDurationLayout(elements)
 		},
 	}
 
-	-- designer-facing aliases: one marker per configurable element
 	layout[Private.Enum.Element.Icon] = {
 		centerX = 0,
 		centerY = 0,
@@ -819,9 +717,6 @@ function Private.Utils.ComputeIconDurationLayout(elements)
 	return layout
 end
 
--- Visual extent of a group's layout, for the edit-mode placeholder outline. A bar's
--- gutter + bar fill the full frame, so its extent is simply the core box; an icon+duration
--- assembly likewise fills its frame; a plain icon group falls back to the free-positioned union.
 ---@param elements table<Element, table<string, any>>
 ---@return { width: number, height: number, offsetX: number, offsetY: number }
 function Private.Utils.ComputeGroupExtent(elements)
@@ -831,8 +726,6 @@ function Private.Utils.ComputeGroupExtent(elements)
 		return { width = core.width or 0, height = core.height or 0, offsetX = 0, offsetY = 0 }
 	end
 
-	-- the Duration element exists only on the icon+duration template, whose two cells and text
-	-- span more than the single Icon box ComputeElementExtent would find
 	if elements[Private.Enum.Element.Duration] ~= nil then
 		local layout = Private.Utils.ComputeIconDurationLayout(elements)
 		local icon = elements[Private.Enum.Element.Icon]
@@ -848,13 +741,6 @@ function Private.Utils.ComputeGroupExtent(elements)
 	return Private.Utils.ComputeElementExtent(elements)
 end
 
--- The box a group's frames occupy for stacking purposes, which is NOT always the core
--- element's box: the icon+duration core is one icon, but the frame is the whole assembly.
--- GroupController:Relayout feeds this into CollectLayoutingArguments.
---
--- Getting this wrong is invisible in Vertical mode — AdjustLayout anchors each frame to the
--- spine texture point-to-point, so a too-narrow spine still centres the frame — and only shows
--- as wrong spacing in Horizontal. Hence a named helper rather than an inline core read.
 ---@param template TargetedSpellsTemplate
 ---@param elements table<Element, table<string, any>>
 ---@return number width, number height
@@ -866,7 +752,6 @@ function Private.Utils.ComputeGroupFootprint(template, elements)
 		return layout.totalWidth, (icon and icon.height) or 0
 	end
 
-	-- every other template's frame IS its core element's box
 	local coreTag = template == Private.Enum.Template.Bar and Private.Enum.Element.ProgressBar
 		or Private.Enum.Element.Icon
 	local core = elements[coreTag]
@@ -900,19 +785,12 @@ function Private.Utils.AdjustLayout(
 	local prevStatusBarTexture = nil
 
 	for _, frame in ipairs(frames) do
-		-- Spine binding: the Bar's size/orientation/fill direction and the frame↔Bar
-		-- parenting are a pure function of the group's Direction/Grow/core size and of the
-		-- container, so they change on acquire or on a Reconfigure — never because a sibling
-		-- frame came or went. A relayout that changes only the anchor chain skips them. The
-		-- stamp lives on the frame and is cleared by Reset, so a pooled frame always rebinds.
 		if
 			frame.boundBarParent ~= barParent
 			or frame.boundX ~= layouting.x
 			or frame.boundY ~= layouting.y
 			or frame.boundIsHorizontal ~= layouting.isHorizontal
 			or frame.boundIsGrowEnd ~= layouting.isGrowEnd
-			-- the frame's own level is derived from the Bar's, so a level the Bar picked up
-			-- from elsewhere has to re-derive it; keeps the skip self-healing
 			or frame.boundBarLevel ~= frame.Bar:GetFrameLevel()
 		then
 			if layouting.isHorizontal then
@@ -988,7 +866,6 @@ function Private.Utils.CreateEditablePopup(title, text, button1)
 			popupSelf:GetParent():Hide()
 		end,
 		EditBoxOnTextChanged = function(popupSelf)
-			-- ctrl + x sets the text to "" but this triggers hiding and shouldn't trigger resetting the text
 			local currentText = popupSelf:GetText()
 
 			if currentText == "" or currentText == text then
@@ -1028,10 +905,6 @@ do
 		return editModeFrameByGroupId[groupId]
 	end
 
-	-- Profile import: accepts a v4 payload (has Groups) or a v3 payload (Self/Party),
-	-- normalising the latter through the migration first, then adopts it wholesale —
-	-- profile import means replacing your config. Returns whether anything actually
-	-- changed.
 	---@param result table
 	---@return boolean
 	local function ImportV4Profile(result)
@@ -1042,9 +915,6 @@ do
 				return false
 			end
 
-			-- A v3 profile string imported into a v4 config: migrate it first. The
-			-- warning flag is pre-stamped because an exported profile is already
-			-- v3-shaped — only a live pre-v3 config needs the party reset.
 			local temp = {
 				V3MigrationWarningSeen = true,
 				Settings = { Self = result.Self, Party = result.Party },
@@ -1059,9 +929,6 @@ do
 		)
 
 		if changed then
-			-- Update groups IN PLACE so the transitional Settings views and the
-			-- edit-mode `self.group` refs (which captured these tables) survive the
-			-- import. Replacing the tables wholesale would strand those references.
 			local incoming = Private.Utils.DeepCopy(payload.Groups)
 
 			for id in pairs(TargetedSpellsSaved.Groups) do
@@ -1083,20 +950,10 @@ do
 				end
 			end
 
-			-- An imported payload may be as incomplete as whatever version exported it.
-			-- Conform re-stamps every Id from its key and heals missing container/element
-			-- fields, so a sparse imported group is completed rather than left partial.
 			Private.Groups.Conform(TargetedSpellsSaved.Groups)
 
-			-- ids were added/removed in place above; drop the cached sort order
 			Private.Groups.InvalidateOrder(TargetedSpellsSaved.Groups)
 
-			-- Same in-place rule as the groups above, and it has to reach one level
-			-- deeper: the edit-mode announcement dropdowns capture the
-			-- AnnounceUntargetedSpells / AnnounceTargetedSpells tables themselves
-			-- (EditMode.lua, MultiDropdown), so replacing either one leaves the panel
-			-- reading and writing an orphan until the next reload.
-			-- walked as a plain map here, not as the typed record it is elsewhere
 			---@type table<string, any>
 			local incomingTextToSpeech = Private.Utils.DeepCopy(payload.TextToSpeech)
 			---@type table<string, any>
@@ -1138,7 +995,6 @@ do
 			return false
 		end
 
-		-- just a type check
 		if result == nil then
 			return false
 		end
@@ -1146,7 +1002,6 @@ do
 		return ImportV4Profile(result)
 	end
 
-	-- serialises the group model + hoisted TTS; Init guarantees both exist
 	function Private.Utils.Export()
 		local payload = {
 			SchemaVersion = TargetedSpellsSaved.SchemaVersion,

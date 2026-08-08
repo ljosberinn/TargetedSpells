@@ -34,7 +34,6 @@ local function GetPlayerName()
 	return playerName
 end
 
--- A capped box truncates and justifies within maxWidth; an uncapped one sizes to its text.
 ---@param region FontString
 ---@param maxWidth number?
 local function ApplyTextWidth(region, maxWidth)
@@ -46,9 +45,6 @@ local function ApplyTextWidth(region, maxWidth)
 	end
 end
 
--- Region descriptors for the three per-acquire loops below, hoisted so nothing is
--- allocated per call. Each names its region by *path* rather than holding a live
--- reference — the descriptor is shared by every frame, so it cannot own one region.
 ---@param frame TargetedSpellsBarMixin
 ---@param path string[]
 ---@return any
@@ -62,10 +58,6 @@ local function ResolveRegion(frame, path)
 	return region
 end
 
--- boxes: the gutter (Icon/TargetMarker, present in the layout only when active) plus the
--- right-hugging Duration/InterruptShield. Icon/Duration toggle their own visibility;
--- TargetMarker/InterruptShield are only placed (visibility is driven elsewhere by the
--- raid-icon presence / the secret interruptibility boolean).
 local BAR_BOX_REGIONS = {
 	{ tag = Element.Icon,             path = { "Icon" },                                   applyShown = true },
 	{ tag = Element.TargetMarker,     path = { "CustomElementsFrame", "TargetMarker" },    applyShown = false },
@@ -73,19 +65,12 @@ local BAR_BOX_REGIONS = {
 	{ tag = Element.DurationCooldown, path = { "DurationCooldown" },                       applyShown = true },
 }
 
--- text: anchored by its justifyH edge to the bar edge the layout computed, so the pinned
--- edge lands exactly where ComputeBarLayout placed it and reflows with the bar. maxWidth
--- caps the box (truncation + internal justification); uncapped sizes to text. Visibility
--- is driven at runtime (SetSpellId / UpdateTargetName / SetInterrupted).
 local BAR_TEXT_REGIONS = {
 	{ tag = Element.SpellName,       path = { "ProgressBar", "SpellName" } },
 	{ tag = Element.TargetName,      path = { "ProgressBar", "TargetName" } },
 	{ tag = Element.InterruptSource, path = { "ProgressBar", "InterruptSource" } },
 }
 
--- fonts: the same three text regions, plus the cooldown's countdown FontString — which is
--- not reachable by path (it comes off the cooldown frame) and carries the separate
--- countdown* settings, hence `countdown`.
 local BAR_FONT_REGIONS = {
 	BAR_TEXT_REGIONS[1],
 	BAR_TEXT_REGIONS[2],
@@ -108,7 +93,6 @@ function TargetedSpellsBarMixin:GetGlowTarget()
 		return self.ProgressBar
 	end
 
-	-- the bar reflows narrower when a gutter is present; glow the actual bar width
 	local layout = Private.Utils.ComputeBarLayout(self:GetElements())
 	return self.ProgressBar, layout.barWidth, core.height
 end
@@ -120,15 +104,6 @@ function TargetedSpellsBarMixin:OnLoad()
 	self.DurationCooldown:SetCountdownFormatter(self.countdownFormatter)
 end
 
--- ── Gutter-reflow renderer ───────────────────────────────────────────────────
--- Layout is [TargetMarker][Icon][ProgressBar]: the active gutter elements pack against
--- the frame's left edge and the ProgressBar fills the rest, so the bar's right edge is
--- fixed and its left edge reflows with the gutter. Private.Utils.ComputeBarLayout is the
--- single source of truth for the geometry (also drives the designer markers); here we just
--- apply it to the live regions, all anchored to the FRAME centre. Text is pinned by its
--- justifyH edge (so LEFT text follows the reflowing left edge, RIGHT stays put); every box
--- is centre-placed at its computed centre. Runtime toggles/values re-run PositionElements,
--- so the static computed positions stay correct.
 function TargetedSpellsBarMixin:PositionElements()
 	local elements = self:GetElements()
 	if elements == nil then
@@ -158,7 +133,6 @@ function TargetedSpellsBarMixin:PositionElements()
 				region:SetShown(elements[entry.tag].active ~= false)
 			end
 		elseif entry.applyShown then
-			-- no layout slot (an inactive gutter element) → hidden
 			region:SetShown(false)
 		end
 	end
@@ -188,13 +162,10 @@ function TargetedSpellsBarMixin:PositionElements()
 	end
 end
 
--- SetSize(self, ...) fires this; the free layout is offset-based, so a resize is
--- just a reflow of the same offsets.
 function TargetedSpellsBarMixin:OnSizeChanged()
 	self:PositionElements()
 end
 
--- Sizes and styles the frame from its group's Bar layout. Runs on acquire.
 function TargetedSpellsBarMixin:ApplyLayout()
 	local core = self:GetElement(Element.ProgressBar)
 	if core == nil then
@@ -215,7 +186,6 @@ function TargetedSpellsBarMixin:ApplyLayout()
 
 	local duration = self:GetElement(Element.DurationCooldown)
 	if duration ~= nil then
-		-- the region's `active` toggle shows/hides its number too (no separate toggle)
 		self.DurationCooldown:SetHideCountdownNumbers(duration.active == false)
 		Private.Utils.ApplyFractionThreshold(self.countdownFormatter, duration.fractionThreshold)
 	end
@@ -309,10 +279,6 @@ function TargetedSpellsBarMixin:SetBackgroundBarColor()
 	self.ProgressBar.Background:SetVertexColor(color.r, color.g, color.b, color.a)
 end
 
--- The border regions live on the ProgressBar, so the border wraps the bar itself (the
--- gutter icon/marker sit outside it). The bar reflows, so its extent is the computed bar
--- width centred on the ProgressBar; the 8-slice / solid renderer is shared with the icon
--- mixin in Private.Utils.
 function TargetedSpellsBarMixin:ApplyBorderStyle(styleName)
 	local elements = self:GetElements()
 	if elements == nil then
@@ -336,26 +302,15 @@ function TargetedSpellsBarMixin:SetShowDuration(showDuration)
 	self.DurationCooldown:SetHideCountdownNumbers(not showDuration)
 end
 
--- See the pool contract on TargetedSpellsMixin:Reset for what belongs here. Alpha, the
--- Bar value, the target marker, the target name and every text colour are all re-applied
--- unconditionally on acquire and so are deliberately absent.
 function TargetedSpellsBarMixin:Reset()
 	TargetedSpellsMixin.Reset(self)
 
-	-- (2) the interrupter's name. Only SetInterrupted writes or shows it, and
-	-- PositionElements places text without ever showing or hiding it. Its *colour* needs no
-	-- reset — the schema always carries a textColor default, so PositionElements re-applies.
 	self.ProgressBar.InterruptSource:SetText("")
 	self.ProgressBar.InterruptSource:Hide()
 
-	-- (2) the shield is only ever shown when its element is active AND the interruptibility
-	-- boolean resolved, so a frame carrying one into a group without a shield would keep it.
-	-- Secret-safe by contract: alpha through secretwrap, never a bare boolean.
 	self.CustomElementsFrame.InterruptShield:SetAlpha(secretwrap(1))
 	self.CustomElementsFrame.InterruptShield:Hide()
 
-	-- (1) stops the countdown, and (3) drops the closure bound to the cast that just ended:
-	-- PostCreate rebinds it only when handed a callback, and neither preview path passes one.
 	self.DurationCooldown:Clear()
 	self.DurationCooldown:SetScript("OnCooldownDone", nil)
 end
@@ -379,10 +334,6 @@ function TargetedSpellsBarMixin:SetTargetMarker(raidTargetIndex)
 	end
 end
 
--- SpellName's maxWidth exists only to keep it clear of TargetName (the Bar schema sizes
--- the two so they never meet — see Design.lua). With TargetName hidden, whether because
--- the spell has no target or because the element is switched off, there is nothing to
--- keep clear of, so SpellName drops its cap and sizes to its own text.
 function TargetedSpellsBarMixin:ApplySpellNameWidth()
 	local element = self:GetElement(Element.SpellName)
 	local maxWidth = nil
@@ -394,8 +345,6 @@ function TargetedSpellsBarMixin:ApplySpellNameWidth()
 	ApplyTextWidth(self.ProgressBar.SpellName, maxWidth)
 end
 
--- v4 text auto-sizes; visibility is just active + whether a target exists (the
--- old width-splitting is gone — see the free-positioning note in the plan).
 function TargetedSpellsBarMixin:UpdateTargetName(targetName)
 	local element = self:GetElement(Element.TargetName)
 
@@ -406,12 +355,10 @@ function TargetedSpellsBarMixin:UpdateTargetName(targetName)
 		self.ProgressBar.TargetName:Show()
 	end
 
-	-- TargetName's visibility just changed, so SpellName's cap may no longer apply
 	self:ApplySpellNameWidth()
 end
 
 function TargetedSpellsBarMixin:PostCreate(info, OnCooldownDoneCallback)
-	-- the Driver assigns the group before PostCreate; size/style from it now
 	self:SetUnit(info and info.unit or nil)
 	self:ApplyLayout()
 	self:SetTargetMarker()
@@ -432,9 +379,6 @@ function TargetedSpellsBarMixin:PostCreate(info, OnCooldownDoneCallback)
 	local durationAlpha = self:SetDuration(info.duration)
 	local targetName = UnitSpellTargetName(info.unit)
 
-	-- The non-secret part of the filter (Nobody vs targeted) was decided by the
-	-- Driver before acquisition; the Player/PartyMember distinction + OnlyImportant
-	-- are secret and resolved here via the frame alpha.
 	self:ApplyCastAlpha(info, durationAlpha)
 	self.Bar:SetValue(self:GetAlpha())
 
@@ -462,9 +406,6 @@ function TargetedSpellsBarMixin:PostCreate(info, OnCooldownDoneCallback)
 		end
 	end
 
-	-- The interruptibility state is a secret boolean; both the Interruptibility bar
-	-- colour and the InterruptShield consume it without the addon ever branching on it
-	-- (SetVertexColorFromBoolean / SetShown). Fetch it once if either needs it.
 	local shield = self:GetElement(Element.InterruptShield)
 	local shieldActive = shield ~= nil and shield.active
 
@@ -485,10 +426,6 @@ function TargetedSpellsBarMixin:PostCreate(info, OnCooldownDoneCallback)
 			end
 
 			if shieldActive then
-				-- visible only when NOT interruptible. The interruptibility boolean is
-				-- secret, so we can't branch on it or SetShown() from it; SetAlphaFromBoolean
-				-- resolves it to alpha secret-safely (there is no SetShownFromBoolean). The
-				-- texture stays shown; alpha 1/0 is what actually reveals/hides it.
 				self.CustomElementsFrame.InterruptShield:Show()
 				self.CustomElementsFrame.InterruptShield:SetAlphaFromBoolean(uninterruptible)
 			end
@@ -572,8 +509,6 @@ function TargetedSpellsBarMixin:SetDuration(duration)
 	return TargetedSpellsMixin.SetDuration(self, duration)
 end
 
--- Each text element carries its own font in v4; the cooldown countdown carries a
--- separate countdown font. One loop applies them all.
 function TargetedSpellsBarMixin:SetFont()
 	local elements = self:GetElements()
 	if elements == nil then
@@ -591,8 +526,6 @@ function TargetedSpellsBarMixin:SetFont()
 			local fontString = target.countdown and self.DurationCooldown:GetCountdownFontString()
 				or ResolveRegion(self, target.path)
 
-			-- DurationCooldown:Clear() silently re-inherits the countdown font, so that one
-			-- cannot be change-detected; the plain text regions can
 			local SetFont = target.countdown and Private.Utils.SafelySetFont or Private.Utils.SetFontIfChanged
 
 			SetFont(fontString, font, fontSize, fontFlags[FontFlags.OUTLINE] and "OUTLINE" or "")

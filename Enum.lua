@@ -91,11 +91,7 @@ Private.Enum.NpcType = {
 	Other = 6,
 }
 
--- v4 model ─────────────────────────────────────────────────────────────────
-
 ---@enum TargetedSpellsTemplate
--- Which XML frame + mixin + pool a group renders with. A per-group property;
--- the surviving meaning of the old FrameKind/GetKind value.
 Private.Enum.Template = {
 	Icon = "Icon",
 	Bar = "Bar",
@@ -103,9 +99,6 @@ Private.Enum.Template = {
 }
 
 ---@enum Element
--- One tag per configurable sub-widget of a frame. Schemas, per-template defaults and
--- migration all key off these. Some tags (Icon, InterruptSource) are shared between
--- templates.
 Private.Enum.Element = {
 	-- shared / icon template
 	Icon = "Icon",
@@ -126,7 +119,6 @@ Private.Enum.Element = {
 }
 
 ---@enum TargetClass
--- What a cast is targeting. A group's Filter is a multi-select over this.
 Private.Enum.TargetClass = {
 	Player = 1,
 	PartyMember = 2,
@@ -134,7 +126,6 @@ Private.Enum.TargetClass = {
 }
 
 ---@enum BarColorMode
--- Collapses the old UseInterruptabilityColors + UseTargetClassColor booleans.
 Private.Enum.BarColorMode = {
 	Static = 1,
 	Interruptibility = 2,

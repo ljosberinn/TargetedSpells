@@ -63,7 +63,7 @@ end
 
 function Private.TextToSpeechUtil.MaybeAnnounceSpell(info, contentType, activeEncounterId)
 	if
-	-- don't execute in open world if outside of combat, otherwise there's stray TTS from people casting stuff in town
+	-- Suppress open-world announcements outside combat.
 		(contentType == Private.Enum.ContentType.OpenWorld and (not InCombatLockdown() or not UnitAffectingCombat(
 			info.unit
 		)))

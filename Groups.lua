@@ -81,8 +81,6 @@ function Private.Groups.GetMatching(info, groups, out)
 		return matching
 	end
 
-	-- deterministic order so overlapping matches are stable across calls (cached;
-	-- rebuilt only when the group set changes — see SortedIds)
 	for _, id in ipairs(Private.Groups.SortedIds(groups)) do
 		local group = groups[id]
 		if group and group.Enabled ~= false and group.Filter then
@@ -112,16 +110,11 @@ function Private.Groups.Count(saved)
 	return count
 end
 
--- Templates whose frames are wider than they are tall stack vertically; anything else
--- defaults to a horizontal row. Absent → Horizontal.
 local DEFAULT_DIRECTION = {
 	[Private.Enum.Template.Bar] = Private.Enum.Direction.Vertical,
 	[Private.Enum.Template.IconDuration] = Private.Enum.Direction.Vertical,
 }
 
--- Which cast targets a new group shows. Absent → all three, the historical default. The
--- icon+duration display is built around a single prominent countdown, so it seeds to the
--- player's own incoming casts rather than every cast in the pull.
 ---@return table<TargetClass, boolean>
 local function DefaultFilter(template)
 	if template == Private.Enum.Template.IconDuration then
@@ -135,13 +128,6 @@ local function DefaultFilter(template)
 	return { [Private.Enum.TargetClass.Player] = true }
 end
 
--- Container-level defaults for a group — every field except Elements (the element
--- layout comes from the template schema, see Design). Single source of truth shared by
--- BuildDefaultGroup (a brand-new group) and Conform (healing a saved group missing a
--- field), so a new container field is added in one place and healed automatically.
--- Returns a fresh table with fresh sub-tables on every call, so callers may keep the
--- result without deep-copying. Kept here — not in the v3 Settings defaults — because a
--- new v4 group has no v3 ancestor.
 ---@param id integer
 ---@param template TargetedSpellsTemplate
 ---@param name string
@@ -177,7 +163,6 @@ local function ContainerDefaults(id, template, name)
 	}
 end
 
--- A brand-new group: container defaults + the template's default element layout.
 ---@param id integer
 ---@param template TargetedSpellsTemplate
 ---@param name string
@@ -188,11 +173,6 @@ local function BuildDefaultGroup(id, template, name)
 	return group
 end
 
--- Fills any missing container field on `group` from a same-shape default; never
--- overwrites a present value, so a meaningful `false` (Enabled/GlowImportant/…) or a
--- non-default enum survives — the test is `== nil`, not truthiness. Elements are healed
--- separately (Design.BackfillElements). ContainerDefaults is freshly built for this one
--- group, so its sub-tables can be assigned directly without aliasing another group.
 ---@param group TargetedSpellsGroup
 local function ApplyContainerDefaults(group)
 	local defaults = ContainerDefaults(group.Id, group.Template, group.Name or ("Group " .. tostring(group.Id)))
@@ -204,11 +184,6 @@ local function ApplyContainerDefaults(group)
 	end
 end
 
--- Guarantees every saved group is complete and self-consistent, whatever version
--- created it: re-stamps the derived Id from its key, fills any missing container field,
--- and backfills element fields. Idempotent, and the single load-time owner of group
--- shape — heals presence only (nil → default), never validating or overwriting a value
--- that is already there.
 ---@param groups table<integer, TargetedSpellsGroup>
 function Private.Groups.Conform(groups)
 	for id, group in pairs(groups) do
@@ -218,16 +193,6 @@ function Private.Groups.Conform(groups)
 	end
 end
 
--- Runtime (non-persisted) id allocator. Ids must be unique among currently-live
--- groups AND must not collide with an edit-mode frame that a within-session delete
--- left lingering: LibEditMode has no RemoveFrame, so a deleted group's named frame
--- (TargetedSpellsGroupEditMode<id>) survives until the next reload — see
--- Private.EditMode.DeleteGroup. A per-session high-water mark satisfies both without
--- persisting anything: it only ever climbs within a session, so an id freed this
--- session is never handed back while its frame is still around. Across reloads the
--- lingering frames are gone and the mark reseeds from the highest saved id, so
--- reusing a since-freed top id is safe. Keyed weakly by the config table so the live
--- config and each spec's fixture stay isolated (and are collected with it).
 local highWaterByConfig = setmetatable({}, { __mode = "k" })
 
 ---@param saved table
@@ -247,11 +212,6 @@ local function AllocateId(saved)
 	return id
 end
 
--- A friendly default name: the lowest "Group N" not already taken. Names are not
--- identity (ids are), but naming off the raw allocated id produces an ugly label like
--- "Group 10" once groups have been created and deleted in a session, since ids only
--- climb. Picking the smallest free N keeps the label sequential and fills gaps left by
--- deletions.
 ---@param saved table
 ---@return string
 local function NextGroupName(saved)
@@ -270,10 +230,6 @@ local function NextGroupName(saved)
 	return "Group " .. n
 end
 
--- Creates a group of `template`, seeded from the built-in element defaults, with a
--- freshly allocated id (see AllocateId — a runtime high-water mark, never reused within
--- a session) and a sequential "Group N" display name (independent of the id — see
--- NextGroupName).
 ---@param template TargetedSpellsTemplate
 ---@param saved table?
 ---@return integer id, TargetedSpellsGroup group
@@ -289,11 +245,6 @@ function Private.Groups.Create(template, saved)
 	return id, group
 end
 
--- The starter groups seeded on a brand-new install (no SavedVariables yet). Built from
--- the live v4 element defaults (Design.GetDefault, via BuildDefaultGroup) so a fresh
--- bar/icon matches exactly what "Reset Element" produces — unlike the v3→v4 migration,
--- which reconstructs geometry from legacy settings. Ids 1/2 mirror the migration layout
--- (Self icon, then bar), each pre-filtered to its role.
 ---@return table<integer, TargetedSpellsGroup>
 function Private.Groups.CreateStarterGroups()
 	local selfGroup = BuildDefaultGroup(1, Private.Enum.Template.Icon, "Self - Icon")

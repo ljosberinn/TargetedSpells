@@ -108,8 +108,7 @@ table.insert(Private.LoginFnQueue, function()
 				local enabledColor = "FF00FF00"
 				local disabledColor = "00FF0000"
 
-				-- The tooltip reflects the two migrated display slots (Groups[1]=Self,
-				-- Groups[2]=Party); either may have been deleted, so guard for nil.
+				-- Migrated groups may have been deleted.
 				local selfGroup = TargetedSpellsSaved.Groups[1]
 				local partyGroup = TargetedSpellsSaved.Groups[2]
 				local selfEnabled = selfGroup ~= nil and selfGroup.Enabled

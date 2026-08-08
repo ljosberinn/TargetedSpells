@@ -1,29 +1,11 @@
 ---@type string, TargetedSpells
 local _, Private = ...
 
--- ── Group display controller ─────────────────────────────────────────────────
--- One controller per group id. Owns everything per-group: the 1x1 container its
--- frames anchor to, the frame pool it draws from, its currently active frames, and the
--- layout that arranges them. It is the *sole* holder of frame references — the Driver
--- classifies casts and routes them here by group id, but never touches a frame itself.
---
--- Per-unit work (release, interrupt marking, interruptibility) scans this controller's
--- own frame list comparing frame:GetUnit(). That list is one group's worth — a handful
--- at most — and the Driver's unit→groups routing index has already narrowed us to the
--- controllers that actually hold something for that unit, so a scan beats carrying a
--- per-unit sub-table per group (one extra table per unit *per group*, churned on every
--- cast). The flat list is needed for Relayout regardless.
---
--- The group table is held by reference so Direction/Grow/Position/Elements reads never
--- go stale (a v4 import mutates the group tables in place rather than replacing them).
-
 ---@class TargetedSpellsGroupController
 local GroupController = {}
 GroupController.__index = GroupController
 Private.GroupController = GroupController
 
--- Pool + core element are a pure function of the group's Template. Derived once at
--- New (and again at Reconfigure, since the Designer can flip a group's template).
 local TEMPLATE_TRAITS = {
 	[Private.Enum.Template.Icon] = {
 		pool = Private.Utils.Pools.Icon,
@@ -42,8 +24,6 @@ local TEMPLATE_TRAITS = {
 ---@param controller TargetedSpellsGroupController
 ---@param group TargetedSpellsGroup
 local function DeriveFromTemplate(controller, group)
-	-- an unknown template would strand frames in no pool at all; Bar is the historical
-	-- fallback the if/else this replaced happened to give
 	local traits = TEMPLATE_TRAITS[group.Template] or TEMPLATE_TRAITS[Private.Enum.Template.Bar]
 
 	controller.pool = traits.pool
@@ -58,13 +38,10 @@ function GroupController.New(group)
 	---@type (TargetedSpellsIconMixin|TargetedSpellsBarMixin)[]
 	controller.frames = {}
 	controller.layoutScratch = {}
-	-- container stays nil until first needed (GetContainer lazy-creates it)
 	DeriveFromTemplate(controller, group)
 	return controller
 end
 
--- Lazy-creates the 1x1 container this group's frames anchor to. Named per group id
--- so it can be found by external tooling (matches the old Driver:GetContainer name).
 ---@return Frame
 function GroupController:GetContainer()
 	if self.container == nil then
@@ -148,9 +125,6 @@ function GroupController:Acquire(info, onCooldownClosure)
 	return frame
 end
 
--- Releases this group's frames for `unit`, honouring the per-frame hide delay: an
--- interrupted frame lingers (CanBeHidden false) and is reported back as `remaining` so
--- the Driver keeps its routing entry for the unit alive.
 ---@param unit string
 ---@param id number|string|nil the cast id to match, or nil for "any cast of this unit"
 ---@return boolean released whether anything was actually returned to the pool
@@ -177,10 +151,6 @@ function GroupController:ReleaseForUnit(unit, id)
 	return released, remaining
 end
 
--- Drops every frame this controller holds, ignoring the hide delay. Used where the
--- display is being torn down or rebuilt wholesale (group edit, profile import,
--- nameplates turned off) rather than a cast ending, so lingering interrupt frames
--- have nothing left to linger on.
 function GroupController:ReleaseAll()
 	local frames = self.frames
 
@@ -190,8 +160,6 @@ function GroupController:ReleaseAll()
 	end
 end
 
--- Recolours this group's frames for `unit` after an interruptibility change. Bar
--- frames carry the colour/shield treatment; icon frames have no equivalent.
 ---@param unit string
 ---@param isInterruptible boolean
 function GroupController:SetInterruptibleForUnit(unit, isInterruptible)
@@ -207,8 +175,6 @@ function GroupController:SetInterruptibleForUnit(unit, isInterruptible)
 	end
 end
 
--- Refreshes the raid target marker on every frame this controller holds (the event is
--- global, not per-unit — any marker may have moved).
 function GroupController:UpdateTargetMarkers()
 	local frames = self.frames
 
@@ -221,9 +187,6 @@ function GroupController:UpdateTargetMarkers()
 	end
 end
 
--- Marks this group's frames for `unit` as interrupted, if the group opted in. Owns the
--- IndicateInterrupts read: whether a group indicates interrupts is group policy, and
--- the Driver has no business reaching through a frame to learn it.
 ---@param unit string
 ---@param interruptName string?
 ---@param interruptColor colorRGB?
@@ -249,18 +212,12 @@ function GroupController:MarkInterruptedForUnit(unit, interruptName, interruptCo
 	return indicated
 end
 
--- Sorts and re-anchors this group's frames under its own container. Self-contained:
--- AdjustLayout chains the frames off the container, so relayouting one group never
--- touches another (the scoping guarantee the Driver's router relies on).
 function GroupController:Relayout()
 	if #self.frames == 0 then
 		return
 	end
 
 	local group = self.group
-	-- NOT the core element's box: the icon+duration frame is wider than its Icon core. A wrong
-	-- value here is invisible in Vertical mode (AdjustLayout still centres each frame on the
-	-- spine) and only misspaces a Horizontal group, so it goes through the named helper.
 	local width, height = Private.Utils.ComputeGroupFootprint(group.Template, group.Elements)
 
 	Private.Utils.SortFrames(self.frames, group.SortOrder)
@@ -281,20 +238,12 @@ function GroupController:Relayout()
 	)
 end
 
--- Re-points at the (possibly re-templated) group and re-derives pool + core element.
--- The Designer can flip a group Icon<->Bar at runtime; callers MUST release this
--- controller's frames first (RefreshGroup does) so no live frame is stranded in the
--- wrong pool.
 ---@param group TargetedSpellsGroup
 function GroupController:Reconfigure(group)
 	self.group = group
 	DeriveFromTemplate(self, group)
 end
 
--- Tears down a controller whose group no longer exists (a delete or an import that
--- drops it). Frames are already gone — the Driver releases them before pruning — so
--- this only has to take the container off screen; WoW has no way to destroy a frame,
--- so it is hidden and dropped along with the controller.
 function GroupController:Discard()
 	if self.container ~= nil then
 		self.container:ClearAllPoints()

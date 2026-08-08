@@ -21,7 +21,6 @@ function TargetedSpellsEditModeMixin:Init(group)
 		timers = {},
 	}
 
-	-- stable, unique global frame name (independent of the user-editable Name)
 	self.editModeFrame = CreateFrame("Frame", "TargetedSpellsGroupEditMode" .. group.Id, UIParent)
 	self.editModeFrame:SetClampedToScreen(true)
 	-- some addons such as BetterCooldownManager toggle the edit mode briefly on login/loading screen end
@@ -111,7 +110,6 @@ function TargetedSpellsEditModeMixin:OnImportConfirmation(encodedString)
 	end
 end
 
--- Rename / Create / Delete manage the group list; Import / Export round-trip config.
 function TargetedSpellsEditModeMixin:CreateManagementButtons()
 	return {
 		{
@@ -161,7 +159,6 @@ function TargetedSpellsEditModeMixin:OnRenameButtonClick()
 
 			if name ~= nil and name ~= "" then
 				self.group.Name = name
-				-- the LibEditMode frame label updates on the next reload
 				Private.EventRegistry:TriggerEvent(Private.Enum.Events.GROUP_CHANGED, self.groupId)
 			end
 		end,
@@ -190,21 +187,12 @@ function TargetedSpellsEditModeMixin:OnDeleteButtonClick()
 	})
 end
 
--- Overrides the legacy CreateSetting above (later assignment wins). The old one is
--- dead code, kept only until a cleanup pass removes it. Every widget edits this
--- instance's `self.group` directly and fires GROUP_CHANGED(self.groupId); the Driver
--- refreshes that group and this instance restarts its demo. Element-level settings
--- are gone — they live in the designer now.
 ---@param base string
 function TargetedSpellsEditModeMixin:CreateSetting(base)
-	-- The WoW global Enum stays in scope for EditModeSettingDisplayType; the addon's
-	-- own enums are referenced as Private.Enum.* so nothing shadows that global.
-
 	local function Changed()
 		Private.EventRegistry:TriggerEvent(Private.Enum.Events.GROUP_CHANGED, self.groupId)
 	end
 
-	-- single-select radio dropdown over `choices` ({ id, label }), bound to self.group[field]
 	---@param name string
 	---@param tooltip string
 	---@param field string
@@ -244,7 +232,6 @@ function TargetedSpellsEditModeMixin:CreateSetting(base)
 		}
 	end
 
-	-- multi-select checkbox dropdown over `choices` ({ id, label }), bound to boolTable[id]
 	---@param name string
 	---@param tooltip string
 	---@param boolTable table<number, boolean>
@@ -315,7 +302,6 @@ function TargetedSpellsEditModeMixin:CreateSetting(base)
 		}
 	end
 
-	-- builds an { id, label } option list from an id→label map over `ids`
 	---@param ids table<number, string>
 	---@param labels table<number, string>
 	---@return table<number, {id: number, label: string}>
@@ -347,7 +333,6 @@ function TargetedSpellsEditModeMixin:CreateSetting(base)
 	elseif base == "Template" then
 		local function Set(_, template)
 			if self.group.Template ~= template then
-				-- release old-pool demo frames BEFORE the pool changes, then reseed
 				self:EndDemo()
 				Private.Groups.SetTemplate(self.group, template)
 				self.pool = self:GroupTemplatePool()
@@ -539,7 +524,6 @@ function TargetedSpellsEditModeMixin:CreateSetting(base)
 	error(string.format("Edit Mode settings for base '%s' are not implemented.", base or "NO BASE"))
 end
 
--- the pool this instance's frames come from, following the group's current template
 function TargetedSpellsEditModeMixin:GroupTemplatePool()
 	if self.group.Template == Private.Enum.Template.Icon then
 		return Private.Utils.Pools.Icon
@@ -550,7 +534,6 @@ function TargetedSpellsEditModeMixin:GroupTemplatePool()
 	return Private.Utils.Pools.Bar
 end
 
--- the group's core element table (Icon or ProgressBar) for its current template
 function TargetedSpellsEditModeMixin:CoreElement()
 	local coreTag = self.group.Template == Private.Enum.Template.Bar and Private.Enum.Element.ProgressBar
 		or Private.Enum.Element.Icon
@@ -558,12 +541,6 @@ function TargetedSpellsEditModeMixin:CoreElement()
 	return self.group.Elements[coreTag]
 end
 
--- core box, so free-positioned elements sitting outside the core (e.g. the bar's
--- icon/duration boxes flanking the narrower ProgressBar) fall inside the grab
--- target. The layout *footprint* — the frame-to-frame stride across the preview's
--- maxFrames cells — deliberately stays core-based (free positioning does not reflow);
--- only the last cell and the cross-axis span grow to the extent. When extent == core
--- this is byte-identical to the old core-based sizing.
 function TargetedSpellsEditModeMixin:ResizeEditModeFrame()
 	local core = self:CoreElement()
 	local extent = Private.Utils.ComputeGroupExtent(self.group.Elements)
@@ -584,8 +561,6 @@ function TargetedSpellsEditModeMixin:RestoreEditModePosition()
 	PixelUtil.SetPoint(self.editModeFrame, position.point, UIParent, position.point, position.x, position.y)
 end
 
--- A v4 profile import updated the group tables in place, so self.group is still
--- valid; refresh the frame's size/position and restart the demo if it's running.
 function TargetedSpellsEditModeMixin:OnProfileImported()
 	if self.deleted then
 		return
@@ -600,8 +575,6 @@ function TargetedSpellsEditModeMixin:OnProfileImported()
 	end
 end
 
--- A container/behaviour setting changed for some group; if it's ours, resize the
--- placeholder and restart the demo so the preview reflects it.
 ---@param groupId integer
 function TargetedSpellsEditModeMixin:OnGroupChanged(groupId)
 	if groupId ~= self.groupId then
@@ -622,7 +595,6 @@ function TargetedSpellsEditModeMixin:OnEditModePositionChanged(_, _, point, x, y
 	position.x = x
 	position.y = y
 
-	-- lightweight: reposition the container only (no frame release), unlike GROUP_CHANGED
 	Private.EventRegistry:TriggerEvent(Private.Enum.Events.GROUP_POSITION_CHANGED, self.groupId)
 end
 
@@ -716,13 +688,6 @@ function TargetedSpellsEditModeMixin:RepositionPreviewFrames()
 	local parentDimension = layouting.isHorizontal and self.editModeFrame:GetWidth() or self.editModeFrame:GetHeight()
 	local offset = layouting.isGrowEnd and (parentDimension / 2 - self.group.Gap) or (-parentDimension / 2)
 
-	-- The placeholder is sized to the element extent, whose centre is offset from the
-	-- core centre when the active elements skew to one side (e.g. the migrated bar's
-	-- icon reaches further left than its duration reaches right → extent.offsetX < 0).
-	-- The content anchors on the *core* centre, so without correction it sits off-centre
-	-- inside the box — bleeding past one edge with padding on the other. Shift it by
-	-- -extent.offset on the CROSS axis so the content's extent centres in the box. The
-	-- grow axis keeps its stacking offset (multi-frame spacing stays core-based).
 	local extent = Private.Utils.ComputeGroupExtent(self.group.Elements)
 
 	Private.Utils.AdjustLayout(
@@ -741,7 +706,6 @@ function TargetedSpellsEditModeMixin:LoopFrame(index)
 	end
 
 	local frame = self.frames[index]
-	-- demo frames render from this instance's group, just like live frames
 	frame:SetGroup(self.group)
 	local castTime = 4 + index / 2
 	local duration = C_DurationUtil.CreateDuration()
@@ -759,7 +723,6 @@ function TargetedSpellsEditModeMixin:LoopFrame(index)
 	frame:Show()
 	frame:SetAlpha(secretwrap(1))
 
-	-- bar demo frames get their preview colour + a random raid marker
 	if frame.SetPreviewBarColor then
 		frame:SetPreviewBarColor()
 		frame:SetTargetMarker(Private.Utils.RollDice() and math.random(1, 8) or nil)
@@ -833,9 +796,6 @@ function TargetedSpellsEditModeMixin:EndDemo()
 	self.demoPlaying = false
 end
 
--- ── Instance factory + group management ──────────────────────────────────────
--- One edit-mode instance per group, created at login and on Create Group.
-
 Private.EditMode = {}
 ---@type table<integer, TargetedSpellsEditModeMixin>
 Private.EditMode.instances = {}
@@ -848,11 +808,6 @@ function Private.EditMode.CreateInstance(group)
 	return instance
 end
 
--- New group (defaults to a Bar) + its instance; refresh its container and, if edit
--- mode is open, start its demo. Fires GROUP_CHANGED (not the lighter GROUP_POSITION_
--- CHANGED) because a fresh group is Enabled and may add capabilities, so the Driver
--- must invalidate its capability cache and re-run SetupFrame — GROUP_CHANGED does both
--- and still positions the container (via RefreshGroup); GROUP_POSITION_CHANGED does not.
 function Private.EditMode.CreateGroup()
 	local id, group = Private.Groups.Create(Private.Enum.Template.Bar)
 	local instance = Private.EditMode.CreateInstance(group)
@@ -864,9 +819,6 @@ function Private.EditMode.CreateGroup()
 	end
 end
 
--- Delete a group + its instance (guarded against the last group). LibEditMode has
--- no RemoveFrame, so the frame is just hidden and flagged deleted so its lingering
--- callbacks no-op; a full refresh drops any live frames of the group.
 ---@param groupId integer
 function Private.EditMode.DeleteGroup(groupId)
 	if not Private.Groups.Delete(groupId) then

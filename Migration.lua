@@ -1,26 +1,6 @@
 ---@type string, TargetedSpells
 local addonName, Private = ...
 
--- Migration.lua ───────────────────────────────────────────────────────────────
--- v3 → v4 SavedVariables rewrite. v4 replaces the two fixed Settings.Self /
--- Settings.Party trees with an N-group model (see the v4 plan). This is a
--- one-way rewrite; downgrade to v3 is out of scope, so no v3 backup is kept.
---
--- Public surface:
---   Private.Migration.Apply(saved) -- migrate a saved table in place to v4
--- Everything else stays file-local. The filter derivation is additionally exposed
--- under Private.__test for the (gated, spec-only) transform tests; it ships no
--- behaviour.
---
--- on disk, field by field, with no caller-side backfill. Nothing outside here may
--- reshape TargetedSpellsSaved.Settings.
---
--- NOTE: bar element *layout* is intentionally NOT migrated. v3's free per-element
--- pixel layout has no faithful mapping onto v4's bar reflow model, so bars adopt the
--- v4 template defaults for geometry and only carry over v4-representable appearance
--- (colours/textures/fonts/toggles/filter). Group Position IS migrated, so a user's
--- placement survives; only bar appearance needs re-tuning. See BuildBarElements.
---
 local Enum = Private.Enum
 local Element = Enum.Element
 local Template = Enum.Template
@@ -32,12 +12,7 @@ Private.Migration = {}
 
 local CURRENT_SCHEMA_VERSION = 4
 
--- Frozen v3 decode map, and the sole definition of these ids: v3 profile strings (shared
--- publicly) encode FeatureFlags as a table keyed by them, and v4 groups carry the surviving
--- ones as named boolean fields instead, so there is no live enum for this any more. Exposed
--- on Private.Migration because the v3 default builders in Settings.lua read it too.
--- Do not edit: these describe historical data. Ids 4, 5 and 9 were retired during v3
--- (ShowDurationFractions, ShowBorder, IncludeSelfInParty) and must not be reused.
+-- Historical v3 flag ids; do not reuse retired values.
 local V3_FLAG = {
 	GlowImportant = 1,
 	OnlyImportant = 2,
@@ -76,10 +51,7 @@ end
 
 local flag = Flag
 
--- A v3 config on disk is whatever the version that wrote it happened to store: keys
--- added late in v3's life are missing, and a hand-edited or very old value can hold
--- the wrong type. Every read of a v3 field goes through here, so the transform never
--- assumes a complete source.
+-- Missing or mistyped v3 values fall back to defaults.
 ---@param source table
 ---@param defaults table
 ---@param key string
@@ -96,9 +68,6 @@ end
 
 local read = Read
 
--- Two v3 enum members were retired mid-v3 and their ids reused for nothing. Both
--- remaps key on the saved *value*, so a config that never held the legacy id passes
--- through untouched.
 ---@param value number
 ---@return Grow
 local function MigrateGrow(value)
@@ -119,12 +88,6 @@ local function MigrateGlowType(value)
 	return value
 end
 
--- v3 reshaped the party display far too heavily for its v2 settings to be carried
--- over field by field, so the party side restarts from the v3 defaults and keeps only
--- the handful of keys whose meaning survived. Runs for a config that never saw v3
--- (V3MigrationWarningSeen unset), and is what the migration popup tells the user about.
-
--- ── Element layout builders ──────────────────────────────────────────────────
 
 ---@param selfSettings SavedVariablesSettingsSelf
 ---@param defaults SavedVariablesSettingsSelf
@@ -157,7 +120,6 @@ local function BuildSelfGroup(selfSettings, defaults)
 		interruptSource.font = font
 		interruptSource.fontFlags = copy(fontFlags)
 
-		-- v3 stored border style as a single LSM name; "None" meant no border
 		local border = elements[Element.Border]
 		local borderStyle = read(selfSettings, defaults, "BorderStyle")
 		if borderStyle == "None" then
@@ -197,16 +159,6 @@ local function BuildPartyGroup(partySettings, defaults)
 
 	---@return table<Element, table<string, any>>
 	local function BuildBarElements()
-		-- LAYOUT IS NOT MIGRATED for bars. v3 stored a free per-element pixel layout
-		-- (Width/Height + edge-anchored, width-split boxes); v4's bar is a reflow model
-		-- (Private.Utils.ComputeBarLayout) where element x/y are small insets and
-		-- ProgressBar.width is the *total* frame width with the gutter subtracted
-		-- internally. There is no faithful mapping between the two: any reconstructed
-		-- absolute offset is re-interpreted as an inset and the elements fly apart. So we
-		-- keep the v4 template's default geometry verbatim and only carry over the settings
-		-- that ARE representable in v4 (colours, textures, fonts, active toggles, filter).
-		-- Positioning is preserved at the group level via Position; users re-tune bar
-		-- appearance with the new designer. See BuildPartyGroup / DerivePartyFilter.
 		local elements = Private.Design.GetDefault(Template.Bar)
 		local flags = read(partySettings, defaults, "FeatureFlags")
 		local fontFlags = copy(read(partySettings, defaults, "FontFlags"))
@@ -305,9 +257,6 @@ local function BuildPartyGroup(partySettings, defaults)
 	}
 end
 
--- Collapses the deprecated Caster/Melee buckets of one v3 TTS table into
--- Enum.NpcType.Other. The merge is an OR: a user who had either bucket enabled keeps
--- hearing those casts rather than silently losing them.
 ---@param source table<number, boolean>|nil
 ---@return table<number, boolean>|nil
 local function FoldNpcTypes(source)
@@ -329,14 +278,8 @@ local function FoldNpcTypes(source)
 	return folded
 end
 
--- ── Ordered migration steps ──────────────────────────────────────────────────
--- migrationSteps[N] upgrades a schema at version N to N+1, mutating `saved` in
--- place and bumping saved.SchemaVersion. A missing SchemaVersion is treated as
--- v3 (the last unversioned shape). A step returns true when what it did needs
--- telling the user about; the caller owns that UI.
 
 local migrationSteps = {
-	-- v3 → v4: two fixed Settings trees become an N-group model.
 	[3] = function(saved)
 		local settings = saved.Settings or {}
 		local selfDefaults = {
@@ -532,8 +475,6 @@ function Private.Migration.Apply(saved)
 	end
 end
 
--- Gated test-only internals (never ships behaviour): the pure reconstruction and
--- filter derivation the snapshot / transform specs pin directly.
 Private.__test = Private.__test or {}
 Private.__test.Migration = {
 	CURRENT_SCHEMA_VERSION = CURRENT_SCHEMA_VERSION,

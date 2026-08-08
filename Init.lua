@@ -44,7 +44,6 @@ EventUtil.ContinueOnAddOnLoaded(addonName, function()
 		}
 	else
 		Private.Migration.Apply(TargetedSpellsSaved)
-		-- Private.Utils.ShowMigrationPopup()
 	end
 
 	if not TargetedSpellsSaved.nameplateShowOffscreenWasInitialized then
