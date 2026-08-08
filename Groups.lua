@@ -75,7 +75,7 @@ end
 function Private.Groups.GetMatching(info, groups, out)
 	groups = groups or (TargetedSpellsSaved and TargetedSpellsSaved.Groups)
 
-	local matching = table.wipe(out)
+	local matching = table.wipe(out or {})
 	local targetClasses = info and info.targetClasses
 	if not groups or not targetClasses then
 		return matching

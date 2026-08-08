@@ -388,23 +388,26 @@ do
 		return breakpoints
 	end
 
-	---@type table<number, table[]>
+	---@type table<any, table[]>
 	local breakpointsByThreshold = {}
 
-	---@type table<NumericFormatter, number>
+	---@type table<NumericFormatter, any>
 	local appliedByFormatter = setmetatable({}, { __mode = "k" })
+	local NIL_THRESHOLD = {}
 
 	function Private.Utils.ApplyFractionThreshold(formatter, fractionThreshold)
-		if appliedByFormatter[formatter] == fractionThreshold then
+		local thresholdKey = fractionThreshold == nil and NIL_THRESHOLD or fractionThreshold
+
+		if appliedByFormatter[formatter] == thresholdKey then
 			return
 		end
 
-		if breakpointsByThreshold[fractionThreshold] == nil then
-			breakpointsByThreshold[fractionThreshold] = BuildCountdownBreakpoints(fractionThreshold)
+		if breakpointsByThreshold[thresholdKey] == nil then
+			breakpointsByThreshold[thresholdKey] = BuildCountdownBreakpoints(fractionThreshold)
 		end
 
-		formatter:SetBreakpoints(breakpointsByThreshold[fractionThreshold])
-		appliedByFormatter[formatter] = fractionThreshold
+		formatter:SetBreakpoints(breakpointsByThreshold[thresholdKey])
+		appliedByFormatter[formatter] = thresholdKey
 	end
 
 	---@return NumericFormatter

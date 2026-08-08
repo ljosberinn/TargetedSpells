@@ -88,6 +88,29 @@ local function MigrateGlowType(value)
 	return value
 end
 
+---@param featureFlags table<number, boolean>
+---@return table<TargetClass, boolean>
+local function DerivePartyFilter(featureFlags)
+	local filter = {
+		[TargetClass.Player] = true,
+		[TargetClass.PartyMember] = true,
+		[TargetClass.Nobody] = true,
+	}
+
+	if flag(featureFlags, V3_FLAG.SelfOnly) then
+		filter[TargetClass.PartyMember] = nil
+	end
+	if flag(featureFlags, V3_FLAG.HideUntargetedSpells) then
+		filter[TargetClass.Nobody] = nil
+	end
+	if flag(featureFlags, V3_FLAG.HideTargetedSpells) then
+		filter[TargetClass.Player] = nil
+		filter[TargetClass.PartyMember] = nil
+	end
+
+	return filter
+end
+
 
 ---@param selfSettings SavedVariablesSettingsSelf
 ---@param defaults SavedVariablesSettingsSelf
@@ -214,33 +237,10 @@ local function BuildPartyGroup(partySettings, defaults)
 		return elements
 	end
 
-	---@return table<TargetClass, boolean>
-	---@return table<TargetClass, boolean>
-	local function DerivePartyFilter()
-		local filter = {
-			[TargetClass.Player] = true,
-			[TargetClass.PartyMember] = true,
-			[TargetClass.Nobody] = true,
-		}
-
-		if flag(flags, V3_FLAG.SelfOnly) then
-			filter[TargetClass.PartyMember] = nil
-		end
-		if flag(flags, V3_FLAG.HideUntargetedSpells) then
-			filter[TargetClass.Nobody] = nil
-		end
-		if flag(flags, V3_FLAG.HideTargetedSpells) then
-			filter[TargetClass.Player] = nil
-			filter[TargetClass.PartyMember] = nil
-		end
-
-		return filter
-	end
-
 	return {
 		Name = "Party",
 		Enabled = read(partySettings, defaults, "Enabled"),
-		Filter = DerivePartyFilter(),
+		Filter = DerivePartyFilter(flags),
 		Template = Template.Bar,
 		Elements = BuildBarElements(),
 		Position = copy(read(partySettings, defaults, "Position")),
@@ -455,6 +455,7 @@ local migrationSteps = {
 			TextToSpeechVoice = read(selfSettings, selfDefaults, "TextToSpeechVoice"),
 		}
 		saved.Settings = nil
+		saved.V3MigrationWarningSeen = nil
 		saved.SchemaVersion = 4
 
 		return false
@@ -478,6 +479,8 @@ end
 Private.__test = Private.__test or {}
 Private.__test.Migration = {
 	CURRENT_SCHEMA_VERSION = CURRENT_SCHEMA_VERSION,
+	derivePartyFilter = DerivePartyFilter,
+	foldNpcTypes = FoldNpcTypes,
 	FoldNpcTypes = FoldNpcTypes,
 	V3_FLAG = V3_FLAG,
 	V3_NPC_TYPE = V3_NPC_TYPE,

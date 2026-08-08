@@ -173,6 +173,28 @@ local function savedVars()
 	return TargetedSpellsSaved
 end
 
+local function resetToV4()
+	table.wipe(TargetedSpellsSaved)
+	TargetedSpellsSaved.SchemaVersion = 4
+	TargetedSpellsSaved.Groups = Private.Groups.CreateStarterGroups()
+	TargetedSpellsSaved.TextToSpeech = {
+		AnnounceUntargetedSpells = {
+			[Private.Enum.NpcType.Boss] = true,
+			[Private.Enum.NpcType.Lieutenant] = true,
+			[Private.Enum.NpcType.Other] = true,
+			[Private.Enum.NpcType.Minion] = false,
+		},
+		AnnounceTargetedSpells = {
+			[Private.Enum.NpcType.Boss] = false,
+			[Private.Enum.NpcType.Lieutenant] = false,
+			[Private.Enum.NpcType.Other] = false,
+			[Private.Enum.NpcType.Minion] = false,
+		},
+		TextToSpeechVoice = -1,
+	}
+	table.wipe(Private.EventRegistry.triggeredEvents)
+end
+
 -- Re-encodes a (possibly modified) settings table into an import string.
 local function encode(tbl)
 	return C_EncodingUtil.EncodeBase64(C_EncodingUtil.SerializeCBOR(tbl))
