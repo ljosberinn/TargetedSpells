@@ -34,7 +34,6 @@ L.Functionality.V3MigrationWarning = string.format(
 )
 
 L.Settings.EnabledLabel = "启用"
-L.Settings.EnabledTooltip = nil
 L.Settings.DisabledLabel = "禁用"
 
 L.Settings.AddonCompartmentTooltipLine1 =
@@ -43,7 +42,6 @@ L.Settings.AddonCompartmentTooltipLine2 =
 	string.format("%s 已%s", WrapTextInColorCode(L.EditMode.TargetedSpellsPartyLabel, "ffeda55f"), "%s")
 
 L.Settings.LoadConditionContentTypeLabel = "加载条件：区域"
-L.Settings.LoadConditionContentTypeLabelAbbreviated = "在以下区域中加载"
 L.Settings.LoadConditionContentTypeTooltip = nil
 L.Settings.LoadConditionContentTypeLabels = {
 	[Private.Enum.ContentType.OpenWorld] = "世界",
@@ -55,28 +53,11 @@ L.Settings.LoadConditionContentTypeLabels = {
 }
 
 L.Settings.LoadConditionRoleLabel = "加载条件：职责"
-L.Settings.LoadConditionRoleLabelAbbreviated = "在以下职责加载"
 L.Settings.LoadConditionRoleTooltip = nil
 L.Settings.LoadConditionRoleLabels = {
 	[Private.Enum.Role.Healer] = "治疗",
 	[Private.Enum.Role.Tank] = "坦克",
 	[Private.Enum.Role.Damager] = "输出",
-}
-
-L.Settings.FrameWidthLabel = "宽度"
-L.Settings.FrameWidthTooltip = nil
-
-L.Settings.FrameHeightLabel = "高度"
-L.Settings.FrameHeightTooltip = nil
-
-L.Settings.FontSizeLabel = "字体大小"
-L.Settings.FontSizeTooltip = nil
-
-L.Settings.FontFlagsLabel = "字体选项"
-L.Settings.FontFlagsTooltip = nil
-L.Settings.FontFlagsLabels = {
-	[Private.Enum.FontFlags.OUTLINE] = "轮廓",
-	[Private.Enum.FontFlags.SHADOW] = "阴影",
 }
 
 L.Settings.FrameGapLabel = "间距"
@@ -114,23 +95,6 @@ L.Settings.GlowTypeLabels = {
 
 L.Settings.IndicateInterruptsLabel = "标记可打断法术"
 
-L.Settings.BorderStyleLabel = "边框样式"
-L.Settings.BorderStyleTooltip = nil
-
-L.Settings.ForegroundBarTextureLabel = "进度条纹理"
-L.Settings.ForegroundBarTextureTooltip = nil
-
-L.Settings.BackgroundBarTextureLabel = "背景条纹理"
-L.Settings.BackgroundBarTextureTooltip = nil
-
-L.Settings.BackgroundBarColorLabel = "背景条颜色"
-L.Settings.BackgroundBarColorTooltip =
-	"不透明度仅在编辑模式中可用，因为默认设置界面未公开此选项。"
-
-L.Settings.ProgressBarColorLabel = "进度条颜色"
-L.Settings.ProgressBarColorTooltip =
-	"不透明度仅在编辑模式中可用，因为默认设置界面未公开此选项。"
-
 L.Settings.TextToSpeechVoiceLabel = "TTS Voice"
 L.Settings.TextToSpeechVoiceTooltip = "Voice for TTS announcements. Shared between Self and Party settings."
 
@@ -147,30 +111,14 @@ L.Settings.NpcTypeLabels = {
 	[Private.Enum.NpcType.Minion] = "Minions",
 }
 
-L.Settings.UseInterruptabilityColorsLabel = "使用打断颜色"
-L.Settings.UseInterruptabilityColorsTooltip = nil
-
 L.Settings.UseTargetClassColorLabel = "使用目标职业颜色"
 L.Settings.UseTargetClassColorTooltip =
 	"以75%不透明度将条形颜色设为目标单位的职业颜色。未选中目标的法术将使用加亮后的背景条颜色。"
-
-L.Settings.UninterruptibleColorLabel = "不可打断颜色"
-L.Settings.UninterruptibleColorTooltip = nil
-
-L.Settings.InterruptibleColorLabel = "可打断颜色"
-L.Settings.InterruptibleColorTooltip = nil
-
-L.Settings.IconZoomLabel = "图标缩放"
-L.Settings.IconZoomTooltip = nil
 
 L.Settings.ClickToOpenSettingsLabel = "点击打开设置"
 
 L.Settings.Import = "导入"
 L.Settings.Export = "导出"
 
-L.Settings.FontLabel = "字体"
-L.Settings.FontTooltip = nil
-
 L.Settings.FeatureFlagsLabel = "功能"
 L.Settings.FeatureFlagsTooltip = nil
-

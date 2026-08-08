@@ -34,7 +34,6 @@ L.Functionality.V3MigrationWarning = string.format(
 )
 
 L.Settings.EnabledLabel = "Aktiviert"
-L.Settings.EnabledTooltip = nil
 L.Settings.DisabledLabel = "Deaktiviert"
 
 L.Settings.AddonCompartmentTooltipLine1 =
@@ -43,7 +42,6 @@ L.Settings.AddonCompartmentTooltipLine2 =
 	string.format("%s ist %s", WrapTextInColorCode(L.EditMode.TargetedSpellsPartyLabel, "ffeda55f"), "%s")
 
 L.Settings.LoadConditionContentTypeLabel = "Ladebedingung: Spielbereich"
-L.Settings.LoadConditionContentTypeLabelAbbreviated = "In Spielbereich laden"
 L.Settings.LoadConditionContentTypeTooltip = nil
 L.Settings.LoadConditionContentTypeLabels = {
 	[Private.Enum.ContentType.OpenWorld] = "Offene Welt",
@@ -55,29 +53,12 @@ L.Settings.LoadConditionContentTypeLabels = {
 }
 
 L.Settings.LoadConditionRoleLabel = "Ladebedingung: Rolle"
-L.Settings.LoadConditionRoleLabelAbbreviated = "In Rolle laden"
 L.Settings.LoadConditionRoleTooltip = nil
 
 L.Settings.LoadConditionRoleLabels = {
 	[Private.Enum.Role.Healer] = "Heiler",
 	[Private.Enum.Role.Tank] = "Panzer",
 	[Private.Enum.Role.Damager] = "Schadensverursacher",
-}
-
-L.Settings.FrameWidthLabel = "Breite"
-L.Settings.FrameWidthTooltip = nil
-
-L.Settings.FrameHeightLabel = "Höhe"
-L.Settings.FrameHeightTooltip = nil
-
-L.Settings.FontSizeLabel = "Schriftgröße"
-L.Settings.FontSizeTooltip = nil
-
-L.Settings.FontFlagsLabel = "Schriftoptionen"
-L.Settings.FontFlagsTooltip = nil
-L.Settings.FontFlagsLabels = {
-	[Private.Enum.FontFlags.OUTLINE] = "Umriss",
-	[Private.Enum.FontFlags.SHADOW] = "Schatten",
 }
 
 L.Settings.FrameGapLabel = "Abstand"
@@ -115,23 +96,6 @@ L.Settings.GlowTypeLabels = {
 
 L.Settings.IndicateInterruptsLabel = "Unterbrechungen anzeigen"
 
-L.Settings.BorderStyleLabel = "Border Style"
-L.Settings.BorderStyleTooltip = nil
-
-L.Settings.ForegroundBarTextureLabel = "Fortschrittsbalken-Textur"
-L.Settings.ForegroundBarTextureTooltip = nil
-
-L.Settings.BackgroundBarTextureLabel = "Hintergrundbalken-Textur"
-L.Settings.BackgroundBarTextureTooltip = nil
-
-L.Settings.BackgroundBarColorLabel = "Hintergrundbalken-Farbe"
-L.Settings.BackgroundBarColorTooltip =
-"Deckkraft ist nur im Bearbeitungsmodus verfügbar, da die standardmäßige Einstellungsoberfläche sie nicht anzeigt."
-
-L.Settings.ProgressBarColorLabel = "Statusbalkenfarbe"
-L.Settings.ProgressBarColorTooltip =
-"Deckkraft ist nur im Bearbeitungsmodus verfügbar, da die standardmäßige Einstellungsoberfläche sie nicht anzeigt."
-
 L.Settings.TextToSpeechVoiceLabel = "TTS-Stimme"
 L.Settings.TextToSpeechVoiceTooltip =
 "Stimme für Text-zu-Sprache-Ansagen. Gilt für Selbst- und Gruppen-Einstellungen."
@@ -150,29 +114,14 @@ L.Settings.NpcTypeLabels = {
 	[Private.Enum.NpcType.Minion] = "Schergen",
 }
 
-L.Settings.UseInterruptabilityColorsLabel = "Farbkodierung für Unterbrechungsstatus nutzen"
-L.Settings.UseInterruptabilityColorsTooltip = nil
-
 L.Settings.UseTargetClassColorLabel = "Zielklassenfarbe verwenden"
 L.Settings.UseTargetClassColorTooltip =
 "Färbt den Balken in der Klassenfarbe der Zieleinheit mit 75 % Transparenz. Zauber ohne Ziel verwenden eine aufgehellte Hintergrundbalken-Farbe."
-
-L.Settings.UninterruptibleColorLabel = "Farbe Ununterbrechbar"
-L.Settings.UninterruptibleColorTooltip = nil
-
-L.Settings.InterruptibleColorLabel = "Farbe Unterbrechbar"
-L.Settings.InterruptibleColorTooltip = nil
-
-L.Settings.IconZoomLabel = "Icon Zoom"
-L.Settings.IconZoomTooltip = nil
 
 L.Settings.ClickToOpenSettingsLabel = "Klicken um Einstellungen zu öffnen"
 
 L.Settings.Import = "Importieren"
 L.Settings.Export = "Exportieren"
-
-L.Settings.FontLabel = "Schriftart"
-L.Settings.FontTooltip = nil
 
 L.Settings.FeatureFlagsLabel = "Features"
 L.Settings.FeatureFlagsTooltip = nil

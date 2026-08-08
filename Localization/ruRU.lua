@@ -34,7 +34,6 @@ L.Functionality.V3MigrationWarning = string.format(
 )
 
 L.Settings.EnabledLabel = "Включено"
-L.Settings.EnabledTooltip = nil
 L.Settings.DisabledLabel = "Отключено"
 
 L.Settings.AddonCompartmentTooltipLine1 =
@@ -43,7 +42,6 @@ L.Settings.AddonCompartmentTooltipLine2 =
 	string.format("%s: %s", WrapTextInColorCode(L.EditMode.TargetedSpellsPartyLabel, "ffeda55f"), "%s")
 
 L.Settings.LoadConditionContentTypeLabel = "Условие загрузки: Тип контента"
-L.Settings.LoadConditionContentTypeLabelAbbreviated = "Загружать в контенте"
 L.Settings.LoadConditionContentTypeTooltip = nil
 L.Settings.LoadConditionContentTypeLabels = {
 	[Private.Enum.ContentType.OpenWorld] = "Открытый мир",
@@ -55,28 +53,11 @@ L.Settings.LoadConditionContentTypeLabels = {
 }
 
 L.Settings.LoadConditionRoleLabel = "Условие загрузки: Роль"
-L.Settings.LoadConditionRoleLabelAbbreviated = "Загружать для роли"
 L.Settings.LoadConditionRoleTooltip = nil
 L.Settings.LoadConditionRoleLabels = {
 	[Private.Enum.Role.Healer] = "Целитель",
 	[Private.Enum.Role.Tank] = "Танк",
 	[Private.Enum.Role.Damager] = "ДД",
-}
-
-L.Settings.FrameWidthLabel = "Ширина"
-L.Settings.FrameWidthTooltip = nil
-
-L.Settings.FrameHeightLabel = "Высота"
-L.Settings.FrameHeightTooltip = nil
-
-L.Settings.FontSizeLabel = "Размер шрифта"
-L.Settings.FontSizeTooltip = nil
-
-L.Settings.FontFlagsLabel = "Параметры шрифта"
-L.Settings.FontFlagsTooltip = nil
-L.Settings.FontFlagsLabels = {
-	[Private.Enum.FontFlags.OUTLINE] = "Контур",
-	[Private.Enum.FontFlags.SHADOW] = "Тень",
 }
 
 L.Settings.FrameGapLabel = "Отступ"
@@ -114,23 +95,6 @@ L.Settings.GlowTypeLabels = {
 
 L.Settings.IndicateInterruptsLabel = "Показывать прерывания"
 
-L.Settings.BorderStyleLabel = "Стиль рамки"
-L.Settings.BorderStyleTooltip = nil
-
-L.Settings.ForegroundBarTextureLabel = "Текстура полосы прогресса"
-L.Settings.ForegroundBarTextureTooltip = nil
-
-L.Settings.BackgroundBarTextureLabel = "Текстура фона полосы"
-L.Settings.BackgroundBarTextureTooltip = nil
-
-L.Settings.BackgroundBarColorLabel = "Цвет фона полосы"
-L.Settings.BackgroundBarColorTooltip =
-	"Прозрачность доступна только в Режиме редактирования, так как стандартный интерфейс настроек её не предоставляет."
-
-L.Settings.ProgressBarColorLabel = "Цвет полосы"
-L.Settings.ProgressBarColorTooltip =
-	"Прозрачность доступна только в Режиме редактирования, так как стандартный интерфейс настроек её не предоставляет."
-
 L.Settings.TextToSpeechVoiceLabel = "Голос TTS"
 L.Settings.TextToSpeechVoiceTooltip =
 	"Голос для Text-to-Speech оповещений. Общий для настроек Self и Party."
@@ -150,30 +114,14 @@ L.Settings.NpcTypeLabels = {
 	[Private.Enum.NpcType.Minion] = "Миньоны",
 }
 
-L.Settings.UseInterruptabilityColorsLabel = "Использовать цвета прерывания"
-L.Settings.UseInterruptabilityColorsTooltip = nil
-
 L.Settings.UseTargetClassColorLabel = "Использовать цвет класса цели"
 L.Settings.UseTargetClassColorTooltip =
 	"Окрашивает полосу в цвет класса целевого юнита с прозрачностью 75 %. Заклинания без цели будут использовать осветлённый Цвет Фоновой Полосы."
-
-L.Settings.UninterruptibleColorLabel = "Цвет непрерываемого"
-L.Settings.UninterruptibleColorTooltip = nil
-
-L.Settings.InterruptibleColorLabel = "Цвет прерываемого"
-L.Settings.InterruptibleColorTooltip = nil
-
-L.Settings.IconZoomLabel = "Масштаб иконки"
-L.Settings.IconZoomTooltip = nil
 
 L.Settings.ClickToOpenSettingsLabel = "Нажмите для открытия настроек"
 
 L.Settings.Import = "Импорт"
 L.Settings.Export = "Экспорт"
 
-L.Settings.FontLabel = "Шрифт"
-L.Settings.FontTooltip = nil
-
 L.Settings.FeatureFlagsLabel = "Функции"
 L.Settings.FeatureFlagsTooltip = nil
-

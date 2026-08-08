@@ -19,7 +19,6 @@ L.SlashCommands = {}
 L.Designer = {}
 
 L.Designer.Title = "Targeted Spells - Layout Designer"
-L.Designer.NoElementSelected = "Select an element"
 L.Designer.ElementPickerLabel = "Element"
 L.Designer.SelectHint = "Click an element in the preview, or pick one from the Element dropdown."
 L.Designer.ResetElement = "Reset Element"
@@ -102,10 +101,6 @@ L.SlashCommands.OptionsDescription = "Open the settings panel"
 L.SlashCommands.SettingsDescription = "Open the settings panel"
 L.SlashCommands.DesignDescription = "Open the layout designer"
 
--- Default names for the two groups the v3 → v4 migration creates.
-L.Migration.SelfGroupName = "Self"
-L.Migration.PartyGroupName = "Party"
-
 L.Settings.EditModeReminder =
 "All settings are exposed via the Edit Mode and \"/targetedspells design\"."
 L.EditMode.TargetedSpellsSelfLabel = "Targeted Spells - Self"
@@ -125,7 +120,6 @@ L.Functionality.V3MigrationWarning = string.format(
 )
 
 L.Settings.EnabledLabel = "Enabled"
-L.Settings.EnabledTooltip = nil
 L.Settings.DisabledLabel = "Disabled"
 
 L.Settings.AddonCompartmentTooltipLine1 =
@@ -134,7 +128,6 @@ L.Settings.AddonCompartmentTooltipLine2 =
 	string.format("%s is %s", WrapTextInColorCode(L.EditMode.TargetedSpellsPartyLabel, "ffeda55f"), "%s")
 
 L.Settings.LoadConditionContentTypeLabel = "Load Condition: Content Type"
-L.Settings.LoadConditionContentTypeLabelAbbreviated = "Load in Content"
 L.Settings.LoadConditionContentTypeTooltip = nil
 L.Settings.LoadConditionContentTypeLabels = {
 	[Private.Enum.ContentType.OpenWorld] = "Open World",
@@ -146,28 +139,11 @@ L.Settings.LoadConditionContentTypeLabels = {
 }
 
 L.Settings.LoadConditionRoleLabel = "Load Condition: Role"
-L.Settings.LoadConditionRoleLabelAbbreviated = "Load on Role"
 L.Settings.LoadConditionRoleTooltip = nil
 L.Settings.LoadConditionRoleLabels = {
 	[Private.Enum.Role.Healer] = "Healer",
 	[Private.Enum.Role.Tank] = "Tank",
 	[Private.Enum.Role.Damager] = "DPS",
-}
-
-L.Settings.FrameWidthLabel = "Width"
-L.Settings.FrameWidthTooltip = nil
-
-L.Settings.FrameHeightLabel = "Height"
-L.Settings.FrameHeightTooltip = nil
-
-L.Settings.FontSizeLabel = "Font Size"
-L.Settings.FontSizeTooltip = nil
-
-L.Settings.FontFlagsLabel = "Font Options"
-L.Settings.FontFlagsTooltip = nil
-L.Settings.FontFlagsLabels = {
-	[Private.Enum.FontFlags.OUTLINE] = "Outline",
-	[Private.Enum.FontFlags.SHADOW] = "Shadow",
 }
 
 L.Settings.FrameGapLabel = "Gap"
@@ -205,23 +181,6 @@ L.Settings.GlowTypeLabels = {
 
 L.Settings.IndicateInterruptsLabel = "Indicate Interrupts"
 
-L.Settings.BorderStyleLabel = "Border Style"
-L.Settings.BorderStyleTooltip = nil
-
-L.Settings.ForegroundBarTextureLabel = "Progress Bar Texture"
-L.Settings.ForegroundBarTextureTooltip = nil
-
-L.Settings.BackgroundBarTextureLabel = "Background Bar Texture"
-L.Settings.BackgroundBarTextureTooltip = nil
-
-L.Settings.BackgroundBarColorLabel = "Background Bar Color"
-L.Settings.BackgroundBarColorTooltip =
-"Opacity is only available in Edit Mode due to the default settings UI not exposing it."
-
-L.Settings.ProgressBarColorLabel = "Bar Color"
-L.Settings.ProgressBarColorTooltip =
-"Opacity is only available in Edit Mode due to the default settings UI not exposing it."
-
 L.Settings.TextToSpeechVoiceLabel = "TTS Voice"
 L.Settings.TextToSpeechVoiceTooltip =
 "Voice used for Text-To-Speech announcements. Shared between Self and Party settings."
@@ -239,29 +198,14 @@ L.Settings.NpcTypeLabels = {
 	[Private.Enum.NpcType.Minion] = "Minions",
 }
 
-L.Settings.UseInterruptabilityColorsLabel = "Use Interrupt Colors"
-L.Settings.UseInterruptabilityColorsTooltip = nil
-
 L.Settings.UseTargetClassColorLabel = "Use Target Class Color"
 L.Settings.UseTargetClassColorTooltip =
 "Colors the bar in the class color of the targeted unit at 75% alpha. Untargeted spells will use a brightened Background Bar Color"
-
-L.Settings.UninterruptibleColorLabel = "Uninterruptible Color"
-L.Settings.UninterruptibleColorTooltip = nil
-
-L.Settings.InterruptibleColorLabel = "Interruptible Color"
-L.Settings.InterruptibleColorTooltip = nil
-
-L.Settings.IconZoomLabel = "Icon Zoom"
-L.Settings.IconZoomTooltip = nil
 
 L.Settings.ClickToOpenSettingsLabel = "Click to open settings"
 
 L.Settings.Import = "Import"
 L.Settings.Export = "Export"
-
-L.Settings.FontLabel = "Font"
-L.Settings.FontTooltip = nil
 
 L.Settings.FeatureFlagsLabel = "Features"
 L.Settings.FeatureFlagsTooltip = nil
@@ -289,6 +233,3 @@ L.Settings.CreateGroup = "Create Group"
 L.Settings.DeleteGroup = "Delete Group"
 L.Settings.DeleteGroupConfirm = "Delete this group? This cannot be undone."
 L.Settings.CannotDeleteLastGroup = "You cannot delete the last remaining group."
-
-L.Settings.ElementSettingsMovedToDesigner =
-"Element appearance (size, colors, fonts, textures) is now edited in the designer: /targetedspells design"

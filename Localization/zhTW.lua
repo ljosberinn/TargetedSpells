@@ -34,7 +34,6 @@ L.Functionality.V3MigrationWarning = string.format(
 )
 
 L.Settings.EnabledLabel = "啟用"
-L.Settings.EnabledTooltip = nil
 L.Settings.DisabledLabel = "停用"
 
 L.Settings.AddonCompartmentTooltipLine1 =
@@ -43,7 +42,6 @@ L.Settings.AddonCompartmentTooltipLine2 =
 	string.format("%s 已%s", WrapTextInColorCode(L.EditMode.TargetedSpellsPartyLabel, "ffeda55f"), "%s")
 
 L.Settings.LoadConditionContentTypeLabel = "載入條件：區域"
-L.Settings.LoadConditionContentTypeLabelAbbreviated = "在以下區域中載入"
 L.Settings.LoadConditionContentTypeTooltip = nil
 L.Settings.LoadConditionContentTypeLabels = {
 	[Private.Enum.ContentType.OpenWorld] = "開放世界",
@@ -55,28 +53,11 @@ L.Settings.LoadConditionContentTypeLabels = {
 }
 
 L.Settings.LoadConditionRoleLabel = "載入條件：職責"
-L.Settings.LoadConditionRoleLabelAbbreviated = "在以下職責載入"
 L.Settings.LoadConditionRoleTooltip = nil
 L.Settings.LoadConditionRoleLabels = {
 	[Private.Enum.Role.Healer] = "治療",
 	[Private.Enum.Role.Tank] = "坦克",
 	[Private.Enum.Role.Damager] = "輸出",
-}
-
-L.Settings.FrameWidthLabel = "寬度"
-L.Settings.FrameWidthTooltip = nil
-
-L.Settings.FrameHeightLabel = "高度"
-L.Settings.FrameHeightTooltip = nil
-
-L.Settings.FontSizeLabel = "字型大小"
-L.Settings.FontSizeTooltip = nil
-
-L.Settings.FontFlagsLabel = "字型選項"
-L.Settings.FontFlagsTooltip = nil
-L.Settings.FontFlagsLabels = {
-	[Private.Enum.FontFlags.OUTLINE] = "外框",
-	[Private.Enum.FontFlags.SHADOW] = "陰影",
 }
 
 L.Settings.FrameGapLabel = "間距"
@@ -114,23 +95,6 @@ L.Settings.GlowTypeLabels = {
 
 L.Settings.IndicateInterruptsLabel = "標記可打斷法術"
 
-L.Settings.BorderStyleLabel = "邊框樣式"
-L.Settings.BorderStyleTooltip = nil
-
-L.Settings.ForegroundBarTextureLabel = "進度條材質"
-L.Settings.ForegroundBarTextureTooltip = nil
-
-L.Settings.BackgroundBarTextureLabel = "背景條材質"
-L.Settings.BackgroundBarTextureTooltip = nil
-
-L.Settings.BackgroundBarColorLabel = "背景條顏色"
-L.Settings.BackgroundBarColorTooltip =
-	"透明度僅在編輯模式中可用，因為預設設定介面未公開此選項。"
-
-L.Settings.ProgressBarColorLabel = "進度條顏色"
-L.Settings.ProgressBarColorTooltip =
-	"透明度僅在編輯模式中可用，因為預設設定介面未公開此選項。"
-
 L.Settings.TextToSpeechVoiceLabel = "TTS 語音"
 L.Settings.TextToSpeechVoiceTooltip = "TTS 播報所使用的語音。自身與小隊設定共用。"
 
@@ -147,30 +111,14 @@ L.Settings.NpcTypeLabels = {
 	[Private.Enum.NpcType.Minion] = "從屬單位",
 }
 
-L.Settings.UseInterruptabilityColorsLabel = "使用打斷顏色"
-L.Settings.UseInterruptabilityColorsTooltip = nil
-
 L.Settings.UseTargetClassColorLabel = "使用目標職業顏色"
 L.Settings.UseTargetClassColorTooltip =
 	"以 75% 透明度將條形顏色設為目標單位的職業顏色。未選中目標的法術將使用加亮後的背景條顏色。"
-
-L.Settings.UninterruptibleColorLabel = "不可打斷顏色"
-L.Settings.UninterruptibleColorTooltip = nil
-
-L.Settings.InterruptibleColorLabel = "可打斷顏色"
-L.Settings.InterruptibleColorTooltip = nil
-
-L.Settings.IconZoomLabel = "圖示縮放"
-L.Settings.IconZoomTooltip = nil
 
 L.Settings.ClickToOpenSettingsLabel = "點擊開啟設定"
 
 L.Settings.Import = "匯入"
 L.Settings.Export = "匯出"
 
-L.Settings.FontLabel = "字型"
-L.Settings.FontTooltip = nil
-
 L.Settings.FeatureFlagsLabel = "功能選項"
 L.Settings.FeatureFlagsTooltip = nil
-

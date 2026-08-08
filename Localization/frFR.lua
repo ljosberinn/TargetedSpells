@@ -34,7 +34,6 @@ L.Functionality.V3MigrationWarning = string.format(
 )
 
 L.Settings.EnabledLabel = "Activé"
-L.Settings.EnabledTooltip = nil
 L.Settings.DisabledLabel = "Désactivé"
 
 L.Settings.AddonCompartmentTooltipLine1 =
@@ -43,7 +42,6 @@ L.Settings.AddonCompartmentTooltipLine2 =
 	string.format("%s est %s", WrapTextInColorCode(L.EditMode.TargetedSpellsPartyLabel, "ffeda55f"), "%s")
 
 L.Settings.LoadConditionContentTypeLabel = "Condition de chargement: Type de contenu"
-L.Settings.LoadConditionContentTypeLabelAbbreviated = "Charger dans le contenu"
 L.Settings.LoadConditionContentTypeTooltip = nil
 L.Settings.LoadConditionContentTypeLabels = {
 	[Private.Enum.ContentType.OpenWorld] = "Monde ouvert",
@@ -55,28 +53,11 @@ L.Settings.LoadConditionContentTypeLabels = {
 }
 
 L.Settings.LoadConditionRoleLabel = "Condition de chargement: Rôle"
-L.Settings.LoadConditionRoleLabelAbbreviated = "Chargement sur Rôle"
 L.Settings.LoadConditionRoleTooltip = nil
 L.Settings.LoadConditionRoleLabels = {
 	[Private.Enum.Role.Healer] = "Healer",
 	[Private.Enum.Role.Tank] = "Tank",
 	[Private.Enum.Role.Damager] = "DPS",
-}
-
-L.Settings.FrameWidthLabel = "Largeur"
-L.Settings.FrameWidthTooltip = nil
-
-L.Settings.FrameHeightLabel = "Hauteur"
-L.Settings.FrameHeightTooltip = nil
-
-L.Settings.FontSizeLabel = "Taille de la police"
-L.Settings.FontSizeTooltip = nil
-
-L.Settings.FontFlagsLabel = "Options de police"
-L.Settings.FontFlagsTooltip = nil
-L.Settings.FontFlagsLabels = {
-	[Private.Enum.FontFlags.OUTLINE] = "Contour",
-	[Private.Enum.FontFlags.SHADOW] = "Ombre",
 }
 
 L.Settings.FrameGapLabel = "Ecart"
@@ -114,23 +95,6 @@ L.Settings.GlowTypeLabels = {
 
 L.Settings.IndicateInterruptsLabel = "Montrer l'interruption"
 
-L.Settings.BorderStyleLabel = "Style de bordure"
-L.Settings.BorderStyleTooltip = nil
-
-L.Settings.ForegroundBarTextureLabel = "Texture de la barre de progression"
-L.Settings.ForegroundBarTextureTooltip = nil
-
-L.Settings.BackgroundBarTextureLabel = "Texture de fond de la barre"
-L.Settings.BackgroundBarTextureTooltip = nil
-
-L.Settings.BackgroundBarColorLabel = "Couleur de fond de la barre"
-L.Settings.BackgroundBarColorTooltip =
-	"L'opacité n'est disponible qu'en Mode Édition, car l'interface des paramètres par défaut ne l'expose pas."
-
-L.Settings.ProgressBarColorLabel = "Couleur de la barre"
-L.Settings.ProgressBarColorTooltip =
-	"L'opacité n'est disponible qu'en Mode Édition, car l'interface des paramètres par défaut ne l'expose pas."
-
 L.Settings.TextToSpeechVoiceLabel = "Voix TTS"
 L.Settings.TextToSpeechVoiceTooltip =
 	"Voix utilisée pour les annonces de synthèse vocale. Partagée entre les paramètres Self et Party."
@@ -150,30 +114,14 @@ L.Settings.NpcTypeLabels = {
 	[Private.Enum.NpcType.Minion] = "Sbires",
 }
 
-L.Settings.UseInterruptabilityColorsLabel = "Utiliser les couleurs d'interruption"
-L.Settings.UseInterruptabilityColorsTooltip = nil
-
 L.Settings.UseTargetClassColorLabel = "Utiliser la couleur de classe de la cible"
 L.Settings.UseTargetClassColorTooltip =
 	"Colore la barre avec la couleur de classe de l'unité ciblée à 75 % d'opacité. Les sorts sans cible utiliseront une Couleur de Barre de Fond éclaircie."
-
-L.Settings.UninterruptibleColorLabel = "Couleur ininterruptible"
-L.Settings.UninterruptibleColorTooltip = nil
-
-L.Settings.InterruptibleColorLabel = "Couleur interruptible"
-L.Settings.InterruptibleColorTooltip = nil
-
-L.Settings.IconZoomLabel = "Zoom de l'icône"
-L.Settings.IconZoomTooltip = nil
 
 L.Settings.ClickToOpenSettingsLabel = "Cliquer pour ouvrir les paramètres"
 
 L.Settings.Import = "Importer"
 L.Settings.Export = "Exporter"
 
-L.Settings.FontLabel = "Police"
-L.Settings.FontTooltip = nil
-
 L.Settings.FeatureFlagsLabel = "Fonctionnalités"
 L.Settings.FeatureFlagsTooltip = nil
-

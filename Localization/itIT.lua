@@ -34,7 +34,6 @@ L.Functionality.V3MigrationWarning = string.format(
 )
 
 L.Settings.EnabledLabel = "Abilitato"
-L.Settings.EnabledTooltip = nil
 L.Settings.DisabledLabel = "Disabilitato"
 
 L.Settings.AddonCompartmentTooltipLine1 =
@@ -43,7 +42,6 @@ L.Settings.AddonCompartmentTooltipLine2 =
 	string.format("%s è %s", WrapTextInColorCode(L.EditMode.TargetedSpellsPartyLabel, "ffeda55f"), "%s")
 
 L.Settings.LoadConditionContentTypeLabel = "Condizione di caricamento: Tipo di contenuto"
-L.Settings.LoadConditionContentTypeLabelAbbreviated = "Carica nel contenuto"
 L.Settings.LoadConditionContentTypeTooltip = nil
 L.Settings.LoadConditionContentTypeLabels = {
 	[Private.Enum.ContentType.OpenWorld] = "Mondo aperto",
@@ -55,28 +53,11 @@ L.Settings.LoadConditionContentTypeLabels = {
 }
 
 L.Settings.LoadConditionRoleLabel = "Condizione di caricamento: Ruolo"
-L.Settings.LoadConditionRoleLabelAbbreviated = "Carica nel ruolo"
 L.Settings.LoadConditionRoleTooltip = nil
 L.Settings.LoadConditionRoleLabels = {
 	[Private.Enum.Role.Healer] = "Guaritore",
 	[Private.Enum.Role.Tank] = "Difensore",
 	[Private.Enum.Role.Damager] = "Attaccante",
-}
-
-L.Settings.FrameWidthLabel = "Larghezza"
-L.Settings.FrameWidthTooltip = nil
-
-L.Settings.FrameHeightLabel = "Altezza"
-L.Settings.FrameHeightTooltip = nil
-
-L.Settings.FontSizeLabel = "Dimensione carattere"
-L.Settings.FontSizeTooltip = nil
-
-L.Settings.FontFlagsLabel = "Opzioni carattere"
-L.Settings.FontFlagsTooltip = nil
-L.Settings.FontFlagsLabels = {
-	[Private.Enum.FontFlags.OUTLINE] = "Contorno",
-	[Private.Enum.FontFlags.SHADOW] = "Ombra",
 }
 
 L.Settings.FrameGapLabel = "Spaziatura"
@@ -114,23 +95,6 @@ L.Settings.GlowTypeLabels = {
 
 L.Settings.IndicateInterruptsLabel = "Indica interruzioni"
 
-L.Settings.BorderStyleLabel = "Stile bordo"
-L.Settings.BorderStyleTooltip = nil
-
-L.Settings.ForegroundBarTextureLabel = "Texture barra progressione"
-L.Settings.ForegroundBarTextureTooltip = nil
-
-L.Settings.BackgroundBarTextureLabel = "Texture sfondo barra"
-L.Settings.BackgroundBarTextureTooltip = nil
-
-L.Settings.BackgroundBarColorLabel = "Colore sfondo barra"
-L.Settings.BackgroundBarColorTooltip =
-	"L'opacità è disponibile solo in Modalità Modifica, poiché l'interfaccia delle impostazioni predefinita non la espone."
-
-L.Settings.ProgressBarColorLabel = "Colore barra"
-L.Settings.ProgressBarColorTooltip =
-	"L'opacità è disponibile solo in Modalità Modifica, poiché l'interfaccia delle impostazioni predefinita non la espone."
-
 L.Settings.TextToSpeechVoiceLabel = "Voce TTS"
 L.Settings.TextToSpeechVoiceTooltip =
 	"Voce utilizzata per gli annunci di sintesi vocale. Condivisa tra le impostazioni Self e Party."
@@ -150,30 +114,14 @@ L.Settings.NpcTypeLabels = {
 	[Private.Enum.NpcType.Minion] = "Scagnozzi",
 }
 
-L.Settings.UseInterruptabilityColorsLabel = "Usa colori interruzione"
-L.Settings.UseInterruptabilityColorsTooltip = nil
-
 L.Settings.UseTargetClassColorLabel = "Usa colore classe del bersaglio"
 L.Settings.UseTargetClassColorTooltip =
 	"Colora la barra con il colore di classe dell'unità bersaglio al 75% di opacità. Gli incantesimi senza bersaglio utilizzeranno un Colore Barra di Sfondo più luminoso."
-
-L.Settings.UninterruptibleColorLabel = "Colore non interrompibile"
-L.Settings.UninterruptibleColorTooltip = nil
-
-L.Settings.InterruptibleColorLabel = "Colore interrompibile"
-L.Settings.InterruptibleColorTooltip = nil
-
-L.Settings.IconZoomLabel = "Zoom icona"
-L.Settings.IconZoomTooltip = nil
 
 L.Settings.ClickToOpenSettingsLabel = "Clicca per aprire le impostazioni"
 
 L.Settings.Import = "Importa"
 L.Settings.Export = "Esporta"
 
-L.Settings.FontLabel = "Carattere"
-L.Settings.FontTooltip = nil
-
 L.Settings.FeatureFlagsLabel = "Funzionalità"
 L.Settings.FeatureFlagsTooltip = nil
-
