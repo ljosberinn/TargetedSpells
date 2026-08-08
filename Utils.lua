@@ -495,18 +495,24 @@ Private.Utils.Pools = {
 }
 
 do
-	local function sortAsc(a, b)
+	---@param a TargetedSpellsMixin
+	---@param b TargetedSpellsMixin
+	---@return boolean
+	local function SortAscending(a, b)
 		return a:GetStartTime() < b:GetStartTime()
 	end
 
-	local function sortDesc(a, b)
+	---@param a TargetedSpellsMixin
+	---@param b TargetedSpellsMixin
+	---@return boolean
+	local function SortDescending(a, b)
 		return a:GetStartTime() > b:GetStartTime()
 	end
 
 	function Private.Utils.SortFrames(frames, sortOrder)
 		local isAscending = sortOrder == Private.Enum.SortOrder.Ascending
 
-		table.sort(frames, isAscending and sortAsc or sortDesc)
+		table.sort(frames, isAscending and SortAscending or SortDescending)
 	end
 end
 
@@ -533,13 +539,11 @@ function Private.Utils.CollectLayoutingArguments(direction, grow, width, height,
 	return out
 end
 
--- Phase 7: the visual extent of a group's active elements, in CENTER→CENTER offset
 -- space relative to the core element (which is the 0,0 origin). Returns the union
 -- bounding box of every active *non-text* box — that includes the core, whose
 -- `active` field is absent (omitActive) and so counts as active — plus any text
 -- element carrying an explicit `maxWidth` cap. Auto-sized (uncapped) text is
 -- deliberately excluded: its runtime width is unbounded, so a long name would
--- otherwise blow the extent out arbitrarily (Phase 7 step 2). Welded/decorative
 -- elements (Overlay, Cooldown, Border, Background) have no width/height and so
 -- contribute nothing — they draw within the core.
 --
@@ -1214,20 +1218,21 @@ do
 end
 
 do
-	local function noop() end
+	---@return nil
+	local function Noop() end
 
 	_G.TargetedSpellsAPI = {
 		Import = Private.Utils.Import,
 		Export = Private.Utils.Export,
 		DecodeProfileString = DecodeProfileString,
-		SetProfile = noop,
+		SetProfile = Noop,
 		GetProfileKeys = function()
 			return { "Global" }
 		end,
 		GetCurrentProfileKey = function()
 			return "Global"
 		end,
-		OpenConfig = noop,
-		CloseConfig = noop,
+		OpenConfig = Noop,
+		CloseConfig = Noop,
 	}
 end

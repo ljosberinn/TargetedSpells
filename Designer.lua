@@ -8,11 +8,6 @@ local LibSharedMedia = LibStub("LibSharedMedia-3.0")
 -- not touch LibEditMode. This file holds the frame/UI; the model (schemas,
 -- defaults, scratch copies) lives in Design.lua / Groups.lua.
 --
--- Phase 5 lands incrementally:
---   step 2  outer window scaffold (title, drag, Esc-close)          [done]
---   step 3  group tabs, one per group, labelled by group.Name       [done]
---   step 4  InsetFrameTemplate canvas                               [done]
---   step 5+ looping demo frame, selection, schema-driven widgets    [pending]
 
 local FRAME_WIDTH = 760
 local FRAME_HEIGHT = 520
@@ -190,7 +185,6 @@ end
 
 -- Selects a group's tab: marks the tab active, takes a fresh scratch copy of that
 -- group's Elements (edits mutate the copy, not the live group, until Apply — the
--- Apply/Cancel lifecycle lands in step 8) and refreshes the canvas.
 ---@param groupId integer
 function DesignerMixin:SelectGroup(groupId)
 	local group = groupId and TargetedSpellsSaved.Groups[groupId]
@@ -256,7 +250,6 @@ end
 -- Acquires a single demo frame from the selected group's pool, parents it into the
 -- canvas centred on its core element, and drives a looping cast. Crucially it
 -- renders from the scratch Elements copy via SetLayoutOverride — not the group's
--- saved layout — so later widget edits preview before Apply (v4 plan step 3a).
 function DesignerMixin:StartDemo()
 	local group = self.selectedGroupId and TargetedSpellsSaved.Groups[self.selectedGroupId]
 
@@ -413,7 +406,6 @@ end
 -- CENTER→CENTER offset, computed from the scratch record (never from the live
 -- frame's regions). Elements with no spatial footprint (welded / active-only, e.g.
 -- Overlay / Background / Cooldown) get no marker — they are reachable from the
--- panel once step 7's element list lands.
 
 -- The marker rectangle (centre x/y, width, height in preview-centre coords) for an
 -- element, or nil for a footprint-less element / an inactive gutter slot. Computed purely
@@ -583,7 +575,6 @@ function DesignerMixin:BuildMarkers()
 end
 
 -- Selects an element: highlights its marker and points the panel header (and, in
--- step 7, the widget list) at that element's scratch record.
 ---@param elementTag Element
 function DesignerMixin:SelectElement(elementTag)
 	self.selectedElement = elementTag
@@ -695,7 +686,6 @@ end
 -- mutates the scratch record in place and previews live (the demo frame already
 -- renders from the same scratch table via SetLayoutOverride). This round covers
 -- boolean/number/enum; color/font/texture render as placeholder rows until their
--- widgets land (color swatch next, the rest in Phase 6).
 
 -- The current selected element's scratch record (nil if nothing selected).
 ---@return table<string, any>?
@@ -1075,7 +1065,7 @@ end
 function DesignerMixin:OpenColorPicker(record, swatch)
 	local startColor = CreateColorFromHexString(self:SelectedScratchRecord()[record.setting] or record.default)
 
-	local function commit()
+	local function Commit()
 		local r, g, b = ColorPickerFrame:GetColorRGB()
 		local a = ColorPickerFrame:GetColorAlpha()
 		swatch:SetColorRGB(r, g, b)
@@ -1088,8 +1078,8 @@ function DesignerMixin:OpenColorPicker(record, swatch)
 		b = startColor.b,
 		opacity = startColor.a,
 		hasOpacity = true,
-		swatchFunc = commit,
-		opacityFunc = commit,
+		swatchFunc = Commit,
+		opacityFunc = Commit,
 		cancelFunc = function(previous)
 			swatch:SetColorRGB(previous.r, previous.g, previous.b)
 			self:OnWidgetValueChanged(
@@ -1358,7 +1348,6 @@ end
 
 function DesignerMixin:Initialize()
 	-- Canvas: a bordered inset split into a Preview (left, holds the demo frame +
-	-- selection markers) and a Panel (right, the schema-driven widget list in step 7).
 	self.Canvas = CreateFrame("Frame", nil, self, "InsetFrameTemplate")
 	self.Canvas:SetPoint("TOPLEFT", self, "TOPLEFT", 12, -32)
 	-- leave a footer strip for the Apply/Revert controls + unsaved hint

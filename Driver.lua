@@ -276,7 +276,6 @@ end
 -- dirtyGroups set {[groupId]=true}, only those controllers relayout — a group's layout
 -- is self-contained (the controller chains its frames under its own container), so a
 -- lifecycle event that changed one group's membership must not pay the ~12 C-side frame
--- ops per frame to re-anchor every *other* group. See sprint-3.
 ---@param dirtyGroups table<integer, boolean>? nil = all controllers; otherwise the set to scope to
 function TargetedSpellsDriver:RepositionFrames(dirtyGroups)
 	if dirtyGroups == nil then

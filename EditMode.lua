@@ -190,7 +190,6 @@ function TargetedSpellsEditModeMixin:OnDeleteButtonClick()
 	})
 end
 
--- ── Phase 4: compact, group-based edit-mode panel ───────────────────────────
 -- Overrides the legacy CreateSetting above (later assignment wins). The old one is
 -- dead code, kept only until a cleanup pass removes it. Every widget edits this
 -- instance's `self.group` directly and fires GROUP_CHANGED(self.groupId); the Driver
@@ -559,7 +558,6 @@ function TargetedSpellsEditModeMixin:CoreElement()
 	return self.group.Elements[coreTag]
 end
 
--- Phase 7: size the placeholder to the group's full *visual extent*, not just its
 -- core box, so free-positioned elements sitting outside the core (e.g. the bar's
 -- icon/duration boxes flanking the narrower ProgressBar) fall inside the grab
 -- target. The layout *footprint* — the frame-to-frame stride across the preview's
@@ -628,7 +626,6 @@ function TargetedSpellsEditModeMixin:OnEditModePositionChanged(_, _, point, x, y
 	Private.EventRegistry:TriggerEvent(Private.Enum.Events.GROUP_POSITION_CHANGED, self.groupId)
 end
 
--- container-only panel; element appearance moved to the designer (Phase 5)
 local SETTINGS_ORDER = {
 	"Enabled",
 	"Template",

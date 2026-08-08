@@ -105,7 +105,6 @@ function TargetedSpellsMixin:GetUnit()
 	return self.unit
 end
 
--- ── Group + layout resolution (Phase 3 seam) ─────────────────────────────────
 -- A frame belongs to a group (assigned by the Driver on acquire). It renders its
 -- element layout from that group — unless a scratch layout is injected, which is
 -- how the designer previews unsaved edits on a frame that belongs to no group

@@ -12,7 +12,6 @@ local addonName, Private = ...
 -- under Private.__test for the (gated, spec-only) transform tests; it ships no
 -- behaviour.
 --
--- This module owns the whole pre-v4 phase: a v3 config is read exactly as it sits
 -- on disk, field by field, with no caller-side backfill. Nothing outside here may
 -- reshape TargetedSpellsSaved.Settings.
 --
@@ -60,13 +59,22 @@ local V3_FLAG = {
 
 local V3_NPC_TYPE = { Caster = 3, Melee = 4 }
 
-local function copy(value)
+---@param value any
+---@return any
+local function Copy(value)
 	return Private.Utils.DeepCopy(value)
 end
 
-local function flag(featureFlags, id)
+local copy = Copy
+
+---@param featureFlags table<number, boolean>?
+---@param id number
+---@return boolean
+local function Flag(featureFlags, id)
 	return featureFlags and featureFlags[id] == true
 end
+
+local flag = Flag
 
 -- A v3 config on disk is whatever the version that wrote it happened to store: keys
 -- added late in v3's life are missing, and a hand-edited or very old value can hold
@@ -75,7 +83,8 @@ end
 ---@param source table
 ---@param defaults table
 ---@param key string
-local function read(source, defaults, key)
+---@return any
+local function Read(source, defaults, key)
 	local value = source[key]
 
 	if value == nil or type(value) ~= type(defaults[key]) then
@@ -84,6 +93,8 @@ local function read(source, defaults, key)
 
 	return value
 end
+
+local read = Read
 
 -- Two v3 enum members were retired mid-v3 and their ids reused for nothing. Both
 -- remaps key on the saved *value*, so a config that never held the legacy id passes
@@ -120,6 +131,7 @@ end
 local function BuildSelfGroup(selfSettings, defaults)
 	local flags = read(selfSettings, defaults, "FeatureFlags")
 
+	---@return table<Element, table<string, any>>
 	local function BuildIconElements()
 		local elements = Private.Design.GetDefault(Template.Icon)
 		local flags = read(selfSettings, defaults, "FeatureFlags")
@@ -183,6 +195,7 @@ end
 local function BuildPartyGroup(partySettings, defaults)
 	local flags = read(partySettings, defaults, "FeatureFlags")
 
+	---@return table<Element, table<string, any>>
 	local function BuildBarElements()
 		-- LAYOUT IS NOT MIGRATED for bars. v3 stored a free per-element pixel layout
 		-- (Width/Height + edge-anchored, width-split boxes); v4's bar is a reflow model
@@ -249,6 +262,7 @@ local function BuildPartyGroup(partySettings, defaults)
 		return elements
 	end
 
+	---@return table<TargetClass, boolean>
 	---@return table<TargetClass, boolean>
 	local function DerivePartyFilter()
 		local filter = {
@@ -472,6 +486,7 @@ local migrationSteps = {
 
 		partySettings = MigratePartySettingsToV3()
 
+		---@return table<number, boolean>|boolean|nil
 		local function ReadAnnounceUntargetedSpells()
 			local value = selfSettings.AnnounceUntargetedSpells
 

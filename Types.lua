@@ -5,7 +5,7 @@
 ---@field Events table<string, string>
 ---@field Enum TargetedSpellsEnums
 ---@field Settings TargetedSpellsSettings
----@field LoginFnQueue table<string, function>
+---@field LoginFnQueue table<number, fun()>
 ---@field L table<string, table<string, string|nil>>
 ---@field Utils TargetedSpellsUtils
 ---@field Design TargetedSpellsDesign
@@ -19,11 +19,65 @@
 ---@field TextToSpeechUtil TargetedSpellsTextToSpeechUtil
 
 ---@class TargetedSpellsTextToSpeechUtil
----@field MaybeAnnounceSpell fun(info: SpellCastInfo, contentType: ContentType, activeEncounterId: number)
+---@field MaybeAnnounceSpell fun(info: SpellCastInfo, contentType: ContentType, activeEncounterId: number?)
 ---@field ClearAnnouncementCacheForUnit fun(unit: string)
 
 ---@class TargetedSpellsDesigner
 ---@field Toggle fun()
+
+---@class DesignerMixin
+---@field SortedGroupIds fun(self: DesignerMixin): integer[]
+---@field RebuildTabs fun(self: DesignerMixin)
+---@field SelectGroup fun(self: DesignerMixin, groupId: integer)
+---@field RequestSelectGroup fun(self: DesignerMixin, groupId: integer)
+---@field GroupPool fun(self: DesignerMixin, group: TargetedSpellsGroup): FramePool<Frame>
+---@field RefreshCanvas fun(self: DesignerMixin)
+---@field StartDemo fun(self: DesignerMixin)
+---@field PlayDemoCast fun(self: DesignerMixin)
+---@field PopulateDemoContent fun(self: DesignerMixin)
+---@field StyleDemoText fun(self: DesignerMixin, region: Region, element: Element, sampleText: string, classColor: colorRGB)
+---@field EndDemo fun(self: DesignerMixin)
+---@field ElementMarkerRect fun(self: DesignerMixin, record: table, tag: Element, layout: table): table
+---@field ScratchLayout fun(self: DesignerMixin): table
+---@field EnsureMarkerVisuals fun(self: DesignerMixin, marker: Frame)
+---@field BuildMarkers fun(self: DesignerMixin)
+---@field SelectElement fun(self: DesignerMixin, elementTag: Element)
+---@field SetupElementDropdown fun(self: DesignerMixin)
+---@field RefreshElementDropdown fun(self: DesignerMixin)
+---@field CopyableSourceGroups fun(self: DesignerMixin): TargetedSpellsGroup[]
+---@field SetupCopyFromDropdown fun(self: DesignerMixin)
+---@field CopyLayoutFromGroup fun(self: DesignerMixin, sourceGroupId: integer)
+---@field SelectedScratchRecord fun(self: DesignerMixin): table?
+---@field SettingLabel fun(self: DesignerMixin, record: table): string
+---@field OptionLabel fun(self: DesignerMixin, option: table): string
+---@field WidgetLabel fun(self: DesignerMixin, widget: table): string
+---@field OnWidgetValueChanged fun(self: DesignerMixin, setting: string, value: any)
+---@field BuildCheckbox fun(self: DesignerMixin, record: table, yOffset: number): Frame
+---@field BuildSlider fun(self: DesignerMixin, record: table, yOffset: number): Frame
+---@field AcquireDropdownRow fun(self: DesignerMixin, record: table, yOffset: number, poolKey: string): Frame
+---@field PopulateRadioMenu fun(self: DesignerMixin, dropdown: Frame, setting: string, options: table[])
+---@field BuildDropdown fun(self: DesignerMixin, record: table, yOffset: number): Frame
+---@field BuildTextureDropdown fun(self: DesignerMixin, record: table, yOffset: number): Frame
+---@field BuildFontDropdown fun(self: DesignerMixin, record: table, yOffset: number): Frame
+---@field BuildFontFlagsDropdown fun(self: DesignerMixin, record: table, yOffset: number): Frame
+---@field FontFlagsSummary fun(self: DesignerMixin, flags: table<FontFlags, boolean>): string
+---@field OnFontFlagChanged fun(self: DesignerMixin, dropdown: Frame, record: table)
+---@field MediaNameList fun(self: DesignerMixin, mediaType: string): string[]
+---@field BuildColorSwatch fun(self: DesignerMixin, record: table, yOffset: number): Frame
+---@field OpenColorPicker fun(self: DesignerMixin, record: table, swatch: Frame)
+---@field BuildPlaceholder fun(self: DesignerMixin, record: table, yOffset: number): Frame
+---@field BuildWidget fun(self: DesignerMixin, record: table, yOffset: number): Frame
+---@field BuildPanel fun(self: DesignerMixin)
+---@field ResetSelectedElement fun(self: DesignerMixin)
+---@field ApplyScratchToDemo fun(self: DesignerMixin)
+---@field UpdateMarkerRects fun(self: DesignerMixin)
+---@field MarkDirty fun(self: DesignerMixin)
+---@field UpdateApplyState fun(self: DesignerMixin)
+---@field ApplyScratch fun(self: DesignerMixin)
+---@field RevertScratch fun(self: DesignerMixin)
+---@field PromptUnsavedSwitch fun(self: DesignerMixin, groupId: integer)
+---@field OnDesignerHide fun(self: DesignerMixin)
+---@field Initialize fun(self: DesignerMixin)
 
 ---@class CollectLayoutingArguments
 ---@field isHorizontal boolean
@@ -36,8 +90,8 @@
 
 ---@class TargetedSpellsUtils
 ---@field DeepCopy fun(source: any): any
+---@field DeepEqual fun(left: any, right: any): boolean
 ---@field CollectLayoutingArguments fun(direction: Direction, grow: Grow, width: number, height: number, gap: number, out?: CollectLayoutingArguments): CollectLayoutingArguments
----@field ComputeElementExtent fun(elements: table<Element, table<string, any>>): { width: number, height: number, offsetX: number, offsetY: number }
 ---@field ComputeGroupExtent fun(elements: table<Element, table<string, any>>): { width: number, height: number, offsetX: number, offsetY: number }
 ---@field ComputeBarLayout fun(elements: table<Element, table<string, any>>): table<any, any>
 ---@field ComputeIconDurationLayout fun(elements: table<Element, table<string, any>>): table<any, any>
@@ -59,6 +113,7 @@
 ---@field CreateCountdownFormatter fun(): NumericFormatter
 ---@field ApplyFractionThreshold fun(formatter: NumericFormatter, fractionThreshold: number)
 ---@field RegisterSlashCommand fun(name: string, description: string, handler: fun(rest: string))
+---@field ComputeElementExtent fun(elements: table<Element, table<string, any>>): { width: number, height: number, offsetX: number, offsetY: number }
 
 -- ── v4 model ───────────────────────────────────────────────────────
 
@@ -339,6 +394,10 @@
 ---@field GetGlowTarget fun(self: TargetedSpellsMixin): GlowTargetFrame, number, number
 ---@field HideGlow fun(self: TargetedSpellsMixin)
 ---@field ShowGlow fun(self: TargetedSpellsMixin, isImportant: boolean)
+---@field GetCoreElement fun(self: TargetedSpellsMixin): Element
+---@field GetCoreSize fun(self: TargetedSpellsMixin): number, number
+---@field HideGlowOn fun(self: TargetedSpellsMixin, glowFrame: GlowTargetFrame)
+---@field ShowGlowOn fun(self: TargetedSpellsMixin, glowFrame: GlowTargetFrame, glowWidth: number, glowHeight: number, glowType: GlowType, isImportant: boolean)
 ---@field GetSpellId fun(self: TargetedSpellsMixin): number?
 ---@field SetSpellId fun(self: TargetedSpellsMixin, spellId: number?)
 ---@field SetInterrupted fun(self: TargetedSpellsMixin, name: string?, color: colorRGB?)
@@ -347,6 +406,7 @@
 ---@field SetShowDuration fun(self: TargetedSpellsMixin, showDuration: boolean)
 ---@field SetIconTexture fun(self: TargetedSpellsMixin, texture: number|string?)
 ---@field SetDuration fun(self: TargetedSpellsMixin, duration: DurationObject): number
+---@field ApplyCastAlpha fun(self: TargetedSpellsMixin, info: SpellCastInfo, durationAlpha: number)
 
 ---@class TargetedSpellsIconMixin : TargetedSpellsMixin
 ---@field private Overlay Texture
@@ -367,6 +427,8 @@
 ---@field private BorderLeft Texture
 ---@field private BorderRight Texture
 ---@field OnLoad fun(self: TargetedSpellsIconMixin)
+---@field GetCoreElement fun(self: TargetedSpellsIconMixin): Element
+---@field ApplyLayout fun(self: TargetedSpellsIconMixin)
 ---@field SetShowDuration fun(self: TargetedSpellsIconMixin, showDuration: boolean)
 ---@field ApplyBorderStyle fun(self: TargetedSpellsIconMixin, styleName: string)
 ---@field OnSizeChanged fun(self: TargetedSpellsIconMixin)
@@ -410,6 +472,10 @@
 ---@field PostCreate fun(self: TargetedSpellsIconDurationMixin, info: SpellCastInfo?, OnCooldownDoneCallback: fun(info: SpellCastInfo))
 ---@field Reset fun(self: TargetedSpellsIconDurationMixin)
 ---@field SetFont fun(self: TargetedSpellsIconDurationMixin)
+---@field GetCoreElement fun(self: TargetedSpellsIconDurationMixin): Element
+---@field HideGlow fun(self: TargetedSpellsIconDurationMixin)
+---@field ShowGlow fun(self: TargetedSpellsIconDurationMixin, isImportant: boolean)
+---@field SetIconTexture fun(self: TargetedSpellsIconDurationMixin, texture: number|string?)
 
 ---@class TargetedSpellsBarProgressBar : StatusBar
 ---@field Background Texture
@@ -426,6 +492,11 @@
 ---@field CustomElementsFrame TargetedSpellsBarCustomElementsFrame
 ---@field DurationCooldown ExtendedCooldownTypes
 ---@field OnLoad fun(self: TargetedSpellsBarMixin)
+---@field GetCoreElement fun(self: TargetedSpellsBarMixin): Element
+---@field GetGlowFrame fun(self: TargetedSpellsBarMixin): GlowTargetFrame
+---@field GetGlowTarget fun(self: TargetedSpellsBarMixin): GlowTargetFrame, number, number
+---@field PositionElements fun(self: TargetedSpellsBarMixin)
+---@field ApplyLayout fun(self: TargetedSpellsBarMixin)
 ---@field OnSizeChanged fun(self: TargetedSpellsBarMixin)
 ---@field Reset fun(self: TargetedSpellsBarMixin)
 ---@field PostCreate fun(self: TargetedSpellsBarMixin, info: SpellCastInfo?, OnCooldownDoneCallback: fun(info: SpellCastInfo)?)
