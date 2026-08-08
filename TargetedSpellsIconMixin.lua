@@ -152,7 +152,7 @@ function TargetedSpellsIconMixin:PostCreate(info, OnCooldownDoneCallback)
 
 	local group = self:GetGroup()
 
-	self.info = info
+	self:SetUnit(info.unit)
 	self.Cooldown:SetCooldownFromDurationObject(info.duration)
 
 	self:SetSpellId(info.spellId)
@@ -176,47 +176,32 @@ function TargetedSpellsIconMixin:PostCreate(info, OnCooldownDoneCallback)
 	end
 end
 
+-- See the pool contract on TargetedSpellsMixin:Reset for what belongs here. The spell id,
+-- the font, the formatter threshold and the interrupt text colour are all re-applied
+-- unconditionally on acquire and so are deliberately absent.
 function TargetedSpellsIconMixin:Reset()
-	self.spellId = nil
-	self.duration = nil
+	-- (1) stops the countdown, and (3) drops the closure bound to the cast that just ended:
+	-- PostCreate rebinds it only when handed a callback, and neither preview path passes one.
 	self.Cooldown:Clear()
-	self.info = nil
 	self.Cooldown:SetScript("OnCooldownDone", nil)
+
+	-- (2) the interrupter's name. Only SetInterrupted writes or shows it, and
+	-- StyleInterruptSource styles it without ever showing or hiding it. Its *colour* needs no
+	-- reset — the schema always carries a textColor default, so StyleInterruptSource re-applies.
 	self.InterruptSource:SetText()
 	self.InterruptSource:Hide()
-	self.InterruptSource:SetTextColor(1, 1, 1)
 
 	-- group is retained through Reset (base Reset no longer nils it)
-	local group = self:GetGroup()
 	local cooldown = self:GetElement(Private.Enum.Element.Cooldown)
-
-	if group ~= nil and group.GlowImportant then
-		local glowType = group.GlowType
-
-		if glowType == Private.Enum.GlowType.PixelGlow then
-			if self._PixelGlow ~= nil then
-				self._PixelGlow:SetAlpha(1)
-			end
-		elseif glowType == Private.Enum.GlowType.AutoCastGlow then
-			if self._AutoCastGlow ~= nil then
-				self._AutoCastGlow:SetAlpha(1)
-			end
-		elseif glowType == Private.Enum.GlowType.ProcGlow then
-			if self._ProcGlow ~= nil then
-				self._ProcGlow:SetAlpha(1)
-			end
-		end
-	end
 
 	TargetedSpellsMixin.Reset(self)
 
 	if cooldown ~= nil then
-		-- important to come last - the cooldown swipe ignores display status of its parent
+		-- (1) has to come last: the cooldown swipe ignores the display status of its parent,
+		-- so this runs after the base Reset hides the frame. ApplyLayout re-applies both on
+		-- the next acquire — these exist for the window the frame spends in the pool.
 		self:SetShowDuration(cooldown.showCountdown ~= false)
 		self.Cooldown:SetDrawSwipe(cooldown.showSwipe)
-		Private.Utils.ApplyFractionThreshold(self.countdownFormatter, cooldown.fractionThreshold)
-		-- Cooldown:Clear() re-inherits from SetCountdownFont, overwriting any previously applied font
-		self:SetFont()
 	end
 end
 
@@ -246,7 +231,7 @@ function TargetedSpellsIconMixin:StyleInterruptSource()
 
 	PixelUtil.SetPoint(self.InterruptSource, justifyH, self, "CENTER", element.x or 0, element.y or 0)
 
-	Private.Utils.SafelySetFont(
+	Private.Utils.SetFontIfChanged(
 		self.InterruptSource,
 		element.font,
 		element.fontSize,

@@ -112,13 +112,7 @@ L.Settings.GlowTypeLabels = {
 	[Private.Enum.GlowType.Star4] = "四角星發光",
 }
 
-L.Settings.ShowDurationLabel = "顯示持續時間"
-
 L.Settings.IndicateInterruptsLabel = "標記可打斷法術"
-
-L.Settings.RenderInterruptSourceNameLabel = "顯示打斷來源名稱"
-
-L.Settings.ShowSwipeLabel = "顯示冷卻掃光"
 
 L.Settings.BorderStyleLabel = "邊框樣式"
 L.Settings.BorderStyleTooltip = nil
@@ -137,8 +131,6 @@ L.Settings.ProgressBarColorLabel = "進度條顏色"
 L.Settings.ProgressBarColorTooltip =
 	"透明度僅在編輯模式中可用，因為預設設定介面未公開此選項。"
 
-L.Settings.MirrorLayoutLabel = "鏡像排版"
-
 L.Settings.TextToSpeechVoiceLabel = "TTS 語音"
 L.Settings.TextToSpeechVoiceTooltip = "TTS 播報所使用的語音。自身與小隊設定共用。"
 
@@ -151,18 +143,9 @@ L.Settings.AnnounceTargetedSpellsTooltip = "依 NPC 類型設定已目標法術�
 L.Settings.NpcTypeLabels = {
 	[Private.Enum.NpcType.Boss] = "首領",
 	[Private.Enum.NpcType.Lieutenant] = "副官",
-	[Private.Enum.NpcType.Caster] = "施法單位",
-	[Private.Enum.NpcType.Melee] = "普通近戰",
+	[Private.Enum.NpcType.Other] = "其他單位",
 	[Private.Enum.NpcType.Minion] = "從屬單位",
 }
-
-L.Settings.HideUntargetedSpellsLabel = "隱藏無目標法術"
-
-L.Settings.HideTargetedSpellsLabel = "隱藏有目標法術"
-
-L.Settings.SelfOnlyLabel = "僅顯示針對玩家的法術"
-
-L.Settings.InlineDurationLabel = "內嵌持續時間位置"
 
 L.Settings.UseInterruptabilityColorsLabel = "使用打斷顏色"
 L.Settings.UseInterruptabilityColorsTooltip = nil
@@ -191,26 +174,3 @@ L.Settings.FontTooltip = nil
 L.Settings.FeatureFlagsLabel = "功能選項"
 L.Settings.FeatureFlagsTooltip = nil
 
-L.Settings.FeatureFlagLabels = {
-	[Private.Enum.FeatureFlag.GlowImportant] = L.Settings.GlowImportantLabel,
-	[Private.Enum.FeatureFlag.OnlyImportant] = L.Settings.OnlyImportantLabel,
-	[Private.Enum.FeatureFlag.ShowDuration] = L.Settings.ShowDurationLabel,
-	[Private.Enum.FeatureFlag.ShowSwipe] = L.Settings.ShowSwipeLabel,
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
-	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,
-	[Private.Enum.FeatureFlag.ShowIcon] = "顯示圖示",
-	[Private.Enum.FeatureFlag.ShowTargetMarker] = "顯示目標標記",
-	[Private.Enum.FeatureFlag.ShowSpellName] = "顯示法術名稱",
-	[Private.Enum.FeatureFlag.ShowTargetName] = "顯示目標名稱",
-	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "顯示目標職業顏色",
-	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
-	[Private.Enum.FeatureFlag.InlineDuration] = L.Settings.InlineDurationLabel,
-	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
-	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
-	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,
-}
-
-L.Settings.FeatureFlagSettingTitles = {
-	[Private.Enum.FeatureFlag.GlowImportant] = "顯示",
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = "打斷設定",
-}

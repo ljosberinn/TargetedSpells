@@ -6,42 +6,39 @@ local TargetedSpellsDriver = {}
 
 function TargetedSpellsDriver:Init()
 	self.delay = 0.2
-	-- secondary index: unit -> its live frames, for release-by-unit (events arrive
-	-- keyed by unit). Primary frame ownership lives on each group's controller.
-	self.frames = {}
+	-- Routing index: unit -> the set of group ids currently displaying that unit. Holds
+	-- ids, never frames — frame ownership is the controllers' alone. Events arrive keyed
+	-- by unit, so this is what turns a unit into the (usually one or two) controllers
+	-- that have anything to say about it, without fanning out over every group.
+	---@type table<string, table<integer, boolean>>
+	self.unitGroups = {}
 	self.dirtyGroups = {}
+	-- scratch for Groups.GetMatching, reused per cast (ProcessInfo iterates it and drops it)
+	---@type TargetedSpellsGroup[]
+	self.matchingGroups = {}
 	---@type table<integer, TargetedSpellsGroupController>
 	self.controllers = {}
 	self.role = Private.Enum.Role.Damager
 	self.contentType = Private.Enum.ContentType.OpenWorld
-	self.OnCooldownDoneClosure = GenerateClosure(self.OnCooldownDone, self)
+	self.OnCooldownDoneClosure = GenerateClosure(self.ReleaseCastFrames, self)
 	self.pendingCasts = {}
 	self.pendingHead = 1
 	self.pendingTail = 0
 	self.drainScheduled = false
 	self.DrainPendingCastsClosure = GenerateClosure(self.DrainPendingCasts, self)
+	-- OnFrameEvent ignores the frame it was invoked for, so the driver frame and every shard share this one closure
+	self.OnFrameEventClosure = GenerateClosure(self.OnFrameEvent, self)
+	---@type table<integer, TargetedSpellsShardFrame>
+	self.shards = {}
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.PROFILE_IMPORTED, self.OnProfileImported, self)
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.GROUP_CHANGED, self.OnGroupChanged, self)
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.GROUP_POSITION_CHANGED, self.OnGroupPositionChanged, self)
 	self.activeEncounterId = nil
 	self.capabilities = nil
 
-	-- denormalise the id onto each group so frames can find their container
-	for id, group in pairs(TargetedSpellsSaved.Groups) do
-		group.Id = id
-	end
-
 	self:SetupFrame(true)
 end
 
--- ── Group controllers ────────────────────────────────────────────────────────
--- Per-group display state (container, pool, active frames, layout) lives on a
--- TargetedSpellsGroupController, created lazily on first use. Takes the group table
--- (not just an id) so callers that already hold it skip a TargetedSpellsSaved lookup
--- that would return nil for a group deleted mid-flight — the ReleaseFrame path can
--- outlive the group.
----@param group TargetedSpellsGroup
----@return TargetedSpellsGroupController
 function TargetedSpellsDriver:GetController(group)
 	local id = group.Id
 
@@ -64,12 +61,91 @@ function TargetedSpellsDriver:InvalidateCapabilities()
 	self.capabilities = nil
 end
 
+do
+	---@type WowEvent[]
+	local coreEvents = {
+		"UNIT_TARGET",
+		"UNIT_SPELLCAST_START",
+		"UNIT_SPELLCAST_INTERRUPTED",
+		"UNIT_SPELLCAST_STOP",
+		"UNIT_SPELLCAST_CHANNEL_START",
+		"UNIT_SPELLCAST_CHANNEL_STOP",
+		"UNIT_SPELLCAST_EMPOWER_START",
+		"UNIT_SPELLCAST_EMPOWER_STOP",
+	}
+
+	---@type WowEvent[]
+	local interruptabilityEvents = {
+		"UNIT_SPELLCAST_INTERRUPTIBLE",
+		"UNIT_SPELLCAST_NOT_INTERRUPTIBLE",
+	}
+
+	function TargetedSpellsDriver:ConfigureShard(shard)
+		local capabilities = self:GetCapabilities()
+
+		if not capabilities.enabled then
+			shard:UnregisterAllEvents()
+			shard:SetScript("OnEvent", nil)
+
+			return
+		end
+
+		shard:SetScript("OnEvent", self.OnFrameEventClosure)
+
+		for _, event in ipairs(coreEvents) do
+			shard:RegisterUnitEvent(event, unpack(shard.units))
+		end
+
+		local readsInterruptibility = capabilities.usesInterruptibility or capabilities.usesShield
+
+		for _, event in ipairs(interruptabilityEvents) do
+			if readsInterruptibility then
+				shard:RegisterUnitEvent(event, unpack(shard.units))
+			else
+				shard:UnregisterEvent(event)
+			end
+		end
+	end
+
+	-- Being driven from NAME_PLATE_UNIT_ADDED is what makes creating these lazily safe: a cast
+	-- starting after this point reaches the shard normally, and one already running when the
+	-- nameplate appeared is picked up by HandleNameplateAdded itself. The only window a fresh
+	-- shard can miss is the one that handler already covers.
+	function TargetedSpellsDriver:EnsureShardForUnit(unit)
+		-- `unit` is always a nameplate token, so the suffix past "nameplate" is always numeric
+		local tokenIndex = tonumber(string.sub(unit, 10))
+		local shardIndex = math.floor((tokenIndex - 1) / Constants.UnitEventConstants.MAX_UNIT_TOKENS_IN_EVENT) + 1
+
+		if self.shards[shardIndex] ~= nil then
+			return
+		end
+
+		-- the whole slice is registered now, so the other tokens in it cost nothing when their
+		-- nameplates show up later
+		local firstToken = (shardIndex - 1) * Constants.UnitEventConstants.MAX_UNIT_TOKENS_IN_EVENT + 1
+		local units = {}
+
+		for offset = 0, Constants.UnitEventConstants.MAX_UNIT_TOKENS_IN_EVENT - 1 do
+			units[offset + 1] = "nameplate" .. (firstToken + offset)
+		end
+
+		---@type TargetedSpellsShardFrame
+		local shard = CreateFrame("Frame", nil, self.frame)
+		shard.units = units
+		self.shards[shardIndex] = shard
+
+		self:ConfigureShard(shard)
+	end
+end
+
 -- Ensures the driver frame exists and its event registration matches the current
--- group state. Safe to call repeatedly: the core spellcast/nameplate events wire a
--- single time (they never change while any display is active), while the enabled/
--- disabled teardown and the conditional events (interruptibility colours, target
--- marker) are reconciled on every call — so a group edit that toggles them takes
--- effect live rather than at the next reload.
+-- group state. Safe to call repeatedly: the driver frame's own events wire a single time
+-- (they never change while any display is active), while the enabled/disabled teardown and
+-- the conditional events (interruptibility colours, target marker) are reconciled on every
+-- call — so a group edit that toggles them takes effect live rather than at the next reload.
+--
+-- Carries only what is not per-unit; the spellcast events live on the shards.
+-- PLAYER_SPECIALIZATION_CHANGED stays here because "player" needs no shard.
 function TargetedSpellsDriver:SetupFrame(isBoot)
 	if isBoot then
 		self.frame = CreateFrame("Frame", "TargetedSpellsDriverFrame", UIParent)
@@ -86,44 +162,45 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 		-- no display active: stop listening entirely until a group is re-enabled
 		self.frame:UnregisterAllEvents()
 		self.frame:SetScript("OnEvent", nil)
+
+		-- the CVar callbacks live outside the frame, so UnregisterAllEvents above does not
+		-- reach them the way it used to reach the CVAR_UPDATE registration
+		CVarCallbackRegistry:UnregisterCallback("nameplateShowEnemies", self)
+		CVarCallbackRegistry:UnregisterCallback("nameplateShowOffscreen", self)
+
+		for _, shard in pairs(self.shards) do
+			self:ConfigureShard(shard)
+		end
+
 		return
 	end
 
-	-- core events are the same for any active display; register them once
-	if not self.frame:IsEventRegistered("UNIT_SPELLCAST_START") then
+	if not self.frame:IsEventRegistered("NAME_PLATE_UNIT_ADDED") then
 		self.frame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 		self.frame:RegisterEvent("LOADING_SCREEN_DISABLED")
 		self.frame:RegisterEvent("UPDATE_INSTANCE_INFO")
-		self.frame:RegisterUnitEvent("UNIT_TARGET")
 		self.frame:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
-		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_START")
-		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTED")
-		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_STOP")
-		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_START")
-		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_STOP")
-		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_START")
-		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_STOP")
 		self.frame:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
 		self.frame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
-		self.frame:RegisterEvent("CVAR_UPDATE")
 		self.frame:RegisterEvent("ENCOUNTER_START")
 		self.frame:RegisterEvent("ENCOUNTER_END")
 
-		self.frame:SetScript("OnEvent", GenerateClosure(self.OnFrameEvent, self))
+		self.frame:SetScript("OnEvent", self.OnFrameEventClosure)
 	end
 
-	if capabilities.usesInterruptibility or capabilities.usesShield then
-		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTIBLE")
-		self.frame:RegisterUnitEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE")
-	else
-		self.frame:UnregisterEvent("UNIT_SPELLCAST_INTERRUPTIBLE")
-		self.frame:UnregisterEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE")
-	end
+	CVarCallbackRegistry:RegisterCallback("nameplateShowEnemies", self.HandleShowEnemiesChanged, self)
+	CVarCallbackRegistry:RegisterCallback("nameplateShowOffscreen", self.HandleShowOffscreenChanged, self)
 
 	if capabilities.showsTargetMarker then
 		self.frame:RegisterEvent("RAID_TARGET_UPDATE")
 	else
 		self.frame:UnregisterEvent("RAID_TARGET_UPDATE")
+	end
+
+	-- shards that already exist follow the new capabilities; later ones pick them up on
+	-- creation, from the same function
+	for _, shard in pairs(self.shards) do
+		self:ConfigureShard(shard)
 	end
 end
 
@@ -148,41 +225,50 @@ do
 	end
 end
 
+-- Classifies a cast and hands it to every matching, loaded group. Returns how many groups
+-- acquired a frame for it — a non-zero count means at least one group's load conditions
+-- allowed, which is what the TTS gate in HandleDelayedStart needs to know.
+---@param info SpellCastInfo
+---@return integer acquired
 function TargetedSpellsDriver:ProcessInfo(info)
 	local dirtyGroups = self.dirtyGroups
 	table.wipe(dirtyGroups)
 
-	if self.frames[info.unit] == nil then
-		self.frames[info.unit] = {}
+	local unit = info.unit
+	local groups = self.unitGroups[unit]
+
+	if groups == nil then
+		groups = {}
+		self.unitGroups[unit] = groups
 	else
-		self:ReleaseFrameForUnit(info.unit, false, nil, dirtyGroups)
+		-- the unit was already displayed (a retarget, or a new cast replacing the old);
+		-- drop what it had before re-classifying. removeUnit is false: we are about to
+		-- write into `groups`, so the entry must survive even if it empties out here.
+		self:ReleaseFrameForUnit(unit, false, nil, dirtyGroups)
 	end
 
 	info.targetClasses = self:GetTargetClasses(info)
 
 	local count = 0
 
-	for _, group in ipairs(Private.Groups.GetMatching(info, TargetedSpellsSaved.Groups)) do
+	for _, group in ipairs(Private.Groups.GetMatching(info, TargetedSpellsSaved.Groups, self.matchingGroups)) do
 		local controller = self:GetController(group)
 
 		if controller:LoadConditionsApply(self.role, self.contentType) then
-			local frame = controller:Acquire(info, self.OnCooldownDoneClosure)
-			table.insert(self.frames[info.unit], frame)
+			controller:Acquire(info, self.OnCooldownDoneClosure)
+			groups[group.Id] = true
 			dirtyGroups[group.Id] = true
 			count = count + 1
 		end
 	end
 
 	if count == 0 then
-		self:ReleaseFrameForUnit(info.unit, true, nil, dirtyGroups)
+		self:ReleaseFrameForUnit(unit, true, nil, dirtyGroups)
 	end
 
 	self:RepositionFrames(dirtyGroups)
-end
 
----@param frame TargetedSpellsIconMixin|TargetedSpellsBarMixin
-function TargetedSpellsDriver:ReleaseFrame(frame)
-	self:GetController(frame:GetGroup()):Release(frame)
+	return count
 end
 
 -- Relayouts group controllers. With no argument, every controller relayouts (global
@@ -214,44 +300,45 @@ function TargetedSpellsDriver:RepositionFrames(dirtyGroups)
 	end
 end
 
----@param dirtyGroups table<integer, boolean>? if given, records the group id of every released frame
+-- Asks every controller currently displaying `unit` to drop its frames for it. The
+-- routing entry is pruned as controllers report themselves empty, so it stays an exact
+-- description of who holds what — a controller that still has a lingering interrupt
+-- frame keeps its id in the set and will be revisited by the delayed cleanup.
+---@param dirtyGroups table<integer, boolean>? if given, records the id of every group that released something
+---@return boolean
 function TargetedSpellsDriver:ReleaseFrameForUnit(unit, removeUnit, id, dirtyGroups)
-	local frames = self.frames[unit]
+	local groups = self.unitGroups[unit]
 
-	if frames == nil then
+	if groups == nil then
 		return false
 	end
 
 	local cleanedSomethingUp = false
 	local cleanedEverythingUp = true
 
-	for i = #frames, 1, -1 do
-		local frame = frames[i]
+	-- clearing keys of the table being traversed is well-defined in Lua, so pruning
+	-- the routing set as we go is safe here
+	for groupId in pairs(groups) do
+		local released, remaining = self.controllers[groupId]:ReleaseForUnit(unit, id)
 
-		if frame then
-			if frame:CanBeHidden(id) then
-				if dirtyGroups ~= nil then
-					local group = frame:GetGroup()
+		if released then
+			cleanedSomethingUp = true
 
-					if group ~= nil then
-						dirtyGroups[group.Id] = true
-					end
-				end
-
-				self:ReleaseFrame(frame)
-				table.remove(frames, i)
-				cleanedSomethingUp = true
-			else
-				cleanedEverythingUp = false
+			if dirtyGroups ~= nil then
+				dirtyGroups[groupId] = true
 			end
+		end
+
+		if remaining then
+			cleanedEverythingUp = false
+		else
+			groups[groupId] = nil
 		end
 	end
 
 	if cleanedEverythingUp then
-		table.wipe(frames)
-
 		if removeUnit then
-			self.frames[unit] = nil
+			self.unitGroups[unit] = nil
 		end
 
 		return true
@@ -262,10 +349,7 @@ end
 
 function TargetedSpellsDriver:UnitIsIrrelevant(unit, skipTargetCheck)
 	if
-		string.sub(unit, 1, 9) ~= "nameplate"
-		or UnitInParty(unit)
-		or UnitIsFriend(unit, "player")
-		or not UnitAffectingCombat(unit)
+		not UnitAffectingCombat(unit)
 	then
 		return true
 	end
@@ -287,22 +371,21 @@ function TargetedSpellsDriver:UnitIsIrrelevant(unit, skipTargetCheck)
 end
 
 function TargetedSpellsDriver:GetCastInformation(unit)
-	local isChannel = false
-	local _, _, _, _, _, _, _, _, spellId, castId = UnitCastingInfo(unit)
+	local _, _, _, _, _, _, _, _, castingSpellId, castingBarId = UnitCastingInfo(unit)
 
-	if spellId == nil then
-		_, _, _, _, _, _, _, spellId, _, _, castId = UnitChannelInfo(unit)
-		isChannel = true
+	if castingSpellId ~= nil then
+		return false, castingSpellId, castingBarId, UnitCastingDuration(unit)
 	end
 
-	return isChannel, spellId, castId
+	local _, _, _, _, _, _, _, channelSpellId, _, _, channelBarId = UnitChannelInfo(unit)
+
+	if channelSpellId == nil then
+		return false, nil, nil, nil
+	end
+
+	return true, channelSpellId, channelBarId, UnitChannelDuration(unit)
 end
 
--- Drains every pending cast that has come due, dispatching each through the
--- DELAYED_UNIT_SPELLCAST_START branch (which recomputes duration and self-cancels
--- stale casts). Entries carry their own dueAt, so this stays correct if self.delay
--- ever becomes per-cast; with the constant delay the queue is already in dueAt order.
--- OnFrameEvent's delayed branch never enqueues, so mutating the queue mid-loop is safe.
 function TargetedSpellsDriver:DrainPendingCasts()
 	self.drainScheduled = false
 
@@ -315,7 +398,7 @@ function TargetedSpellsDriver:DrainPendingCasts()
 		local info = pending[head]
 		pending[head] = nil
 		head = head + 1
-		self:OnFrameEvent(self.frame, Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START, info)
+		self:HandleDelayedStart(info, true)
 	end
 
 	if head > tail then
@@ -330,108 +413,66 @@ function TargetedSpellsDriver:DrainPendingCasts()
 	end
 end
 
----@param _ Frame -- identical to self.frame
----@param event string
+---@param instanceType string
+---@param difficultyId number
+---@return ContentType
+local function ResolveContentType(instanceType, difficultyId)
+	if instanceType == "raid" then
+		return Private.Enum.ContentType.Raid
+	end
+
+	if instanceType == "party" and (difficultyId == DifficultyUtil.ID.DungeonTimewalker
+			or difficultyId == DifficultyUtil.ID.DungeonNormal
+			or difficultyId == DifficultyUtil.ID.DungeonHeroic
+			or difficultyId == DifficultyUtil.ID.DungeonMythic
+			or difficultyId == DifficultyUtil.ID.DungeonChallenge
+			or difficultyId == 205 -- follower dungeons
+		)
+	then
+		return Private.Enum.ContentType.Dungeon
+	end
+
+	if instanceType == "pvp" then
+		return Private.Enum.ContentType.Battleground
+	end
+
+	if instanceType == "arena" then
+		return Private.Enum.ContentType.Arena
+	end
+
+	if instanceType == "scenario" and difficultyId == 208 then
+		return Private.Enum.ContentType.Delve
+	end
+
+	-- equivalent to `instanceType == "none"`
+	return Private.Enum.ContentType.OpenWorld
+end
+
+---@param specializationRole string|nil
+---@return Role
+local function ResolveRole(specializationRole)
+	if specializationRole == "HEALER" then
+		return Private.Enum.Role.Healer
+	end
+
+	if specializationRole == "TANK" then
+		return Private.Enum.Role.Tank
+	end
+
+	return Private.Enum.Role.Damager
+end
+
 function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 	if
 		event == "UNIT_SPELLCAST_START"
 		or event == "UNIT_SPELLCAST_CHANNEL_START"
 		or event == "UNIT_SPELLCAST_EMPOWER_START"
 	then
-		local unit, castGuid, spellId, id = ...
-
-		if self:UnitIsIrrelevant(unit) then
-			return
-		end
-
-		local isChannel = false
-
-		if event == "UNIT_SPELLCAST_EMPOWER_START" then
-			spellId, id = select(3, ...)
-		elseif event == "UNIT_SPELLCAST_CHANNEL_START" then
-			isChannel = true
-		end
-
-		local now = GetTime()
-		local tail = self.pendingTail + 1
-
-		self.pendingCasts[tail] = {
-			unit = unit,
-			spellId = spellId,
-			startTime = now,
-			id = id,
-			isChannel = isChannel,
-			dueAt = now + self.delay,
-		}
-		self.pendingTail = tail
-
-		-- one timer serves the whole queue; only (re)start it when nothing is scheduled
-		if not self.drainScheduled then
-			self.drainScheduled = true
-			C_Timer.After(self.delay, self.DrainPendingCastsClosure)
-		end
+		self:HandleCastStart(...)
 	elseif event == "UNIT_TARGET" then
-		---@type string
-		local unit = ...
-
-		if self:UnitIsIrrelevant(unit) then
-			return
-		end
-
-		local isChannel, spellId, castId = self:GetCastInformation(unit)
-
-		self:OnFrameEvent(self.frame, Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START, {
-			unit = unit,
-			spellId = spellId,
-			startTime = GetTime(),
-			id = castId,
-			isChannel = isChannel,
-			isRetarget = true,
-		})
+		self:HandleUnitTarget(...)
 	elseif event == "NAME_PLATE_UNIT_ADDED" then
-		---@type string
-		local unit = ...
-
-		if self:UnitIsIrrelevant(unit) then
-			return
-		end
-
-		local isChannel, spellId, castId = self:GetCastInformation(unit)
-		local duration = (isChannel and UnitChannelDuration(unit) or nil) or UnitCastingDuration(unit)
-
-		if duration == nil then
-			return
-		end
-
-		-- todo: startTime is wrong, but we can't do better yet
-		self:ProcessInfo({
-			unit = unit,
-			spellId = spellId,
-			startTime = GetTime(),
-			id = castId,
-			duration = duration,
-			isChannel = isChannel,
-		})
-	elseif event == "CVAR_UPDATE" then
-		local name, value = ...
-
-		if name == "nameplateShowEnemies" then
-			if value == 0 or value == "0" then
-				self:ReleaseAllOwnFrames()
-			end
-		elseif name == "nameplateShowOffscreen" then
-			if value == "1" or value == 1 then
-			else
-				Private.Utils.ShowStaticPopup({
-					text = Private.L.Functionality.CVarWarning,
-					button1 = ENABLE,
-					button2 = CLOSE,
-					OnAccept = function()
-						C_CVar.SetCVar("nameplateShowOffscreen", 1)
-					end,
-				})
-			end
-		end
+		self:HandleNameplateAdded(...)
 	elseif
 		event == "UNIT_SPELLCAST_STOP"
 		or event == "UNIT_SPELLCAST_CHANNEL_STOP"
@@ -439,162 +480,261 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		or event == "NAME_PLATE_UNIT_REMOVED"
 		or event == "UNIT_SPELLCAST_INTERRUPTED"
 	then
-		---@type string
-		local unit = ...
-
-		if self:UnitIsIrrelevant(unit, true) then
-			return
-		end
-
-		local frames = self.frames[unit]
-		Private.TextToSpeechUtil.ClearAnnouncementCacheForUnit(unit)
-
-		if frames == nil or #frames == 0 then
-			return
-		end
-
-		---@type number|nil
-		local id = nil
-		---@type string|nil
-		local interruptedBy = nil
-
-		if event == "UNIT_SPELLCAST_CHANNEL_STOP" or event == "UNIT_SPELLCAST_INTERRUPTED" then
-			interruptedBy, id = select(4, ...)
-		elseif event == "UNIT_SPELLCAST_EMPOWER_STOP" then
-			interruptedBy, id = select(5, ...)
-		elseif event == "UNIT_SPELLCAST_STOP" then
-			id = select(4, ...)
-		end
-
-		self:MaybeMarkAsInterruptedAndDelay(unit, id, interruptedBy)
-
-		local dirtyGroups = self.dirtyGroups
-		table.wipe(dirtyGroups)
-
-		if self:ReleaseFrameForUnit(unit, true, id, dirtyGroups) then
-			self:RepositionFrames(dirtyGroups)
-		end
-	elseif event == Private.Enum.Events.DELAYED_UNIT_SPELLCAST_START then
-		---@type SpellCastInfo
-		local info = ...
-
-		-- cast vanished during the delay
-		info.duration = info.isChannel and UnitChannelDuration(info.unit) or UnitCastingDuration(info.unit)
-
-		-- without `nameplateShowOffscreen` active, castTime may stay nil
-		if info.duration == nil then
-			return
-		end
-
-		self:ProcessInfo(info)
-
-		if info.isRetarget or not self:AnyGroupLoadConditionsAllow() then
-			return
-		end
-
-		Private.TextToSpeechUtil.MaybeAnnounceSpell(info, self.contentType, self.activeEncounterId)
-	elseif event == Private.Enum.Events.DELAYED_FRAME_CLEANUP then
-		---@type DelayInfo
-		local delayInfo = ...
-
-		local dirtyGroups = self.dirtyGroups
-		table.wipe(dirtyGroups)
-
-		if self:ReleaseFrameForUnit(delayInfo.unit, true, delayInfo.id, dirtyGroups) then
-			self:RepositionFrames(dirtyGroups)
-		end
+		self:HandleCastStop(event, ...)
 	elseif
 		event == "ZONE_CHANGED_NEW_AREA"
 		or event == "LOADING_SCREEN_DISABLED"
 		or event == "PLAYER_SPECIALIZATION_CHANGED"
 		or event == "UPDATE_INSTANCE_INFO"
 	then
-		if event == "LOADING_SCREEN_DISABLED" then
-			self:CleanupDanglingFrames()
-		end
-
-		local _, instanceType, difficultyId = GetInstanceInfo()
-		-- equivalent to `instanceType == "none"`
-		local nextContentType = Private.Enum.ContentType.OpenWorld
-
-		if instanceType == "raid" then
-			nextContentType = Private.Enum.ContentType.Raid
-		elseif instanceType == "party" then
-			if
-				difficultyId == DifficultyUtil.ID.DungeonTimewalker
-				or difficultyId == DifficultyUtil.ID.DungeonNormal
-				or difficultyId == DifficultyUtil.ID.DungeonHeroic
-				or difficultyId == DifficultyUtil.ID.DungeonMythic
-				or difficultyId == DifficultyUtil.ID.DungeonChallenge
-				or difficultyId == 205 -- follower dungeons
-			then
-				nextContentType = Private.Enum.ContentType.Dungeon
-			end
-		elseif instanceType == "pvp" then
-			nextContentType = Private.Enum.ContentType.Battleground
-		elseif instanceType == "arena" then
-			nextContentType = Private.Enum.ContentType.Arena
-		elseif instanceType == "scenario" then
-			if difficultyId == 208 then
-				nextContentType = Private.Enum.ContentType.Delve
-			end
-		end
-
-		self.contentType = nextContentType
-
-		local specId = PlayerUtil.GetCurrentSpecID()
-		local role = GetSpecializationRoleByID(specId)
-
-		if
-			role == "HEALER"
-		then
-			self.role = Private.Enum.Role.Healer
-		elseif role == "TANK" then
-			self.role = Private.Enum.Role.Tank
-		else
-			self.role = Private.Enum.Role.Damager
-		end
+		self:HandleWorldStateChanged(event)
 	elseif event == "UNIT_SPELLCAST_INTERRUPTIBLE" or event == "UNIT_SPELLCAST_NOT_INTERRUPTIBLE" then
-		local unit = ...
-
-		if self:UnitIsIrrelevant(unit) then
-			return
-		end
-
-		local frames = self.frames[unit]
-
-		if frames == nil or #frames == 0 then
-			return
-		end
-
-		local isInterruptible = event == "UNIT_SPELLCAST_INTERRUPTIBLE"
-
-		for _, frame in ipairs(frames) do
-			if frame.AdjustInterruptibleColor then
-				frame:AdjustInterruptibleColor(isInterruptible)
-				frame:AdjustInterruptShield(isInterruptible)
-			end
-		end
+		self:HandleInterruptibleChanged(event, ...)
 	elseif event == "RAID_TARGET_UPDATE" then
-		for _, frames in pairs(self.frames) do
-			for _, frame in ipairs(frames) do
-				if frame.SetTargetMarker then
-					frame:SetTargetMarker()
-				end
-			end
-		end
+		self:HandleRaidTargetUpdate()
 	elseif event == "ENCOUNTER_START" then
-		local encounterId = ...
-		self.activeEncounterId = encounterId
+		self:HandleEncounterStart(...)
 	elseif event == "ENCOUNTER_END" then
-		self.activeEncounterId = nil
+		self:HandleEncounterEnd()
 	end
+end
+
+-- Queues the cast rather than acting on it: the target is not reliable this early, so
+-- everything real happens once the drain timer fires HandleDelayedStart.
+function TargetedSpellsDriver:HandleCastStart(unit)
+	if self:UnitIsIrrelevant(unit) then
+		return
+	end
+
+	local now = GetTime()
+	local tail = self.pendingTail + 1
+
+	-- Only what the drain cannot read back off the unit: which unit, when the cast actually
+	-- began, and when to look. spellId/castId/isChannel/duration are all re-derived in
+	-- HandleDelayedStart, so nothing queued here can go stale.
+	--
+	-- `startTime` is the exception and has to be captured now. The real value is available as
+	-- UnitCastingInfo's startTimeMs, but that call is SecretWhenUnitSpellCastRestricted, so the
+	-- value is a plain number in most content and secret in PvP — and Utils.SortFrames orders
+	-- frames with `<` on it. A sort key that works everywhere except arenas is worse than an
+	-- approximate one, which is what the `startTime is wrong` note in HandleNameplateAdded is about.
+	--
+	-- Deliberately partial: the four missing fields are what `reverify` exists to fill, and
+	-- nothing reads them before HandleDelayedStart has.
+	---@diagnostic disable-next-line: missing-fields
+	self.pendingCasts[tail] = {
+		unit = unit,
+		startTime = now,
+		dueAt = now + self.delay,
+	}
+	self.pendingTail = tail
+
+	-- one timer serves the whole queue; only (re)start it when nothing is scheduled
+	if not self.drainScheduled then
+		self.drainScheduled = true
+		C_Timer.After(self.delay, self.DrainPendingCastsClosure)
+	end
+end
+
+function TargetedSpellsDriver:HandleUnitTarget(unit)
+	if self:UnitIsIrrelevant(unit) then
+		return
+	end
+
+	local isChannel, spellId, castId, duration = self:GetCastInformation(unit)
+
+	if spellId == nil or duration == nil then
+		return
+	end
+
+	self:HandleDelayedStart({
+		unit = unit,
+		spellId = spellId,
+		startTime = GetTime(),
+		id = castId,
+		isChannel = isChannel,
+		isRetarget = true,
+		duration = duration
+	}, false)
+end
+
+function TargetedSpellsDriver:HandleNameplateAdded(unit)
+	self:EnsureShardForUnit(unit)
+
+	if self:UnitIsIrrelevant(unit) then
+		return
+	end
+
+
+	local isChannel, spellId, castId, duration = self:GetCastInformation(unit)
+
+	if spellId == nil or duration == nil then
+		return
+	end
+
+	-- todo: startTime is wrong, but we can't do better yet
+	self:ProcessInfo({
+		unit = unit,
+		spellId = spellId,
+		startTime = GetTime(),
+		id = castId,
+		duration = duration,
+		isChannel = isChannel,
+	})
+end
+
+-- Enemy nameplates off means every tracked unit's plate is gone, so nothing we are showing
+-- can still be valid.
+function TargetedSpellsDriver:HandleShowEnemiesChanged(value)
+	if value == 0 or value == "0" then
+		self:ReleaseAllOwnFrames()
+	end
+end
+
+-- Without this one, casts from units the camera cannot see never get a duration, so
+-- HandleDelayedStart drops them (see its `info.duration == nil` guard).
+function TargetedSpellsDriver:HandleShowOffscreenChanged(value)
+	if value ~= "1" and value ~= 1 then
+		Private.Utils.ShowStaticPopup({
+			text = Private.L.Functionality.CVarWarning,
+			button1 = ENABLE,
+			button2 = CLOSE,
+			OnAccept = function()
+				C_CVar.SetCVar("nameplateShowOffscreen", 1)
+			end,
+		})
+	end
+end
+
+function TargetedSpellsDriver:HandleCastStop(event, ...)
+	---@type string
+	local unit = ...
+
+	if self:UnitIsIrrelevant(unit, true) then
+		return
+	end
+
+	local groups = self.unitGroups[unit]
+	Private.TextToSpeechUtil.ClearAnnouncementCacheForUnit(unit)
+
+	-- nothing on screen for this unit: the single hash lookup that keeps the stop
+	-- events of every non-matching cast in a pull off the rest of this path
+	if groups == nil or next(groups) == nil then
+		return
+	end
+
+	---@type number|nil
+	local id = nil
+	---@type string|nil
+	local interruptedBy = nil
+
+	if event == "UNIT_SPELLCAST_CHANNEL_STOP" or event == "UNIT_SPELLCAST_INTERRUPTED" then
+		interruptedBy, id = select(4, ...)
+	elseif event == "UNIT_SPELLCAST_EMPOWER_STOP" then
+		interruptedBy, id = select(5, ...)
+	elseif event == "UNIT_SPELLCAST_STOP" then
+		id = select(4, ...)
+	end
+
+	self:MaybeMarkAsInterruptedAndDelay(unit, id, interruptedBy)
+
+	local dirtyGroups = self.dirtyGroups
+	table.wipe(dirtyGroups)
+
+	if self:ReleaseFrameForUnit(unit, true, id, dirtyGroups) then
+		self:RepositionFrames(dirtyGroups)
+	end
+end
+
+-- `reverify` means "this info was captured earlier and anything in it may be stale": read the
+-- cast back off the unit. Only the queue takes it — a caller that has just read the unit itself
+-- passes false and keeps what it found.
+--
+-- Re-reading everything rather than just the duration is what makes the queue entry a note
+-- ("look at this unit at time T") instead of a snapshot. It also means no caller has to map an
+-- event name onto isChannel, which is what used to drop empowered casts: GetCastInformation is
+-- the single thing that knows an empower is served by the channel APIs.
+function TargetedSpellsDriver:HandleDelayedStart(info, reverify)
+	if reverify then
+		local isChannel, spellId, castId, duration = self:GetCastInformation(info.unit)
+
+		info.isChannel = isChannel
+		info.spellId = spellId
+		info.id = castId
+		info.duration = duration
+	end
+
+	-- the cast ended during the delay, or has no duration at all — the latter is what happens
+	-- without `nameplateShowOffscreen`, for a unit the camera cannot see
+	if info.spellId == nil or info.duration == nil then
+		return
+	end
+
+	local acquired = self:ProcessInfo(info)
+
+	if info.isRetarget then
+		return
+	end
+
+	-- ProcessInfo has just tested LoadConditionsApply for every group this cast matched, so
+	-- anything it acquired already answers the gate; only a cast that matched nothing (or
+	-- matched only unloaded groups) has to pay for the full walk over every group.
+	if acquired == 0 and not self:AnyGroupLoadConditionsAllow() then
+		return
+	end
+
+	Private.TextToSpeechUtil.MaybeAnnounceSpell(info, self.contentType, self.activeEncounterId)
+end
+
+function TargetedSpellsDriver:HandleWorldStateChanged(event)
+	if event == "LOADING_SCREEN_DISABLED" then
+		self:CleanupDanglingFrames()
+	end
+
+	local _, instanceType, difficultyId = GetInstanceInfo()
+
+	self.contentType = ResolveContentType(instanceType, difficultyId)
+	self.role = ResolveRole(GetSpecializationRoleByID(PlayerUtil.GetCurrentSpecID()))
+end
+
+function TargetedSpellsDriver:HandleInterruptibleChanged(event, unit)
+	if self:UnitIsIrrelevant(unit) then
+		return
+	end
+
+	local groups = self.unitGroups[unit]
+
+	if groups == nil then
+		return
+	end
+
+	local isInterruptible = event == "UNIT_SPELLCAST_INTERRUPTIBLE"
+
+	for groupId in pairs(groups) do
+		self.controllers[groupId]:SetInterruptibleForUnit(unit, isInterruptible)
+	end
+end
+
+function TargetedSpellsDriver:HandleRaidTargetUpdate()
+	-- global event: every group's frames may need a new marker, so this is the one
+	-- path that legitimately visits all controllers rather than routing by unit
+	for _, controller in pairs(self.controllers) do
+		controller:UpdateTargetMarkers()
+	end
+end
+
+function TargetedSpellsDriver:HandleEncounterStart(encounterId)
+	self.activeEncounterId = encounterId
+end
+
+function TargetedSpellsDriver:HandleEncounterEnd()
+	self.activeEncounterId = nil
 end
 
 function TargetedSpellsDriver:CleanupDanglingFrames()
 	local cleanedSomethingUp = false
 
-	for unit in pairs(self.frames) do
+	for unit in pairs(self.unitGroups) do
 		local thisUnitWasCleanedUp = self:ReleaseFrameForUnit(unit, true)
 
 		Private.TextToSpeechUtil.ClearAnnouncementCacheForUnit(unit)
@@ -607,19 +747,18 @@ function TargetedSpellsDriver:CleanupDanglingFrames()
 	end
 end
 
--- Releases every frame the Driver itself acquired and clears the live frame set.
+-- Releases every frame the Driver itself acquired and clears the routing index.
 -- Deliberately NOT Pools:ReleaseAll — the Bar/Icon pools are shared with the EditMode
 -- and Designer demo frames, which the Driver does not own; releasing those out from
 -- under a live demo double-releases (assertsafe error) and can alias a demo frame onto
--- a live cast.
+-- a live cast. Going through the controllers satisfies that by construction: a
+-- controller only ever holds frames it acquired for a live cast.
 function TargetedSpellsDriver:ReleaseAllOwnFrames()
-	for _, frames in pairs(self.frames) do
-		for _, frame in ipairs(frames) do
-			self:ReleaseFrame(frame)
-		end
+	for _, controller in pairs(self.controllers) do
+		controller:ReleaseAll()
 	end
 
-	table.wipe(self.frames)
+	table.wipe(self.unitGroups)
 end
 
 -- A v4 profile import updates the group tables in place (Utils.ImportV4Profile),
@@ -629,6 +768,17 @@ end
 -- safe here because ReleaseAllOwnFrames just cleared every live frame.
 function TargetedSpellsDriver:OnProfileImported()
 	self:ReleaseAllOwnFrames()
+
+	-- a delete (EditMode.DeleteGroup routes here) or an import can drop a group
+	-- outright; its controller would otherwise linger holding a stale group ref and a
+	-- shown, empty container. Safe after ReleaseAllOwnFrames: the routing index is wiped,
+	-- so no unit can still name a controller we drop here.
+	for id, controller in pairs(self.controllers) do
+		if TargetedSpellsSaved.Groups[id] == nil then
+			controller:Discard()
+			self.controllers[id] = nil
+		end
+	end
 
 	for _, group in pairs(TargetedSpellsSaved.Groups) do
 		local controller = self:GetController(group)
@@ -644,16 +794,19 @@ end
 -- on the next cast) and repositions its container. Shared by the group-change refresh.
 ---@param group TargetedSpellsGroup
 function TargetedSpellsDriver:RefreshGroup(group)
-	for _, frames in pairs(self.frames) do
-		for index = #frames, 1, -1 do
-			if frames[index]:GetGroup() == group then
-				self:ReleaseFrame(frames[index])
-				table.remove(frames, index)
-			end
-		end
+	local groupId = group.Id
+	local controller = self:GetController(group)
+
+	controller:ReleaseAll()
+
+	-- the group no longer displays anything, so drop it from every unit's routing set.
+	-- Units left with an empty set are harmless (they fall out on the next cast or
+	-- CleanupDanglingFrames) and the unit key space is bounded by the nameplate count.
+	for _, groups in pairs(self.unitGroups) do
+		groups[groupId] = nil
 	end
 
-	self:GetController(group):Position()
+	controller:Position()
 end
 
 -- Fired when an edit-mode setting changes a group's container/behaviour. Refreshes
@@ -714,14 +867,17 @@ function TargetedSpellsDriver:MaybeMarkAsInterruptedAndDelay(unit, id, interrupt
 		interruptColor = C_ClassColor.GetClassColor(className)
 	end
 
-	local frames = self.frames[unit]
+	local groups = self.unitGroups[unit]
+
+	if groups == nil then
+		return
+	end
+
 	local anyIndicated = false
 
-	for _, frame in pairs(frames) do
-		local group = frame:GetGroup()
-
-		if group ~= nil and group.IndicateInterrupts then
-			frame:SetInterrupted(interruptName, interruptColor)
+	-- each controller decides for itself whether its group indicates interrupts
+	for groupId in pairs(groups) do
+		if self.controllers[groupId]:MarkInterruptedForUnit(unit, interruptName, interruptColor) then
 			anyIndicated = true
 		end
 	end
@@ -736,13 +892,13 @@ function TargetedSpellsDriver:MaybeMarkAsInterruptedAndDelay(unit, id, interrupt
 		id = id,
 	}
 
-	C_Timer.After(
-		1,
-		GenerateClosure(self.OnFrameEvent, self, self.frame, Private.Enum.Events.DELAYED_FRAME_CLEANUP, delayInfo)
-	)
+	C_Timer.After(1, GenerateClosure(self.ReleaseCastFrames, self, delayInfo))
 end
 
-function TargetedSpellsDriver:OnCooldownDone(info)
+-- A cast is finished with, by whichever route: its cooldown ran out, or the interrupt
+-- indication above finished lingering. Both callers hand over something carrying the
+-- unit and the cast id, which is all the release needs.
+function TargetedSpellsDriver:ReleaseCastFrames(info)
 	local dirtyGroups = self.dirtyGroups
 	table.wipe(dirtyGroups)
 

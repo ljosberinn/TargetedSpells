@@ -7,7 +7,6 @@
 
 local b = require("spec.bootstrap")
 local Private = b.Private
-local Enum = Private.Enum
 
 -- Driver.lua's only file-scope side effect is
 --   table.insert(Private.LoginFnQueue, GenerateClosure(Driver.Init, Driver))
@@ -28,39 +27,12 @@ loadfile("Driver.lua")("TargetedSpells", Private)
 local driver = capturedDriver
 
 -- Minimal state RepositionFrames/ReleaseFrameForUnit read, seeded fresh per test.
--- self.frames is the Driver's release-by-unit index (read by ReleaseFrameForUnit /
--- ReleaseAllOwnFrames); self.controllers is the per-group ownership RepositionFrames
--- now routes to.
+-- self.unitGroups is the Driver's routing index (unit -> set of group ids displaying
+-- it — ids only, never frames); self.controllers holds the frames the Driver routes to.
 local function resetDriver()
-	driver.frames = {}
+	driver.unitGroups = {}
 	driver.dirtyGroups = {}
 	driver.controllers = {}
-end
-
-local function makeGroup(id)
-	return {
-		Id = id,
-		Template = Enum.Template.Icon,
-		SortOrder = Enum.SortOrder.Ascending,
-		Direction = Enum.Direction.Vertical,
-		Grow = Enum.Grow.End,
-		Gap = 2,
-		Elements = { [Enum.Element.Icon] = { width = 48, height = 48 } },
-	}
-end
-
-local function makeFrame(group, startTime, canBeHidden)
-	return {
-		GetGroup = function()
-			return group
-		end,
-		GetStartTime = function()
-			return startTime
-		end,
-		CanBeHidden = function()
-			return canBeHidden ~= false
-		end,
-	}
 end
 
 -- A stand-in controller that records how many times the router relayouts it. The
@@ -70,6 +42,17 @@ local function makeController(id, seen)
 	return {
 		Relayout = function()
 			seen[id] = (seen[id] or 0) + 1
+		end,
+	}
+end
+
+-- A controller stubbed to report a fixed release outcome. The real one decides per
+-- frame; the Driver only ever sees this (released, remaining) pair, which is the whole
+-- contract these specs exercise.
+local function makeReleasingController(released, remaining)
+	return {
+		ReleaseForUnit = function()
+			return released, remaining
 		end,
 	}
 end
@@ -107,17 +90,14 @@ describe("RepositionFrames scoping", function()
 end)
 
 describe("ReleaseFrameForUnit dirty-group collection", function()
-	before_each(function()
-		resetDriver()
-		-- releasing is out of scope here; record nothing and let the frame drop
-		driver.ReleaseFrame = function() end
-	end)
+	before_each(resetDriver)
 
-	it("records the group id of every released frame", function()
-		local groupA, groupB = makeGroup(1), makeGroup(2)
-		driver.frames = {
-			nameplate1 = { makeFrame(groupA, 10), makeFrame(groupB, 20) },
+	it("records the group id of every group that released something", function()
+		driver.controllers = {
+			[1] = makeReleasingController(true, false),
+			[2] = makeReleasingController(true, false),
 		}
+		driver.unitGroups = { nameplate1 = { [1] = true, [2] = true } }
 
 		local dirty = {}
 		driver:ReleaseFrameForUnit("nameplate1", true, nil, dirty)
@@ -126,42 +106,94 @@ describe("ReleaseFrameForUnit dirty-group collection", function()
 		assert.is_true(dirty[2])
 	end)
 
-	it("does not record groups of frames that cannot be hidden yet", function()
-		local groupA, groupB = makeGroup(1), makeGroup(2)
-		driver.frames = {
-			nameplate1 = { makeFrame(groupA, 10, true), makeFrame(groupB, 20, false) },
+	it("does not record a group whose frame cannot be hidden yet", function()
+		driver.controllers = {
+			[1] = makeReleasingController(true, false),
+			[2] = makeReleasingController(false, true), -- interrupt-delayed, still held
 		}
+		driver.unitGroups = { nameplate1 = { [1] = true, [2] = true } }
 
 		local dirty = {}
 		driver:ReleaseFrameForUnit("nameplate1", true, nil, dirty)
 
 		assert.is_true(dirty[1])
-		assert.is_nil(dirty[2]) -- lingering (interrupt-delayed) frame's group stays clean
+		assert.is_nil(dirty[2]) -- lingering frame's group stays clean
+	end)
+
+	it("returns false for a unit it is not displaying", function()
+		driver.controllers = { [1] = makeReleasingController(true, false) }
+
+		assert.is_false(driver:ReleaseFrameForUnit("nameplate9", true, nil, {}))
+	end)
+end)
+
+-- The routing index must stay an exact description of who holds what: a controller that
+-- reports itself empty is dropped from the unit's set, one still holding a lingering
+-- frame keeps its id so the delayed cleanup revisits it.
+describe("ReleaseFrameForUnit routing maintenance", function()
+	before_each(resetDriver)
+
+	it("drops the unit entirely once every group is empty", function()
+		driver.controllers = {
+			[1] = makeReleasingController(true, false),
+			[2] = makeReleasingController(true, false),
+		}
+		driver.unitGroups = { nameplate1 = { [1] = true, [2] = true } }
+
+		assert.is_true(driver:ReleaseFrameForUnit("nameplate1", true, nil, {}))
+		assert.is_nil(driver.unitGroups.nameplate1)
+	end)
+
+	it("keeps the unit and only the still-holding group when one lingers", function()
+		driver.controllers = {
+			[1] = makeReleasingController(true, false),
+			[2] = makeReleasingController(false, true),
+		}
+		driver.unitGroups = { nameplate1 = { [1] = true, [2] = true } }
+
+		driver:ReleaseFrameForUnit("nameplate1", true, nil, {})
+
+		assert.is_not_nil(driver.unitGroups.nameplate1)
+		assert.is_nil(driver.unitGroups.nameplate1[1]) -- emptied, pruned
+		assert.is_true(driver.unitGroups.nameplate1[2]) -- still lingering
+	end)
+
+	it("keeps an emptied unit entry when removeUnit is false", function()
+		-- ProcessInfo's release-then-reacquire path: the entry is about to be written to
+		driver.controllers = { [1] = makeReleasingController(true, false) }
+		driver.unitGroups = { nameplate1 = { [1] = true } }
+
+		driver:ReleaseFrameForUnit("nameplate1", false, nil, {})
+
+		assert.is_not_nil(driver.unitGroups.nameplate1)
+		assert.same({}, driver.unitGroups.nameplate1)
 	end)
 end)
 
 -- Sprint 7: the CVAR nameplate-off path must release only the Driver's own frames,
--- never Pools:ReleaseAll (which would free EditMode/Designer demo frames sharing the pools).
+-- never Pools:ReleaseAll (which would free EditMode/Designer demo frames sharing the
+-- pools). Routing through the controllers makes that structural — a controller only
+-- ever holds frames it acquired for a live cast.
 describe("ReleaseAllOwnFrames", function()
 	before_each(resetDriver)
 
-	it("releases every frame in self.frames and leaves foreign frames alone", function()
-		local groupA = makeGroup(1)
-		local own1, own2 = makeFrame(groupA, 10), makeFrame(groupA, 20)
-		local demoFrame = makeFrame(groupA, 30) -- shares the pool but not owned by the Driver
-
-		driver.frames = { nameplate1 = { own1 }, nameplate2 = { own2 } }
-
-		local released = {}
-		driver.ReleaseFrame = function(_, frame)
-			released[frame] = true
+	it("releases through every controller and clears the routing index", function()
+		local releasedAll = {}
+		local function makeReleaseAllController(id)
+			return {
+				ReleaseAll = function()
+					releasedAll[id] = true
+				end,
+			}
 		end
+
+		driver.controllers = { [1] = makeReleaseAllController(1), [2] = makeReleaseAllController(2) }
+		driver.unitGroups = { nameplate1 = { [1] = true }, nameplate2 = { [2] = true } }
 
 		driver:ReleaseAllOwnFrames()
 
-		assert.is_true(released[own1])
-		assert.is_true(released[own2])
-		assert.is_nil(released[demoFrame]) -- never touched: not in self.frames
-		assert.same({}, driver.frames)
+		assert.is_true(releasedAll[1])
+		assert.is_true(releasedAll[2])
+		assert.same({}, driver.unitGroups)
 	end)
 end)

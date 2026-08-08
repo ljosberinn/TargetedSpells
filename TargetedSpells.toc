@@ -19,6 +19,7 @@ Libs\LibSharedMedia-3.0\lib.xml
 
 Templates\TargetedSpellsFrameTemplate.xml
 Templates\TargetedSpellsBarFrameTemplate.xml
+Templates\TargetedSpellsIconDurationFrameTemplate.xml
 
 Enum.lua
 Init.lua
@@ -35,6 +36,7 @@ Migration.lua
 TargetedSpellsMixin.lua
 TargetedSpellsIconMixin.lua
 TargetedSpellsBarMixin.lua
+TargetedSpellsIconDurationMixin.lua
 EditMode.lua
 GroupController.lua
 TextToSpeech.lua

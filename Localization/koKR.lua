@@ -112,13 +112,7 @@ L.Settings.GlowTypeLabels = {
 	[Private.Enum.GlowType.Star4] = "별 4",
 }
 
-L.Settings.ShowDurationLabel = "지속시간 표시"
-
 L.Settings.IndicateInterruptsLabel = "차단 표시"
-
-L.Settings.RenderInterruptSourceNameLabel = "차단자 이름 표시"
-
-L.Settings.ShowSwipeLabel = "회전 표시"
 
 L.Settings.BorderStyleLabel = "테두리 스타일"
 L.Settings.BorderStyleTooltip = nil
@@ -137,8 +131,6 @@ L.Settings.ProgressBarColorLabel = "바 색상"
 L.Settings.ProgressBarColorTooltip =
 	"불투명도는 기본 설정 UI에서 표시되지 않기 때문에 편집 모드에서만 사용할 수 있습니다."
 
-L.Settings.MirrorLayoutLabel = "레이아웃 반전"
-
 L.Settings.TextToSpeechVoiceLabel = "TTS Voice"
 L.Settings.TextToSpeechVoiceTooltip = "Voice for TTS announcements. Shared between Self and Party settings."
 
@@ -151,18 +143,9 @@ L.Settings.AnnounceTargetedSpellsTooltip = "TTS for targeted spells by NPC type.
 L.Settings.NpcTypeLabels = {
 	[Private.Enum.NpcType.Boss] = "Bosses",
 	[Private.Enum.NpcType.Lieutenant] = "Lieutenants",
-	[Private.Enum.NpcType.Caster] = "Has Mana",
-	[Private.Enum.NpcType.Melee] = "Regular Melee",
+	[Private.Enum.NpcType.Other] = "그 외 모든 대상",
 	[Private.Enum.NpcType.Minion] = "Minions",
 }
-
-L.Settings.HideUntargetedSpellsLabel = "대상 없는 주문 숨기기"
-
-L.Settings.HideTargetedSpellsLabel = "대상 있는 주문 숨기기"
-
-L.Settings.SelfOnlyLabel = "플레이어를 대상으로 하는 주문만 표시"
-
-L.Settings.InlineDurationLabel = "지속시간 인라인 위치"
 
 L.Settings.UseInterruptabilityColorsLabel = "방해 색상 사용"
 L.Settings.UseInterruptabilityColorsTooltip = nil
@@ -192,26 +175,3 @@ L.Settings.FontTooltip = nil
 L.Settings.FeatureFlagsLabel = "기능"
 L.Settings.FeatureFlagsTooltip = nil
 
-L.Settings.FeatureFlagLabels = {
-	[Private.Enum.FeatureFlag.GlowImportant] = L.Settings.GlowImportantLabel,
-	[Private.Enum.FeatureFlag.OnlyImportant] = L.Settings.OnlyImportantLabel,
-	[Private.Enum.FeatureFlag.ShowDuration] = L.Settings.ShowDurationLabel,
-	[Private.Enum.FeatureFlag.ShowSwipe] = L.Settings.ShowSwipeLabel,
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
-	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,
-	[Private.Enum.FeatureFlag.ShowIcon] = "아이콘 표시",
-	[Private.Enum.FeatureFlag.ShowTargetMarker] = "대상 마커 표시",
-	[Private.Enum.FeatureFlag.ShowSpellName] = "주문 이름 표시",
-	[Private.Enum.FeatureFlag.ShowTargetName] = "대상 이름 표시",
-	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "대상 직업 색상 표시",
-	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
-	[Private.Enum.FeatureFlag.InlineDuration] = L.Settings.InlineDurationLabel,
-	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
-	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
-	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,
-}
-
-L.Settings.FeatureFlagSettingTitles = {
-	[Private.Enum.FeatureFlag.GlowImportant] = "표시",
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = "차단 설정",
-}

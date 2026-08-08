@@ -112,13 +112,7 @@ L.Settings.GlowTypeLabels = {
 	[Private.Enum.GlowType.Star4] = "Star 4",
 }
 
-L.Settings.ShowDurationLabel = "Montrer la durée"
-
 L.Settings.IndicateInterruptsLabel = "Montrer l'interruption"
-
-L.Settings.RenderInterruptSourceNameLabel = "Afficher la source d'interruption"
-
-L.Settings.ShowSwipeLabel = "Afficher le balayage"
 
 L.Settings.BorderStyleLabel = "Style de bordure"
 L.Settings.BorderStyleTooltip = nil
@@ -137,8 +131,6 @@ L.Settings.ProgressBarColorLabel = "Couleur de la barre"
 L.Settings.ProgressBarColorTooltip =
 	"L'opacité n'est disponible qu'en Mode Édition, car l'interface des paramètres par défaut ne l'expose pas."
 
-L.Settings.MirrorLayoutLabel = "Disposition en miroir"
-
 L.Settings.TextToSpeechVoiceLabel = "Voix TTS"
 L.Settings.TextToSpeechVoiceTooltip =
 	"Voix utilisée pour les annonces de synthèse vocale. Partagée entre les paramètres Self et Party."
@@ -154,18 +146,9 @@ L.Settings.AnnounceTargetedSpellsTooltip =
 L.Settings.NpcTypeLabels = {
 	[Private.Enum.NpcType.Boss] = "Boss",
 	[Private.Enum.NpcType.Lieutenant] = "Lieutenants",
-	[Private.Enum.NpcType.Caster] = "A du mana",
-	[Private.Enum.NpcType.Melee] = "Melee normal",
+	[Private.Enum.NpcType.Other] = "Tous les autres",
 	[Private.Enum.NpcType.Minion] = "Sbires",
 }
-
-L.Settings.HideUntargetedSpellsLabel = "Masquer les sorts sans cible"
-
-L.Settings.HideTargetedSpellsLabel = "Masquer les sorts avec cible"
-
-L.Settings.SelfOnlyLabel = "Afficher uniquement les sorts ciblant le joueur"
-
-L.Settings.InlineDurationLabel = "Durée en position intégrée"
 
 L.Settings.UseInterruptabilityColorsLabel = "Utiliser les couleurs d'interruption"
 L.Settings.UseInterruptabilityColorsTooltip = nil
@@ -194,26 +177,3 @@ L.Settings.FontTooltip = nil
 L.Settings.FeatureFlagsLabel = "Fonctionnalités"
 L.Settings.FeatureFlagsTooltip = nil
 
-L.Settings.FeatureFlagLabels = {
-	[Private.Enum.FeatureFlag.GlowImportant] = L.Settings.GlowImportantLabel,
-	[Private.Enum.FeatureFlag.OnlyImportant] = L.Settings.OnlyImportantLabel,
-	[Private.Enum.FeatureFlag.ShowDuration] = L.Settings.ShowDurationLabel,
-	[Private.Enum.FeatureFlag.ShowSwipe] = L.Settings.ShowSwipeLabel,
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
-	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,
-	[Private.Enum.FeatureFlag.ShowIcon] = "Afficher l'icône",
-	[Private.Enum.FeatureFlag.ShowTargetMarker] = "Afficher le marqueur de cible",
-	[Private.Enum.FeatureFlag.ShowSpellName] = "Afficher le nom du sort",
-	[Private.Enum.FeatureFlag.ShowTargetName] = "Afficher le nom de la cible",
-	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Afficher la couleur de classe de la cible",
-	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
-	[Private.Enum.FeatureFlag.InlineDuration] = L.Settings.InlineDurationLabel,
-	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
-	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
-	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,
-}
-
-L.Settings.FeatureFlagSettingTitles = {
-	[Private.Enum.FeatureFlag.GlowImportant] = "Affichage",
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = "Paramètres d'interruption",
-}

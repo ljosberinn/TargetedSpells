@@ -12,9 +12,35 @@ function Private.Utils.SafelySetFont(fontString, font, fontSize, fontFlags)
 	end)
 
 	if not ok then
-		-- fall back to a known-good font; the invalid one is not persisted anywhere
 		fontString:SetFont("Fonts\\FRIZQT__.TTF", fontSize, fontFlags)
 	end
+end
+
+-- SafelySetFont, skipped when the same triple is already stamped on the region. A pooled
+-- frame is usually re-acquired into the group it came from, so the font being applied is
+-- normally the one already there — and this is the addon's highest-frequency call.
+--
+-- Deliberately NOT used for a cooldown's countdown FontString: Cooldown:Clear() silently
+-- re-inherits the font from SetCountdownFont, which the stamp cannot observe, so those
+-- keep going through SafelySetFont unconditionally.
+---@param fontString TargetedSpellsStampedFontString
+---@param font string
+---@param fontSize number
+---@param fontFlags string
+function Private.Utils.SetFontIfChanged(fontString, font, fontSize, fontFlags)
+	if
+		fontString.appliedFont == font
+		and fontString.appliedFontSize == fontSize
+		and fontString.appliedFontFlags == fontFlags
+	then
+		return
+	end
+
+	Private.Utils.SafelySetFont(fontString, font, fontSize, fontFlags)
+
+	fontString.appliedFont = font
+	fontString.appliedFontSize = fontSize
+	fontString.appliedFontFlags = fontFlags
 end
 
 -- ── Slice / solid border renderer (shared by the icon + bar mixins) ──────────
@@ -55,6 +81,102 @@ do
 	---@field BorderBottom Texture
 	---@field BorderLeft Texture
 	---@field BorderRight Texture
+	--- the last-rendered border signature, stamped by ApplyBorderStyle so an unchanged
+	--- re-apply costs one comparison instead of twelve regions' worth of C calls
+	---@field appliedBorderStyle string?
+	---@field appliedBorderWidth number?
+	---@field appliedBorderHeight number?
+	---@field appliedBorderOffsetX number?
+	---@field appliedBorderOffsetY number?
+	---@field appliedBorderSize number?
+	---@field appliedBorderColor string?
+
+	-- 8-slice texcoords keyed by region name, hoisted and mutated in place rather than
+	-- rebuilt per call: only the four edge strips' repeat slots follow the box size (they
+	-- are written just before the loop below), the other 48 numbers are constants. The
+	-- loop consumes them synchronously, so sharing one table across every caller is safe.
+	local SLICE_TEXCOORDS = {
+		BorderTopLeft = {
+			0.5078125,
+			BACKDROP_COORD_START,
+			0.5078125,
+			BACKDROP_COORD_END,
+			0.6171875,
+			BACKDROP_COORD_START,
+			0.6171875,
+			BACKDROP_COORD_END,
+		},
+		BorderTopRight = {
+			0.6328125,
+			BACKDROP_COORD_START,
+			0.6328125,
+			BACKDROP_COORD_END,
+			0.7421875,
+			BACKDROP_COORD_START,
+			0.7421875,
+			BACKDROP_COORD_END,
+		},
+		BorderBottomLeft = {
+			0.7578125,
+			BACKDROP_COORD_START,
+			0.7578125,
+			BACKDROP_COORD_END,
+			0.8671875,
+			BACKDROP_COORD_START,
+			0.8671875,
+			BACKDROP_COORD_END,
+		},
+		BorderBottomRight = {
+			0.8828125,
+			BACKDROP_COORD_START,
+			0.8828125,
+			BACKDROP_COORD_END,
+			0.9921875,
+			BACKDROP_COORD_START,
+			0.9921875,
+			BACKDROP_COORD_END,
+		},
+		BorderTop = {
+			0.2578125,
+			0,
+			0.3671875,
+			0,
+			0.2578125,
+			BACKDROP_COORD_START,
+			0.3671875,
+			BACKDROP_COORD_START,
+		},
+		BorderBottom = {
+			0.3828125,
+			0,
+			0.4921875,
+			0,
+			0.3828125,
+			BACKDROP_COORD_START,
+			0.4921875,
+			BACKDROP_COORD_START,
+		},
+		BorderLeft = {
+			0.0078125,
+			BACKDROP_COORD_START,
+			0.0078125,
+			0,
+			0.1171875,
+			BACKDROP_COORD_START,
+			0.1171875,
+			0,
+		},
+		BorderRight = {
+			0.1328125,
+			BACKDROP_COORD_START,
+			0.1328125,
+			0,
+			0.2421875,
+			BACKDROP_COORD_START,
+			0.2421875,
+			0,
+		},
+	}
 
 	---@param frame TargetedSpellsBorderFrame owns the Border* regions and is the anchor origin
 	---@param styleName string LSM border media name, or "Solid" / "None"
@@ -62,13 +184,39 @@ do
 	---@param borderSize number? edge/strip thickness; falls back to the border's natural size
 	---@param borderColorHex string? AARRGGBB tint, or nil for untinted
 	function Private.Utils.ApplyBorderStyle(frame, styleName, box, borderSize, borderColorHex)
-		local borderColor = borderColorHex and CreateColorFromHexString(borderColorHex)
 		-- the border wraps `box`, centred at frame CENTER + (offsetX, offsetY). For the
 		-- icon this is the icon frame itself (offset 0); for the bar it's the union extent
 		-- of the active boxed elements, so the border encloses the icon / target marker /
 		-- duration too, not just the ProgressBar.
 		local width, height = box.width, box.height
 		local offsetX, offsetY = box.offsetX or 0, box.offsetY or 0
+
+		-- What the border renders is a pure function of style, box and tint, and a pooled
+		-- frame is normally re-acquired into the group it came from — so the whole 12-region
+		-- reapply (and, for "None", 12 redundant Hide()s) is skipped when nothing changed.
+		-- Anything that touches these regions behind our back must clear the stamp;
+		-- currently nothing does.
+		if
+			frame.appliedBorderStyle == styleName
+			and frame.appliedBorderWidth == width
+			and frame.appliedBorderHeight == height
+			and frame.appliedBorderOffsetX == offsetX
+			and frame.appliedBorderOffsetY == offsetY
+			and frame.appliedBorderSize == borderSize
+			and frame.appliedBorderColor == borderColorHex
+		then
+			return
+		end
+
+		frame.appliedBorderStyle = styleName
+		frame.appliedBorderWidth = width
+		frame.appliedBorderHeight = height
+		frame.appliedBorderOffsetX = offsetX
+		frame.appliedBorderOffsetY = offsetY
+		frame.appliedBorderSize = borderSize
+		frame.appliedBorderColor = borderColorHex
+
+		local borderColor = borderColorHex and CreateColorFromHexString(borderColorHex)
 		local halfW, halfH = width / 2, height / 2
 
 		if styleName == "Solid" then
@@ -105,12 +253,17 @@ do
 			frame.BorderSolidRight:SetPoint("BOTTOMRIGHT", frame, "CENTER", offsetX + halfW, offsetY - halfH)
 			frame.BorderSolidRight:SetWidth(size)
 
-			for _, strip in ipairs({ frame.BorderSolidTop, frame.BorderSolidBottom, frame.BorderSolidLeft, frame.BorderSolidRight }) do
-				if borderColor ~= nil then
-					strip:SetVertexColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a)
-				end
-				strip:Show()
+			if borderColor ~= nil then
+				frame.BorderSolidTop:SetVertexColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a)
+				frame.BorderSolidBottom:SetVertexColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a)
+				frame.BorderSolidLeft:SetVertexColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a)
+				frame.BorderSolidRight:SetVertexColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a)
 			end
+
+			frame.BorderSolidTop:Show()
+			frame.BorderSolidBottom:Show()
+			frame.BorderSolidLeft:Show()
+			frame.BorderSolidRight:Show()
 		elseif styleName == "None" then
 			frame.BorderSolidTop:Hide()
 			frame.BorderSolidBottom:Hide()
@@ -170,100 +323,40 @@ do
 			frame.BorderLeft:SetWidth(edgeSize)
 			frame.BorderRight:SetWidth(edgeSize)
 
-			local sliceTexCoords = {
-				[frame.BorderTopLeft] = {
-					0.5078125,
-					BACKDROP_COORD_START,
-					0.5078125,
-					BACKDROP_COORD_END,
-					0.6171875,
-					BACKDROP_COORD_START,
-					0.6171875,
-					BACKDROP_COORD_END,
-				},
-				[frame.BorderTopRight] = {
-					0.6328125,
-					BACKDROP_COORD_START,
-					0.6328125,
-					BACKDROP_COORD_END,
-					0.7421875,
-					BACKDROP_COORD_START,
-					0.7421875,
-					BACKDROP_COORD_END,
-				},
-				[frame.BorderBottomLeft] = {
-					0.7578125,
-					BACKDROP_COORD_START,
-					0.7578125,
-					BACKDROP_COORD_END,
-					0.8671875,
-					BACKDROP_COORD_START,
-					0.8671875,
-					BACKDROP_COORD_END,
-				},
-				[frame.BorderBottomRight] = {
-					0.8828125,
-					BACKDROP_COORD_START,
-					0.8828125,
-					BACKDROP_COORD_END,
-					0.9921875,
-					BACKDROP_COORD_START,
-					0.9921875,
-					BACKDROP_COORD_END,
-				},
-				[frame.BorderTop] = {
-					0.2578125,
-					edgeRepeatX,
-					0.3671875,
-					edgeRepeatX,
-					0.2578125,
-					BACKDROP_COORD_START,
-					0.3671875,
-					BACKDROP_COORD_START,
-				},
-				[frame.BorderBottom] = {
-					0.3828125,
-					edgeRepeatX,
-					0.4921875,
-					edgeRepeatX,
-					0.3828125,
-					BACKDROP_COORD_START,
-					0.4921875,
-					BACKDROP_COORD_START,
-				},
-				[frame.BorderLeft] = {
-					0.0078125,
-					BACKDROP_COORD_START,
-					0.0078125,
-					edgeRepeatY,
-					0.1171875,
-					BACKDROP_COORD_START,
-					0.1171875,
-					edgeRepeatY,
-				},
-				[frame.BorderRight] = {
-					0.1328125,
-					BACKDROP_COORD_START,
-					0.1328125,
-					edgeRepeatY,
-					0.2421875,
-					BACKDROP_COORD_START,
-					0.2421875,
-					edgeRepeatY,
-				},
-			}
+			-- the only size-dependent numbers in the whole slice map
+			SLICE_TEXCOORDS.BorderTop[2] = edgeRepeatX
+			SLICE_TEXCOORDS.BorderTop[4] = edgeRepeatX
+			SLICE_TEXCOORDS.BorderBottom[2] = edgeRepeatX
+			SLICE_TEXCOORDS.BorderBottom[4] = edgeRepeatX
+			SLICE_TEXCOORDS.BorderLeft[4] = edgeRepeatY
+			SLICE_TEXCOORDS.BorderLeft[8] = edgeRepeatY
+			SLICE_TEXCOORDS.BorderRight[4] = edgeRepeatY
+			SLICE_TEXCOORDS.BorderRight[8] = edgeRepeatY
 
 			local path = LibSharedMedia:Fetch(LibSharedMedia.MediaType.BORDER, styleName) or ""
 
-			for tex, entry in pairs(sliceTexCoords) do
-				tex:SetTexture(path, "REPEAT", "REPEAT")
-				tex:SetTexCoord(entry[1], entry[2], entry[3], entry[4], entry[5], entry[6], entry[7], entry[8])
+			for region, coordinates in pairs(SLICE_TEXCOORDS) do
+				local texture = frame[region]
+
+				texture:SetTexture(path, "REPEAT", "REPEAT")
+				texture:SetTexCoord(
+					coordinates[1],
+					coordinates[2],
+					coordinates[3],
+					coordinates[4],
+					coordinates[5],
+					coordinates[6],
+					coordinates[7],
+					coordinates[8]
+				)
+
 				if borderColor ~= nil then
-					tex:SetVertexColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a)
+					texture:SetVertexColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a)
 				else
-					tex:SetVertexColor(1, 1, 1, 1)
+					texture:SetVertexColor(1, 1, 1, 1)
 				end
-				tex:Show()
+
+				texture:Show()
 			end
 		end
 	end
@@ -318,6 +411,7 @@ end
 
 do
 	---@param fractionThreshold number?
+	---@return table[]
 	local function BuildCountdownBreakpoints(fractionThreshold)
 		local breakpoints = {}
 
@@ -338,13 +432,23 @@ do
 		return breakpoints
 	end
 
-	-- Reconfigures a countdown formatter's fraction cutoff in place. Each frame owns
-	-- its own formatter (thresholds are a per-element setting), so this is called on
-	-- layout apply rather than once globally.
-	---@param formatter NumericFormatter
-	---@param fractionThreshold number?
+	---@type table<number, table[]>
+	local breakpointsByThreshold = {}
+
+	---@type table<NumericFormatter, number>
+	local appliedByFormatter = setmetatable({}, { __mode = "k" })
+
 	function Private.Utils.ApplyFractionThreshold(formatter, fractionThreshold)
-		formatter:SetBreakpoints(BuildCountdownBreakpoints(fractionThreshold))
+		if appliedByFormatter[formatter] == fractionThreshold then
+			return
+		end
+
+		if breakpointsByThreshold[fractionThreshold] == nil then
+			breakpointsByThreshold[fractionThreshold] = BuildCountdownBreakpoints(fractionThreshold)
+		end
+
+		formatter:SetBreakpoints(breakpointsByThreshold[fractionThreshold])
+		appliedByFormatter[formatter] = fractionThreshold
 	end
 
 	---@return NumericFormatter
@@ -374,6 +478,16 @@ Private.Utils.Pools = {
 		"TargetedSpellsBarFrameTemplate",
 		---@param pool FramePool<TargetedSpellsBarMixin>
 		---@param frame TargetedSpellsBarMixin
+		function(pool, frame)
+			frame:Reset()
+		end
+	),
+	IconDuration = CreateFramePool(
+		"Frame",
+		UIParent,
+		"TargetedSpellsIconDurationFrameTemplate",
+		---@param pool FramePool<TargetedSpellsIconDurationMixin>
+		---@param frame TargetedSpellsIconDurationMixin
 		function(pool, frame)
 			frame:Reset()
 		end
@@ -526,9 +640,41 @@ local BAR_TEXTS = {
 		.InterruptSource
 }
 
+-- Memo for the reflow layouts (ComputeBarLayout / ComputeIconDurationLayout), keyed by the
+-- Elements table it was computed from and weak so a discarded group/scratch table takes its
+-- layout with it (same shape as Groups' sortedIdCache). A frame acquire computes the same
+-- layout three to four times over — renderer, border, glow width — from a table that is not
+-- mutated in between.
+--
+-- One cache serves both functions: an Elements table belongs to exactly one template, and a
+-- template swap replaces it wholesale (Groups.SetTemplate) rather than mutating it, so the two
+-- can never collide on a key.
+--
+-- The layout is only ever read, never mutated, so handing every caller the same table is
+-- safe. Elements tables ARE mutated in place in two places (the Designer's live scratch
+-- and Design.BackfillElements), and both call InvalidateLayout.
+---@type table<table, table<any, any>>
+local layoutCache = setmetatable({}, { __mode = "k" })
+
+-- Drops the memoised layout for an Elements table. Must be called by anything that
+-- mutates one in place; replacing the table wholesale needs no call (the new table simply
+-- has no entry).
+---@param elements table<Element, table<string, any>>?
+function Private.Utils.InvalidateLayout(elements)
+	if elements ~= nil then
+		layoutCache[elements] = nil
+	end
+end
+
 ---@param elements table<Element, table<string, any>>
 ---@return table<any, any> layout keyed by Element plus `gutterWidth`/`barWidth`
 function Private.Utils.ComputeBarLayout(elements)
+	local cached = layoutCache[elements]
+
+	if cached ~= nil then
+		return cached
+	end
+
 	local core = elements[Private.Enum.Element.ProgressBar]
 	local total = (core and core.width) or 0
 	local height = (core and core.height) or 0
@@ -613,12 +759,65 @@ function Private.Utils.ComputeBarLayout(elements)
 		end
 	end
 
+	layoutCache[elements] = layout
+
+	return layout
+end
+
+local DURATION_WIDTH_RATIO = 2.6
+
+---@param elements table<Element, table<string, any>>
+---@return table<any, any> layout keyed by the string/Element keys listed above
+function Private.Utils.ComputeIconDurationLayout(elements)
+	local cached = layoutCache[elements]
+
+	if cached ~= nil then
+		return cached
+	end
+
+	local icon = elements[Private.Enum.Element.Icon]
+	local duration = elements[Private.Enum.Element.Duration]
+
+	local iconWidth = (icon and icon.width) or 0
+	local iconHeight = (icon and icon.height) or 0
+	local gap = (duration and duration.gap) or 0
+	local fontSize = (duration and duration.countdownFontSize) or 0
+	local durationWidth = fontSize * DURATION_WIDTH_RATIO
+	local totalWidth = iconWidth * 2 + gap * 2 + durationWidth
+
+	-- each cell's centre sits half an icon in from its own edge of the assembly
+	local cellOffset = totalWidth / 2 - iconWidth / 2
+
+	local layout = {
+		totalWidth = totalWidth,
+		durationWidth = durationWidth,
+		iconLeft = { centerX = -cellOffset, centerY = 0, width = iconWidth, height = iconHeight },
+		iconRight = { centerX = cellOffset, centerY = 0, width = iconWidth, height = iconHeight },
+		duration = {
+			centerX = 0,
+			centerY = (duration and duration.y) or 0,
+			width = durationWidth,
+			height = fontSize,
+		},
+	}
+
+	-- designer-facing aliases: one marker per configurable element
+	layout[Private.Enum.Element.Icon] = {
+		centerX = 0,
+		centerY = 0,
+		width = totalWidth,
+		height = iconHeight,
+	}
+	layout[Private.Enum.Element.Duration] = layout.duration
+
+	layoutCache[elements] = layout
+
 	return layout
 end
 
 -- Visual extent of a group's layout, for the edit-mode placeholder outline. A bar's
--- gutter + bar fill the full frame, so its extent is simply the core box; an icon group
--- has no ProgressBar and falls back to the free-positioned union.
+-- gutter + bar fill the full frame, so its extent is simply the core box; an icon+duration
+-- assembly likewise fills its frame; a plain icon group falls back to the free-positioned union.
 ---@param elements table<Element, table<string, any>>
 ---@return { width: number, height: number, offsetX: number, offsetY: number }
 function Private.Utils.ComputeGroupExtent(elements)
@@ -628,7 +827,47 @@ function Private.Utils.ComputeGroupExtent(elements)
 		return { width = core.width or 0, height = core.height or 0, offsetX = 0, offsetY = 0 }
 	end
 
+	-- the Duration element exists only on the icon+duration template, whose two cells and text
+	-- span more than the single Icon box ComputeElementExtent would find
+	if elements[Private.Enum.Element.Duration] ~= nil then
+		local layout = Private.Utils.ComputeIconDurationLayout(elements)
+		local icon = elements[Private.Enum.Element.Icon]
+
+		return {
+			width = layout.totalWidth,
+			height = (icon and icon.height) or 0,
+			offsetX = 0,
+			offsetY = 0,
+		}
+	end
+
 	return Private.Utils.ComputeElementExtent(elements)
+end
+
+-- The box a group's frames occupy for stacking purposes, which is NOT always the core
+-- element's box: the icon+duration core is one icon, but the frame is the whole assembly.
+-- GroupController:Relayout feeds this into CollectLayoutingArguments.
+--
+-- Getting this wrong is invisible in Vertical mode — AdjustLayout anchors each frame to the
+-- spine texture point-to-point, so a too-narrow spine still centres the frame — and only shows
+-- as wrong spacing in Horizontal. Hence a named helper rather than an inline core read.
+---@param template TargetedSpellsTemplate
+---@param elements table<Element, table<string, any>>
+---@return number width, number height
+function Private.Utils.ComputeGroupFootprint(template, elements)
+	if template == Private.Enum.Template.IconDuration then
+		local icon = elements[Private.Enum.Element.Icon]
+		local layout = Private.Utils.ComputeIconDurationLayout(elements)
+
+		return layout.totalWidth, (icon and icon.height) or 0
+	end
+
+	-- every other template's frame IS its core element's box
+	local coreTag = template == Private.Enum.Template.Bar and Private.Enum.Element.ProgressBar
+		or Private.Enum.Element.Icon
+	local core = elements[coreTag]
+
+	return (core and core.width) or 0, (core and core.height) or 0
 end
 
 function Private.Utils.ShowMigrationPopup()
@@ -645,48 +884,6 @@ function Private.Utils.ShowMigrationPopup()
 	end)
 end
 
-function Private.Utils.MigratePartySettingsToV3(existing)
-	local defaults = Private.Settings.GetPartyDefaultSettings()
-
-	local compatibleKeys = {
-		"Enabled",
-		"LoadConditionContentType",
-		"LoadConditionRole",
-		"Font",
-		"GlowType",
-		"FontFlags",
-	}
-
-	for _, key in ipairs(compatibleKeys) do
-		local value = existing[key]
-
-		if value ~= nil and type(value) == type(defaults[key]) then
-			defaults[key] = value
-		end
-	end
-
-	return defaults
-end
-
-function Private.Utils.ApplyMigration(key, kind, defaults)
-	local tableRef = kind == Private.Enum.FrameKind.Self and TargetedSpellsSaved.Settings.Self
-		or TargetedSpellsSaved.Settings.Party
-
-	if key == "Grow" and tableRef[key] == 1 then
-		tableRef[key] = Private.Enum.Grow.Start
-	end
-
-	if key == "GlowType" and tableRef[key] == 3 then
-		tableRef[key] = Private.Enum.GlowType.PixelGlow
-	end
-
-	if key == "ShowBorder" then
-		local shown = tableRef[key]
-		tableRef[key] = nil
-		tableRef.BorderStyle = shown and defaults.BorderStyle or "None"
-	end
-end
-
 function Private.Utils.AdjustLayout(
 	frames,
 	layouting,
@@ -699,21 +896,45 @@ function Private.Utils.AdjustLayout(
 	local prevStatusBarTexture = nil
 
 	for _, frame in ipairs(frames) do
-		if layouting.isHorizontal then
-			frame.Bar:SetSize(layouting.x, layouting.y)
-		else
-			frame.Bar:SetSize(layouting.y, layouting.x)
+		-- Spine binding: the Bar's size/orientation/fill direction and the frame↔Bar
+		-- parenting are a pure function of the group's Direction/Grow/core size and of the
+		-- container, so they change on acquire or on a Reconfigure — never because a sibling
+		-- frame came or went. A relayout that changes only the anchor chain skips them. The
+		-- stamp lives on the frame and is cleared by Reset, so a pooled frame always rebinds.
+		if
+			frame.boundBarParent ~= barParent
+			or frame.boundX ~= layouting.x
+			or frame.boundY ~= layouting.y
+			or frame.boundIsHorizontal ~= layouting.isHorizontal
+			or frame.boundIsGrowEnd ~= layouting.isGrowEnd
+			-- the frame's own level is derived from the Bar's, so a level the Bar picked up
+			-- from elsewhere has to re-derive it; keeps the skip self-healing
+			or frame.boundBarLevel ~= frame.Bar:GetFrameLevel()
+		then
+			if layouting.isHorizontal then
+				frame.Bar:SetSize(layouting.x, layouting.y)
+			else
+				frame.Bar:SetSize(layouting.y, layouting.x)
+			end
+
+			frame.Bar:SetOrientation(layouting.orientation)
+			frame.Bar:SetReverseFill(layouting.isGrowEnd)
+			frame.Bar:SetParent(barParent)
+			frame:SetParent(frame.Bar)
+			frame:SetFrameLevel(frame.Bar:GetFrameLevel() + 10)
+
+			frame.boundBarParent = barParent
+			frame.boundX = layouting.x
+			frame.boundY = layouting.y
+			frame.boundIsHorizontal = layouting.isHorizontal
+			frame.boundIsGrowEnd = layouting.isGrowEnd
+			frame.boundBarLevel = frame.Bar:GetFrameLevel()
 		end
 
 		local texture = frame.Bar:GetStatusBarTexture()
 		frame:ClearAllPoints()
 		frame:SetPoint(layouting.originPoint, texture, layouting.originPoint)
 
-		frame.Bar:SetOrientation(layouting.orientation)
-		frame.Bar:SetReverseFill(layouting.isGrowEnd)
-		frame.Bar:SetParent(barParent)
-		frame:SetParent(frame.Bar)
-		frame:SetFrameLevel(frame.Bar:GetFrameLevel() + 10)
 		frame.Bar:ClearAllPoints()
 		frame.Bar:SetValue(frame:GetAlpha())
 
@@ -803,10 +1024,10 @@ do
 		return editModeFrameByGroupId[groupId]
 	end
 
-	-- v4 profile import: accepts a v4 payload (has Groups) or a v3 payload
-	-- (Self/Party), normalising the latter through the migration first, then
-	-- adopts it wholesale — profile import means replacing your config. Returns
-	-- whether anything actually changed.
+	-- Profile import: accepts a v4 payload (has Groups) or a v3 payload (Self/Party),
+	-- normalising the latter through the migration first, then adopts it wholesale —
+	-- profile import means replacing your config. Returns whether anything actually
+	-- changed.
 	---@param result table
 	---@return boolean
 	local function ImportV4Profile(result)
@@ -817,8 +1038,13 @@ do
 				return false
 			end
 
-			-- a v3 profile string imported into a v4 config: migrate it first
-			local temp = { Settings = { Self = result.Self, Party = result.Party } }
+			-- A v3 profile string imported into a v4 config: migrate it first. The
+			-- warning flag is pre-stamped because an exported profile is already
+			-- v3-shaped — only a live pre-v3 config needs the party reset.
+			local temp = {
+				V3MigrationWarningSeen = true,
+				Settings = { Self = result.Self, Party = result.Party },
+			}
 			Private.Migration.Apply(temp)
 			payload = temp
 		end
@@ -851,14 +1077,45 @@ do
 						existing[key] = value
 					end
 				end
-
-				TargetedSpellsSaved.Groups[id].Id = id
 			end
+
+			-- An imported payload may be as incomplete as whatever version exported it.
+			-- Conform re-stamps every Id from its key and heals missing container/element
+			-- fields, so a sparse imported group is completed rather than left partial.
+			Private.Groups.Conform(TargetedSpellsSaved.Groups)
 
 			-- ids were added/removed in place above; drop the cached sort order
 			Private.Groups.InvalidateOrder(TargetedSpellsSaved.Groups)
 
-			TargetedSpellsSaved.TextToSpeech = Private.Utils.DeepCopy(payload.TextToSpeech)
+			-- Same in-place rule as the groups above, and it has to reach one level
+			-- deeper: the edit-mode announcement dropdowns capture the
+			-- AnnounceUntargetedSpells / AnnounceTargetedSpells tables themselves
+			-- (EditMode.lua, MultiDropdown), so replacing either one leaves the panel
+			-- reading and writing an orphan until the next reload.
+			-- walked as a plain map here, not as the typed record it is elsewhere
+			---@type table<string, any>
+			local incomingTextToSpeech = Private.Utils.DeepCopy(payload.TextToSpeech)
+			---@type table<string, any>
+			local textToSpeech = TargetedSpellsSaved.TextToSpeech
+
+			for key in pairs(textToSpeech) do
+				if incomingTextToSpeech[key] == nil then
+					textToSpeech[key] = nil
+				end
+			end
+
+			for key, value in pairs(incomingTextToSpeech) do
+				local existing = textToSpeech[key]
+
+				if type(existing) == "table" and type(value) == "table" then
+					table.wipe(existing)
+					for id, enabled in pairs(value) do
+						existing[id] = enabled
+					end
+				else
+					textToSpeech[key] = value
+				end
+			end
 
 			Private.EventRegistry:TriggerEvent(Private.Enum.Events.PROFILE_IMPORTED)
 		end
@@ -882,156 +1139,16 @@ do
 			return false
 		end
 
-		-- once migrated to the v4 group model, import runs the v4 path (which
-		-- also accepts v3 strings by migrating them). Until then, the v3 path below.
-		if TargetedSpellsSaved.Groups ~= nil then
-			return ImportV4Profile(result)
-		end
-
-		local hasAnyChange = false
-
-		---@param tableRef SavedVariablesSettingsParty|SavedVariablesSettingsSelf
-		---@param kindString string
-		---@param sourceData table
-		---@param defaults table
-		---@param eventKeys table
-		local function ImportKindSettings(tableRef, kindString, sourceData, defaults, eventKeys)
-			local anyPrimaryLoadConditionIsDisabled = false
-
-			local enumByKey = {
-				LoadConditionContentType = Private.Enum.ContentType,
-				LoadConditionRole = Private.Enum.Role,
-				FontFlags = Private.Enum.FontFlags,
-				FeatureFlags = Private.Enum.FeatureFlag,
-				AnnounceUntargetedSpells = Private.Enum.NpcType,
-				AnnounceTargetedSpells = Private.Enum.NpcType,
-			}
-
-			local isLoadConditionKey = {
-				LoadConditionContentType = true,
-				LoadConditionRole = true,
-			}
-
-			for key, defaultValue in pairs(defaults) do
-				local newValue = sourceData[key]
-				local expectedType = type(defaultValue)
-
-				if newValue ~= nil and type(newValue) == expectedType then
-					local eventKey = eventKeys[key]
-					local hasChanges = false
-
-					if expectedType == "table" then
-						local enumToCompareAgainst = enumByKey[key]
-
-						if enumToCompareAgainst then
-							local newTable = {}
-							local allDisabled = true
-
-							for _, id in pairs(enumToCompareAgainst) do
-								if newValue[id] == nil then
-									newTable[id] = tableRef[key][id]
-								else
-									newTable[id] = newValue[id]
-
-									if newValue[id] ~= tableRef[key][id] then
-										hasChanges = true
-									end
-
-									if newValue[id] then
-										allDisabled = false
-									end
-								end
-							end
-
-							if allDisabled and isLoadConditionKey[key] then
-								anyPrimaryLoadConditionIsDisabled = true
-							end
-
-							if hasChanges then
-								tableRef[key] = newTable
-								Private.Utils.ApplyMigration(key, kindString, defaults)
-								Private.EventRegistry:TriggerEvent(
-									Private.Enum.Events.SETTING_CHANGED,
-									eventKey,
-									newTable
-								)
-							end
-						end
-					elseif newValue ~= tableRef[key] then
-						tableRef[key] = newValue
-						Private.Utils.ApplyMigration(key, kindString, defaults)
-						hasChanges = true
-
-						if eventKey then
-							Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, eventKey, newValue)
-						end
-					end
-
-					if hasChanges then
-						hasAnyChange = true
-					end
-				end
-			end
-
-			if anyPrimaryLoadConditionIsDisabled then
-				tableRef.Enabled = false
-				Private.EventRegistry:TriggerEvent(Private.Enum.Events.SETTING_CHANGED, eventKeys.Enabled, false)
-			end
-		end
-
-		TargetedSpellsSaved.V3MigrationWarningSeen = true
-
-		for kind, kindString in pairs(Private.Enum.FrameKind) do
-			local sourceData = result[kind]
-
-			if sourceData ~= nil then
-				local tableRef = TargetedSpellsSaved.Settings[kind]
-				local isSelf = kind == "Self"
-				local defaults = isSelf and Private.Settings.GetSelfDefaultSettings()
-					or Private.Settings.GetPartyDefaultSettings()
-				local eventKeys = isSelf and Private.Settings.Keys.Self or Private.Settings.Keys.Party
-
-				ImportKindSettings(tableRef, kindString, sourceData, defaults, eventKeys)
-
-				if sourceData.Position ~= nil then
-					local point, x, y = sourceData.Position.point, sourceData.Position.x, sourceData.Position.y
-					-- v3 import path (only reachable pre-migration); frames are keyed by group id
-					local frame = editModeFrameByGroupId[isSelf and 1 or 2]
-
-					if
-						frame ~= nil
-						and (point ~= tableRef.Position.point or x ~= tableRef.Position.x or y ~= tableRef.Position.y)
-					then
-						frame:ClearAllPoints()
-						PixelUtil.SetPoint(frame, "CENTER", UIParent, point, x, y)
-
-						tableRef.Position.point = point
-						tableRef.Position.x = x
-						tableRef.Position.y = y
-
-						local event = isSelf and Private.Enum.Events.SETTING_CHANGED
-							or Private.Enum.Events.SETTING_CHANGED
-						Private.EventRegistry:TriggerEvent(event, point, x, y)
-					end
-				end
-			end
-		end
-
-		return hasAnyChange
+		return ImportV4Profile(result)
 	end
 
+	-- serialises the group model + hoisted TTS; Init guarantees both exist
 	function Private.Utils.Export()
-		local payload
-		if TargetedSpellsSaved.Groups ~= nil then
-			-- v4: serialise the group model + hoisted TTS, not the old Settings tree
-			payload = {
-				SchemaVersion = TargetedSpellsSaved.SchemaVersion,
-				Groups = TargetedSpellsSaved.Groups,
-				TextToSpeech = TargetedSpellsSaved.TextToSpeech,
-			}
-		else
-			payload = TargetedSpellsSaved.Settings
-		end
+		local payload = {
+			SchemaVersion = TargetedSpellsSaved.SchemaVersion,
+			Groups = TargetedSpellsSaved.Groups,
+			TextToSpeech = TargetedSpellsSaved.TextToSpeech,
+		}
 
 		return C_EncodingUtil.EncodeBase64(C_EncodingUtil.SerializeCBOR(payload))
 	end

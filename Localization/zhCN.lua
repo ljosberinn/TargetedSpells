@@ -112,13 +112,7 @@ L.Settings.GlowTypeLabels = {
 	[Private.Enum.GlowType.Star4] = "四星发光",
 }
 
-L.Settings.ShowDurationLabel = "显示持续时间"
-
 L.Settings.IndicateInterruptsLabel = "标记可打断法术"
-
-L.Settings.RenderInterruptSourceNameLabel = "显示打断来源名称"
-
-L.Settings.ShowSwipeLabel = "显示滑动"
 
 L.Settings.BorderStyleLabel = "边框样式"
 L.Settings.BorderStyleTooltip = nil
@@ -137,8 +131,6 @@ L.Settings.ProgressBarColorLabel = "进度条颜色"
 L.Settings.ProgressBarColorTooltip =
 	"不透明度仅在编辑模式中可用，因为默认设置界面未公开此选项。"
 
-L.Settings.MirrorLayoutLabel = "镜像布局"
-
 L.Settings.TextToSpeechVoiceLabel = "TTS Voice"
 L.Settings.TextToSpeechVoiceTooltip = "Voice for TTS announcements. Shared between Self and Party settings."
 
@@ -151,18 +143,9 @@ L.Settings.AnnounceTargetedSpellsTooltip = "TTS for targeted spells by NPC type.
 L.Settings.NpcTypeLabels = {
 	[Private.Enum.NpcType.Boss] = "Bosses",
 	[Private.Enum.NpcType.Lieutenant] = "Lieutenants",
-	[Private.Enum.NpcType.Caster] = "Has Mana",
-	[Private.Enum.NpcType.Melee] = "Regular Melee",
+	[Private.Enum.NpcType.Other] = "其他单位",
 	[Private.Enum.NpcType.Minion] = "Minions",
 }
-
-L.Settings.HideUntargetedSpellsLabel = "隐藏无目标法术"
-
-L.Settings.HideTargetedSpellsLabel = "隐藏有目标法术"
-
-L.Settings.SelfOnlyLabel = "仅显示针对玩家的法术"
-
-L.Settings.InlineDurationLabel = "内嵌持续时间位置"
 
 L.Settings.UseInterruptabilityColorsLabel = "使用打断颜色"
 L.Settings.UseInterruptabilityColorsTooltip = nil
@@ -191,26 +174,3 @@ L.Settings.FontTooltip = nil
 L.Settings.FeatureFlagsLabel = "功能"
 L.Settings.FeatureFlagsTooltip = nil
 
-L.Settings.FeatureFlagLabels = {
-	[Private.Enum.FeatureFlag.GlowImportant] = L.Settings.GlowImportantLabel,
-	[Private.Enum.FeatureFlag.OnlyImportant] = L.Settings.OnlyImportantLabel,
-	[Private.Enum.FeatureFlag.ShowDuration] = L.Settings.ShowDurationLabel,
-	[Private.Enum.FeatureFlag.ShowSwipe] = L.Settings.ShowSwipeLabel,
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
-	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,
-	[Private.Enum.FeatureFlag.ShowIcon] = "显示图标",
-	[Private.Enum.FeatureFlag.ShowTargetMarker] = "显示目标标记",
-	[Private.Enum.FeatureFlag.ShowSpellName] = "显示法术名称",
-	[Private.Enum.FeatureFlag.ShowTargetName] = "显示目标名称",
-	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "显示目标职业颜色",
-	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
-	[Private.Enum.FeatureFlag.InlineDuration] = L.Settings.InlineDurationLabel,
-	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
-	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
-	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,
-}
-
-L.Settings.FeatureFlagSettingTitles = {
-	[Private.Enum.FeatureFlag.GlowImportant] = "显示",
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = "打断设置",
-}

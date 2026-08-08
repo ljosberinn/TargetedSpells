@@ -59,7 +59,7 @@ local previewFontCounter = 0
 
 ---@param path string
 ---@return string globalFontName
-local function previewFontObject(path)
+local function PreviewFontObject(path)
 	if previewFontCache[path] then
 		return previewFontCache[path]
 	end
@@ -116,12 +116,22 @@ local ELEMENT_ORDER = {
 		Element.InterruptShield,
 		Element.Border,
 	},
+	-- one Icon entry, deliberately: a single Icon element drives both cells, so listing it
+	-- once is what makes "edit the icon, both mirror" the only possible behaviour
+	[Private.Enum.Template.IconDuration] = {
+		Element.Icon,
+		Element.Duration,
+		Element.Overlay,
+		Element.Cooldown,
+		Element.Border,
+	},
 }
 
 -- The core (always-selected fallback) element per template.
 local CORE_ELEMENT = {
 	[Private.Enum.Template.Icon] = Element.Icon,
 	[Private.Enum.Template.Bar] = Element.ProgressBar,
+	[Private.Enum.Template.IconDuration] = Element.Icon,
 }
 
 ---@class TargetedSpellsDesignerFrame : Frame
@@ -227,6 +237,8 @@ end
 function DesignerMixin:GroupPool(group)
 	if group.Template == Private.Enum.Template.Icon then
 		return Private.Utils.Pools.Icon
+	elseif group.Template == Private.Enum.Template.IconDuration then
+		return Private.Utils.Pools.IconDuration
 	end
 
 	return Private.Utils.Pools.Bar
@@ -247,6 +259,7 @@ end
 -- saved layout — so later widget edits preview before Apply (v4 plan step 3a).
 function DesignerMixin:StartDemo()
 	local group = self.selectedGroupId and TargetedSpellsSaved.Groups[self.selectedGroupId]
+
 	if group == nil or not self:IsShown() then
 		return
 	end
@@ -336,6 +349,10 @@ function DesignerMixin:PopulateDemoContent()
 		self:StyleDemoText(frame.ProgressBar.InterruptSource, self.scratchElements[Element.InterruptSource], playerName,
 			classColor)
 
+		-- StyleDemoText above just settled TargetName's visibility, which is what decides
+		-- whether SpellName keeps its cap; re-apply it so the preview matches a live bar
+		frame:ApplySpellNameWidth()
+
 		local shield = self.scratchElements[Element.InterruptShield]
 		frame.CustomElementsFrame.InterruptShield:Show()
 		frame.CustomElementsFrame.InterruptShield:SetAlphaFromBoolean(secretwrap(shield ~= nil and shield.active == true))
@@ -403,18 +420,18 @@ end
 -- from the stored record (never by querying the demo frame — its sizes are secret-tainted
 -- by the cast path and error on arithmetic).
 --
--- The bar template reflows, so its geometry comes from the shared Private.Utils.
--- ComputeBarLayout (passed in as `barLayout`) rather than the raw record, keeping the
+-- The reflowing templates (bar, icon+duration) take their geometry from the shared
+-- Private.Utils layout (passed in as `layout`) rather than the raw record, keeping the
 -- markers on top of what the preview actually draws. The icon template has no reflow and
 -- uses the record directly: boxes use their stored size/offset; text is edge-anchored by
 -- justifyH, so the CENTER-placed marker is shifted half its nominal width to put the
 -- justify edge on x.
 ---@param record table<string, any>
 ---@param tag Element?
----@param barLayout table?
-function DesignerMixin:ElementMarkerRect(record, tag, barLayout)
-	if barLayout ~= nil then
-		local geom = barLayout[tag]
+---@param layout table?
+function DesignerMixin:ElementMarkerRect(record, tag, layout)
+	if layout ~= nil then
+		local geom = layout[tag]
 		if geom == nil then
 			return nil -- footprint-less element, or an inactive gutter slot (no marker)
 		end
@@ -457,14 +474,21 @@ function DesignerMixin:ElementMarkerRect(record, tag, barLayout)
 	return nil
 end
 
--- The reflow layout for the current scratch bar, or nil for the icon template (which does
--- not reflow). Markers derive their positions from this so they track ComputeBarLayout.
-function DesignerMixin:ScratchBarLayout()
-	if self.scratchTemplate ~= Private.Enum.Template.Bar or self.scratchElements == nil then
+-- The reflow layout for the current scratch elements, or nil for the icon template (which
+-- does not reflow, and whose markers come straight off each record's x/y). Markers derive
+-- their positions from this so they track exactly what the renderer will draw.
+function DesignerMixin:ScratchLayout()
+	if self.scratchElements == nil then
 		return nil
 	end
 
-	return Private.Utils.ComputeBarLayout(self.scratchElements)
+	if self.scratchTemplate == Private.Enum.Template.Bar then
+		return Private.Utils.ComputeBarLayout(self.scratchElements)
+	elseif self.scratchTemplate == Private.Enum.Template.IconDuration then
+		return Private.Utils.ComputeIconDurationLayout(self.scratchElements)
+	end
+
+	return nil
 end
 
 -- Lazily builds a marker's visuals on first acquire: a mouseover fill (auto-shown
@@ -517,14 +541,14 @@ function DesignerMixin:BuildMarkers()
 		return
 	end
 
-	local barLayout = self:ScratchBarLayout()
+	local layout = self:ScratchLayout()
 
 	for elementTag in pairs(Private.Design.GetSchema(self.scratchTemplate)) do
 		local record = self.scratchElements[elementTag]
 		local x, y, width, height = nil, nil, nil, nil
 
 		if record ~= nil then
-			x, y, width, height = self:ElementMarkerRect(record, elementTag, barLayout)
+			x, y, width, height = self:ElementMarkerRect(record, elementTag, layout)
 		end
 
 		if width ~= nil then
@@ -725,6 +749,9 @@ function DesignerMixin:OnWidgetValueChanged(setting, value)
 	end
 
 	record[setting] = value
+	-- the scratch table is mutated in place and previewed live, so its memoised bar layout
+	-- has to be dropped explicitly (Utils.ComputeBarLayout keys the memo on the table)
+	Private.Utils.InvalidateLayout(self.scratchElements)
 	self:ApplyScratchToDemo()
 
 	-- toggling `active` changes the bar's reflow gutter set, which adds/removes a marker
@@ -867,11 +894,12 @@ function DesignerMixin:PopulateRadioMenu(dropdown, setting, options)
 
 			if option.font then
 				radio:AddInitializer(function(button)
-					button.fontString:SetFontObject(previewFontObject(option.font))
+					button.fontString:SetFontObject(PreviewFontObject(option.font))
 				end)
 			end
 		end
 	end)
+
 	dropdown:Show()
 end
 
@@ -987,6 +1015,7 @@ function DesignerMixin:OnFontFlagChanged(dropdown, record)
 	end
 
 	dropdown:OverrideText(self:FontFlagsSummary(self:SelectedScratchRecord()[record.setting]))
+	Private.Utils.InvalidateLayout(self.scratchElements)
 	self:ApplyScratchToDemo()
 	self:UpdateMarkerRects()
 	self:MarkDirty()
@@ -1163,6 +1192,7 @@ function DesignerMixin:ResetSelectedElement()
 	end
 
 	self.scratchElements[self.selectedElement] = defaultRecord
+	Private.Utils.InvalidateLayout(self.scratchElements)
 	self:ApplyScratchToDemo()
 	-- BuildMarkers repositions markers from the reset offsets and re-runs
 	-- SelectElement, which rebuilds the panel widgets with the restored values
@@ -1189,10 +1219,12 @@ function DesignerMixin:ApplyScratchToDemo()
 	-- icon when spellId is nil, which makes edits like icon-zoom look like the whole
 	-- icon changed. Preserve the current texture across the refresh so only the edited
 	-- property (e.g. the zoom texcoord) visibly changes.
+	-- restore through SetIconTexture, not self.Icon: a template may draw the icon more than
+	-- once (icon+duration), and writing the region directly would leave its copies disagreeing
 	local previousTexture = self.demoFrame.Icon and self.demoFrame.Icon:GetTexture()
 	self.demoFrame:SetSpellId(self.demoFrame:GetSpellId())
-	if previousTexture ~= nil and self.demoFrame.Icon ~= nil then
-		self.demoFrame.Icon:SetTexture(previousTexture)
+	if previousTexture ~= nil then
+		self.demoFrame:SetIconTexture(previousTexture)
 	end
 
 	if self.demoFrame.SetPreviewBarColor then
@@ -1207,13 +1239,13 @@ end
 -- Repositions/resizes existing selection markers from the scratch layout (cheaper
 -- than a full BuildMarkers rebuild for a value edit).
 function DesignerMixin:UpdateMarkerRects()
-	local barLayout = self:ScratchBarLayout()
+	local layout = self:ScratchLayout()
 
 	for elementTag, marker in pairs(self.markers) do
 		local record = self.scratchElements[elementTag]
 
 		if record ~= nil then
-			local x, y, width, height = self:ElementMarkerRect(record, elementTag, barLayout)
+			local x, y, width, height = self:ElementMarkerRect(record, elementTag, layout)
 
 			if width ~= nil then
 				marker:Show()
@@ -1487,50 +1519,47 @@ function DesignerMixin:Initialize()
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.PROFILE_IMPORTED, RebuildIfShown)
 end
 
--- Lazily built on first Toggle so nothing is created for users who never open it.
-local designerFrame
-
----@return TargetedSpellsDesignerFrame
-local function BuildFrame()
-	local frame = CreateFrame("Frame", "TargetedSpellsDesigner", UIParent, "ButtonFrameTemplate")
-
-	-- Strip the game-panel weight ButtonFrameTemplate carries but we don't want:
-	-- the portrait, the bottom button bar, and the default inset (the canvas
-	-- supplies its own InsetFrameTemplate).
-	ButtonFrameTemplate_HidePortrait(frame)
-	ButtonFrameTemplate_HideButtonBar(frame)
-	frame.Inset:Hide()
-
-	frame:SetTitle(Private.L.Designer.Title)
-	frame:SetSize(FRAME_WIDTH, FRAME_HEIGHT)
-	frame:SetPoint("CENTER")
-	frame:SetFrameStrata("HIGH")
-	frame:SetClampedToScreen(true)
-
-	frame:SetMovable(true)
-	frame:EnableMouse(true)
-	frame:RegisterForDrag("LeftButton")
-	frame:SetScript("OnDragStart", frame.StartMoving)
-	frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
-
-	-- Esc closes it, like a native panel.
-	table.insert(UISpecialFrames, frame:GetName())
-
-	Mixin(frame, DesignerMixin)
-	frame:Initialize()
-
-	frame:Hide()
-
-	return frame
-end
-
 ---@class TargetedSpellsDesigner
 Private.Designer = {}
 
--- Opens the designer if hidden, closes it if shown. Builds the window on first use.
-function Private.Designer.Toggle()
-	designerFrame = designerFrame or BuildFrame()
-	designerFrame:SetShown(not designerFrame:IsShown())
+do
+	---@type TargetedSpellsDesignerFrame?
+	local designerFrame
+
+	-- Opens the designer if hidden, closes it if shown. Builds the window on first use.
+	function Private.Designer.Toggle()
+		if designerFrame == nil then
+			designerFrame = CreateFrame("Frame", "TargetedSpellsDesigner", UIParent, "ButtonFrameTemplate")
+
+			-- Strip the game-panel weight ButtonFrameTemplate carries but we don't want:
+			-- the portrait, the bottom button bar, and the default inset (the canvas
+			-- supplies its own InsetFrameTemplate).
+			ButtonFrameTemplate_HidePortrait(designerFrame)
+			ButtonFrameTemplate_HideButtonBar(designerFrame)
+			designerFrame.Inset:Hide()
+
+			designerFrame:SetTitle(Private.L.Designer.Title)
+			designerFrame:SetSize(FRAME_WIDTH, FRAME_HEIGHT)
+			designerFrame:SetPoint("CENTER")
+			designerFrame:SetFrameStrata("HIGH")
+			designerFrame:SetClampedToScreen(true)
+			designerFrame:SetMovable(true)
+			designerFrame:EnableMouse(true)
+			designerFrame:RegisterForDrag("LeftButton")
+			designerFrame:SetScript("OnDragStart", designerFrame.StartMoving)
+			designerFrame:SetScript("OnDragStop", designerFrame.StopMovingOrSizing)
+
+			-- Esc closes it, like a native panel.
+			table.insert(UISpecialFrames, designerFrame:GetName())
+
+			Mixin(designerFrame, DesignerMixin)
+			designerFrame:Initialize()
+
+			designerFrame:Hide()
+		end
+
+		designerFrame:SetShown(not designerFrame:IsShown())
+	end
 end
 
 Private.Utils.RegisterSlashCommand("design", Private.L.SlashCommands.DesignDescription, function()

@@ -3,30 +3,33 @@
 local b = require("spec.bootstrap")
 local Private = b.Private
 local Enum = Private.Enum
-local Keys = Private.Settings.Keys
+local Element = Enum.Element
 
 describe("Export", function()
 	before_each(function()
-		b.reset()
+		b.resetToV4()
 	end)
 
 	it("returns a non-empty string", function()
-		local s = Private.Utils.Export()
-		assert.is_string(s)
-		assert.is_true(#s > 0)
+		local exported = Private.Utils.Export()
+		assert.is_string(exported)
+		assert.is_true(#exported > 0)
 	end)
 
-	it("decoded output contains Self and Party keys", function()
+	it("serialises the group model, not the retired Settings tree", function()
 		local decoded = b.exportDecoded()
 		assert.is_table(decoded)
-		assert.is_table(decoded.Self)
-		assert.is_table(decoded.Party)
+		assert.equals(4, decoded.SchemaVersion)
+		assert.is_table(decoded.Groups)
+		assert.is_table(decoded.TextToSpeech)
+		assert.is_nil(decoded.Self)
+		assert.is_nil(decoded.Party)
 	end)
 end)
 
 describe("Round-trip (no change)", function()
 	before_each(function()
-		b.reset()
+		b.resetToV4()
 	end)
 
 	it("importing an exported snapshot returns false when nothing changed", function()
@@ -39,120 +42,110 @@ describe("Round-trip (no change)", function()
 	end)
 end)
 
-describe("Scalar import", function()
+describe("Group import", function()
 	before_each(function()
-		b.reset()
+		b.resetToV4()
 	end)
 
-	it("detects a changed Width and restores the exported value", function()
-		local exported = Private.Utils.Export() -- Width = 48
-		b.savedVars().Settings.Self.Width = 99
-		assert.is_true(Private.Utils.Import(exported))
-		assert.equals(48, b.savedVars().Settings.Self.Width)
-	end)
-
-	it("fires SETTING_CHANGED with the correct key for a changed scalar", function()
+	it("restores a changed container field", function()
 		local exported = Private.Utils.Export()
-		b.savedVars().Settings.Self.Width = 99
+		b.savedVars().Groups[1].Gap = 999
+		assert.is_true(Private.Utils.Import(exported))
+		assert.equals(2, b.savedVars().Groups[1].Gap)
+	end)
+
+	it("restores a changed element field", function()
+		local exported = Private.Utils.Export()
+		b.savedVars().Groups[1].Elements[Element.Icon].width = 999
+		assert.is_true(Private.Utils.Import(exported))
+		assert.equals(48, b.savedVars().Groups[1].Elements[Element.Icon].width)
+	end)
+
+	it("fires PROFILE_IMPORTED when something changed", function()
+		local exported = Private.Utils.Export()
+		b.savedVars().Groups[1].Gap = 999
 		Private.Utils.Import(exported)
 
 		local found = false
 		for _, ev in ipairs(Private.EventRegistry.triggeredEvents) do
-			if ev.event == Enum.Events.SETTING_CHANGED and ev.args[1] == Keys.Self.Width then
+			if ev.event == Enum.Events.PROFILE_IMPORTED then
 				found = true
 			end
 		end
 		assert.is_true(found)
 	end)
 
-	it("ignores a field whose imported value has the wrong type", function()
-		local decoded = b.exportDecoded()
-		decoded.Self.Width = "not-a-number"
-		assert.is_false(Private.Utils.Import(b.encode(decoded)))
-		assert.equals(48, b.savedVars().Settings.Self.Width)
+	-- edit-mode instances capture the group table itself, so an import that swapped
+	-- the tables out would strand every one of those references
+	it("updates group tables in place rather than replacing them", function()
+		local exported = Private.Utils.Export()
+		local groupRef = b.savedVars().Groups[1]
+		b.savedVars().Groups[1].Gap = 999
+		Private.Utils.Import(exported)
+		assert.is_true(groupRef == b.savedVars().Groups[1])
 	end)
 
-	it("ignores a key not present in defaults", function()
+	it("adds a group present only in the payload and stamps its id", function()
 		local decoded = b.exportDecoded()
-		decoded.Self.GhostKey = "ghost" ---@diagnostic disable-line: inject-field
-		assert.is_false(Private.Utils.Import(b.encode(decoded)))
-		assert.is_nil(b.savedVars().Settings.Self.GhostKey)
-	end)
-
-	it("imports a changed Party scalar independently of Self", function()
-		local decoded = b.exportDecoded()
-		decoded.Party.Width = 500
+		decoded.Groups[3] = Private.Utils.DeepCopy(decoded.Groups[1])
 		assert.is_true(Private.Utils.Import(b.encode(decoded)))
-		assert.equals(500, b.savedVars().Settings.Party.Width)
-		assert.equals(48, b.savedVars().Settings.Self.Width)
+		assert.is_not_nil(b.savedVars().Groups[3])
+		assert.equals(3, b.savedVars().Groups[3].Id)
+	end)
+
+	it("removes a group absent from the payload", function()
+		local exported = Private.Utils.Export()
+		b.savedVars().Groups[3] = Private.Utils.DeepCopy(b.savedVars().Groups[1])
+		assert.is_true(Private.Utils.Import(exported))
+		assert.is_nil(b.savedVars().Groups[3])
+	end)
+
+	it("re-stamps Id from the key when the payload disagrees", function()
+		local decoded = b.exportDecoded()
+		decoded.Groups[1].Id = 99
+		assert.is_true(Private.Utils.Import(b.encode(decoded)))
+		assert.equals(1, b.savedVars().Groups[1].Id)
 	end)
 end)
 
-describe("Table (enum) import", function()
+describe("TextToSpeech import", function()
 	before_each(function()
-		b.reset()
+		b.resetToV4()
 	end)
 
-	it("applies a changed ContentType flag", function()
+	it("restores a changed announcement flag", function()
+		local exported = Private.Utils.Export()
+		b.savedVars().TextToSpeech.AnnounceUntargetedSpells[Enum.NpcType.Boss] = false
+		assert.is_true(Private.Utils.Import(exported))
+		assert.is_true(b.savedVars().TextToSpeech.AnnounceUntargetedSpells[Enum.NpcType.Boss])
+	end)
+
+	it("restores a changed voice", function()
 		local decoded = b.exportDecoded()
-		decoded.Self.LoadConditionContentType[Enum.ContentType.OpenWorld] = true
+		decoded.TextToSpeech.TextToSpeechVoice = 5
 		assert.is_true(Private.Utils.Import(b.encode(decoded)))
-		assert.is_true(b.savedVars().Settings.Self.LoadConditionContentType[Enum.ContentType.OpenWorld])
+		assert.equals(5, b.savedVars().TextToSpeech.TextToSpeechVoice)
 	end)
 
-	it("preserves existing values for enum IDs absent from the import payload", function()
-		local decoded = b.exportDecoded()
-		decoded.Self.LoadConditionContentType[Enum.ContentType.OpenWorld] = true
-		decoded.Self.LoadConditionContentType[Enum.ContentType.Dungeon] = nil
-		Private.Utils.Import(b.encode(decoded))
-		assert.is_true(b.savedVars().Settings.Self.LoadConditionContentType[Enum.ContentType.Dungeon])
-	end)
+	-- the edit-mode announcement dropdowns capture these tables at login, so an
+	-- import that swapped either of them out would leave the panel on an orphan
+	it("updates the announcement tables in place rather than replacing them", function()
+		local exported = Private.Utils.Export()
+		local textToSpeechRef = b.savedVars().TextToSpeech
+		local untargetedRef = b.savedVars().TextToSpeech.AnnounceUntargetedSpells
 
-	it("sets Enabled=false when all LoadConditionContentType flags are disabled", function()
-		local decoded = b.exportDecoded()
-		for _, id in pairs(Enum.ContentType) do
-			decoded.Self.LoadConditionContentType[id] = false
-		end
-		Private.Utils.Import(b.encode(decoded))
-		assert.is_false(b.savedVars().Settings.Self.Enabled)
-	end)
+		b.savedVars().TextToSpeech.AnnounceUntargetedSpells[Enum.NpcType.Boss] = false
+		assert.is_true(Private.Utils.Import(exported))
 
-	it("does not disable Enabled when at least one ContentType flag remains true", function()
-		local decoded = b.exportDecoded()
-		for _, id in pairs(Enum.ContentType) do
-			decoded.Self.LoadConditionContentType[id] = false
-		end
-		decoded.Self.LoadConditionContentType[Enum.ContentType.Dungeon] = true
-		Private.Utils.Import(b.encode(decoded))
-		assert.is_true(b.savedVars().Settings.Self.Enabled)
-	end)
-end)
-
-describe("Partial import (one kind only)", function()
-	before_each(function()
-		b.reset()
-	end)
-
-	it("Self-only payload leaves Party unchanged", function()
-		local decoded = b.exportDecoded()
-		decoded.Self.Width = 99
-		decoded.Party = nil
-		Private.Utils.Import(b.encode(decoded))
-		assert.equals(300, b.savedVars().Settings.Party.Width)
-	end)
-
-	it("Party-only payload leaves Self unchanged", function()
-		local decoded = b.exportDecoded()
-		decoded.Party.Width = 400
-		decoded.Self = nil
-		Private.Utils.Import(b.encode(decoded))
-		assert.equals(48, b.savedVars().Settings.Self.Width)
+		assert.is_true(textToSpeechRef == b.savedVars().TextToSpeech)
+		assert.is_true(untargetedRef == b.savedVars().TextToSpeech.AnnounceUntargetedSpells)
+		assert.is_true(untargetedRef[Enum.NpcType.Boss])
 	end)
 end)
 
 describe("Invalid input", function()
 	before_each(function()
-		b.reset()
+		b.resetToV4()
 	end)
 
 	it("returns false for a garbage string", function()
@@ -162,156 +155,8 @@ describe("Invalid input", function()
 	it("returns false for an empty string", function()
 		assert.is_false(Private.Utils.Import(""))
 	end)
-end)
 
-describe("LoadConditionRole import", function()
-	before_each(function()
-		b.reset()
-	end)
-
-	it("sets Enabled=false when all LoadConditionRole flags are disabled", function()
-		local decoded = b.exportDecoded()
-		for _, id in pairs(Enum.Role) do
-			decoded.Self.LoadConditionRole[id] = false
-		end
-		Private.Utils.Import(b.encode(decoded))
-		assert.is_false(b.savedVars().Settings.Self.Enabled)
-	end)
-
-	it("does not disable Enabled when at least one Role flag remains true", function()
-		local decoded = b.exportDecoded()
-		for _, id in pairs(Enum.Role) do
-			decoded.Self.LoadConditionRole[id] = false
-		end
-		decoded.Self.LoadConditionRole[Enum.Role.Healer] = true
-		Private.Utils.Import(b.encode(decoded))
-		assert.is_true(b.savedVars().Settings.Self.Enabled)
-	end)
-
-	it("fires SETTING_CHANGED with the correct key for a changed Role flag", function()
-		local decoded = b.exportDecoded()
-		decoded.Self.LoadConditionRole[Enum.Role.Damager] = false
-		Private.Utils.Import(b.encode(decoded))
-
-		local found = false
-		for _, ev in ipairs(Private.EventRegistry.triggeredEvents) do
-			if ev.event == Enum.Events.SETTING_CHANGED and ev.args[1] == Keys.Self.LoadConditionRole then
-				found = true
-			end
-		end
-		assert.is_true(found)
-	end)
-end)
-
-describe("FeatureFlags import", function()
-	before_each(function()
-		b.reset()
-	end)
-
-	it("applies a changed FeatureFlag", function()
-		local decoded = b.exportDecoded()
-		decoded.Self.FeatureFlags[Enum.FeatureFlag.ShowDuration] = false
-		assert.is_true(Private.Utils.Import(b.encode(decoded)))
-		assert.is_false(b.savedVars().Settings.Self.FeatureFlags[Enum.FeatureFlag.ShowDuration])
-	end)
-
-	it("preserves flags absent from the import payload", function()
-		local decoded = b.exportDecoded()
-		decoded.Self.FeatureFlags[Enum.FeatureFlag.ShowDuration] = false
-		decoded.Self.FeatureFlags[Enum.FeatureFlag.GlowImportant] = nil
-		Private.Utils.Import(b.encode(decoded))
-		assert.is_true(b.savedVars().Settings.Self.FeatureFlags[Enum.FeatureFlag.GlowImportant])
-	end)
-
-	it("fires SETTING_CHANGED with the correct key for a changed FeatureFlag", function()
-		local decoded = b.exportDecoded()
-		decoded.Self.FeatureFlags[Enum.FeatureFlag.ShowDuration] = false
-		Private.Utils.Import(b.encode(decoded))
-
-		local found = false
-		for _, ev in ipairs(Private.EventRegistry.triggeredEvents) do
-			if ev.event == Enum.Events.SETTING_CHANGED and ev.args[1] == Keys.Self.FeatureFlags then
-				found = true
-			end
-		end
-		assert.is_true(found)
-	end)
-end)
-
-describe("AnnounceUntargetedSpells import", function()
-	before_each(function()
-		b.reset()
-	end)
-
-	it("applies a changed NpcType flag", function()
-		local decoded = b.exportDecoded()
-		decoded.Self.AnnounceUntargetedSpells[Enum.NpcType.Boss] = false
-		assert.is_true(Private.Utils.Import(b.encode(decoded)))
-		assert.is_false(b.savedVars().Settings.Self.AnnounceUntargetedSpells[Enum.NpcType.Boss])
-	end)
-
-	it("preserves flags absent from the import payload", function()
-		local decoded = b.exportDecoded()
-		decoded.Self.AnnounceUntargetedSpells[Enum.NpcType.Boss] = false
-		decoded.Self.AnnounceUntargetedSpells[Enum.NpcType.Lieutenant] = nil
-		Private.Utils.Import(b.encode(decoded))
-		assert.is_true(b.savedVars().Settings.Self.AnnounceUntargetedSpells[Enum.NpcType.Lieutenant])
-	end)
-end)
-
-describe("AnnounceTargetedSpells import", function()
-	before_each(function()
-		b.reset()
-	end)
-
-	it("applies a changed NpcType flag", function()
-		local decoded = b.exportDecoded()
-		decoded.Self.AnnounceTargetedSpells[Enum.NpcType.Boss] = true
-		assert.is_true(Private.Utils.Import(b.encode(decoded)))
-		assert.is_true(b.savedVars().Settings.Self.AnnounceTargetedSpells[Enum.NpcType.Boss])
-	end)
-
-	it("preserves flags absent from the import payload", function()
-		local decoded = b.exportDecoded()
-		decoded.Self.AnnounceTargetedSpells[Enum.NpcType.Boss] = true
-		decoded.Self.AnnounceTargetedSpells[Enum.NpcType.Lieutenant] = nil
-		Private.Utils.Import(b.encode(decoded))
-		assert.is_false(b.savedVars().Settings.Self.AnnounceTargetedSpells[Enum.NpcType.Lieutenant])
-	end)
-end)
-
-describe("ApplyMigration", function()
-	before_each(function()
-		b.reset()
-	end)
-
-	it("migrates Grow=1 (deprecated Center) to Grow.Start", function()
-		local decoded = b.exportDecoded()
-		decoded.Self.Grow = 1
-		Private.Utils.Import(b.encode(decoded))
-		assert.equals(Enum.Grow.Start, b.savedVars().Settings.Self.Grow)
-	end)
-
-	it("migrates GlowType=3 (deprecated ButtonGlow) to PixelGlow", function()
-		local decoded = b.exportDecoded()
-		decoded.Self.GlowType = 3
-		Private.Utils.Import(b.encode(decoded))
-		assert.equals(Enum.GlowType.PixelGlow, b.savedVars().Settings.Self.GlowType)
-	end)
-
-	it("migrates ShowBorder=true to default BorderStyle when called directly", function()
-		local defaults = Private.Settings.GetSelfDefaultSettings()
-		b.savedVars().Settings.Self.ShowBorder = true ---@diagnostic disable-line: inject-field
-		Private.Utils.ApplyMigration("ShowBorder", Enum.FrameKind.Self, defaults)
-		assert.is_nil(b.savedVars().Settings.Self.ShowBorder) ---@diagnostic disable-line: undefined-field
-		assert.equals(defaults.BorderStyle, b.savedVars().Settings.Self.BorderStyle)
-	end)
-
-	it("migrates ShowBorder=false to BorderStyle 'None' when called directly", function()
-		local defaults = Private.Settings.GetSelfDefaultSettings()
-		b.savedVars().Settings.Self.ShowBorder = false ---@diagnostic disable-line: inject-field
-		Private.Utils.ApplyMigration("ShowBorder", Enum.FrameKind.Self, defaults)
-		assert.is_nil(b.savedVars().Settings.Self.ShowBorder) ---@diagnostic disable-line: undefined-field
-		assert.equals("None", b.savedVars().Settings.Self.BorderStyle)
+	it("returns false for a payload that is neither a v4 nor a v3 profile", function()
+		assert.is_false(Private.Utils.Import(b.encode({ NotAProfile = true })))
 	end)
 end)

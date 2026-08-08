@@ -112,13 +112,7 @@ L.Settings.GlowTypeLabels = {
 	[Private.Enum.GlowType.Star4] = "Звезда 4",
 }
 
-L.Settings.ShowDurationLabel = "Показывать длительность"
-
 L.Settings.IndicateInterruptsLabel = "Показывать прерывания"
-
-L.Settings.RenderInterruptSourceNameLabel = "Показывать имя источника прерывания"
-
-L.Settings.ShowSwipeLabel = "Показывать анимацию перезарядки"
 
 L.Settings.BorderStyleLabel = "Стиль рамки"
 L.Settings.BorderStyleTooltip = nil
@@ -137,9 +131,6 @@ L.Settings.ProgressBarColorLabel = "Цвет полосы"
 L.Settings.ProgressBarColorTooltip =
 	"Прозрачность доступна только в Режиме редактирования, так как стандартный интерфейс настроек её не предоставляет."
 
-L.Settings.MirrorLayoutLabel = "Зеркальный макет"
-L.Settings.MirrorLayoutTooltip = nil
-
 L.Settings.TextToSpeechVoiceLabel = "Голос TTS"
 L.Settings.TextToSpeechVoiceTooltip =
 	"Голос для Text-to-Speech оповещений. Общий для настроек Self и Party."
@@ -155,19 +146,9 @@ L.Settings.AnnounceTargetedSpellsTooltip =
 L.Settings.NpcTypeLabels = {
 	[Private.Enum.NpcType.Boss] = "Боссы",
 	[Private.Enum.NpcType.Lieutenant] = "Лейтенанты",
-	[Private.Enum.NpcType.Caster] = "Есть мана",
-	[Private.Enum.NpcType.Melee] = "Обычные мобы",
+	[Private.Enum.NpcType.Other] = "Все остальные",
 	[Private.Enum.NpcType.Minion] = "Миньоны",
 }
-
-L.Settings.HideUntargetedSpellsLabel = "Скрыть заклинания без цели"
-
-L.Settings.HideTargetedSpellsLabel = "Скрыть заклинания с целью"
-
-L.Settings.SelfOnlyLabel =
-	"Показывать только заклинания, нацеленные на игрока"
-
-L.Settings.InlineDurationLabel = "Встроенное отображение длительности"
 
 L.Settings.UseInterruptabilityColorsLabel = "Использовать цвета прерывания"
 L.Settings.UseInterruptabilityColorsTooltip = nil
@@ -196,26 +177,3 @@ L.Settings.FontTooltip = nil
 L.Settings.FeatureFlagsLabel = "Функции"
 L.Settings.FeatureFlagsTooltip = nil
 
-L.Settings.FeatureFlagLabels = {
-	[Private.Enum.FeatureFlag.GlowImportant] = L.Settings.GlowImportantLabel,
-	[Private.Enum.FeatureFlag.OnlyImportant] = L.Settings.OnlyImportantLabel,
-	[Private.Enum.FeatureFlag.ShowDuration] = L.Settings.ShowDurationLabel,
-	[Private.Enum.FeatureFlag.ShowSwipe] = L.Settings.ShowSwipeLabel,
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
-	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,
-	[Private.Enum.FeatureFlag.ShowIcon] = "Показывать иконку",
-	[Private.Enum.FeatureFlag.ShowTargetMarker] = "Показывать маркер цели",
-	[Private.Enum.FeatureFlag.ShowSpellName] = "Показывать название заклинания",
-	[Private.Enum.FeatureFlag.ShowTargetName] = "Показывать имя цели",
-	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Показывать цвет класса цели",
-	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
-	[Private.Enum.FeatureFlag.InlineDuration] = L.Settings.InlineDurationLabel,
-	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
-	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
-	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,
-}
-
-L.Settings.FeatureFlagSettingTitles = {
-	[Private.Enum.FeatureFlag.GlowImportant] = "Отображение",
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = "Настройки прерываний",
-}

@@ -5,9 +5,26 @@ local Private = b.Private
 local Enum = Private.Enum
 
 describe("Design.GetDefault", function()
-	it("returns Elements for both templates", function()
-		assert.is_table(Private.Design.GetDefault(Enum.Template.Icon))
-		assert.is_table(Private.Design.GetDefault(Enum.Template.Bar))
+	it("returns Elements for every template", function()
+		for _, template in pairs(Enum.Template) do
+			assert.is_table(Private.Design.GetDefault(template))
+			assert.is_table(Private.Design.GetSchema(template))
+		end
+	end)
+
+	it("every schema record across every template has a default", function()
+		-- a field cannot exist in the defaults without a record describing its widget, and a
+		-- record without a default would seed a nil the designer cannot render
+		for _, template in pairs(Enum.Template) do
+			local defaults = Private.Design.GetDefault(template)
+
+			for element, records in pairs(Private.Design.GetSchema(template)) do
+				for _, record in ipairs(records) do
+					assert.is_not_nil(record.default, template .. "/" .. element .. "/" .. record.setting)
+					assert.is_not_nil(defaults[element][record.setting])
+				end
+			end
+		end
 	end)
 
 	it("errors on an unknown template", function()

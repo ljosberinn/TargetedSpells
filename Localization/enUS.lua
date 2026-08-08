@@ -36,7 +36,6 @@ L.Designer.Discard = "Discard"
 L.Designer.UnsavedHint = "Changes apply on Save."
 L.Designer.UnsavedPrompt = "You have unsaved layout changes."
 
--- Widget-row labels, keyed by the schema record's `name`.
 L.Designer.SettingNames = {
 	ELEMENT_ACTIVE = "Enabled",
 	ELEMENT_WIDTH = "Width",
@@ -49,6 +48,7 @@ L.Designer.SettingNames = {
 	ELEMENT_TEXT_COLOR = "Text Color",
 	ELEMENT_JUSTIFY_H = "Alignment",
 	ELEMENT_MAX_WIDTH = "Max Width",
+	ELEMENT_GAP = "Gap",
 	ELEMENT_USE_CLASS_COLOR = "Use Class Color",
 	ELEMENT_ICON_ZOOM = "Icon Zoom",
 	ELEMENT_SHOW_SWIPE = "Show Swipe",
@@ -66,7 +66,6 @@ L.Designer.SettingNames = {
 	ELEMENT_BACKGROUND_COLOR = "Background Color",
 }
 
--- Dropdown option labels, keyed by the option's `name`.
 L.Designer.Options = {
 	JUSTIFY_LEFT = "Left",
 	JUSTIFY_CENTER = "Center",
@@ -76,14 +75,12 @@ L.Designer.Options = {
 	BAR_COLOR_TARGET_CLASS = "Target Class Color",
 }
 
--- Font-style multi-select labels, keyed by Enum.FontFlags, plus the empty summary.
 L.Designer.FontFlagNames = {
 	[Private.Enum.FontFlags.OUTLINE] = "Outline",
 	[Private.Enum.FontFlags.SHADOW] = "Shadow",
 }
 L.Designer.FontFlagsNone = "None"
 
--- Friendly names for the configurable elements, shown as the widget-panel header.
 L.Designer.ElementNames = {
 	[Private.Enum.Element.Icon] = "Icon",
 	[Private.Enum.Element.Overlay] = "Cooldown Manager Bezel",
@@ -97,9 +94,9 @@ L.Designer.ElementNames = {
 	[Private.Enum.Element.SpellName] = "Spell Name",
 	[Private.Enum.Element.TargetName] = "Target Name",
 	[Private.Enum.Element.InterruptShield] = "Interrupt Shield",
+	[Private.Enum.Element.Duration] = "Duration",
 }
 
--- Slash-command dispatcher: header + one description per subcommand.
 L.SlashCommands.Header = "Targeted Spells commands:"
 L.SlashCommands.OptionsDescription = "Open the settings panel"
 L.SlashCommands.SettingsDescription = "Open the settings panel"
@@ -110,7 +107,7 @@ L.Migration.SelfGroupName = "Self"
 L.Migration.PartyGroupName = "Party"
 
 L.Settings.EditModeReminder =
-	"All settings are exposed via the Edit Mode and \"/targetedspells design\"."
+"All settings are exposed via the Edit Mode and \"/targetedspells design\"."
 L.EditMode.TargetedSpellsSelfLabel = "Targeted Spells - Self"
 L.EditMode.TargetedSpellsPartyLabel = "Targeted Spells - Party"
 
@@ -206,13 +203,7 @@ L.Settings.GlowTypeLabels = {
 	[Private.Enum.GlowType.Star4] = "Star 4",
 }
 
-L.Settings.ShowDurationLabel = "Show Duration"
-
 L.Settings.IndicateInterruptsLabel = "Indicate Interrupts"
-
-L.Settings.RenderInterruptSourceNameLabel = "Render Interrupt Source Name"
-
-L.Settings.ShowSwipeLabel = "Show Swipe"
 
 L.Settings.BorderStyleLabel = "Border Style"
 L.Settings.BorderStyleTooltip = nil
@@ -225,17 +216,15 @@ L.Settings.BackgroundBarTextureTooltip = nil
 
 L.Settings.BackgroundBarColorLabel = "Background Bar Color"
 L.Settings.BackgroundBarColorTooltip =
-	"Opacity is only available in Edit Mode due to the default settings UI not exposing it."
+"Opacity is only available in Edit Mode due to the default settings UI not exposing it."
 
 L.Settings.ProgressBarColorLabel = "Bar Color"
 L.Settings.ProgressBarColorTooltip =
-	"Opacity is only available in Edit Mode due to the default settings UI not exposing it."
-
-L.Settings.MirrorLayoutLabel = "Mirror Layout"
+"Opacity is only available in Edit Mode due to the default settings UI not exposing it."
 
 L.Settings.TextToSpeechVoiceLabel = "TTS Voice"
 L.Settings.TextToSpeechVoiceTooltip =
-	"Voice used for Text-To-Speech announcements. Shared between Self and Party settings."
+"Voice used for Text-To-Speech announcements. Shared between Self and Party settings."
 
 L.Settings.AnnounceUntargetedSpellsLabel = "Untargeted TTS Settings"
 L.Settings.AnnounceUntargetedSpellsTooltip = "Text-To-Speech for untargeted spells (AoE, frontals, etc.) by NPC type."
@@ -246,25 +235,16 @@ L.Settings.AnnounceTargetedSpellsTooltip = "Text-To-Speech for spells that targe
 L.Settings.NpcTypeLabels = {
 	[Private.Enum.NpcType.Boss] = "Bosses",
 	[Private.Enum.NpcType.Lieutenant] = "Lieutenants",
-	[Private.Enum.NpcType.Caster] = "Has Mana",
-	[Private.Enum.NpcType.Melee] = "Regular Melee",
+	[Private.Enum.NpcType.Other] = "Any Other",
 	[Private.Enum.NpcType.Minion] = "Minions",
 }
-
-L.Settings.HideUntargetedSpellsLabel = "Hide Untargeted Spells"
-
-L.Settings.HideTargetedSpellsLabel = "Hide Targeted Spells"
-
-L.Settings.SelfOnlyLabel = "Only Show Player-Targeting Spells"
-
-L.Settings.InlineDurationLabel = "Inline Duration Position"
 
 L.Settings.UseInterruptabilityColorsLabel = "Use Interrupt Colors"
 L.Settings.UseInterruptabilityColorsTooltip = nil
 
 L.Settings.UseTargetClassColorLabel = "Use Target Class Color"
 L.Settings.UseTargetClassColorTooltip =
-	"Colors the bar in the class color of the targeted unit at 75% alpha. Untargeted spells will use a brightened Background Bar Color"
+"Colors the bar in the class color of the targeted unit at 75% alpha. Untargeted spells will use a brightened Background Bar Color"
 
 L.Settings.UninterruptibleColorLabel = "Uninterruptible Color"
 L.Settings.UninterruptibleColorTooltip = nil
@@ -286,31 +266,6 @@ L.Settings.FontTooltip = nil
 L.Settings.FeatureFlagsLabel = "Features"
 L.Settings.FeatureFlagsTooltip = nil
 
-L.Settings.FeatureFlagLabels = {
-	[Private.Enum.FeatureFlag.GlowImportant] = L.Settings.GlowImportantLabel,
-	[Private.Enum.FeatureFlag.OnlyImportant] = L.Settings.OnlyImportantLabel,
-	[Private.Enum.FeatureFlag.ShowDuration] = L.Settings.ShowDurationLabel,
-	[Private.Enum.FeatureFlag.ShowSwipe] = L.Settings.ShowSwipeLabel,
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
-	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,
-	[Private.Enum.FeatureFlag.ShowIcon] = "Show Icon",
-	[Private.Enum.FeatureFlag.ShowTargetMarker] = "Show Target Marker",
-	[Private.Enum.FeatureFlag.ShowSpellName] = "Show Spell Name",
-	[Private.Enum.FeatureFlag.ShowTargetName] = "Show Target Name",
-	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Show Target Class Color",
-	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
-	[Private.Enum.FeatureFlag.InlineDuration] = L.Settings.InlineDurationLabel,
-	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
-	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
-	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,
-}
-
-L.Settings.FeatureFlagSettingTitles = {
-	[Private.Enum.FeatureFlag.GlowImportant] = "Display",
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = "Interrupt Settings",
-}
-
--- Phase 4 — per-group edit-mode panel (container settings + group management)
 L.Settings.GroupNameLabel = "Rename Group"
 L.Settings.GroupNamePrompt = "Enter a name for this group:"
 
@@ -319,6 +274,7 @@ L.Settings.TemplateTooltip = "Switching template resets this group's element lay
 L.Settings.TemplateLabels = {
 	[Private.Enum.Template.Icon] = "Icon",
 	[Private.Enum.Template.Bar] = "Bar",
+	[Private.Enum.Template.IconDuration] = "Icon + Duration",
 }
 
 L.Settings.FilterLabel = "Show Casts Targeting"
@@ -335,4 +291,4 @@ L.Settings.DeleteGroupConfirm = "Delete this group? This cannot be undone."
 L.Settings.CannotDeleteLastGroup = "You cannot delete the last remaining group."
 
 L.Settings.ElementSettingsMovedToDesigner =
-	"Element appearance (size, colors, fonts, textures) is now edited in the designer: /targetedspells design"
+"Element appearance (size, colors, fonts, textures) is now edited in the designer: /targetedspells design"

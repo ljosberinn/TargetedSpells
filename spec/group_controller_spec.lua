@@ -32,11 +32,13 @@ local function makeGroup(id, template)
 	}
 end
 
--- Minimal frame satisfying Acquire (SetGroup/PostCreate) and SortFrames (GetStartTime).
+-- Minimal frame satisfying Acquire (SetGroup/PostCreate), SortFrames (GetStartTime) and
+-- the controller's per-unit lookups (GetUnit/CanBeHidden). PostCreate takes the unit off
+-- the info table exactly as the real mixins do.
 local nextStartTime = 0
 local function makeFakeFrame()
 	nextStartTime = nextStartTime + 1
-	local frame = { startTime = nextStartTime }
+	local frame = { startTime = nextStartTime, hideable = true }
 	function frame:SetGroup(group)
 		self.group = group
 	end
@@ -46,8 +48,15 @@ local function makeFakeFrame()
 	function frame:GetStartTime()
 		return self.startTime
 	end
-	function frame:PostCreate()
+	function frame:GetUnit()
+		return self.unit
+	end
+	function frame:CanBeHidden()
+		return self.hideable
+	end
+	function frame:PostCreate(info)
 		self.created = true
+		self.unit = info and info.unit or nil
 	end
 	return frame
 end
@@ -106,16 +115,18 @@ describe("GroupController acquire ownership", function()
 	end)
 end)
 
-describe("GroupController release", function()
-	it("removes only the released frame and returns it to the pool", function()
+describe("GroupController ReleaseForUnit", function()
+	it("releases only the named unit's frames and leaves siblings alone", function()
 		local a = makeController(1)
-		local first = a:Acquire({}, noop)
-		local second = a:Acquire({}, noop)
+		local first = a:Acquire({ unit = "nameplate1" }, noop)
+		local second = a:Acquire({ unit = "nameplate2" }, noop)
 
-		a:Release(first)
+		local released, remaining = a:ReleaseForUnit("nameplate1")
 
+		assert.is_true(released)
+		assert.is_false(remaining)
 		assert.equals(1, #a.frames)
-		assert.equals(second, a.frames[1]) -- sibling untouched
+		assert.equals(second, a.frames[1]) -- other unit untouched
 		assert.is_true(a.pool.released[first])
 		assert.is_nil(a.pool.released[second])
 	end)
@@ -123,14 +134,121 @@ describe("GroupController release", function()
 	it("leaves other controllers' lists alone", function()
 		local a = makeController(1)
 		local c = makeController(2)
-		local a1 = a:Acquire({}, noop)
-		local c1 = c:Acquire({}, noop)
+		a:Acquire({ unit = "nameplate1" }, noop)
+		local c1 = c:Acquire({ unit = "nameplate1" }, noop)
 
-		a:Release(a1)
+		a:ReleaseForUnit("nameplate1")
 
 		assert.equals(0, #a.frames)
 		assert.equals(1, #c.frames)
 		assert.equals(c1, c.frames[1])
+	end)
+
+	it("reports a lingering frame as remaining and keeps holding it", function()
+		local a = makeController(1)
+		local lingering = a:Acquire({ unit = "nameplate1" }, noop)
+		lingering.hideable = false -- interrupted: still inside its hide delay
+
+		local released, remaining = a:ReleaseForUnit("nameplate1")
+
+		assert.is_false(released)
+		assert.is_true(remaining)
+		assert.equals(1, #a.frames)
+		assert.is_nil(a.pool.released[lingering])
+	end)
+
+	it("reports both when one frame goes and another lingers", function()
+		local a = makeController(1)
+		local goes = a:Acquire({ unit = "nameplate1" }, noop)
+		local stays = a:Acquire({ unit = "nameplate1" }, noop)
+		stays.hideable = false
+
+		local released, remaining = a:ReleaseForUnit("nameplate1")
+
+		assert.is_true(released)
+		assert.is_true(remaining)
+		assert.equals(1, #a.frames)
+		assert.equals(stays, a.frames[1])
+		assert.is_true(a.pool.released[goes])
+	end)
+
+	it("reports nothing for a unit it never held", function()
+		local a = makeController(1)
+		a:Acquire({ unit = "nameplate1" }, noop)
+
+		local released, remaining = a:ReleaseForUnit("nameplate9")
+
+		assert.is_false(released)
+		assert.is_false(remaining)
+		assert.equals(1, #a.frames)
+	end)
+end)
+
+describe("GroupController ReleaseAll", function()
+	it("drops every frame regardless of the hide delay", function()
+		local a = makeController(1)
+		local first = a:Acquire({ unit = "nameplate1" }, noop)
+		local lingering = a:Acquire({ unit = "nameplate2" }, noop)
+		lingering.hideable = false
+
+		a:ReleaseAll()
+
+		assert.equals(0, #a.frames)
+		assert.is_true(a.pool.released[first])
+		assert.is_true(a.pool.released[lingering])
+	end)
+
+	it("leaves other controllers' lists alone", function()
+		local a = makeController(1)
+		local c = makeController(2)
+		a:Acquire({ unit = "nameplate1" }, noop)
+		local c1 = c:Acquire({ unit = "nameplate1" }, noop)
+
+		a:ReleaseAll()
+
+		assert.equals(0, #a.frames)
+		assert.equals(1, #c.frames)
+		assert.equals(c1, c.frames[1])
+	end)
+end)
+
+describe("GroupController MarkInterruptedForUnit", function()
+	local function makeMarkable(controller)
+		for _, frame in ipairs(controller.frames) do
+			function frame:SetInterrupted(name, color)
+				self.interruptedBy = name
+				self.interruptColor = color
+			end
+		end
+	end
+
+	it("marks only the named unit's frames when the group opts in", function()
+		local a = makeController(1)
+		a.group.IndicateInterrupts = true
+		local target = a:Acquire({ unit = "nameplate1" }, noop)
+		local other = a:Acquire({ unit = "nameplate2" }, noop)
+		makeMarkable(a)
+
+		assert.is_true(a:MarkInterruptedForUnit("nameplate1", "Healer", nil))
+		assert.equals("Healer", target.interruptedBy)
+		assert.is_nil(other.interruptedBy)
+	end)
+
+	it("does nothing and reports false when the group opts out", function()
+		local a = makeController(1)
+		a.group.IndicateInterrupts = false
+		local target = a:Acquire({ unit = "nameplate1" }, noop)
+		makeMarkable(a)
+
+		assert.is_false(a:MarkInterruptedForUnit("nameplate1", "Healer", nil))
+		assert.is_nil(target.interruptedBy)
+	end)
+
+	it("reports false when it holds nothing for the unit", function()
+		local a = makeController(1)
+		a.group.IndicateInterrupts = true
+
+		assert.is_false(a:MarkInterruptedForUnit("nameplate1", "Healer", nil))
 	end)
 end)
 
@@ -204,6 +322,12 @@ describe("GroupController reconfigure", function()
 		local barController = Controller.New(makeGroup(2, Enum.Template.Bar))
 		assert.equals(Enum.Element.ProgressBar, barController.coreElement)
 		assert.equals(Private.Utils.Pools.Bar, barController.pool)
+
+		-- icon+duration shares the Icon core element but must NOT share the Icon pool
+		local iconDurationController = Controller.New(makeGroup(3, Enum.Template.IconDuration))
+		assert.equals(Enum.Element.Icon, iconDurationController.coreElement)
+		assert.equals(Private.Utils.Pools.IconDuration, iconDurationController.pool)
+		assert.is_false(iconDurationController.pool == Private.Utils.Pools.Icon)
 	end)
 
 	it("re-derives pool and core element on an Icon<->Bar flip", function()
@@ -217,5 +341,18 @@ describe("GroupController reconfigure", function()
 		assert.equals(Enum.Element.ProgressBar, controller.coreElement)
 		assert.equals(Private.Utils.Pools.Bar, controller.pool)
 		assert.equals(group, controller.group)
+	end)
+
+	it("re-derives the pool when flipping to icon+duration, despite the core element not changing", function()
+		local group = makeGroup(1, Enum.Template.Icon)
+		local controller = Controller.New(group)
+
+		group.Template = Enum.Template.IconDuration
+		controller:Reconfigure(group)
+
+		-- the core element is Icon either way, so the pool is the only observable difference —
+		-- and a stale pool here would return frames of the wrong template
+		assert.equals(Enum.Element.Icon, controller.coreElement)
+		assert.equals(Private.Utils.Pools.IconDuration, controller.pool)
 	end)
 end)

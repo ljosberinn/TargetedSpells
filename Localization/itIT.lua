@@ -112,13 +112,7 @@ L.Settings.GlowTypeLabels = {
 	[Private.Enum.GlowType.Star4] = "Stella 4",
 }
 
-L.Settings.ShowDurationLabel = "Mostra durata"
-
 L.Settings.IndicateInterruptsLabel = "Indica interruzioni"
-
-L.Settings.RenderInterruptSourceNameLabel = "Mostra nome della fonte di interruzione"
-
-L.Settings.ShowSwipeLabel = "Mostra animazione cooldown"
 
 L.Settings.BorderStyleLabel = "Stile bordo"
 L.Settings.BorderStyleTooltip = nil
@@ -137,8 +131,6 @@ L.Settings.ProgressBarColorLabel = "Colore barra"
 L.Settings.ProgressBarColorTooltip =
 	"L'opacità è disponibile solo in Modalità Modifica, poiché l'interfaccia delle impostazioni predefinita non la espone."
 
-L.Settings.MirrorLayoutLabel = "Inverti layout"
-
 L.Settings.TextToSpeechVoiceLabel = "Voce TTS"
 L.Settings.TextToSpeechVoiceTooltip =
 	"Voce utilizzata per gli annunci di sintesi vocale. Condivisa tra le impostazioni Self e Party."
@@ -154,18 +146,9 @@ L.Settings.AnnounceTargetedSpellsTooltip =
 L.Settings.NpcTypeLabels = {
 	[Private.Enum.NpcType.Boss] = "Boss",
 	[Private.Enum.NpcType.Lieutenant] = "Luogotenenti",
-	[Private.Enum.NpcType.Caster] = "Ha Mana",
-	[Private.Enum.NpcType.Melee] = "Nemici normali",
+	[Private.Enum.NpcType.Other] = "Tutti gli altri",
 	[Private.Enum.NpcType.Minion] = "Scagnozzi",
 }
-
-L.Settings.HideUntargetedSpellsLabel = "Nascondi incantesimi senza bersaglio"
-
-L.Settings.HideTargetedSpellsLabel = "Nascondi incantesimi con bersaglio"
-
-L.Settings.SelfOnlyLabel = "Mostra solo incantesimi che prendono di mira il giocatore"
-
-L.Settings.InlineDurationLabel = "Posizione durata integrata"
 
 L.Settings.UseInterruptabilityColorsLabel = "Usa colori interruzione"
 L.Settings.UseInterruptabilityColorsTooltip = nil
@@ -194,26 +177,3 @@ L.Settings.FontTooltip = nil
 L.Settings.FeatureFlagsLabel = "Funzionalità"
 L.Settings.FeatureFlagsTooltip = nil
 
-L.Settings.FeatureFlagLabels = {
-	[Private.Enum.FeatureFlag.GlowImportant] = L.Settings.GlowImportantLabel,
-	[Private.Enum.FeatureFlag.OnlyImportant] = L.Settings.OnlyImportantLabel,
-	[Private.Enum.FeatureFlag.ShowDuration] = L.Settings.ShowDurationLabel,
-	[Private.Enum.FeatureFlag.ShowSwipe] = L.Settings.ShowSwipeLabel,
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
-	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,
-	[Private.Enum.FeatureFlag.ShowIcon] = "Mostra icona",
-	[Private.Enum.FeatureFlag.ShowTargetMarker] = "Mostra marcatore bersaglio",
-	[Private.Enum.FeatureFlag.ShowSpellName] = "Mostra nome incantesimo",
-	[Private.Enum.FeatureFlag.ShowTargetName] = "Mostra nome bersaglio",
-	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Mostra colore classe bersaglio",
-	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
-	[Private.Enum.FeatureFlag.InlineDuration] = L.Settings.InlineDurationLabel,
-	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
-	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
-	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,
-}
-
-L.Settings.FeatureFlagSettingTitles = {
-	[Private.Enum.FeatureFlag.GlowImportant] = "Visualizzazione",
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = "Impostazioni interruzione",
-}

@@ -16,7 +16,7 @@ L.Functionality = {}
 L.Settings = {}
 
 L.Settings.EditModeReminder =
-	"Alle Einstellungen sind über den Bearbeitungsmodus und \"/targetedspells design\" erreichbar."
+"Alle Einstellungen sind über den Bearbeitungsmodus und \"/targetedspells design\" erreichbar."
 L.EditMode.TargetedSpellsSelfLabel = "Targeted Spells - Spieler"
 L.EditMode.TargetedSpellsPartyLabel = "Targeted Spells - Gruppe"
 
@@ -113,13 +113,7 @@ L.Settings.GlowTypeLabels = {
 	[Private.Enum.GlowType.Star4] = "Star 4",
 }
 
-L.Settings.ShowDurationLabel = "Dauer anzeigen"
-
 L.Settings.IndicateInterruptsLabel = "Unterbrechungen anzeigen"
-
-L.Settings.RenderInterruptSourceNameLabel = "Unterbrechungsquellnamen anzeigen"
-
-L.Settings.ShowSwipeLabel = "Abklingzeitsanimation anzeigen"
 
 L.Settings.BorderStyleLabel = "Border Style"
 L.Settings.BorderStyleTooltip = nil
@@ -132,47 +126,36 @@ L.Settings.BackgroundBarTextureTooltip = nil
 
 L.Settings.BackgroundBarColorLabel = "Hintergrundbalken-Farbe"
 L.Settings.BackgroundBarColorTooltip =
-	"Deckkraft ist nur im Bearbeitungsmodus verfügbar, da die standardmäßige Einstellungsoberfläche sie nicht anzeigt."
+"Deckkraft ist nur im Bearbeitungsmodus verfügbar, da die standardmäßige Einstellungsoberfläche sie nicht anzeigt."
 
 L.Settings.ProgressBarColorLabel = "Statusbalkenfarbe"
 L.Settings.ProgressBarColorTooltip =
-	"Deckkraft ist nur im Bearbeitungsmodus verfügbar, da die standardmäßige Einstellungsoberfläche sie nicht anzeigt."
-
-L.Settings.MirrorLayoutLabel = "Layout spiegeln"
+"Deckkraft ist nur im Bearbeitungsmodus verfügbar, da die standardmäßige Einstellungsoberfläche sie nicht anzeigt."
 
 L.Settings.TextToSpeechVoiceLabel = "TTS-Stimme"
 L.Settings.TextToSpeechVoiceTooltip =
-	"Stimme für Text-zu-Sprache-Ansagen. Gilt für Selbst- und Gruppen-Einstellungen."
+"Stimme für Text-zu-Sprache-Ansagen. Gilt für Selbst- und Gruppen-Einstellungen."
 
 L.Settings.AnnounceUntargetedSpellsLabel = "Ungezielte TTS-Einstellungen"
 L.Settings.AnnounceUntargetedSpellsTooltip = "Text-zu-Sprache für ungezielte Zauber (AoE, Frontals usw.) nach NPC-Typ."
 
 L.Settings.AnnounceTargetedSpellsLabel = "Gezielte TTS-Einstellungen"
 L.Settings.AnnounceTargetedSpellsTooltip =
-	"Text-zu-Sprache für Zauber, die einen bestimmten Spieler anvisieren, nach NPC-Typ."
+"Text-zu-Sprache für Zauber, die einen bestimmten Spieler anvisieren, nach NPC-Typ."
 
 L.Settings.NpcTypeLabels = {
 	[Private.Enum.NpcType.Boss] = "Bosse",
 	[Private.Enum.NpcType.Lieutenant] = "Leutnants",
-	[Private.Enum.NpcType.Caster] = "Hat Mana",
-	[Private.Enum.NpcType.Melee] = "Normale Gegner",
+	[Private.Enum.NpcType.Other] = "Alle Weiteren",
 	[Private.Enum.NpcType.Minion] = "Schergen",
 }
-
-L.Settings.HideUntargetedSpellsLabel = "Zauber ohne Ziel ausblenden"
-
-L.Settings.HideTargetedSpellsLabel = "Zauber mit Ziel ausblenden"
-
-L.Settings.SelfOnlyLabel = "Nur Zauber anzeigen, die auf den Spieler zielen"
-
-L.Settings.InlineDurationLabel = "Dauer inline anzeigen"
 
 L.Settings.UseInterruptabilityColorsLabel = "Farbkodierung für Unterbrechungsstatus nutzen"
 L.Settings.UseInterruptabilityColorsTooltip = nil
 
 L.Settings.UseTargetClassColorLabel = "Zielklassenfarbe verwenden"
 L.Settings.UseTargetClassColorTooltip =
-	"Färbt den Balken in der Klassenfarbe der Zieleinheit mit 75 % Transparenz. Zauber ohne Ziel verwenden eine aufgehellte Hintergrundbalken-Farbe."
+"Färbt den Balken in der Klassenfarbe der Zieleinheit mit 75 % Transparenz. Zauber ohne Ziel verwenden eine aufgehellte Hintergrundbalken-Farbe."
 
 L.Settings.UninterruptibleColorLabel = "Farbe Ununterbrechbar"
 L.Settings.UninterruptibleColorTooltip = nil
@@ -194,26 +177,3 @@ L.Settings.FontTooltip = nil
 L.Settings.FeatureFlagsLabel = "Features"
 L.Settings.FeatureFlagsTooltip = nil
 
-L.Settings.FeatureFlagLabels = {
-	[Private.Enum.FeatureFlag.GlowImportant] = L.Settings.GlowImportantLabel,
-	[Private.Enum.FeatureFlag.OnlyImportant] = L.Settings.OnlyImportantLabel,
-	[Private.Enum.FeatureFlag.ShowDuration] = L.Settings.ShowDurationLabel,
-	[Private.Enum.FeatureFlag.ShowSwipe] = L.Settings.ShowSwipeLabel,
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
-	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,
-	[Private.Enum.FeatureFlag.ShowIcon] = "Symbol anzeigen",
-	[Private.Enum.FeatureFlag.ShowTargetMarker] = "Zielmarkierung anzeigen",
-	[Private.Enum.FeatureFlag.ShowSpellName] = "Zaubernamen anzeigen",
-	[Private.Enum.FeatureFlag.ShowTargetName] = "Zielnamen anzeigen",
-	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Zielklassenfarbe anzeigen",
-	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
-	[Private.Enum.FeatureFlag.InlineDuration] = L.Settings.InlineDurationLabel,
-	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
-	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
-	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,
-}
-
-L.Settings.FeatureFlagSettingTitles = {
-	[Private.Enum.FeatureFlag.GlowImportant] = "Anzeige",
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = "Unterbrechungseinstellungen",
-}

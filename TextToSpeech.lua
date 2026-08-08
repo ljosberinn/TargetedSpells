@@ -58,13 +58,7 @@ local function UnitMatchesTTSCriteria(unit)
 		return settings[Private.Enum.NpcType.Boss]
 	end
 
-	local class = UnitClassBase(unit)
-
-	if class == "PALADIN" or class == "MAGE" or class == "PRIEST" then
-		return settings[Private.Enum.NpcType.Caster]
-	end
-
-	return settings[Private.Enum.NpcType.Melee]
+	return settings[Private.Enum.NpcType.Other]
 end
 
 function Private.TextToSpeechUtil.MaybeAnnounceSpell(info, contentType, activeEncounterId)

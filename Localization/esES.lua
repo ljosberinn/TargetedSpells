@@ -112,13 +112,7 @@ L.Settings.GlowTypeLabels = {
 	[Private.Enum.GlowType.Star4] = "Estrella 4",
 }
 
-L.Settings.ShowDurationLabel = "Mostrar duración"
-
 L.Settings.IndicateInterruptsLabel = "Indicar interrupciones"
-
-L.Settings.RenderInterruptSourceNameLabel = "Mostrar nombre de fuente de interrupción"
-
-L.Settings.ShowSwipeLabel = "Mostrar barrido"
 
 L.Settings.BorderStyleLabel = "Estilo de borde"
 L.Settings.BorderStyleTooltip = nil
@@ -137,8 +131,6 @@ L.Settings.ProgressBarColorLabel = "Color de barra"
 L.Settings.ProgressBarColorTooltip =
 	"La opacidad solo está disponible en el Modo de Edición, ya que la interfaz de configuración predeterminada no la muestra."
 
-L.Settings.MirrorLayoutLabel = "Invertir diseño"
-
 L.Settings.TextToSpeechVoiceLabel = "Voz TTS"
 L.Settings.TextToSpeechVoiceTooltip =
 	"Voz usada para los anuncios de texto a voz. Compartida entre las configuraciones de Self y Party."
@@ -154,17 +146,9 @@ L.Settings.AnnounceTargetedSpellsTooltip =
 L.Settings.NpcTypeLabels = {
 	[Private.Enum.NpcType.Boss] = "Jefes",
 	[Private.Enum.NpcType.Lieutenant] = "Lugartenientes",
-	[Private.Enum.NpcType.Caster] = "Tiene maná",
-	[Private.Enum.NpcType.Melee] = "Enemigos normales",
+	[Private.Enum.NpcType.Other] = "Todos los demás",
 	[Private.Enum.NpcType.Minion] = "Secuaces",
 }
-
-L.Settings.HideUntargetedSpellsLabel = "Ocultar hechizos sin objetivo"
-L.Settings.HideTargetedSpellsLabel = "Ocultar hechizos con objetivo"
-
-L.Settings.SelfOnlyLabel = "Mostrar solo hechizos dirigidos al jugador"
-
-L.Settings.InlineDurationLabel = "Posición de duración integrada"
 
 L.Settings.UseInterruptabilityColorsLabel = "Usar colores de interrupción"
 L.Settings.UseInterruptabilityColorsTooltip = nil
@@ -193,26 +177,3 @@ L.Settings.FontTooltip = nil
 L.Settings.FeatureFlagsLabel = "Características"
 L.Settings.FeatureFlagsTooltip = nil
 
-L.Settings.FeatureFlagLabels = {
-	[Private.Enum.FeatureFlag.GlowImportant] = L.Settings.GlowImportantLabel,
-	[Private.Enum.FeatureFlag.OnlyImportant] = L.Settings.OnlyImportantLabel,
-	[Private.Enum.FeatureFlag.ShowDuration] = L.Settings.ShowDurationLabel,
-	[Private.Enum.FeatureFlag.ShowSwipe] = L.Settings.ShowSwipeLabel,
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
-	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,
-	[Private.Enum.FeatureFlag.ShowIcon] = "Mostrar icono",
-	[Private.Enum.FeatureFlag.ShowTargetMarker] = "Mostrar marcador de objetivo",
-	[Private.Enum.FeatureFlag.ShowSpellName] = "Mostrar nombre del hechizo",
-	[Private.Enum.FeatureFlag.ShowTargetName] = "Mostrar nombre del objetivo",
-	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Mostrar color de clase del objetivo",
-	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
-	[Private.Enum.FeatureFlag.InlineDuration] = L.Settings.InlineDurationLabel,
-	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
-	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
-	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,
-}
-
-L.Settings.FeatureFlagSettingTitles = {
-	[Private.Enum.FeatureFlag.GlowImportant] = "Visualización",
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = "Configuración de interrupción",
-}

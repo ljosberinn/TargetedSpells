@@ -2,6 +2,8 @@
 local addonName, Private = ...
 local LibEditMode = LibStub("LibEditMode")
 
+
+
 ---@class TargetedSpellsEditModeMixin
 local TargetedSpellsEditModeMixin = {}
 
@@ -356,7 +358,13 @@ function TargetedSpellsEditModeMixin:CreateSetting(base)
 		end
 
 		local function Generator(owner, rootDescription)
-			for _, id in ipairs({ Private.Enum.Template.Icon, Private.Enum.Template.Bar }) do
+			local templates = {
+				Private.Enum.Template.Icon,
+				Private.Enum.Template.Bar,
+				Private.Enum.Template.IconDuration,
+			}
+
+			for _, id in ipairs(templates) do
 				rootDescription:CreateRadio(Private.L.Settings.TemplateLabels[id], function()
 					return self.group.Template == id
 				end, function()
@@ -441,11 +449,18 @@ function TargetedSpellsEditModeMixin:CreateSetting(base)
 			Private.Enum.Grow.Start
 		)
 	elseif base == "GlowType" then
+		local GLOW_TYPES = {
+			Private.Enum.GlowType.PixelGlow,
+			Private.Enum.GlowType.Star4,
+			Private.Enum.GlowType.AutoCastGlow,
+			Private.Enum.GlowType.ProcGlow,
+		}
+
 		return RadioDropdown(
 			Private.L.Settings.GlowTypeLabel,
 			Private.L.Settings.GlowTypeTooltip,
 			"GlowType",
-			Options(Private.Settings.GetGlowTypesForKind(Private.Enum.FrameKind.Self), Private.L.Settings.GlowTypeLabels),
+			Options(GLOW_TYPES, Private.L.Settings.GlowTypeLabels),
 			Private.Enum.GlowType.PixelGlow,
 			not self.group.GlowImportant
 		)
@@ -494,8 +509,7 @@ function TargetedSpellsEditModeMixin:CreateSetting(base)
 		return MultiDropdown(label, tooltip, boolTable, Options({
 			Private.Enum.NpcType.Boss,
 			Private.Enum.NpcType.Lieutenant,
-			Private.Enum.NpcType.Caster,
-			Private.Enum.NpcType.Melee,
+			Private.Enum.NpcType.Other,
 			Private.Enum.NpcType.Minion,
 		}, Private.L.Settings.NpcTypeLabels), boolTable)
 	elseif base == "TextToSpeechVoice" then
@@ -530,6 +544,8 @@ end
 function TargetedSpellsEditModeMixin:GroupTemplatePool()
 	if self.group.Template == Private.Enum.Template.Icon then
 		return Private.Utils.Pools.Icon
+	elseif self.group.Template == Private.Enum.Template.IconDuration then
+		return Private.Utils.Pools.IconDuration
 	end
 
 	return Private.Utils.Pools.Bar
@@ -537,8 +553,8 @@ end
 
 -- the group's core element table (Icon or ProgressBar) for its current template
 function TargetedSpellsEditModeMixin:CoreElement()
-	local coreTag = self.group.Template == Private.Enum.Template.Icon and Private.Enum.Element.Icon
-		or Private.Enum.Element.ProgressBar
+	local coreTag = self.group.Template == Private.Enum.Template.Bar and Private.Enum.Element.ProgressBar
+		or Private.Enum.Element.Icon
 
 	return self.group.Elements[coreTag]
 end
@@ -637,6 +653,15 @@ function TargetedSpellsEditModeMixin:AppendSettings()
 		self.group.Position,
 		self.displayName
 	)
+
+	-- temp fix until https://github.com/p3lim-wow/LibEditMode/issues/86 gets closed, if at all
+	if LibEditMode:IsInEditMode() then
+		local selection = LibEditMode.frameSelections[self.editModeFrame]
+
+		if selection then
+			selection:ShowHighlighted()
+		end
+	end
 
 	LibEditMode:RegisterCallback("layout", GenerateClosure(self.RestoreEditModePosition, self))
 

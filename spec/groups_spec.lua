@@ -80,6 +80,39 @@ describe("Groups.GetMatching", function()
 		assert.same({}, Private.Groups.GetMatching({ targetClasses = {} }, makeGroups()))
 		assert.same({}, Private.Groups.GetMatching({}, makeGroups()))
 	end)
+
+	describe("with a reused `out` table", function()
+		local playerCast = { targetClasses = { [TargetClass.Player] = true } }
+
+		it("returns the same table it was handed, with the same contents as a fresh call", function()
+			local out = {}
+			local matches = Private.Groups.GetMatching(playerCast, makeGroups(), out)
+
+			assert.equals(out, matches)
+			assert.same(names(Private.Groups.GetMatching(playerCast, makeGroups())), names(matches))
+		end)
+
+		it("wipes the previous result rather than appending to it", function()
+			local out = {}
+			local groups = makeGroups()
+
+			Private.Groups.GetMatching(playerCast, groups, out)
+			assert.same({ "player", "player+party" }, names(out))
+
+			Private.Groups.GetMatching({ targetClasses = { [TargetClass.Nobody] = true } }, groups, out)
+			assert.same({ "nobody" }, names(out))
+		end)
+
+		it("wipes it even when nothing matches", function()
+			local out = {}
+			local groups = makeGroups()
+
+			Private.Groups.GetMatching(playerCast, groups, out)
+			Private.Groups.GetMatching({ targetClasses = {} }, groups, out)
+
+			assert.same({}, out)
+		end)
+	end)
 end)
 
 describe("Groups.Create / Delete / SetTemplate / Count", function()
@@ -100,9 +133,9 @@ describe("Groups.Create / Delete / SetTemplate / Count", function()
 		assert.equals(1, group.Id)
 		assert.is_string(group.Name)
 		assert.is_table(group.Elements[Element.ProgressBar])
-		-- fresh group sees every target class until narrowed
-		assert.is_true(group.Filter[Enum.TargetClass.Player])
-		assert.is_true(group.Filter[Enum.TargetClass.Nobody])
+		-- the Filter is seeded per template, not "everything": a bar starts on untargeted
+		-- casts, which is the display it was designed for
+		assert.same({ [Enum.TargetClass.Nobody] = true }, group.Filter)
 	end)
 
 	it("never reuses ids across delete/create within a session", function()

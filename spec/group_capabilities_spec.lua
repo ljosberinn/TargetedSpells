@@ -93,6 +93,22 @@ describe("Groups.ComputeCapabilities", function()
 		assert.is_true(capabilities.showsTargetMarker)
 	end)
 
+	it("an icon+duration group contributes no bar capabilities", function()
+		-- it has no interruptibility colours, shield or target marker, so it must stay out of
+		-- the Bar branch — otherwise the Driver subscribes to events nothing renders
+		local capabilities = Private.Groups.ComputeCapabilities({
+			[1] = {
+				Enabled = true,
+				Template = Template.IconDuration,
+				Elements = Private.Design.GetDefault(Template.IconDuration),
+			},
+		})
+
+		assert.is_false(capabilities.usesInterruptibility)
+		assert.is_false(capabilities.usesShield)
+		assert.is_false(capabilities.showsTargetMarker)
+	end)
+
 	it("indicatesInterrupts is independent of Enabled", function()
 		local capabilities = Private.Groups.ComputeCapabilities({
 			[1] = { Enabled = false, Template = Template.Icon, Elements = {}, IndicateInterrupts = true },

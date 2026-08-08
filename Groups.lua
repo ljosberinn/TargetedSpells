@@ -72,13 +72,10 @@ function Private.Groups.ComputeCapabilities(groups)
 	return capabilities
 end
 
----@param info { targetClasses: table<TargetClass, boolean> }
----@param groups table<any, table>?
----@return table[]
-function Private.Groups.GetMatching(info, groups)
+function Private.Groups.GetMatching(info, groups, out)
 	groups = groups or (TargetedSpellsSaved and TargetedSpellsSaved.Groups)
 
-	local matching = {}
+	local matching = table.wipe(out)
 	local targetClasses = info and info.targetClasses
 	if not groups or not targetClasses then
 		return matching
@@ -105,9 +102,6 @@ local function SavedOrGlobal(saved)
 	return saved or TargetedSpellsSaved
 end
 
--- Number of groups. Used to guard against deleting the last one.
----@param saved table?
----@return number
 function Private.Groups.Count(saved)
 	local count = 0
 
@@ -118,29 +112,50 @@ function Private.Groups.Count(saved)
 	return count
 end
 
--- Container-level defaults for a brand-new group (element layout comes from the
--- template's built-in defaults). Kept here — not in the v3 Settings defaults —
--- because a new v4 group has no v3 ancestor.
+-- Templates whose frames are wider than they are tall stack vertically; anything else
+-- defaults to a horizontal row. Absent → Horizontal.
+local DEFAULT_DIRECTION = {
+	[Private.Enum.Template.Bar] = Private.Enum.Direction.Vertical,
+	[Private.Enum.Template.IconDuration] = Private.Enum.Direction.Vertical,
+}
+
+-- Which cast targets a new group shows. Absent → all three, the historical default. The
+-- icon+duration display is built around a single prominent countdown, so it seeds to the
+-- player's own incoming casts rather than every cast in the pull.
+---@return table<TargetClass, boolean>
+local function DefaultFilter(template)
+	if template == Private.Enum.Template.IconDuration then
+		return { [Private.Enum.TargetClass.Player] = true }
+	end
+
+	if template == Private.Enum.Template.Bar then
+		return { [Private.Enum.TargetClass.Nobody] = true }
+	end
+
+	return { [Private.Enum.TargetClass.Player] = true }
+end
+
+-- Container-level defaults for a group — every field except Elements (the element
+-- layout comes from the template schema, see Design). Single source of truth shared by
+-- BuildDefaultGroup (a brand-new group) and Conform (healing a saved group missing a
+-- field), so a new container field is added in one place and healed automatically.
+-- Returns a fresh table with fresh sub-tables on every call, so callers may keep the
+-- result without deep-copying. Kept here — not in the v3 Settings defaults — because a
+-- new v4 group has no v3 ancestor.
 ---@param id integer
 ---@param template TargetedSpellsTemplate
 ---@param name string
-local function BuildDefaultGroup(id, template, name)
+local function ContainerDefaults(id, template, name)
 	return {
 		Id = id,
 		Name = name,
 		Enabled = true,
-		Filter = {
-			[Private.Enum.TargetClass.Player] = true,
-			[Private.Enum.TargetClass.PartyMember] = true,
-			[Private.Enum.TargetClass.Nobody] = true,
-		},
+		Filter = DefaultFilter(template),
 		Template = template,
-		Elements = Private.Design.GetDefault(template),
 		Position = { point = "CENTER", x = 0, y = 0 },
 		Gap = 2,
 		Grow = Private.Enum.Grow.Start,
-		Direction = template == Private.Enum.Template.Bar and Private.Enum.Direction.Vertical
-			or Private.Enum.Direction.Horizontal,
+		Direction = DEFAULT_DIRECTION[template] or Private.Enum.Direction.Horizontal,
 		SortOrder = Private.Enum.SortOrder.Ascending,
 		LoadConditionContentType = {
 			[Private.Enum.ContentType.OpenWorld] = false,
@@ -160,6 +175,47 @@ local function BuildDefaultGroup(id, template, name)
 		OnlyImportant = false,
 		IndicateInterrupts = false,
 	}
+end
+
+-- A brand-new group: container defaults + the template's default element layout.
+---@param id integer
+---@param template TargetedSpellsTemplate
+---@param name string
+local function BuildDefaultGroup(id, template, name)
+	local group = ContainerDefaults(id, template, name)
+	group.Elements = Private.Design.GetDefault(template)
+
+	return group
+end
+
+-- Fills any missing container field on `group` from a same-shape default; never
+-- overwrites a present value, so a meaningful `false` (Enabled/GlowImportant/…) or a
+-- non-default enum survives — the test is `== nil`, not truthiness. Elements are healed
+-- separately (Design.BackfillElements). ContainerDefaults is freshly built for this one
+-- group, so its sub-tables can be assigned directly without aliasing another group.
+---@param group TargetedSpellsGroup
+local function ApplyContainerDefaults(group)
+	local defaults = ContainerDefaults(group.Id, group.Template, group.Name or ("Group " .. tostring(group.Id)))
+
+	for key, value in pairs(defaults) do
+		if group[key] == nil then
+			group[key] = value
+		end
+	end
+end
+
+-- Guarantees every saved group is complete and self-consistent, whatever version
+-- created it: re-stamps the derived Id from its key, fills any missing container field,
+-- and backfills element fields. Idempotent, and the single load-time owner of group
+-- shape — heals presence only (nil → default), never validating or overwriting a value
+-- that is already there.
+---@param groups table<integer, TargetedSpellsGroup>
+function Private.Groups.Conform(groups)
+	for id, group in pairs(groups) do
+		group.Id = id
+		ApplyContainerDefaults(group)
+		Private.Design.BackfillElements(group)
+	end
 end
 
 -- Runtime (non-persisted) id allocator. Ids must be unique among currently-live

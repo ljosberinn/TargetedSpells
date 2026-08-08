@@ -26,6 +26,11 @@ LibStub = function(name)
 			HashTable = function()
 				return {}
 			end,
+			-- ApplyBorderStyle fetches the border art path; the name round-trips so a spec
+			-- can assert which media a style resolved to
+			Fetch = function(_, mediaType, key)
+				return string.format("%s/%s", tostring(mediaType), tostring(key))
+			end,
 			MediaType = {
 				FONT = "font",
 				STATUSBAR = "statusbar",
@@ -37,11 +42,26 @@ LibStub = function(name)
 	return {}
 end
 
+-- ColorMixin stand-ins: only the four channels are read by the addon.
+function CreateColor(r, g, b, a)
+	return { r = r, g = g, b = b, a = a }
+end
+
+-- AARRGGBB, matching the hex strings the element schema stores.
+function CreateColorFromHexString(hex)
+	local a, r, g, b = hex:match("^(%x%x)(%x%x)(%x%x)(%x%x)$")
+
+	return CreateColor(tonumber(r, 16) / 255, tonumber(g, 16) / 255, tonumber(b, 16) / 255, tonumber(a, 16) / 255)
+end
+
 Private.LoginFnQueue = {}
 
 loadfile("Settings.lua")(addonName, Private)
 
 Enum = { LuaCurveType = { Linear = 0 } }
+
+-- Driver.lua reads the unit-token cap at file scope to size its nameplate event shards.
+Constants = { UnitEventConstants = { MAX_UNIT_TOKENS_IN_EVENT = 4 } }
 
 C_CurveUtil = {
 	CreateCurve = function()
@@ -64,6 +84,40 @@ CreateFramePool = function()
 		end,
 		Release = function() end,
 	}
+end
+
+-- Blizzard's CVar callback registry (Blizzard_SharedXMLBase/CvarUtil.lua). Faithful on the two
+-- properties the Driver depends on: callbacks are keyed by CVar name so only that CVar's
+-- writes reach them, and registration is idempotent per owner ("an owner can have a single
+-- callback per event" — CallbackRegistry.lua), which is what lets the Driver register from
+-- SetupFrame's repeatedly-called reconciliation. TriggerEvent passes the owner first, matching
+-- securecallfunction(func, owner, ...) in the real TriggerEvent.
+CVarCallbackRegistry = {
+	callbacks = {},
+}
+
+function CVarCallbackRegistry:RegisterCallback(event, func, owner)
+	if self.callbacks[event] == nil then
+		self.callbacks[event] = {}
+	end
+
+	self.callbacks[event][owner] = func
+end
+
+function CVarCallbackRegistry:UnregisterCallback(event, owner)
+	if self.callbacks[event] ~= nil then
+		self.callbacks[event][owner] = nil
+	end
+end
+
+function CVarCallbackRegistry:TriggerEvent(event, ...)
+	if self.callbacks[event] == nil then
+		return
+	end
+
+	for owner, func in pairs(self.callbacks[event]) do
+		func(owner, ...)
+	end
 end
 
 C_EncodingUtil = {
@@ -113,17 +167,6 @@ loadfile("Migration.lua")(addonName, Private)
 -- than in bootstrap's _G. All TargetedSpellsSaved mutations must go through
 -- these helpers so they always update the same table Utils.lua reads.
 
-local function reset()
-	TargetedSpellsSaved = {
-		V3MigrationWarningSeen = false,
-		Settings = {
-			Self = Private.Settings.GetSelfDefaultSettings(),
-			Party = Private.Settings.GetPartyDefaultSettings(),
-		},
-	}
-	Private.EventRegistry.triggeredEvents = {}
-end
-
 -- Returns the live TargetedSpellsSaved table from bootstrap's scope.
 -- Tests MUST use this instead of the global to avoid the setfenv split.
 local function savedVars()
@@ -143,7 +186,7 @@ end
 
 return {
 	Private = Private,
-	reset = reset,
+	resetToV4 = resetToV4,
 	savedVars = savedVars,
 	encode = encode,
 	exportDecoded = exportDecoded,
