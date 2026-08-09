@@ -14,9 +14,32 @@ local L = Private.L
 L.EditMode = {}
 L.Functionality = {}
 L.Settings = {}
+L.Migration = {}
+L.SlashCommands = {}
+L.Designer = {}
+L.Designer.Title = "Targeted Spells - 版面設計師"
+L.Designer.ElementPickerLabel = "元素"
+L.Designer.SelectHint = "點擊預覽中的元素，或從元素下拉選單中選擇。"
+L.Designer.ResetElement = "重設元素"
+L.Designer.CopyFrom = "從其他群組複製版面…"
+L.Designer.CopyFromEmpty = "沒有其他相同類型的群組"
+L.Designer.Apply = "儲存變更"
+L.Designer.Revert = "還原"
+L.Designer.Discard = "放棄"
+L.Designer.UnsavedHint = "儲存後變更才會生效。"
+L.Designer.UnsavedPrompt = "你有尚未儲存的版面變更。"
+L.Designer.SettingNames = { ELEMENT_ACTIVE = "啟用", ELEMENT_WIDTH = "寬度", ELEMENT_HEIGHT = "高度", ELEMENT_X = "X 偏移", ELEMENT_Y = "Y 偏移", ELEMENT_FONT_SIZE = "字型大小", ELEMENT_FONT = "字型", ELEMENT_FONT_FLAGS = "字型樣式", ELEMENT_TEXT_COLOR = "文字顏色", ELEMENT_JUSTIFY_H = "對齊", ELEMENT_MAX_WIDTH = "最大寬度", ELEMENT_GAP = "間距", ELEMENT_USE_CLASS_COLOR = "使用職業顏色", ELEMENT_ICON_ZOOM = "圖示縮放", ELEMENT_SHOW_SWIPE = "顯示掃過動畫", ELEMENT_SHOW_COUNTDOWN = "顯示持續時間", ELEMENT_FRACTION_THRESHOLD = "低於此值顯示小數（秒）", ELEMENT_BORDER_TEXTURE = "邊框材質", ELEMENT_BORDER_COLOR = "邊框顏色", ELEMENT_BORDER_SIZE = "邊框大小", ELEMENT_BAR_TEXTURE = "條材質", ELEMENT_BAR_COLOR_MODE = "顏色模式", ELEMENT_BAR_COLOR = "條顏色", ELEMENT_INTERRUPTIBLE_COLOR = "可打斷顏色", ELEMENT_UNINTERRUPTIBLE_COLOR = "不可打斷顏色", ELEMENT_BACKGROUND_TEXTURE = "背景材質", ELEMENT_BACKGROUND_COLOR = "背景顏色" }
+L.Designer.Options = { JUSTIFY_LEFT = "靠左", JUSTIFY_CENTER = "置中", JUSTIFY_RIGHT = "靠右", BAR_COLOR_STATIC = "固定", BAR_COLOR_INTERRUPTIBILITY = "可打斷性", BAR_COLOR_TARGET_CLASS = "目標職業顏色" }
+L.Designer.FontFlagNames = { [Private.Enum.FontFlags.OUTLINE] = "外框", [Private.Enum.FontFlags.SHADOW] = "陰影" }
+L.Designer.FontFlagsNone = "無"
+L.Designer.ElementNames = { [Private.Enum.Element.Icon] = "圖示", [Private.Enum.Element.Overlay] = "冷卻管理器邊框", [Private.Enum.Element.Cooldown] = "冷卻時間", [Private.Enum.Element.Border] = "邊框", [Private.Enum.Element.InterruptSource] = "打斷者名稱", [Private.Enum.Element.ProgressBar] = "進度條", [Private.Enum.Element.Background] = "背景", [Private.Enum.Element.TargetMarker] = "目標標記", [Private.Enum.Element.DurationCooldown] = "持續時間", [Private.Enum.Element.SpellName] = "法術名稱", [Private.Enum.Element.TargetName] = "目標名稱", [Private.Enum.Element.InterruptShield] = "打斷護盾", [Private.Enum.Element.Duration] = "持續時間" }
+L.SlashCommands.Header = "Targeted Spells 指令："
+L.SlashCommands.OptionsDescription = "開啟設定面板"
+L.SlashCommands.SettingsDescription = "開啟設定面板"
+L.SlashCommands.DesignDescription = "開啟版面設計師"
 
 L.Settings.EditModeReminder =
-	"建議使用編輯模式，它包含所有設定的即時預覽。\n這些設定僅在此處提供，以便在戰鬥中也能編輯。"
+	"所有設定均可透過編輯模式和 \"/targetedspells design\" 進行調整。"
 L.EditMode.TargetedSpellsSelfLabel = "目標法術 - 自身"
 L.EditMode.TargetedSpellsPartyLabel = "目標法術 - 小隊"
 
@@ -34,7 +57,6 @@ L.Functionality.V3MigrationWarning = string.format(
 )
 
 L.Settings.EnabledLabel = "啟用"
-L.Settings.EnabledTooltip = nil
 L.Settings.DisabledLabel = "停用"
 
 L.Settings.AddonCompartmentTooltipLine1 =
@@ -43,7 +65,6 @@ L.Settings.AddonCompartmentTooltipLine2 =
 	string.format("%s 已%s", WrapTextInColorCode(L.EditMode.TargetedSpellsPartyLabel, "ffeda55f"), "%s")
 
 L.Settings.LoadConditionContentTypeLabel = "載入條件：區域"
-L.Settings.LoadConditionContentTypeLabelAbbreviated = "在以下區域中載入"
 L.Settings.LoadConditionContentTypeTooltip = nil
 L.Settings.LoadConditionContentTypeLabels = {
 	[Private.Enum.ContentType.OpenWorld] = "開放世界",
@@ -55,28 +76,11 @@ L.Settings.LoadConditionContentTypeLabels = {
 }
 
 L.Settings.LoadConditionRoleLabel = "載入條件：職責"
-L.Settings.LoadConditionRoleLabelAbbreviated = "在以下職責載入"
 L.Settings.LoadConditionRoleTooltip = nil
 L.Settings.LoadConditionRoleLabels = {
 	[Private.Enum.Role.Healer] = "治療",
 	[Private.Enum.Role.Tank] = "坦克",
 	[Private.Enum.Role.Damager] = "輸出",
-}
-
-L.Settings.FrameWidthLabel = "寬度"
-L.Settings.FrameWidthTooltip = nil
-
-L.Settings.FrameHeightLabel = "高度"
-L.Settings.FrameHeightTooltip = nil
-
-L.Settings.FontSizeLabel = "字型大小"
-L.Settings.FontSizeTooltip = nil
-
-L.Settings.FontFlagsLabel = "字型選項"
-L.Settings.FontFlagsTooltip = nil
-L.Settings.FontFlagsLabels = {
-	[Private.Enum.FontFlags.OUTLINE] = "外框",
-	[Private.Enum.FontFlags.SHADOW] = "陰影",
 }
 
 L.Settings.FrameGapLabel = "間距"
@@ -112,32 +116,7 @@ L.Settings.GlowTypeLabels = {
 	[Private.Enum.GlowType.Star4] = "四角星發光",
 }
 
-L.Settings.ShowDurationLabel = "顯示持續時間"
-
 L.Settings.IndicateInterruptsLabel = "標記可打斷法術"
-
-L.Settings.RenderInterruptSourceNameLabel = "顯示打斷來源名稱"
-
-L.Settings.ShowSwipeLabel = "顯示冷卻掃光"
-
-L.Settings.BorderStyleLabel = "邊框樣式"
-L.Settings.BorderStyleTooltip = nil
-
-L.Settings.ForegroundBarTextureLabel = "進度條材質"
-L.Settings.ForegroundBarTextureTooltip = nil
-
-L.Settings.BackgroundBarTextureLabel = "背景條材質"
-L.Settings.BackgroundBarTextureTooltip = nil
-
-L.Settings.BackgroundBarColorLabel = "背景條顏色"
-L.Settings.BackgroundBarColorTooltip =
-	"透明度僅在編輯模式中可用，因為預設設定介面未公開此選項。"
-
-L.Settings.ProgressBarColorLabel = "進度條顏色"
-L.Settings.ProgressBarColorTooltip =
-	"透明度僅在編輯模式中可用，因為預設設定介面未公開此選項。"
-
-L.Settings.MirrorLayoutLabel = "鏡像排版"
 
 L.Settings.TextToSpeechVoiceLabel = "TTS 語音"
 L.Settings.TextToSpeechVoiceTooltip = "TTS 播報所使用的語音。自身與小隊設定共用。"
@@ -151,66 +130,30 @@ L.Settings.AnnounceTargetedSpellsTooltip = "依 NPC 類型設定已目標法術�
 L.Settings.NpcTypeLabels = {
 	[Private.Enum.NpcType.Boss] = "首領",
 	[Private.Enum.NpcType.Lieutenant] = "副官",
-	[Private.Enum.NpcType.Caster] = "施法單位",
-	[Private.Enum.NpcType.Melee] = "普通近戰",
+	[Private.Enum.NpcType.Other] = "其他單位",
 	[Private.Enum.NpcType.Minion] = "從屬單位",
 }
-
-L.Settings.HideUntargetedSpellsLabel = "隱藏無目標法術"
-
-L.Settings.HideTargetedSpellsLabel = "隱藏有目標法術"
-
-L.Settings.SelfOnlyLabel = "僅顯示針對玩家的法術"
-
-L.Settings.InlineDurationLabel = "內嵌持續時間位置"
-
-L.Settings.UseInterruptabilityColorsLabel = "使用打斷顏色"
-L.Settings.UseInterruptabilityColorsTooltip = nil
 
 L.Settings.UseTargetClassColorLabel = "使用目標職業顏色"
 L.Settings.UseTargetClassColorTooltip =
 	"以 75% 透明度將條形顏色設為目標單位的職業顏色。未選中目標的法術將使用加亮後的背景條顏色。"
-
-L.Settings.UninterruptibleColorLabel = "不可打斷顏色"
-L.Settings.UninterruptibleColorTooltip = nil
-
-L.Settings.InterruptibleColorLabel = "可打斷顏色"
-L.Settings.InterruptibleColorTooltip = nil
-
-L.Settings.IconZoomLabel = "圖示縮放"
-L.Settings.IconZoomTooltip = nil
 
 L.Settings.ClickToOpenSettingsLabel = "點擊開啟設定"
 
 L.Settings.Import = "匯入"
 L.Settings.Export = "匯出"
 
-L.Settings.FontLabel = "字型"
-L.Settings.FontTooltip = nil
-
 L.Settings.FeatureFlagsLabel = "功能選項"
 L.Settings.FeatureFlagsTooltip = nil
-
-L.Settings.FeatureFlagLabels = {
-	[Private.Enum.FeatureFlag.GlowImportant] = L.Settings.GlowImportantLabel,
-	[Private.Enum.FeatureFlag.OnlyImportant] = L.Settings.OnlyImportantLabel,
-	[Private.Enum.FeatureFlag.ShowDuration] = L.Settings.ShowDurationLabel,
-	[Private.Enum.FeatureFlag.ShowSwipe] = L.Settings.ShowSwipeLabel,
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
-	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,
-	[Private.Enum.FeatureFlag.ShowIcon] = "顯示圖示",
-	[Private.Enum.FeatureFlag.ShowTargetMarker] = "顯示目標標記",
-	[Private.Enum.FeatureFlag.ShowSpellName] = "顯示法術名稱",
-	[Private.Enum.FeatureFlag.ShowTargetName] = "顯示目標名稱",
-	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "顯示目標職業顏色",
-	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
-	[Private.Enum.FeatureFlag.InlineDuration] = L.Settings.InlineDurationLabel,
-	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
-	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
-	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,
-}
-
-L.Settings.FeatureFlagSettingTitles = {
-	[Private.Enum.FeatureFlag.GlowImportant] = "顯示",
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = "打斷設定",
-}
+L.Settings.GroupNameLabel = "重新命名群組"
+L.Settings.GroupNamePrompt = "輸入此群組的名稱："
+L.Settings.TemplateLabel = "範本"
+L.Settings.TemplateTooltip = "切換範本會將此群組的元素版面重設為範本預設值。"
+L.Settings.TemplateLabels = { [Private.Enum.Template.Icon] = "圖示", [Private.Enum.Template.Bar] = "條", [Private.Enum.Template.IconDuration] = "圖示 + 持續時間" }
+L.Settings.FilterLabel = "顯示以其為目標的法術"
+L.Settings.FilterTooltip = "此群組顯示哪些目標的法術。"
+L.Settings.TargetClassLabels = { [Private.Enum.TargetClass.Player] = "你", [Private.Enum.TargetClass.PartyMember] = "小隊成員", [Private.Enum.TargetClass.Nobody] = "無（未指定目標）" }
+L.Settings.CreateGroup = "建立群組"
+L.Settings.DeleteGroup = "刪除群組"
+L.Settings.DeleteGroupConfirm = "刪除此群組？此操作無法復原。"
+L.Settings.CannotDeleteLastGroup = "無法刪除最後剩餘的群組。"

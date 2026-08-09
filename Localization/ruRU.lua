@@ -14,9 +14,32 @@ local L = Private.L
 L.EditMode = {}
 L.Functionality = {}
 L.Settings = {}
+L.Migration = {}
+L.SlashCommands = {}
+L.Designer = {}
+L.Designer.Title = "Targeted Spells — Редактор раскладки"
+L.Designer.ElementPickerLabel = "Элемент"
+L.Designer.SelectHint = "Нажмите на элемент в окне предварительного просмотра или выберите его в списке элементов."
+L.Designer.ResetElement = "Сбросить элемент"
+L.Designer.CopyFrom = "Копировать раскладку из…"
+L.Designer.CopyFromEmpty = "Нет других групп этого типа"
+L.Designer.Apply = "Сохранить изменения"
+L.Designer.Revert = "Отменить"
+L.Designer.Discard = "Отбросить"
+L.Designer.UnsavedHint = "Изменения применяются после сохранения."
+L.Designer.UnsavedPrompt = "У вас есть несохранённые изменения раскладки."
+L.Designer.SettingNames = { ELEMENT_ACTIVE = "Включено", ELEMENT_WIDTH = "Ширина", ELEMENT_HEIGHT = "Высота", ELEMENT_X = "Смещение по X", ELEMENT_Y = "Смещение по Y", ELEMENT_FONT_SIZE = "Размер шрифта", ELEMENT_FONT = "Шрифт", ELEMENT_FONT_FLAGS = "Стиль шрифта", ELEMENT_TEXT_COLOR = "Цвет текста", ELEMENT_JUSTIFY_H = "Выравнивание", ELEMENT_MAX_WIDTH = "Максимальная ширина", ELEMENT_GAP = "Отступ", ELEMENT_USE_CLASS_COLOR = "Использовать цвет класса", ELEMENT_ICON_ZOOM = "Масштаб значка", ELEMENT_SHOW_SWIPE = "Показывать анимацию", ELEMENT_SHOW_COUNTDOWN = "Показывать длительность", ELEMENT_FRACTION_THRESHOLD = "Дробная часть ниже (с)", ELEMENT_BORDER_TEXTURE = "Текстура рамки", ELEMENT_BORDER_COLOR = "Цвет рамки", ELEMENT_BORDER_SIZE = "Размер рамки", ELEMENT_BAR_TEXTURE = "Текстура полосы", ELEMENT_BAR_COLOR_MODE = "Режим цвета", ELEMENT_BAR_COLOR = "Цвет полосы", ELEMENT_INTERRUPTIBLE_COLOR = "Цвет прерываемого", ELEMENT_UNINTERRUPTIBLE_COLOR = "Цвет непрерываемого", ELEMENT_BACKGROUND_TEXTURE = "Текстура фона", ELEMENT_BACKGROUND_COLOR = "Цвет фона" }
+L.Designer.Options = { JUSTIFY_LEFT = "Слева", JUSTIFY_CENTER = "По центру", JUSTIFY_RIGHT = "Справа", BAR_COLOR_STATIC = "Статический", BAR_COLOR_INTERRUPTIBILITY = "Прерываемость", BAR_COLOR_TARGET_CLASS = "Цвет класса цели" }
+L.Designer.FontFlagNames = { [Private.Enum.FontFlags.OUTLINE] = "Контур", [Private.Enum.FontFlags.SHADOW] = "Тень" }
+L.Designer.FontFlagsNone = "Нет"
+L.Designer.ElementNames = { [Private.Enum.Element.Icon] = "Значок", [Private.Enum.Element.Overlay] = "Рамка менеджера восстановления", [Private.Enum.Element.Cooldown] = "Восстановление", [Private.Enum.Element.Border] = "Рамка", [Private.Enum.Element.InterruptSource] = "Имя прерывающего", [Private.Enum.Element.ProgressBar] = "Индикатор прогресса", [Private.Enum.Element.Background] = "Фон", [Private.Enum.Element.TargetMarker] = "Метка цели", [Private.Enum.Element.DurationCooldown] = "Длительность", [Private.Enum.Element.SpellName] = "Название заклинания", [Private.Enum.Element.TargetName] = "Имя цели", [Private.Enum.Element.InterruptShield] = "Щит прерывания", [Private.Enum.Element.Duration] = "Длительность" }
+L.SlashCommands.Header = "Команды Targeted Spells:"
+L.SlashCommands.OptionsDescription = "Открыть панель настроек"
+L.SlashCommands.SettingsDescription = "Открыть панель настроек"
+L.SlashCommands.DesignDescription = "Открыть редактор раскладки"
 
 L.Settings.EditModeReminder =
-	"Рекомендуем использовать Режим редактирования — он включает предварительный просмотр всех настроек в реальном времени.\nЗдесь настройки представлены только для возможности изменения в бою."
+	"Все настройки доступны через Режим редактирования и \"/targetedspells design\"."
 L.EditMode.TargetedSpellsSelfLabel = "Targeted Spells - Свой"
 L.EditMode.TargetedSpellsPartyLabel = "Targeted Spells - Группа"
 
@@ -34,7 +57,6 @@ L.Functionality.V3MigrationWarning = string.format(
 )
 
 L.Settings.EnabledLabel = "Включено"
-L.Settings.EnabledTooltip = nil
 L.Settings.DisabledLabel = "Отключено"
 
 L.Settings.AddonCompartmentTooltipLine1 =
@@ -43,7 +65,6 @@ L.Settings.AddonCompartmentTooltipLine2 =
 	string.format("%s: %s", WrapTextInColorCode(L.EditMode.TargetedSpellsPartyLabel, "ffeda55f"), "%s")
 
 L.Settings.LoadConditionContentTypeLabel = "Условие загрузки: Тип контента"
-L.Settings.LoadConditionContentTypeLabelAbbreviated = "Загружать в контенте"
 L.Settings.LoadConditionContentTypeTooltip = nil
 L.Settings.LoadConditionContentTypeLabels = {
 	[Private.Enum.ContentType.OpenWorld] = "Открытый мир",
@@ -55,28 +76,11 @@ L.Settings.LoadConditionContentTypeLabels = {
 }
 
 L.Settings.LoadConditionRoleLabel = "Условие загрузки: Роль"
-L.Settings.LoadConditionRoleLabelAbbreviated = "Загружать для роли"
 L.Settings.LoadConditionRoleTooltip = nil
 L.Settings.LoadConditionRoleLabels = {
 	[Private.Enum.Role.Healer] = "Целитель",
 	[Private.Enum.Role.Tank] = "Танк",
 	[Private.Enum.Role.Damager] = "ДД",
-}
-
-L.Settings.FrameWidthLabel = "Ширина"
-L.Settings.FrameWidthTooltip = nil
-
-L.Settings.FrameHeightLabel = "Высота"
-L.Settings.FrameHeightTooltip = nil
-
-L.Settings.FontSizeLabel = "Размер шрифта"
-L.Settings.FontSizeTooltip = nil
-
-L.Settings.FontFlagsLabel = "Параметры шрифта"
-L.Settings.FontFlagsTooltip = nil
-L.Settings.FontFlagsLabels = {
-	[Private.Enum.FontFlags.OUTLINE] = "Контур",
-	[Private.Enum.FontFlags.SHADOW] = "Тень",
 }
 
 L.Settings.FrameGapLabel = "Отступ"
@@ -112,33 +116,7 @@ L.Settings.GlowTypeLabels = {
 	[Private.Enum.GlowType.Star4] = "Звезда 4",
 }
 
-L.Settings.ShowDurationLabel = "Показывать длительность"
-
 L.Settings.IndicateInterruptsLabel = "Показывать прерывания"
-
-L.Settings.RenderInterruptSourceNameLabel = "Показывать имя источника прерывания"
-
-L.Settings.ShowSwipeLabel = "Показывать анимацию перезарядки"
-
-L.Settings.BorderStyleLabel = "Стиль рамки"
-L.Settings.BorderStyleTooltip = nil
-
-L.Settings.ForegroundBarTextureLabel = "Текстура полосы прогресса"
-L.Settings.ForegroundBarTextureTooltip = nil
-
-L.Settings.BackgroundBarTextureLabel = "Текстура фона полосы"
-L.Settings.BackgroundBarTextureTooltip = nil
-
-L.Settings.BackgroundBarColorLabel = "Цвет фона полосы"
-L.Settings.BackgroundBarColorTooltip =
-	"Прозрачность доступна только в Режиме редактирования, так как стандартный интерфейс настроек её не предоставляет."
-
-L.Settings.ProgressBarColorLabel = "Цвет полосы"
-L.Settings.ProgressBarColorTooltip =
-	"Прозрачность доступна только в Режиме редактирования, так как стандартный интерфейс настроек её не предоставляет."
-
-L.Settings.MirrorLayoutLabel = "Зеркальный макет"
-L.Settings.MirrorLayoutTooltip = nil
 
 L.Settings.TextToSpeechVoiceLabel = "Голос TTS"
 L.Settings.TextToSpeechVoiceTooltip =
@@ -155,67 +133,30 @@ L.Settings.AnnounceTargetedSpellsTooltip =
 L.Settings.NpcTypeLabels = {
 	[Private.Enum.NpcType.Boss] = "Боссы",
 	[Private.Enum.NpcType.Lieutenant] = "Лейтенанты",
-	[Private.Enum.NpcType.Caster] = "Есть мана",
-	[Private.Enum.NpcType.Melee] = "Обычные мобы",
+	[Private.Enum.NpcType.Other] = "Все остальные",
 	[Private.Enum.NpcType.Minion] = "Миньоны",
 }
-
-L.Settings.HideUntargetedSpellsLabel = "Скрыть заклинания без цели"
-
-L.Settings.HideTargetedSpellsLabel = "Скрыть заклинания с целью"
-
-L.Settings.SelfOnlyLabel =
-	"Показывать только заклинания, нацеленные на игрока"
-
-L.Settings.InlineDurationLabel = "Встроенное отображение длительности"
-
-L.Settings.UseInterruptabilityColorsLabel = "Использовать цвета прерывания"
-L.Settings.UseInterruptabilityColorsTooltip = nil
 
 L.Settings.UseTargetClassColorLabel = "Использовать цвет класса цели"
 L.Settings.UseTargetClassColorTooltip =
 	"Окрашивает полосу в цвет класса целевого юнита с прозрачностью 75 %. Заклинания без цели будут использовать осветлённый Цвет Фоновой Полосы."
-
-L.Settings.UninterruptibleColorLabel = "Цвет непрерываемого"
-L.Settings.UninterruptibleColorTooltip = nil
-
-L.Settings.InterruptibleColorLabel = "Цвет прерываемого"
-L.Settings.InterruptibleColorTooltip = nil
-
-L.Settings.IconZoomLabel = "Масштаб иконки"
-L.Settings.IconZoomTooltip = nil
 
 L.Settings.ClickToOpenSettingsLabel = "Нажмите для открытия настроек"
 
 L.Settings.Import = "Импорт"
 L.Settings.Export = "Экспорт"
 
-L.Settings.FontLabel = "Шрифт"
-L.Settings.FontTooltip = nil
-
 L.Settings.FeatureFlagsLabel = "Функции"
 L.Settings.FeatureFlagsTooltip = nil
-
-L.Settings.FeatureFlagLabels = {
-	[Private.Enum.FeatureFlag.GlowImportant] = L.Settings.GlowImportantLabel,
-	[Private.Enum.FeatureFlag.OnlyImportant] = L.Settings.OnlyImportantLabel,
-	[Private.Enum.FeatureFlag.ShowDuration] = L.Settings.ShowDurationLabel,
-	[Private.Enum.FeatureFlag.ShowSwipe] = L.Settings.ShowSwipeLabel,
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
-	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,
-	[Private.Enum.FeatureFlag.ShowIcon] = "Показывать иконку",
-	[Private.Enum.FeatureFlag.ShowTargetMarker] = "Показывать маркер цели",
-	[Private.Enum.FeatureFlag.ShowSpellName] = "Показывать название заклинания",
-	[Private.Enum.FeatureFlag.ShowTargetName] = "Показывать имя цели",
-	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Показывать цвет класса цели",
-	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
-	[Private.Enum.FeatureFlag.InlineDuration] = L.Settings.InlineDurationLabel,
-	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
-	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
-	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,
-}
-
-L.Settings.FeatureFlagSettingTitles = {
-	[Private.Enum.FeatureFlag.GlowImportant] = "Отображение",
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = "Настройки прерываний",
-}
+L.Settings.GroupNameLabel = "Переименовать группу"
+L.Settings.GroupNamePrompt = "Введите название этой группы:"
+L.Settings.TemplateLabel = "Шаблон"
+L.Settings.TemplateTooltip = "Смена шаблона сбрасывает раскладку элементов этой группы к настройкам шаблона по умолчанию."
+L.Settings.TemplateLabels = { [Private.Enum.Template.Icon] = "Значок", [Private.Enum.Template.Bar] = "Полоса", [Private.Enum.Template.IconDuration] = "Значок + длительность" }
+L.Settings.FilterLabel = "Показывать заклинания, нацеленные на"
+L.Settings.FilterTooltip = "Цели заклинаний, которые показывает эта группа."
+L.Settings.TargetClassLabels = { [Private.Enum.TargetClass.Player] = "вас", [Private.Enum.TargetClass.PartyMember] = "членов группы", [Private.Enum.TargetClass.Nobody] = "никого (без цели)" }
+L.Settings.CreateGroup = "Создать группу"
+L.Settings.DeleteGroup = "Удалить группу"
+L.Settings.DeleteGroupConfirm = "Удалить эту группу? Это действие нельзя отменить."
+L.Settings.CannotDeleteLastGroup = "Нельзя удалить последнюю оставшуюся группу."

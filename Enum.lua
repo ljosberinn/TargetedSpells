@@ -6,12 +6,9 @@ Private.Enum = {}
 
 ---@enum CustomEvents
 Private.Enum.Events = {
-	SETTING_CHANGED = "SETTING_CHANGED",
-	DELAYED_UNIT_SPELLCAST_START = "DELAYED_UNIT_SPELLCAST_START",
-	EDIT_MODE_SELF_POSITION_CHANGED = "EDIT_MODE_SELF_POSITION_CHANGED",
-	EDIT_MODE_PARTY_POSITION_CHANGED = "EDIT_MODE_PARTY_POSITION_CHANGED",
-	DELAYED_FRAME_CLEANUP = "DELAYED_FRAME_CLEANUP",
-	PARTY_SETTINGS_MIGRATED = "PARTY_SETTINGS_MIGRATED",
+	PROFILE_IMPORTED = "PROFILE_IMPORTED",
+	GROUP_CHANGED = "GROUP_CHANGED",
+	GROUP_POSITION_CHANGED = "GROUP_POSITION_CHANGED",
 }
 
 ---@enum Direction
@@ -88,30 +85,49 @@ Private.Enum.FontFlags = {
 Private.Enum.NpcType = {
 	Boss = 1,
 	Lieutenant = 2,
-	Caster = 3,
-	Melee = 4,
+	-- Caster = 3, -- deprecated as of 12.1
+	-- Melee = 4, -- deprecated as of 12.1
 	Minion = 5,
+	Other = 6,
 }
 
----@enum FeatureFlag
-Private.Enum.FeatureFlag = {
-	GlowImportant = 1,
-	OnlyImportant = 2,
-	ShowDuration = 3,
-	-- ShowDurationFractions = 4, -- deprecated
-	-- ShowBorder = 5, -- deprecated
-	ShowSwipe = 6,
-	IndicateInterrupts = 7,
-	RenderInterruptSourceName = 8,
-	-- IncludeSelfInParty = 9, -- deprecated
-	ShowIcon = 10,
-	ShowTargetMarker = 11,
-	ShowSpellName = 12,
-	ShowTargetName = 13,
-	ShowTargetClassColor = 14,
-	MirrorLayout = 15,
-	HideUntargetedSpells = 16,
-	HideTargetedSpells = 17,
-	SelfOnly = 18,
-	InlineDuration = 19,
+---@enum TargetedSpellsTemplate
+Private.Enum.Template = {
+	Icon = "Icon",
+	Bar = "Bar",
+	IconDuration = "IconDuration",
+}
+
+---@enum Element
+Private.Enum.Element = {
+	-- shared / icon template
+	Icon = "Icon",
+	Overlay = "Overlay",
+	Cooldown = "Cooldown",
+	Border = "Border",
+	InterruptSource = "InterruptSource",
+	-- bar template
+	ProgressBar = "ProgressBar",
+	Background = "Background",
+	TargetMarker = "TargetMarker",
+	DurationCooldown = "DurationCooldown",
+	SpellName = "SpellName",
+	TargetName = "TargetName",
+	InterruptShield = "InterruptShield",
+	-- icon+duration template
+	Duration = "Duration",
+}
+
+---@enum TargetClass
+Private.Enum.TargetClass = {
+	Player = 1,
+	PartyMember = 2,
+	Nobody = 3,
+}
+
+---@enum BarColorMode
+Private.Enum.BarColorMode = {
+	Static = 1,
+	Interruptibility = 2,
+	TargetClassColor = 3,
 }

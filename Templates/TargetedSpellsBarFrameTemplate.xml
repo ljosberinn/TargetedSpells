@@ -1,8 +1,5 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/ https://raw.githubusercontent.com/Gethe/wow-ui-source/live/Interface/AddOns/Blizzard_SharedXML/UI.xsd">
     <Frame name="TargetedSpellsBarFrameTemplate" mixin="TargetedSpellsBarMixin" virtual="true" ignoreParentAlpha="true" enableMouse="false" propagateMouseInput="Both">
-        <KeyValues>
-            <KeyValue key="kind" value="party" type="string" />
-        </KeyValues>
         <Layers>
             <Layer level="ARTWORK">
                 <Texture parentKey="Icon">
@@ -40,7 +37,7 @@
                     <Layer level="OVERLAY">
                         <FontString parentKey="SpellName" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE" wordwrap="false" />
                         <FontString parentKey="TargetName" font="GameFontHighlightSmall" justifyH="RIGHT" justifyV="MIDDLE" wordwrap="false" />
-<FontString parentKey="InterruptSource" hidden="true" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE" wordwrap="false">
+                        <FontString parentKey="InterruptSource" hidden="true" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE" wordwrap="false">
                             <Anchors>
                                 <Anchor point="LEFT" relativePoint="LEFT">
                                     <Offset>
@@ -50,12 +47,89 @@
                             </Anchors>
                         </FontString>
                     </Layer>
+                    <!-- Border: solid strips + 8-slice pieces, wrapping the ProgressBar
+                         (which fills the frame). Hidden until active; driven at runtime by
+                         Private.Utils.ApplyBorderStyle. On an OVERLAY sublevel above the
+                         text so the border sits over the bar fill. -->
+                    <Layer level="OVERLAY" textureSubLevel="1">
+                        <Texture parentKey="BorderSolidTop" hidden="true" file="Interface\Buttons\WHITE8x8">
+                            <Color r="1" g="1" b="1" a="0.8" />
+                            <Size>
+                                <AbsDimension x="0" y="1" />
+                            </Size>
+                            <Anchors>
+                                <Anchor point="TOPLEFT" relativePoint="TOPLEFT" />
+                                <Anchor point="TOPRIGHT" relativePoint="TOPRIGHT" />
+                            </Anchors>
+                        </Texture>
+                        <Texture parentKey="BorderSolidBottom" hidden="true" file="Interface\Buttons\WHITE8x8">
+                            <Color r="1" g="1" b="1" a="0.8" />
+                            <Size>
+                                <AbsDimension x="0" y="1" />
+                            </Size>
+                            <Anchors>
+                                <Anchor point="BOTTOMLEFT" relativePoint="BOTTOMLEFT" />
+                                <Anchor point="BOTTOMRIGHT" relativePoint="BOTTOMRIGHT" />
+                            </Anchors>
+                        </Texture>
+                        <Texture parentKey="BorderSolidLeft" hidden="true" file="Interface\Buttons\WHITE8x8">
+                            <Color r="1" g="1" b="1" a="0.8" />
+                            <Size>
+                                <AbsDimension x="1" y="0" />
+                            </Size>
+                            <Anchors>
+                                <Anchor point="TOPLEFT" relativePoint="TOPLEFT" />
+                                <Anchor point="BOTTOMLEFT" relativePoint="BOTTOMLEFT" />
+                            </Anchors>
+                        </Texture>
+                        <Texture parentKey="BorderSolidRight" hidden="true" file="Interface\Buttons\WHITE8x8">
+                            <Color r="1" g="1" b="1" a="0.8" />
+                            <Size>
+                                <AbsDimension x="1" y="0" />
+                            </Size>
+                            <Anchors>
+                                <Anchor point="TOPRIGHT" relativePoint="TOPRIGHT" />
+                                <Anchor point="BOTTOMRIGHT" relativePoint="BOTTOMRIGHT" />
+                            </Anchors>
+                        </Texture>
+                        <!-- Slice border corners (positioned/sized at runtime) -->
+                        <Texture parentKey="BorderTopLeft" hidden="true" />
+                        <Texture parentKey="BorderTopRight" hidden="true" />
+                        <Texture parentKey="BorderBottomLeft" hidden="true" />
+                        <Texture parentKey="BorderBottomRight" hidden="true" />
+                        <!-- Slice border edges, statically anchored to their adjacent corners -->
+                        <Texture parentKey="BorderTop" hidden="true">
+                            <Anchors>
+                                <Anchor point="TOPLEFT" relativeKey="$parent.BorderTopLeft" relativePoint="TOPRIGHT" />
+                                <Anchor point="TOPRIGHT" relativeKey="$parent.BorderTopRight" relativePoint="TOPLEFT" />
+                            </Anchors>
+                        </Texture>
+                        <Texture parentKey="BorderBottom" hidden="true">
+                            <Anchors>
+                                <Anchor point="BOTTOMLEFT" relativeKey="$parent.BorderBottomLeft" relativePoint="BOTTOMRIGHT" />
+                                <Anchor point="BOTTOMRIGHT" relativeKey="$parent.BorderBottomRight" relativePoint="BOTTOMLEFT" />
+                            </Anchors>
+                        </Texture>
+                        <Texture parentKey="BorderLeft" hidden="true">
+                            <Anchors>
+                                <Anchor point="TOPLEFT" relativeKey="$parent.BorderTopLeft" relativePoint="BOTTOMLEFT" />
+                                <Anchor point="BOTTOMLEFT" relativeKey="$parent.BorderBottomLeft" relativePoint="TOPLEFT" />
+                            </Anchors>
+                        </Texture>
+                        <Texture parentKey="BorderRight" hidden="true">
+                            <Anchors>
+                                <Anchor point="TOPRIGHT" relativeKey="$parent.BorderTopRight" relativePoint="BOTTOMRIGHT" />
+                                <Anchor point="BOTTOMRIGHT" relativeKey="$parent.BorderBottomRight" relativePoint="TOPRIGHT" />
+                            </Anchors>
+                        </Texture>
+                    </Layer>
                 </Layers>
             </StatusBar>
             <Frame parentKey="CustomElementsFrame" setAllPoints="true" enableMouse="false" propagateMouseInput="Both">
                 <Layers>
                     <Layer level="OVERLAY">
                         <Texture parentKey="TargetMarker" file="Interface/TargetingFrame/UI-RaidTargetingIcons" />
+                        <Texture parentKey="InterruptShield" hidden="true" atlas="nameplates-InterruptShield" />
                     </Layer>
                 </Layers>
             </Frame>

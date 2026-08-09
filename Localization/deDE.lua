@@ -14,9 +14,86 @@ local L = Private.L
 L.EditMode = {}
 L.Functionality = {}
 L.Settings = {}
+L.Migration = {}
+L.SlashCommands = {}
+L.Designer = {}
+
+L.Designer.Title = "Targeted Spells - Layout-Designer"
+L.Designer.ElementPickerLabel = "Element"
+L.Designer.SelectHint = "Klicke ein Element in der Vorschau an oder wähle eines aus dem Element-Dropdown aus."
+L.Designer.ResetElement = "Element zurücksetzen"
+L.Designer.CopyFrom = "Layout kopieren von…"
+L.Designer.CopyFromEmpty = "Keine anderen Gruppen dieses Typs"
+L.Designer.Apply = "Änderungen speichern"
+L.Designer.Revert = "Zurücksetzen"
+L.Designer.Discard = "Verwerfen"
+L.Designer.UnsavedHint = "Änderungen werden beim Speichern angewendet."
+L.Designer.UnsavedPrompt = "Du hast ungespeicherte Layoutänderungen."
+L.Designer.SettingNames = {
+	ELEMENT_ACTIVE = "Aktiviert",
+	ELEMENT_WIDTH = "Breite",
+	ELEMENT_HEIGHT = "Höhe",
+	ELEMENT_X = "X-Versatz",
+	ELEMENT_Y = "Y-Versatz",
+	ELEMENT_FONT_SIZE = "Schriftgröße",
+	ELEMENT_FONT = "Schriftart",
+	ELEMENT_FONT_FLAGS = "Schriftstil",
+	ELEMENT_TEXT_COLOR = "Textfarbe",
+	ELEMENT_JUSTIFY_H = "Ausrichtung",
+	ELEMENT_MAX_WIDTH = "Maximale Breite",
+	ELEMENT_GAP = "Abstand",
+	ELEMENT_USE_CLASS_COLOR = "Klassenfarbe verwenden",
+	ELEMENT_ICON_ZOOM = "Symbolzoom",
+	ELEMENT_SHOW_SWIPE = "Wischanimation anzeigen",
+	ELEMENT_SHOW_COUNTDOWN = "Dauer anzeigen",
+	ELEMENT_FRACTION_THRESHOLD = "Bruchwert unter (s)",
+	ELEMENT_BORDER_TEXTURE = "Rahmentextur",
+	ELEMENT_BORDER_COLOR = "Rahmenfarbe",
+	ELEMENT_BORDER_SIZE = "Rahmenbreite",
+	ELEMENT_BAR_TEXTURE = "Balkentextur",
+	ELEMENT_BAR_COLOR_MODE = "Farbmodus",
+	ELEMENT_BAR_COLOR = "Balkenfarbe",
+	ELEMENT_INTERRUPTIBLE_COLOR = "Unterbrechbare Farbe",
+	ELEMENT_UNINTERRUPTIBLE_COLOR = "Nicht unterbrechbare Farbe",
+	ELEMENT_BACKGROUND_TEXTURE = "Hintergrundtextur",
+	ELEMENT_BACKGROUND_COLOR = "Hintergrundfarbe",
+}
+L.Designer.Options = {
+	JUSTIFY_LEFT = "Links",
+	JUSTIFY_CENTER = "Mittig",
+	JUSTIFY_RIGHT = "Rechts",
+	BAR_COLOR_STATIC = "Statisch",
+	BAR_COLOR_INTERRUPTIBILITY = "Unterbrechbarkeit",
+	BAR_COLOR_TARGET_CLASS = "Zielklassenfarbe",
+}
+L.Designer.FontFlagNames = {
+	[Private.Enum.FontFlags.OUTLINE] = "Kontur",
+	[Private.Enum.FontFlags.SHADOW] = "Schatten",
+}
+L.Designer.FontFlagsNone = "Keine"
+L.Designer.ElementNames = {
+	[Private.Enum.Element.Icon] = "Symbol",
+	[Private.Enum.Element.Overlay] = "Cooldown-Manager-Rahmen",
+	[Private.Enum.Element.Cooldown] = "Abklingzeit",
+	[Private.Enum.Element.Border] = "Rahmen",
+	[Private.Enum.Element.InterruptSource] = "Unterbrechername",
+	[Private.Enum.Element.ProgressBar] = "Fortschrittsbalken",
+	[Private.Enum.Element.Background] = "Hintergrund",
+	[Private.Enum.Element.TargetMarker] = "Zielmarkierung",
+	[Private.Enum.Element.DurationCooldown] = "Dauer",
+	[Private.Enum.Element.SpellName] = "Zaubername",
+	[Private.Enum.Element.TargetName] = "Zielname",
+	[Private.Enum.Element.InterruptShield] = "Unterbrechungsschild",
+	[Private.Enum.Element.Duration] = "Dauer",
+}
+
+L.SlashCommands.Header = "Targeted-Spells-Befehle:"
+L.SlashCommands.OptionsDescription = "Einstellungsfenster öffnen"
+L.SlashCommands.SettingsDescription = "Einstellungsfenster öffnen"
+L.SlashCommands.DesignDescription = "Layout-Designer öffnen"
 
 L.Settings.EditModeReminder =
-	"Der Bearbeitungsmodus beinhaltet eine Echtzeitvorschau aller Einstellungen.\nDiese Einstellungen sind hier nur damit man sie auch im Kampf bearbeiten kann."
+"Alle Einstellungen sind über den Bearbeitungsmodus und \"/targetedspells design\" erreichbar."
 L.EditMode.TargetedSpellsSelfLabel = "Targeted Spells - Spieler"
 L.EditMode.TargetedSpellsPartyLabel = "Targeted Spells - Gruppe"
 
@@ -34,7 +111,6 @@ L.Functionality.V3MigrationWarning = string.format(
 )
 
 L.Settings.EnabledLabel = "Aktiviert"
-L.Settings.EnabledTooltip = nil
 L.Settings.DisabledLabel = "Deaktiviert"
 
 L.Settings.AddonCompartmentTooltipLine1 =
@@ -43,7 +119,6 @@ L.Settings.AddonCompartmentTooltipLine2 =
 	string.format("%s ist %s", WrapTextInColorCode(L.EditMode.TargetedSpellsPartyLabel, "ffeda55f"), "%s")
 
 L.Settings.LoadConditionContentTypeLabel = "Ladebedingung: Spielbereich"
-L.Settings.LoadConditionContentTypeLabelAbbreviated = "In Spielbereich laden"
 L.Settings.LoadConditionContentTypeTooltip = nil
 L.Settings.LoadConditionContentTypeLabels = {
 	[Private.Enum.ContentType.OpenWorld] = "Offene Welt",
@@ -55,29 +130,12 @@ L.Settings.LoadConditionContentTypeLabels = {
 }
 
 L.Settings.LoadConditionRoleLabel = "Ladebedingung: Rolle"
-L.Settings.LoadConditionRoleLabelAbbreviated = "In Rolle laden"
 L.Settings.LoadConditionRoleTooltip = nil
 
 L.Settings.LoadConditionRoleLabels = {
 	[Private.Enum.Role.Healer] = "Heiler",
 	[Private.Enum.Role.Tank] = "Panzer",
 	[Private.Enum.Role.Damager] = "Schadensverursacher",
-}
-
-L.Settings.FrameWidthLabel = "Breite"
-L.Settings.FrameWidthTooltip = nil
-
-L.Settings.FrameHeightLabel = "Höhe"
-L.Settings.FrameHeightTooltip = nil
-
-L.Settings.FontSizeLabel = "Schriftgröße"
-L.Settings.FontSizeTooltip = nil
-
-L.Settings.FontFlagsLabel = "Schriftoptionen"
-L.Settings.FontFlagsTooltip = nil
-L.Settings.FontFlagsLabels = {
-	[Private.Enum.FontFlags.OUTLINE] = "Umriss",
-	[Private.Enum.FontFlags.SHADOW] = "Schatten",
 }
 
 L.Settings.FrameGapLabel = "Abstand"
@@ -113,107 +171,55 @@ L.Settings.GlowTypeLabels = {
 	[Private.Enum.GlowType.Star4] = "Star 4",
 }
 
-L.Settings.ShowDurationLabel = "Dauer anzeigen"
-
 L.Settings.IndicateInterruptsLabel = "Unterbrechungen anzeigen"
-
-L.Settings.RenderInterruptSourceNameLabel = "Unterbrechungsquellnamen anzeigen"
-
-L.Settings.ShowSwipeLabel = "Abklingzeitsanimation anzeigen"
-
-L.Settings.BorderStyleLabel = "Border Style"
-L.Settings.BorderStyleTooltip = nil
-
-L.Settings.ForegroundBarTextureLabel = "Fortschrittsbalken-Textur"
-L.Settings.ForegroundBarTextureTooltip = nil
-
-L.Settings.BackgroundBarTextureLabel = "Hintergrundbalken-Textur"
-L.Settings.BackgroundBarTextureTooltip = nil
-
-L.Settings.BackgroundBarColorLabel = "Hintergrundbalken-Farbe"
-L.Settings.BackgroundBarColorTooltip =
-	"Deckkraft ist nur im Bearbeitungsmodus verfügbar, da die standardmäßige Einstellungsoberfläche sie nicht anzeigt."
-
-L.Settings.ProgressBarColorLabel = "Statusbalkenfarbe"
-L.Settings.ProgressBarColorTooltip =
-	"Deckkraft ist nur im Bearbeitungsmodus verfügbar, da die standardmäßige Einstellungsoberfläche sie nicht anzeigt."
-
-L.Settings.MirrorLayoutLabel = "Layout spiegeln"
 
 L.Settings.TextToSpeechVoiceLabel = "TTS-Stimme"
 L.Settings.TextToSpeechVoiceTooltip =
-	"Stimme für Text-zu-Sprache-Ansagen. Gilt für Selbst- und Gruppen-Einstellungen."
+"Stimme für Text-zu-Sprache-Ansagen. Gilt für Selbst- und Gruppen-Einstellungen."
 
 L.Settings.AnnounceUntargetedSpellsLabel = "Ungezielte TTS-Einstellungen"
 L.Settings.AnnounceUntargetedSpellsTooltip = "Text-zu-Sprache für ungezielte Zauber (AoE, Frontals usw.) nach NPC-Typ."
 
 L.Settings.AnnounceTargetedSpellsLabel = "Gezielte TTS-Einstellungen"
 L.Settings.AnnounceTargetedSpellsTooltip =
-	"Text-zu-Sprache für Zauber, die einen bestimmten Spieler anvisieren, nach NPC-Typ."
+"Text-zu-Sprache für Zauber, die einen bestimmten Spieler anvisieren, nach NPC-Typ."
 
 L.Settings.NpcTypeLabels = {
 	[Private.Enum.NpcType.Boss] = "Bosse",
 	[Private.Enum.NpcType.Lieutenant] = "Leutnants",
-	[Private.Enum.NpcType.Caster] = "Hat Mana",
-	[Private.Enum.NpcType.Melee] = "Normale Gegner",
+	[Private.Enum.NpcType.Other] = "Alle Weiteren",
 	[Private.Enum.NpcType.Minion] = "Schergen",
 }
 
-L.Settings.HideUntargetedSpellsLabel = "Zauber ohne Ziel ausblenden"
-
-L.Settings.HideTargetedSpellsLabel = "Zauber mit Ziel ausblenden"
-
-L.Settings.SelfOnlyLabel = "Nur Zauber anzeigen, die auf den Spieler zielen"
-
-L.Settings.InlineDurationLabel = "Dauer inline anzeigen"
-
-L.Settings.UseInterruptabilityColorsLabel = "Farbkodierung für Unterbrechungsstatus nutzen"
-L.Settings.UseInterruptabilityColorsTooltip = nil
-
 L.Settings.UseTargetClassColorLabel = "Zielklassenfarbe verwenden"
 L.Settings.UseTargetClassColorTooltip =
-	"Färbt den Balken in der Klassenfarbe der Zieleinheit mit 75 % Transparenz. Zauber ohne Ziel verwenden eine aufgehellte Hintergrundbalken-Farbe."
-
-L.Settings.UninterruptibleColorLabel = "Farbe Ununterbrechbar"
-L.Settings.UninterruptibleColorTooltip = nil
-
-L.Settings.InterruptibleColorLabel = "Farbe Unterbrechbar"
-L.Settings.InterruptibleColorTooltip = nil
-
-L.Settings.IconZoomLabel = "Icon Zoom"
-L.Settings.IconZoomTooltip = nil
+"Färbt den Balken in der Klassenfarbe der Zieleinheit mit 75 % Transparenz. Zauber ohne Ziel verwenden eine aufgehellte Hintergrundbalken-Farbe."
 
 L.Settings.ClickToOpenSettingsLabel = "Klicken um Einstellungen zu öffnen"
 
 L.Settings.Import = "Importieren"
 L.Settings.Export = "Exportieren"
 
-L.Settings.FontLabel = "Schriftart"
-L.Settings.FontTooltip = nil
-
 L.Settings.FeatureFlagsLabel = "Features"
 L.Settings.FeatureFlagsTooltip = nil
-
-L.Settings.FeatureFlagLabels = {
-	[Private.Enum.FeatureFlag.GlowImportant] = L.Settings.GlowImportantLabel,
-	[Private.Enum.FeatureFlag.OnlyImportant] = L.Settings.OnlyImportantLabel,
-	[Private.Enum.FeatureFlag.ShowDuration] = L.Settings.ShowDurationLabel,
-	[Private.Enum.FeatureFlag.ShowSwipe] = L.Settings.ShowSwipeLabel,
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
-	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,
-	[Private.Enum.FeatureFlag.ShowIcon] = "Symbol anzeigen",
-	[Private.Enum.FeatureFlag.ShowTargetMarker] = "Zielmarkierung anzeigen",
-	[Private.Enum.FeatureFlag.ShowSpellName] = "Zaubernamen anzeigen",
-	[Private.Enum.FeatureFlag.ShowTargetName] = "Zielnamen anzeigen",
-	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Zielklassenfarbe anzeigen",
-	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
-	[Private.Enum.FeatureFlag.InlineDuration] = L.Settings.InlineDurationLabel,
-	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
-	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
-	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,
+L.Settings.GroupNameLabel = "Gruppe umbenennen"
+L.Settings.GroupNamePrompt = "Gib einen Namen für diese Gruppe ein:"
+L.Settings.TemplateLabel = "Vorlage"
+L.Settings.TemplateTooltip = "Der Wechsel der Vorlage setzt das Element-Layout dieser Gruppe auf die Standardvorlage zurück."
+L.Settings.TemplateLabels = {
+	[Private.Enum.Template.Icon] = "Symbol",
+	[Private.Enum.Template.Bar] = "Balken",
+	[Private.Enum.Template.IconDuration] = "Symbol + Dauer",
 }
-
-L.Settings.FeatureFlagSettingTitles = {
-	[Private.Enum.FeatureFlag.GlowImportant] = "Anzeige",
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = "Unterbrechungseinstellungen",
+L.Settings.FilterLabel = "Zauber anzeigen, die auf"
+L.Settings.FilterTooltip = "Welche Ziele dieser Gruppe angezeigte Zauber haben."
+L.Settings.TargetClassLabels = {
+	[Private.Enum.TargetClass.Player] = "dich",
+	[Private.Enum.TargetClass.PartyMember] = "Gruppenmitglieder",
+	[Private.Enum.TargetClass.Nobody] = "niemanden (ohne Ziel)",
 }
+L.Settings.CreateGroup = "Gruppe erstellen"
+L.Settings.DeleteGroup = "Gruppe löschen"
+L.Settings.DeleteGroupConfirm = "Diese Gruppe löschen? Dies kann nicht rückgängig gemacht werden."
+L.Settings.CannotDeleteLastGroup = "Die letzte verbleibende Gruppe kann nicht gelöscht werden."
+

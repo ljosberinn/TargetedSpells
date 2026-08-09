@@ -5,10 +5,78 @@
 ---@field Events table<string, string>
 ---@field Enum TargetedSpellsEnums
 ---@field Settings TargetedSpellsSettings
----@field LoginFnQueue table<string, function>
+---@field LoginFnQueue table<number, fun()>
 ---@field L table<string, table<string, string|nil>>
 ---@field Utils TargetedSpellsUtils
+---@field Design TargetedSpellsDesign
+---@field Groups TargetedSpellsGroups
+---@field GroupController TargetedSpellsGroupController
+---@field Migration TargetedSpellsMigration
+---@field EditMode TargetedSpellsEditModeManager
+---@field Designer TargetedSpellsDesigner
 ---@field Glows GlowFunctions
+---@field TextToSpeechUtil TargetedSpellsTextToSpeechUtil
+
+---@class TargetedSpellsTextToSpeechUtil
+---@field MaybeAnnounceSpell fun(info: SpellCastInfo, contentType: ContentType, activeEncounterId: number?)
+---@field ClearAnnouncementCacheForUnit fun(unit: string)
+
+---@class TargetedSpellsDesigner
+---@field Toggle fun()
+
+---@class DesignerMixin
+---@field SortedGroupIds fun(self: DesignerMixin): integer[]
+---@field RebuildTabs fun(self: DesignerMixin)
+---@field SelectGroup fun(self: DesignerMixin, groupId: integer)
+---@field RequestSelectGroup fun(self: DesignerMixin, groupId: integer)
+---@field GroupPool fun(self: DesignerMixin, group: TargetedSpellsGroup): FramePool<Frame>
+---@field RefreshCanvas fun(self: DesignerMixin)
+---@field StartDemo fun(self: DesignerMixin)
+---@field PlayDemoCast fun(self: DesignerMixin)
+---@field PopulateDemoContent fun(self: DesignerMixin)
+---@field StyleDemoText fun(self: DesignerMixin, region: Region, element: Element, sampleText: string, classColor: colorRGB)
+---@field EndDemo fun(self: DesignerMixin)
+---@field ElementMarkerRect fun(self: DesignerMixin, record: table, tag: Element, layout: table): table
+---@field ScratchLayout fun(self: DesignerMixin): table
+---@field EnsureMarkerVisuals fun(self: DesignerMixin, marker: Frame)
+---@field BuildMarkers fun(self: DesignerMixin)
+---@field SelectElement fun(self: DesignerMixin, elementTag: Element)
+---@field SetupElementDropdown fun(self: DesignerMixin)
+---@field RefreshElementDropdown fun(self: DesignerMixin)
+---@field CopyableSourceGroups fun(self: DesignerMixin): TargetedSpellsGroup[]
+---@field SetupCopyFromDropdown fun(self: DesignerMixin)
+---@field CopyLayoutFromGroup fun(self: DesignerMixin, sourceGroupId: integer)
+---@field SelectedScratchRecord fun(self: DesignerMixin): table?
+---@field SettingLabel fun(self: DesignerMixin, record: table): string
+---@field OptionLabel fun(self: DesignerMixin, option: table): string
+---@field WidgetLabel fun(self: DesignerMixin, widget: table): string
+---@field OnWidgetValueChanged fun(self: DesignerMixin, setting: string, value: any)
+---@field BuildCheckbox fun(self: DesignerMixin, record: table, yOffset: number): Frame
+---@field BuildSlider fun(self: DesignerMixin, record: table, yOffset: number): Frame
+---@field AcquireDropdownRow fun(self: DesignerMixin, record: table, yOffset: number, poolKey: string): Frame
+---@field PopulateRadioMenu fun(self: DesignerMixin, dropdown: Frame, setting: string, options: table[])
+---@field BuildDropdown fun(self: DesignerMixin, record: table, yOffset: number): Frame
+---@field BuildTextureDropdown fun(self: DesignerMixin, record: table, yOffset: number): Frame
+---@field BuildFontDropdown fun(self: DesignerMixin, record: table, yOffset: number): Frame
+---@field BuildFontFlagsDropdown fun(self: DesignerMixin, record: table, yOffset: number): Frame
+---@field FontFlagsSummary fun(self: DesignerMixin, flags: table<FontFlags, boolean>): string
+---@field OnFontFlagChanged fun(self: DesignerMixin, dropdown: Frame, record: table)
+---@field MediaNameList fun(self: DesignerMixin, mediaType: string): string[]
+---@field BuildColorSwatch fun(self: DesignerMixin, record: table, yOffset: number): Frame
+---@field OpenColorPicker fun(self: DesignerMixin, record: table, swatch: Frame)
+---@field BuildPlaceholder fun(self: DesignerMixin, record: table, yOffset: number): Frame
+---@field BuildWidget fun(self: DesignerMixin, record: table, yOffset: number): Frame
+---@field BuildPanel fun(self: DesignerMixin)
+---@field ResetSelectedElement fun(self: DesignerMixin)
+---@field ApplyScratchToDemo fun(self: DesignerMixin)
+---@field UpdateMarkerRects fun(self: DesignerMixin)
+---@field MarkDirty fun(self: DesignerMixin)
+---@field UpdateApplyState fun(self: DesignerMixin)
+---@field ApplyScratch fun(self: DesignerMixin)
+---@field RevertScratch fun(self: DesignerMixin)
+---@field PromptUnsavedSwitch fun(self: DesignerMixin, groupId: integer)
+---@field OnDesignerHide fun(self: DesignerMixin)
+---@field Initialize fun(self: DesignerMixin)
 
 ---@class CollectLayoutingArguments
 ---@field isHorizontal boolean
@@ -20,21 +88,105 @@
 ---@field relativePoint FramePoint
 
 ---@class TargetedSpellsUtils
----@field CollectLayoutingArguments fun(direction: Direction, grow: Grow, width: number, height: number, gap: number): CollectLayoutingArguments
----@field AdjustLayout fun(frames: TargetedSpellsIconMixin[], geo: CollectLayoutingArguments, barParent: Frame, firstAnchorPoint: FramePoint, firstOffsetX: number, firstOffsetY: number, isEditMode: boolean)
+---@field DeepCopy fun(source: any): any
+---@field DeepEqual fun(left: any, right: any): boolean
+---@field CollectLayoutingArguments fun(direction: Direction, grow: Grow, width: number, height: number, gap: number, out?: CollectLayoutingArguments): CollectLayoutingArguments
+---@field ComputeGroupExtent fun(elements: table<Element, table<string, any>>): { width: number, height: number, offsetX: number, offsetY: number }
+---@field ComputeBarLayout fun(elements: table<Element, table<string, any>>): table<any, any>
+---@field ComputeIconDurationLayout fun(elements: table<Element, table<string, any>>): table<any, any>
+---@field ComputeGroupFootprint fun(template: TargetedSpellsTemplate, elements: table<Element, table<string, any>>): number, number
+---@field InvalidateLayout fun(elements: table<Element, table<string, any>>?)
+---@field AdjustLayout fun(frames: TargetedSpellsIconMixin[], geo: CollectLayoutingArguments, barParent: Frame, firstAnchorPoint: FramePoint, firstOffsetX: number, firstOffsetY: number)
 ---@field SortFrames fun(frames: TargetedSpellsIconMixin[], sortOrder: SortOrder)
 ---@field RollDice fun(): boolean
 ---@field ShowStaticPopup fun(args: StaticPopupDialogsArgs)
 ---@field Import fun(string: string): boolean
 ---@field Export fun(): string
----@field RegisterEditModeFrame fun(frameKind: FrameKind, frame: Frame)
----@field GetEditModeFrame fun(frameKind: FrameKind): Frame?
+---@field RegisterEditModeFrame fun(groupId: integer, frame: Frame)
+---@field GetEditModeFrame fun(groupId: integer): Frame?
 ---@field CreateEditablePopup fun(title: string, text: string, button1: string): StaticPopupDialogsArgs
----@field Pools { Self: FramePool<TargetedSpellsIconMixin>, Bar: FramePool<TargetedSpellsBarMixin> }
+---@field Pools { Icon: FramePool<TargetedSpellsIconMixin>, Bar: FramePool<TargetedSpellsBarMixin>, IconDuration: FramePool<TargetedSpellsIconDurationMixin> }
 ---@field ShowMigrationPopup fun()
----@field MigratePartySettingsToV3 fun(existing: table): SavedVariablesSettingsParty
----@field ApplyMigration fun(key: string, kind: FrameKind, defaults: SavedVariablesSettingsSelf|SavedVariablesSettingsParty)
----@field SafelySetFont fun(kind: FrameKind, fontString: FontString, font: string, fontSize: number, fontFlags: string)
+---@field SafelySetFont fun(fontString: FontString, font: string, fontSize: number, fontFlags: string)
+---@field SetFontIfChanged fun(fontString: TargetedSpellsStampedFontString, font: string, fontSize: number, fontFlags: string)
+---@field CreateCountdownFormatter fun(): NumericFormatter
+---@field ApplyFractionThreshold fun(formatter: NumericFormatter, fractionThreshold: number)
+---@field RegisterSlashCommand fun(name: string, description: string, handler: fun(rest: string))
+---@field ComputeElementExtent fun(elements: table<Element, table<string, any>>): { width: number, height: number, offsetX: number, offsetY: number }
+
+---@class TargetedSpellsElementRecord
+---@field setting string
+---@field name string
+---@field type string
+---@field default any
+---@field min number?
+---@field max number?
+---@field step number?
+---@field options table[]?
+---@field mediaType string? -- for texture records: "statusbar" | "background" | "border"
+
+---@class TargetedSpellsGroup
+---@field Id integer -- denormalised from the Groups map key at load (Driver)
+---@field Name string
+---@field Enabled boolean
+---@field Filter table<TargetClass, boolean>
+---@field Template TargetedSpellsTemplate
+---@field Elements table<Element, table<string, any>>
+---@field Position FramePosition
+---@field Gap number
+---@field Grow Grow
+---@field Direction Direction
+---@field SortOrder SortOrder
+---@field LoadConditionContentType table<number, boolean>
+---@field LoadConditionRole table<number, boolean>
+---@field GlowType GlowType
+---@field GlowImportant boolean
+---@field OnlyImportant boolean
+---@field IndicateInterrupts boolean
+
+---@class TargetedSpellsDesign
+---@field GetDefault fun(template: TargetedSpellsTemplate): table<Element, table<string, any>>
+---@field GetSchema fun(template: TargetedSpellsTemplate): table<Element, TargetedSpellsElementRecord[]>
+---@field CopyElements fun(elements: table): table
+---@field BackfillElements fun(group: TargetedSpellsGroup)
+
+---@class TargetedSpellsGroups
+---@field GetMatching fun(info: { targetClasses: table<TargetClass, boolean> }, groups: table<any, TargetedSpellsGroup>?, out: TargetedSpellsGroup[]): TargetedSpellsGroup[]
+---@field Create fun(template: TargetedSpellsTemplate, saved: table?): integer, TargetedSpellsGroup
+---@field Delete fun(id: integer, saved: table?): boolean
+---@field SetTemplate fun(group: TargetedSpellsGroup, template: TargetedSpellsTemplate)
+---@field Count fun(saved: table?): number
+---@field SortedIds fun(groups: table): integer[]
+---@field InvalidateOrder fun(groups: table)
+---@field Conform fun(groups: table<integer, TargetedSpellsGroup>)
+---@field ComputeCapabilities fun(groups: table<integer, TargetedSpellsGroup>): TargetedSpellsGroupCapabilities
+---@field LoadConditionsApply fun(self: TargetedSpellsGroups, role: Role, contentType: ContentType): boolean
+
+---@class TargetedSpellsGroupCapabilities
+---@field enabled boolean -- any group Enabled
+---@field usesInterruptibility boolean -- any enabled Bar group colouring by interruptibility
+---@field usesShield boolean -- any enabled Bar group with an active InterruptShield
+---@field showsTargetMarker boolean -- any enabled Bar group with an active TargetMarker
+---@field indicatesInterrupts boolean -- any group with IndicateInterrupts (independent of Enabled)
+
+---@class TargetedSpellsTextToSpeech
+---@field AnnounceUntargetedSpells table<NpcType, boolean>
+---@field AnnounceTargetedSpells table<NpcType, boolean>
+---@field TextToSpeechVoice integer|nil
+
+---@class SavedVariablesV4
+---@field SchemaVersion integer
+---@field Groups table<integer, TargetedSpellsGroup>
+---@field TextToSpeech TargetedSpellsTextToSpeech
+
+---@class TargetedSpellsMigration
+---@field Apply fun(saved: table)
+
+---@class TargetedSpellsEditModeManager
+---@field instances table<integer, TargetedSpellsEditModeMixin>
+---@field CreateInstance fun(group: TargetedSpellsGroup): TargetedSpellsEditModeMixin
+---@field CreateGroup fun()
+---@field DeleteGroup fun(groupId: integer)
 
 ---@class GlowFunctions
 ---@field PixelGlow_Start fun(frame: Frame, width: number, height: number)
@@ -77,7 +229,6 @@
 
 ---@class DelayInfo
 ---@field unit string
----@field kinds table<FrameKind, boolean>
 ---@field id number|string|nil
 
 ---@class SpellCastInfo
@@ -88,26 +239,23 @@
 ---@field duration DurationObject
 ---@field isChannel boolean
 ---@field isRetarget boolean?
+---@field targetClasses table<TargetClass, boolean>?
+---@field dueAt number?
 
 ---@class FontInfo
 ---@field fonts table<string, string>
 ---@field byLabel table<string, string>
 
 ---@class TargetedSpellsSettings
----@field Keys table<'Self' | 'Party', table<string, string>>
----@field GetSettingsDisplayOrder fun(kind: FrameKind): string[]
 ---@field GetDefaultEditModeFramePosition fun(kind: FrameKind): FramePosition
----@field GetSliderSettingsForOption fun(key: string): SliderSettings
----@field GetSelfDefaultSettings fun(): SavedVariablesSettingsSelf
----@field GetPartyDefaultSettings fun(): SavedVariablesSettingsParty
----@field GetContentTypesForKind fun(kind: FrameKind): table<string, ContentType>
----@field GetGlowTypesForKind fun(kind: FrameKind): GlowType[]
 ---@field GetFontOptions fun(): FontInfo
----@field GetFeatureFlagsForKind fun(kind: FrameKind): FeatureFlag[]
 
 ---@class SavedVariables
 ---@field Settings SavedVariablesSettings
 ---@field nameplateShowOffscreenWasInitialized boolean
+---@field SchemaVersion integer?
+---@field Groups table<integer, TargetedSpellsGroup>?
+---@field TextToSpeech TargetedSpellsTextToSpeech?
 
 ---@class SavedVariablesSettings
 ---@field Self SavedVariablesSettingsSelf
@@ -134,7 +282,7 @@
 ---@field IconZoom number
 ---@field Font string
 ---@field FontFlags table<FontFlags, boolean>
----@field FeatureFlags table<FeatureFlag, boolean>
+---@field FeatureFlags table<number, boolean> keyed by Migration.V3_FLAG ids (v3 data only)
 ---@field BorderStyle string
 ---@field AnnounceUntargetedSpells table<NpcType, boolean>
 ---@field AnnounceTargetedSpells table<NpcType, boolean>
@@ -153,7 +301,7 @@
 ---@field GlowType GlowType
 ---@field Font string
 ---@field FontFlags table<FontFlags, boolean>
----@field FeatureFlags table<FeatureFlag, boolean>
+---@field FeatureFlags table<number, boolean> keyed by Migration.V3_FLAG ids (v3 data only)
 ---@field ForegroundBarTexture string
 ---@field BackgroundBarTexture string
 ---@field BackgroundBarColor string
@@ -170,11 +318,22 @@
 ---@class TargetedSpellsSelfPreviewFrame: Frame
 ---@field GetChildren fun(self: TargetedSpellsSelfPreviewFrame): TargetedSpellsIconMixin
 
+---@class TargetedSpellsStampedFontString : FontString
+---@field appliedFont string?
+---@field appliedFontSize number?
+---@field appliedFontFlags string?
+
 ---@class GlowTargetFrame : Frame
 ---@field _Star4 Star4Glow?
 ---@field _PixelGlow Frame?
 ---@field _AutoCastGlow Frame?
 ---@field _ProcGlow ProcGlowFrame?
+--- the glow currently parked on this frame: its type and the dimensions it was built for.
+--- HideGlow leaves the stamp in place so the next ShowGlow can recognise a glow it can simply
+--- re-show; a mismatched type is the only thing that returns objects to their pools.
+---@field appliedGlowType GlowType?
+---@field appliedGlowWidth number?
+---@field appliedGlowHeight number?
 
 ---@class Star4Glow : Frame
 ---@field Inner Texture
@@ -182,44 +341,65 @@
 ---@field Animation AnimationGroup
 
 ---@class TargetedSpellsMixin : Frame
----@field private kind FrameKind?
 ---@field private startTime number?
 ---@field private spellId number?
 ---@field private id number?
 ---@field private elapsed number
 ---@field protected wasInterrupted boolean
 ---@field private doNotHideBefore number?
----@field info SpellCastInfo?
+--- the spine binding Utils.AdjustLayout last applied to this frame; cleared by Reset so a
+--- pooled frame always rebinds (see the stamp there)
+---@field boundBarParent Frame?
+---@field boundX number?
+---@field boundY number?
+---@field boundIsHorizontal boolean?
+---@field boundIsGrowEnd boolean?
+---@field boundBarLevel number?
 ---@field Bar StatusBar
 ---@field Icon Texture
 ---@field InterruptIcon Texture
 ---@field OnLoad fun(self: TargetedSpellsMixin)
 ---@field SetId fun(self: TargetedSpellsMixin, id: number?)
 ---@field GetId fun(self: TargetedSpellsMixin): number?
----@field GetKind fun(self: TargetedSpellsMixin): FrameKind?
+---@field private group TargetedSpellsGroup?
+---@field private layoutOverride table<Element, table<string, any>>?
+---@field SetGroup fun(self: TargetedSpellsMixin, group: TargetedSpellsGroup?)
+---@field GetGroup fun(self: TargetedSpellsMixin): TargetedSpellsGroup?
+---@field SetLayoutOverride fun(self: TargetedSpellsMixin, elements: table<Element, table<string, any>>?)
+---@field ClearLayoutOverride fun(self: TargetedSpellsMixin)
+---@field GetElements fun(self: TargetedSpellsMixin): table<Element, table<string, any>>?
+---@field GetElement fun(self: TargetedSpellsMixin, element: Element): table<string, any>?
 ---@field CanBeHidden fun(self: TargetedSpellsMixin, id: number|string|nil): boolean
+---@field unit string?
+---@field SetUnit fun(self: TargetedSpellsMixin, unit: string?)
+---@field GetUnit fun(self: TargetedSpellsMixin): string?
 ---@field SetStartTime fun(self: TargetedSpellsMixin, startTime: number?)
 ---@field GetStartTime fun(self: TargetedSpellsMixin): number?
 ---@field ClearStartTime fun(self: TargetedSpellsMixin)
 ---@field ShouldBeShown fun(self: TargetedSpellsMixin): boolean
 ---@field IsSpellImportant fun(self: TargetedSpellsMixin, boolOverride: boolean?): boolean
+---@field GetGlowFrame fun(self: TargetedSpellsMixin): GlowTargetFrame
 ---@field GetGlowTarget fun(self: TargetedSpellsMixin): GlowTargetFrame, number, number
 ---@field HideGlow fun(self: TargetedSpellsMixin)
 ---@field ShowGlow fun(self: TargetedSpellsMixin, isImportant: boolean)
+---@field GetCoreElement fun(self: TargetedSpellsMixin): Element
+---@field GetCoreSize fun(self: TargetedSpellsMixin): number, number
+---@field HideGlowOn fun(self: TargetedSpellsMixin, glowFrame: GlowTargetFrame)
+---@field ShowGlowOn fun(self: TargetedSpellsMixin, glowFrame: GlowTargetFrame, glowWidth: number, glowHeight: number, glowType: GlowType, isImportant: boolean)
 ---@field GetSpellId fun(self: TargetedSpellsMixin): number?
 ---@field SetSpellId fun(self: TargetedSpellsMixin, spellId: number?)
 ---@field SetInterrupted fun(self: TargetedSpellsMixin, name: string?, color: colorRGB?)
 ---@field Reset fun(self: TargetedSpellsMixin)
 ---@field SetFont fun(self: TargetedSpellsMixin)
 ---@field SetShowDuration fun(self: TargetedSpellsMixin, showDuration: boolean)
+---@field SetIconTexture fun(self: TargetedSpellsMixin, texture: number|string?)
 ---@field SetDuration fun(self: TargetedSpellsMixin, duration: DurationObject): number
+---@field ApplyCastAlpha fun(self: TargetedSpellsMixin, info: SpellCastInfo, durationAlpha: number)
 
 ---@class TargetedSpellsIconMixin : TargetedSpellsMixin
 ---@field private Overlay Texture
 ---@field Cooldown ExtendedCooldownTypes
----@field private unit string?
----@field private duration DurationObject|nil
----@field private InterruptSource FontString
+---@field private InterruptSource TargetedSpellsStampedFontString
 ---@field OnCooldownDoneCallback fun(info: SpellCastInfo)
 ---@field OnCooldownDoneClosure fun()
 ---@field private BorderSolidTop Texture
@@ -235,29 +415,76 @@
 ---@field private BorderLeft Texture
 ---@field private BorderRight Texture
 ---@field OnLoad fun(self: TargetedSpellsIconMixin)
+---@field GetCoreElement fun(self: TargetedSpellsIconMixin): Element
+---@field ApplyLayout fun(self: TargetedSpellsIconMixin)
 ---@field SetShowDuration fun(self: TargetedSpellsIconMixin, showDuration: boolean)
 ---@field ApplyBorderStyle fun(self: TargetedSpellsIconMixin, styleName: string)
 ---@field OnSizeChanged fun(self: TargetedSpellsIconMixin)
----@field OnSettingChanged fun(self: TargetedSpellsIconMixin, key: string, flagIdOrValue: number|string|boolean|table, newBool: boolean?)
 ---@field PostCreate fun(self: TargetedSpellsIconMixin, info: SpellCastInfo?, OnCooldownDoneCallback: fun(info: SpellCastInfo))
 ---@field Reset fun(self: TargetedSpellsIconMixin)
 ---@field SetFont fun(self: TargetedSpellsIconMixin)
 
+---@class TargetedSpellsIconDurationCell : Frame
+---@field Icon Texture
+---@field Overlay Texture
+---@field InterruptIcon Texture
+---@field Cooldown ExtendedCooldownTypes
+---@field countdownFormatter NumericFormatter
+---@field BorderSolidTop Texture
+---@field BorderSolidBottom Texture
+---@field BorderSolidLeft Texture
+---@field BorderSolidRight Texture
+---@field BorderTopLeft Texture
+---@field BorderTopRight Texture
+---@field BorderBottomLeft Texture
+---@field BorderBottomRight Texture
+---@field BorderTop Texture
+---@field BorderBottom Texture
+---@field BorderLeft Texture
+---@field BorderRight Texture
+
+---@class TargetedSpellsIconDurationMixin : TargetedSpellsMixin
+---@field IconCell TargetedSpellsIconDurationCell
+---@field IconCellMirror TargetedSpellsIconDurationCell
+---@field Duration TargetedSpellsStampedFontString
+---@field durationFormatter NumericFormatter
+---@field durationBinding DurationTextBinding
+---@field OnCooldownDoneCallback fun(info: SpellCastInfo)
+---@field OnCooldownDoneClosure fun()
+---@field OnLoad fun(self: TargetedSpellsIconDurationMixin)
+---@field PositionElements fun(self: TargetedSpellsIconDurationMixin)
+---@field ApplyLayout fun(self: TargetedSpellsIconDurationMixin)
+---@field ApplyBorderStyle fun(self: TargetedSpellsIconDurationMixin, styleName: string)
+---@field SetShowDuration fun(self: TargetedSpellsIconDurationMixin, showDuration: boolean)
+---@field OnSizeChanged fun(self: TargetedSpellsIconDurationMixin)
+---@field PostCreate fun(self: TargetedSpellsIconDurationMixin, info: SpellCastInfo?, OnCooldownDoneCallback: fun(info: SpellCastInfo))
+---@field Reset fun(self: TargetedSpellsIconDurationMixin)
+---@field SetFont fun(self: TargetedSpellsIconDurationMixin)
+---@field GetCoreElement fun(self: TargetedSpellsIconDurationMixin): Element
+---@field HideGlow fun(self: TargetedSpellsIconDurationMixin)
+---@field ShowGlow fun(self: TargetedSpellsIconDurationMixin, isImportant: boolean)
+---@field SetIconTexture fun(self: TargetedSpellsIconDurationMixin, texture: number|string?)
+
 ---@class TargetedSpellsBarProgressBar : StatusBar
 ---@field Background Texture
----@field SpellName FontString
----@field TargetName FontString
----@field InterruptSource FontString
+---@field SpellName TargetedSpellsStampedFontString
+---@field TargetName TargetedSpellsStampedFontString
+---@field InterruptSource TargetedSpellsStampedFontString
 
 ---@class TargetedSpellsBarCustomElementsFrame : Frame
 ---@field TargetMarker Texture
+---@field InterruptShield Texture
 
 ---@class TargetedSpellsBarMixin : TargetedSpellsMixin
----@field unit string?
 ---@field ProgressBar TargetedSpellsBarProgressBar
 ---@field CustomElementsFrame TargetedSpellsBarCustomElementsFrame
 ---@field DurationCooldown ExtendedCooldownTypes
 ---@field OnLoad fun(self: TargetedSpellsBarMixin)
+---@field GetCoreElement fun(self: TargetedSpellsBarMixin): Element
+---@field GetGlowFrame fun(self: TargetedSpellsBarMixin): GlowTargetFrame
+---@field GetGlowTarget fun(self: TargetedSpellsBarMixin): GlowTargetFrame, number, number
+---@field PositionElements fun(self: TargetedSpellsBarMixin)
+---@field ApplyLayout fun(self: TargetedSpellsBarMixin)
 ---@field OnSizeChanged fun(self: TargetedSpellsBarMixin)
 ---@field Reset fun(self: TargetedSpellsBarMixin)
 ---@field PostCreate fun(self: TargetedSpellsBarMixin, info: SpellCastInfo?, OnCooldownDoneCallback: fun(info: SpellCastInfo)?)
@@ -270,28 +497,37 @@
 ---@field SetProgressBarColor fun(self: TargetedSpellsBarMixin)
 ---@field SetPreviewBarColor fun(self: TargetedSpellsBarMixin)
 ---@field AdjustInterruptibleColor fun(self: TargetedSpellsBarMixin, isInterruptible: boolean)
+---@field AdjustInterruptShield fun(self: TargetedSpellsBarMixin, isInterruptible: boolean)
 ---@field SetTargetMarker fun(self: TargetedSpellsBarMixin, raidTargetIndex: number?)
+---@field UpdateTargetName fun(self: TargetedSpellsBarMixin, targetName: string?)
+---@field ApplySpellNameWidth fun(self: TargetedSpellsBarMixin)
 
 ---@class EditModeFrame : Frame
 ---@field firstFrameTimestamp number
 
 ---@class TargetedSpellsEditModeMixin : Frame
 ---@field protected editModeFrame EditModeFrame
----@field protected frameKind FrameKind
 ---@field protected displayName string
 ---@field protected maxFrames number
 ---@field protected pool FramePool<TargetedSpellsIconMixin>|FramePool<TargetedSpellsBarMixin>
 ---@field private demoPlaying boolean
 ---@field private frames TargetedSpellsIconMixin[] | TargetedSpellsBarMixin[]
 ---@field protected demoTimers { tickers: table<number, FunctionContainer>, timers: table<number, FunctionContainer> }
----@field Init fun(self: TargetedSpellsEditModeMixin, displayName: string, frameKind: FrameKind)
----@field OnSettingsChanged fun(self: TargetedSpellsEditModeMixin, key: string, flagIdOrValue: number|string|boolean|table, newBool: boolean?)
----@field CreateSetting fun(self: TargetedSpellsEditModeMixin, key: string, defaults: SavedVariablesSettingsParty|SavedVariablesSettingsSelf): LibEditModeButton|LibEditModeCheckbox|LibEditModeDropdown|LibEditModeSlider|LibEditModeColorPicker
+---@field Init fun(self: TargetedSpellsEditModeMixin, group: TargetedSpellsGroup)
+---@field group TargetedSpellsGroup
+---@field groupId integer
+---@field deleted boolean?
+---@field OnGroupChanged fun(self: TargetedSpellsEditModeMixin, groupId: integer)
+---@field GroupTemplatePool fun(self: TargetedSpellsEditModeMixin): FramePool<TargetedSpellsIconMixin>|FramePool<TargetedSpellsBarMixin>
+---@field CreateManagementButtons fun(self: TargetedSpellsEditModeMixin): LibEditModeButton[]
+---@field OnRenameButtonClick fun(self: TargetedSpellsEditModeMixin)
+---@field OnDeleteButtonClick fun(self: TargetedSpellsEditModeMixin)
+---@field CreateSetting fun(self: TargetedSpellsEditModeMixin, base: string): LibEditModeButton|LibEditModeCheckbox|LibEditModeDropdown|LibEditModeSlider|LibEditModeColorPicker
 ---@field ResizeEditModeFrame fun(self: TargetedSpellsEditModeMixin)
 ---@field RestoreEditModePosition fun(self: TargetedSpellsEditModeMixin)
+---@field OnProfileImported fun(self: TargetedSpellsEditModeMixin)
 ---@field OnEditModePositionChanged fun(self: TargetedSpellsEditModeMixin, frame: Frame, layoutName: string, point: FramePoint, x: number, y: number)
 ---@field AppendSettings fun(self: TargetedSpellsEditModeMixin)
----@field OnLayoutSettingChanged fun(self: TargetedSpellsEditModeMixin, key: string, value: number|string, newBool: boolean?)
 ---@field RepositionPreviewFrames fun(self: TargetedSpellsEditModeMixin)
 ---@field LoopFrame fun(self: TargetedSpellsEditModeMixin, index: number)
 ---@field StartDemo fun(self: TargetedSpellsEditModeMixin)
@@ -303,44 +539,81 @@
 ---@field OnImportConfirmation fun(self: TargetedSpellsEditModeMixin, encodedString: string)
 ---@field IsPastLoadingScreen fun(self: TargetedSpellsEditModeMixin): boolean
 
----@class TargetedSpellsSelfEditMode : TargetedSpellsEditModeMixin
----@field private frames TargetedSpellsIconMixin[]
----@field pool FramePool<TargetedSpellsIconMixin>
----@field Init fun(self: TargetedSpellsSelfEditMode)
----@field OnLayoutSettingChanged fun(self: TargetedSpellsSelfEditMode, key: string, value: number|string, newBool: boolean?): nil
+---@class TargetedSpellsGroupController
+---@field group TargetedSpellsGroup
+---@field container Frame?
+---@field pool FramePool<TargetedSpellsIconMixin|TargetedSpellsBarMixin>
+---@field coreElement Element
+---@field frames (TargetedSpellsIconMixin|TargetedSpellsBarMixin)[]
+---@field layoutScratch CollectLayoutingArguments
+---@field New fun(group: TargetedSpellsGroup): TargetedSpellsGroupController
+---@field GetContainer fun(self: TargetedSpellsGroupController): Frame
+---@field Position fun(self: TargetedSpellsGroupController)
+---@field Acquire fun(self: TargetedSpellsGroupController, info: SpellCastInfo, onCooldownClosure: fun(info: SpellCastInfo)): TargetedSpellsIconMixin|TargetedSpellsBarMixin
+---@field ReleaseForUnit fun(self: TargetedSpellsGroupController, unit: string, id?: number|string): boolean, boolean
+---@field ReleaseAll fun(self: TargetedSpellsGroupController)
+---@field SetInterruptibleForUnit fun(self: TargetedSpellsGroupController, unit: string, isInterruptible: boolean)
+---@field UpdateTargetMarkers fun(self: TargetedSpellsGroupController)
+---@field MarkInterruptedForUnit fun(self: TargetedSpellsGroupController, unit: string, interruptName: string?, interruptColor: colorRGB?): boolean
+---@field Relayout fun(self: TargetedSpellsGroupController)
+---@field Reconfigure fun(self: TargetedSpellsGroupController, group: TargetedSpellsGroup)
+---@field Discard fun(self: TargetedSpellsGroupController)
+---@field LoadConditionsApply fun(self: TargetedSpellsGroupController, role: Role, contentType: ContentType): boolean
 
----@class TargetedSpellsPartyEditMode : TargetedSpellsEditModeMixin
----@field private frames TargetedSpellsBarMixin[]
----@field pool FramePool<TargetedSpellsBarMixin>
----@field Init fun(self: TargetedSpellsPartyEditMode)
----@field OnLayoutSettingChanged fun(self: TargetedSpellsPartyEditMode, key: string, value: number|string, newBool: boolean?)
----@field LoopFrame fun(self: TargetedSpellsPartyEditMode, index: number)
+---@class TargetedSpellsShardFrame : Frame
+---@field units string[]
 
 ---@class TargetedSpellsDriver
 ---@field private frame Frame
 ---@field private role Role
 ---@field private contentType ContentType
 ---@field private delay number
+---@field private pendingCasts table<integer, SpellCastInfo>
+---@field private pendingHead integer
+---@field private pendingTail integer
+---@field private drainScheduled boolean
+---@field private DrainPendingCastsClosure fun()
+---@field private DrainPendingCasts fun(self: TargetedSpellsDriver)
 ---@field private OnCooldownDoneClosure fun(info: SpellCastInfo)
----@field private ttsAnnouncementCache table<string, number>
 ---@field private activeEncounterId number?
----@field frames table<string, (TargetedSpellsIconMixin|TargetedSpellsBarMixin)[]>
+---@field unitGroups table<string, table<integer, boolean>> unit -> set of group ids displaying it; routing only, never frames
+---@field controllers table<integer, TargetedSpellsGroupController>
+---@field OnGroupPositionChanged fun(self: TargetedSpellsDriver, groupId: integer)
+---@field GetController fun(self: TargetedSpellsDriver, group: TargetedSpellsGroup): TargetedSpellsGroupController
 ---@field SetupFrame fun(self: TargetedSpellsDriver, isBoot: boolean)
----@field ProcessInfo fun(self: TargetedSpellsDriver, info: SpellCastInfo)
----@field RepositionFrames fun(self: TargetedSpellsDriver)
----@field ReleaseFrameForUnit fun(self: TargetedSpellsDriver, unit: string, removeUnit: boolean, id?: number): boolean
----@field LoadConditionsProhibitExecution fun(self: TargetedSpellsDriver, kind: FrameKind): boolean
+---@field private OnFrameEventClosure fun(listenerFrame: Frame, event: WowEvent, ...)
+---@field shards table<integer, TargetedSpellsShardFrame> nameplate event shards by shard index; created on demand
+---@field ConfigureShard fun(self: TargetedSpellsDriver, shard: TargetedSpellsShardFrame)
+---@field EnsureShardForUnit fun(self: TargetedSpellsDriver, unit: string)
+---@field capabilities TargetedSpellsGroupCapabilities? -- cached summary; nil = dirty
+---@field GetCapabilities fun(self: TargetedSpellsDriver): TargetedSpellsGroupCapabilities
+---@field InvalidateCapabilities fun(self: TargetedSpellsDriver)
+---@field AnyGroupLoadConditionsAllow fun(self: TargetedSpellsDriver): boolean
+---@field GetTargetClasses fun(self: TargetedSpellsDriver, info: SpellCastInfo): table<TargetClass, boolean>
+---@field ProcessInfo fun(self: TargetedSpellsDriver, info: SpellCastInfo): integer
+---@field ReleaseAllOwnFrames fun(self: TargetedSpellsDriver)
+---@field RefreshGroup fun(self: TargetedSpellsDriver, group: TargetedSpellsGroup)
+---@field RepositionFrames fun(self: TargetedSpellsDriver, dirtyGroups?: table<integer, boolean>)
+---@field ReleaseFrameForUnit fun(self: TargetedSpellsDriver, unit: string, removeUnit: boolean, id?: number, dirtyGroups?: table<integer, boolean>): boolean
 ---@field UnitIsIrrelevant fun(self: TargetedSpellsDriver, unit: string, skipTargetCheck?: boolean): boolean
 ---@field OnFrameEvent fun(self: TargetedSpellsDriver, listenerFrame: Frame, event: WowEvent, ...)
----@field OnSettingsChanged fun(self: TargetedSpellsDriver, key: string, value: number|string|boolean|table)
----@field DetermineSpellDelayRequirement fun(self: TargetedSpellsDriver): boolean
+---@field HandleCastStart fun(self: TargetedSpellsDriver, unit: string)
+---@field HandleUnitTarget fun(self: TargetedSpellsDriver, unit: string)
+---@field HandleNameplateAdded fun(self: TargetedSpellsDriver, unit: string)
+---@field HandleShowEnemiesChanged fun(self: TargetedSpellsDriver, value: string|number)
+---@field HandleShowOffscreenChanged fun(self: TargetedSpellsDriver, value: string|number)
+---@field HandleCastStop fun(self: TargetedSpellsDriver, event: WowEvent, ...)
+---@field HandleDelayedStart fun(self: TargetedSpellsDriver, info: SpellCastInfo, reverify: boolean)
+---@field ReleaseCastFrames fun(self: TargetedSpellsDriver, info: SpellCastInfo|DelayInfo)
+---@field HandleWorldStateChanged fun(self: TargetedSpellsDriver, event: WowEvent)
+---@field HandleInterruptibleChanged fun(self: TargetedSpellsDriver, event: WowEvent, unit: string)
+---@field HandleRaidTargetUpdate fun(self: TargetedSpellsDriver)
+---@field HandleEncounterStart fun(self: TargetedSpellsDriver, encounterId: number)
+---@field HandleEncounterEnd fun(self: TargetedSpellsDriver)
+---@field OnProfileImported fun(self: TargetedSpellsDriver)
 ---@field MaybeMarkAsInterruptedAndDelay fun(self: TargetedSpellsDriver, unit: string, id: number|string|nil, interruptedBy: string?)
 ---@field CleanupDanglingFrames fun(self: TargetedSpellsDriver)
----@field EncounterPreventsTTSExecution fun(self: TargetedSpellsDriver, unit: string): boolean
----@field MaybeAnnounceSpell fun(self: TargetedSpellsDriver, info: SpellCastInfo)
----@field GetCastInformation fun(self: TargetedSpellsDriver, unit: string): boolean, number, number
----@field ClearAnnouncementCacheForUnit fun(self: TargetedSpellsDriver, unit: string)
----@field UnitMatchesTTSCriteria fun(self: TargetedSpellsDriver, unit: string): boolean
+---@field GetCastInformation fun(self: TargetedSpellsDriver, unit: string): boolean, number?, number?, DurationObject?
 
 ---@class NumericFormatter
 ---@field SetBreakpoints fun(self: NumericFormatter, breakpoints: table)
@@ -356,6 +629,13 @@
 ---@field GetCountdownFontString fun(self: ExtendedCooldownTypes): FontString
 ---@field SetCooldownFromDurationObject fun(self: ExtendedCooldownTypes, durationObject: DurationObject, clearIfZero?: boolean)
 ---@field SetCountdownFormatter fun(self: ExtendedCooldownTypes, formatter: NumericFormatter)
+
+---@class DurationTextBinding
+---@field SetFontString fun(self: DurationTextBinding, fontString: FontString)
+---@field SetDuration fun(self: DurationTextBinding, duration: DurationObject)
+---@field SetFormatter fun(self: DurationTextBinding, formatter: NumericFormatter)
+---@field SetEnabled fun(self: DurationTextBinding, enabled: boolean)
+---@field SetZeroDurationText fun(self: DurationTextBinding, text: string?)
 
 ---@class IconDataProviderMixin
 ---@field GetRandomIcon fun(self: IconDataProviderMixin): number
@@ -466,7 +746,6 @@ local s_passThroughClosureGenerators = {
 	end,
 }
 
--- Syntactic sugar for function(...) return f(a, b, c, ...); end
 function GenerateClosure(f, ...)
 	return GenerateClosureInternal(s_passThroughClosureGenerators, f, ...)
 end
@@ -502,27 +781,28 @@ StaticPopupDialogs = {}
 
 PixelUtil = {
 	SetPoint =
-		---@param region Region
-		---@param point FramePoint
-		---@param relativeTo Region
-		---@param relativePoint FramePoint
-		---@param offsetX number
-		---@param offsetY number
-		---@param minOffsetXPixels number?
-		---@param minOffsetYPixels number?
+	---@param region Region
+	---@param point FramePoint
+	---@param relativeTo Region
+	---@param relativePoint FramePoint
+	---@param offsetX number
+	---@param offsetY number
+	---@param minOffsetXPixels number?
+	---@param minOffsetYPixels number?
 		function(region, point, relativeTo, relativePoint, offsetX, offsetY, minOffsetXPixels, minOffsetYPixels)
 			region:SetPoint(point, relativeTo, relativePoint, offsetX, offsetY)
 		end,
 	SetSize =
-		---@param region Region
-		---@param width number
-		---@param height number
+	---@param region Region
+	---@param width number
+	---@param height number
 		function(region, width, height)
 			region:SetSize(width, height)
 		end,
 }
 
 function StaticPopup_Hide(name) end
+
 function StaticPopup_Show(name) end
 
 ---@enum Enum.StatusBarInterpolation

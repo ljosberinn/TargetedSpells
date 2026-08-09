@@ -145,6 +145,7 @@ local GlowFramePool = CreateFramePool(
 		frame.info = {}
 		frame.name = nil
 		frame.timer = nil
+		frame.throttle = nil
 		frame:Hide()
 		frame:ClearAllPoints()
 	end
@@ -203,6 +204,8 @@ local function AddFrameAndTex(frame, color, name, count, texture, texCoord, desa
 	return GlowFrame
 end
 
+local GLOW_UPDATE_INTERVAL = 1 / 60
+
 do
 	local color = { 0.95, 0.95, 0.32, 1 }
 	local count = 8
@@ -255,7 +258,16 @@ do
 	---@param self GlowFrame
 	---@param elapsed number
 	local function PUpdate(self, elapsed)
-		self.timer = self.timer + elapsed / self.info.period
+		self.throttle = (self.throttle or 0) + elapsed
+
+		if self.throttle < GLOW_UPDATE_INTERVAL then
+			return
+		end
+
+		local step = self.throttle
+		self.throttle = 0
+
+		self.timer = self.timer + step / self.info.period
 
 		if self.timer > 1 or self.timer < -1 then
 			self.timer = self.timer % 1
@@ -331,9 +343,9 @@ do
 					self,
 					"TOPLEFT",
 					self.info.th
-						+ PCalc2((progress + self.info.step * (index - 1)) % 1, width, self.info.th, self.info.pBRx),
+					+ PCalc2((progress + self.info.step * (index - 1)) % 1, width, self.info.th, self.info.pBRx),
 					-height
-						+ PCalc1((progress + self.info.step * (index - 1)) % 1, height, self.info.th, self.info.pBRy)
+					+ PCalc1((progress + self.info.step * (index - 1)) % 1, height, self.info.th, self.info.pBRy)
 				)
 			end
 		end
@@ -383,6 +395,7 @@ do
 		end
 
 		GlowFrame.timer = GlowFrame.timer or 0
+		GlowFrame.throttle = 0
 		GlowFrame.info = GlowFrame.info or {}
 		GlowFrame.info.step = 1 / count
 		GlowFrame.info.period = 4
@@ -394,7 +407,7 @@ do
 			GlowFrame.info.needsUpdate = true
 		end
 
-		PUpdate(GlowFrame, 0)
+		PUpdate(GlowFrame, GLOW_UPDATE_INTERVAL)
 
 		GlowFrame:SetScript("OnUpdate", PUpdate)
 	end
@@ -414,6 +427,15 @@ do
 	---@param self Frame
 	---@param elapsed number
 	local function AutoCastGlowOnUpdate(self, elapsed)
+		self.throttle = (self.throttle or 0) + elapsed
+
+		if self.throttle < GLOW_UPDATE_INTERVAL then
+			return
+		end
+
+		local step = self.throttle
+		self.throttle = 0
+
 		local width = self.info.width
 		local height = self.info.height
 
@@ -434,7 +456,7 @@ do
 
 		local TexIndex = 0
 		for ring = 1, 4 do
-			self.timer[ring] = self.timer[ring] + elapsed / (self.info.period * ring)
+			self.timer[ring] = self.timer[ring] + step / (self.info.period * ring)
 
 			if self.timer[ring] > 1 or self.timer[ring] < -1 then
 				self.timer[ring] = self.timer[ring] % 1
@@ -467,6 +489,7 @@ do
 		end
 
 		glowFrame.timer = glowFrame.timer or { 0, 0, 0, 0 }
+		glowFrame.throttle = 0
 		glowFrame.info = glowFrame.info or {}
 		glowFrame.info.N = count
 		glowFrame.info.period = 8
@@ -480,7 +503,7 @@ do
 		glowFrame.info.rightlim = height + width
 		glowFrame.info.space = glowFrame.info.perimeter / count
 
-		AutoCastGlowOnUpdate(glowFrame, 0)
+		AutoCastGlowOnUpdate(glowFrame, GLOW_UPDATE_INTERVAL)
 		glowFrame:SetScript("OnUpdate", AutoCastGlowOnUpdate)
 	end
 end

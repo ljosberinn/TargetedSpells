@@ -14,9 +14,32 @@ local L = Private.L
 L.EditMode = {}
 L.Functionality = {}
 L.Settings = {}
+L.Migration = {}
+L.SlashCommands = {}
+L.Designer = {}
+L.Designer.Title = "Targeted Spells - Concepteur de mise en page"
+L.Designer.ElementPickerLabel = "Élément"
+L.Designer.SelectHint = "Cliquez sur un élément dans l'aperçu ou sélectionnez-en un dans la liste des éléments."
+L.Designer.ResetElement = "Réinitialiser l'élément"
+L.Designer.CopyFrom = "Copier la mise en page depuis…"
+L.Designer.CopyFromEmpty = "Aucun autre groupe de ce type"
+L.Designer.Apply = "Enregistrer les modifications"
+L.Designer.Revert = "Rétablir"
+L.Designer.Discard = "Abandonner"
+L.Designer.UnsavedHint = "Les modifications s'appliquent lors de l'enregistrement."
+L.Designer.UnsavedPrompt = "Vous avez des modifications de mise en page non enregistrées."
+L.Designer.SettingNames = { ELEMENT_ACTIVE = "Activé", ELEMENT_WIDTH = "Largeur", ELEMENT_HEIGHT = "Hauteur", ELEMENT_X = "Décalage X", ELEMENT_Y = "Décalage Y", ELEMENT_FONT_SIZE = "Taille de police", ELEMENT_FONT = "Police", ELEMENT_FONT_FLAGS = "Style de police", ELEMENT_TEXT_COLOR = "Couleur du texte", ELEMENT_JUSTIFY_H = "Alignement", ELEMENT_MAX_WIDTH = "Largeur maximale", ELEMENT_GAP = "Écart", ELEMENT_USE_CLASS_COLOR = "Utiliser la couleur de classe", ELEMENT_ICON_ZOOM = "Zoom de l'icône", ELEMENT_SHOW_SWIPE = "Afficher l'animation de balayage", ELEMENT_SHOW_COUNTDOWN = "Afficher la durée", ELEMENT_FRACTION_THRESHOLD = "Fraction sous (s)", ELEMENT_BORDER_TEXTURE = "Texture de bordure", ELEMENT_BORDER_COLOR = "Couleur de bordure", ELEMENT_BORDER_SIZE = "Taille de bordure", ELEMENT_BAR_TEXTURE = "Texture de barre", ELEMENT_BAR_COLOR_MODE = "Mode de couleur", ELEMENT_BAR_COLOR = "Couleur de barre", ELEMENT_INTERRUPTIBLE_COLOR = "Couleur interruptible", ELEMENT_UNINTERRUPTIBLE_COLOR = "Couleur non interruptible", ELEMENT_BACKGROUND_TEXTURE = "Texture d'arrière-plan", ELEMENT_BACKGROUND_COLOR = "Couleur d'arrière-plan" }
+L.Designer.Options = { JUSTIFY_LEFT = "Gauche", JUSTIFY_CENTER = "Centre", JUSTIFY_RIGHT = "Droite", BAR_COLOR_STATIC = "Statique", BAR_COLOR_INTERRUPTIBILITY = "Interruptibilité", BAR_COLOR_TARGET_CLASS = "Couleur de classe de la cible" }
+L.Designer.FontFlagNames = { [Private.Enum.FontFlags.OUTLINE] = "Contour", [Private.Enum.FontFlags.SHADOW] = "Ombre" }
+L.Designer.FontFlagsNone = "Aucun"
+L.Designer.ElementNames = { [Private.Enum.Element.Icon] = "Icône", [Private.Enum.Element.Overlay] = "Cadre du gestionnaire de temps de recharge", [Private.Enum.Element.Cooldown] = "Temps de recharge", [Private.Enum.Element.Border] = "Bordure", [Private.Enum.Element.InterruptSource] = "Nom de l'interrupteur", [Private.Enum.Element.ProgressBar] = "Barre de progression", [Private.Enum.Element.Background] = "Arrière-plan", [Private.Enum.Element.TargetMarker] = "Marqueur de cible", [Private.Enum.Element.DurationCooldown] = "Durée", [Private.Enum.Element.SpellName] = "Nom du sort", [Private.Enum.Element.TargetName] = "Nom de la cible", [Private.Enum.Element.InterruptShield] = "Bouclier d'interruption", [Private.Enum.Element.Duration] = "Durée" }
+L.SlashCommands.Header = "Commandes de Targeted Spells :"
+L.SlashCommands.OptionsDescription = "Ouvrir le panneau des paramètres"
+L.SlashCommands.SettingsDescription = "Ouvrir le panneau des paramètres"
+L.SlashCommands.DesignDescription = "Ouvrir le concepteur de mise en page"
 
 L.Settings.EditModeReminder =
-	"Pensez à utiliser le Mode Édition, il inclut un aperçu en direct de tous les paramètres.\nCeux-ci sont uniquement présents pour permettre l'édition en combat."
+	"Tous les paramètres sont accessibles via le Mode Édition et \"/targetedspells design\"."
 L.EditMode.TargetedSpellsSelfLabel = "Targeted Spells - Self"
 L.EditMode.TargetedSpellsPartyLabel = "Targeted Spells - Party"
 
@@ -34,7 +57,6 @@ L.Functionality.V3MigrationWarning = string.format(
 )
 
 L.Settings.EnabledLabel = "Activé"
-L.Settings.EnabledTooltip = nil
 L.Settings.DisabledLabel = "Désactivé"
 
 L.Settings.AddonCompartmentTooltipLine1 =
@@ -43,7 +65,6 @@ L.Settings.AddonCompartmentTooltipLine2 =
 	string.format("%s est %s", WrapTextInColorCode(L.EditMode.TargetedSpellsPartyLabel, "ffeda55f"), "%s")
 
 L.Settings.LoadConditionContentTypeLabel = "Condition de chargement: Type de contenu"
-L.Settings.LoadConditionContentTypeLabelAbbreviated = "Charger dans le contenu"
 L.Settings.LoadConditionContentTypeTooltip = nil
 L.Settings.LoadConditionContentTypeLabels = {
 	[Private.Enum.ContentType.OpenWorld] = "Monde ouvert",
@@ -55,28 +76,11 @@ L.Settings.LoadConditionContentTypeLabels = {
 }
 
 L.Settings.LoadConditionRoleLabel = "Condition de chargement: Rôle"
-L.Settings.LoadConditionRoleLabelAbbreviated = "Chargement sur Rôle"
 L.Settings.LoadConditionRoleTooltip = nil
 L.Settings.LoadConditionRoleLabels = {
 	[Private.Enum.Role.Healer] = "Healer",
 	[Private.Enum.Role.Tank] = "Tank",
 	[Private.Enum.Role.Damager] = "DPS",
-}
-
-L.Settings.FrameWidthLabel = "Largeur"
-L.Settings.FrameWidthTooltip = nil
-
-L.Settings.FrameHeightLabel = "Hauteur"
-L.Settings.FrameHeightTooltip = nil
-
-L.Settings.FontSizeLabel = "Taille de la police"
-L.Settings.FontSizeTooltip = nil
-
-L.Settings.FontFlagsLabel = "Options de police"
-L.Settings.FontFlagsTooltip = nil
-L.Settings.FontFlagsLabels = {
-	[Private.Enum.FontFlags.OUTLINE] = "Contour",
-	[Private.Enum.FontFlags.SHADOW] = "Ombre",
 }
 
 L.Settings.FrameGapLabel = "Ecart"
@@ -112,32 +116,7 @@ L.Settings.GlowTypeLabels = {
 	[Private.Enum.GlowType.Star4] = "Star 4",
 }
 
-L.Settings.ShowDurationLabel = "Montrer la durée"
-
 L.Settings.IndicateInterruptsLabel = "Montrer l'interruption"
-
-L.Settings.RenderInterruptSourceNameLabel = "Afficher la source d'interruption"
-
-L.Settings.ShowSwipeLabel = "Afficher le balayage"
-
-L.Settings.BorderStyleLabel = "Style de bordure"
-L.Settings.BorderStyleTooltip = nil
-
-L.Settings.ForegroundBarTextureLabel = "Texture de la barre de progression"
-L.Settings.ForegroundBarTextureTooltip = nil
-
-L.Settings.BackgroundBarTextureLabel = "Texture de fond de la barre"
-L.Settings.BackgroundBarTextureTooltip = nil
-
-L.Settings.BackgroundBarColorLabel = "Couleur de fond de la barre"
-L.Settings.BackgroundBarColorTooltip =
-	"L'opacité n'est disponible qu'en Mode Édition, car l'interface des paramètres par défaut ne l'expose pas."
-
-L.Settings.ProgressBarColorLabel = "Couleur de la barre"
-L.Settings.ProgressBarColorTooltip =
-	"L'opacité n'est disponible qu'en Mode Édition, car l'interface des paramètres par défaut ne l'expose pas."
-
-L.Settings.MirrorLayoutLabel = "Disposition en miroir"
 
 L.Settings.TextToSpeechVoiceLabel = "Voix TTS"
 L.Settings.TextToSpeechVoiceTooltip =
@@ -154,66 +133,30 @@ L.Settings.AnnounceTargetedSpellsTooltip =
 L.Settings.NpcTypeLabels = {
 	[Private.Enum.NpcType.Boss] = "Boss",
 	[Private.Enum.NpcType.Lieutenant] = "Lieutenants",
-	[Private.Enum.NpcType.Caster] = "A du mana",
-	[Private.Enum.NpcType.Melee] = "Melee normal",
+	[Private.Enum.NpcType.Other] = "Tous les autres",
 	[Private.Enum.NpcType.Minion] = "Sbires",
 }
-
-L.Settings.HideUntargetedSpellsLabel = "Masquer les sorts sans cible"
-
-L.Settings.HideTargetedSpellsLabel = "Masquer les sorts avec cible"
-
-L.Settings.SelfOnlyLabel = "Afficher uniquement les sorts ciblant le joueur"
-
-L.Settings.InlineDurationLabel = "Durée en position intégrée"
-
-L.Settings.UseInterruptabilityColorsLabel = "Utiliser les couleurs d'interruption"
-L.Settings.UseInterruptabilityColorsTooltip = nil
 
 L.Settings.UseTargetClassColorLabel = "Utiliser la couleur de classe de la cible"
 L.Settings.UseTargetClassColorTooltip =
 	"Colore la barre avec la couleur de classe de l'unité ciblée à 75 % d'opacité. Les sorts sans cible utiliseront une Couleur de Barre de Fond éclaircie."
-
-L.Settings.UninterruptibleColorLabel = "Couleur ininterruptible"
-L.Settings.UninterruptibleColorTooltip = nil
-
-L.Settings.InterruptibleColorLabel = "Couleur interruptible"
-L.Settings.InterruptibleColorTooltip = nil
-
-L.Settings.IconZoomLabel = "Zoom de l'icône"
-L.Settings.IconZoomTooltip = nil
 
 L.Settings.ClickToOpenSettingsLabel = "Cliquer pour ouvrir les paramètres"
 
 L.Settings.Import = "Importer"
 L.Settings.Export = "Exporter"
 
-L.Settings.FontLabel = "Police"
-L.Settings.FontTooltip = nil
-
 L.Settings.FeatureFlagsLabel = "Fonctionnalités"
 L.Settings.FeatureFlagsTooltip = nil
-
-L.Settings.FeatureFlagLabels = {
-	[Private.Enum.FeatureFlag.GlowImportant] = L.Settings.GlowImportantLabel,
-	[Private.Enum.FeatureFlag.OnlyImportant] = L.Settings.OnlyImportantLabel,
-	[Private.Enum.FeatureFlag.ShowDuration] = L.Settings.ShowDurationLabel,
-	[Private.Enum.FeatureFlag.ShowSwipe] = L.Settings.ShowSwipeLabel,
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = L.Settings.IndicateInterruptsLabel,
-	[Private.Enum.FeatureFlag.RenderInterruptSourceName] = L.Settings.RenderInterruptSourceNameLabel,
-	[Private.Enum.FeatureFlag.ShowIcon] = "Afficher l'icône",
-	[Private.Enum.FeatureFlag.ShowTargetMarker] = "Afficher le marqueur de cible",
-	[Private.Enum.FeatureFlag.ShowSpellName] = "Afficher le nom du sort",
-	[Private.Enum.FeatureFlag.ShowTargetName] = "Afficher le nom de la cible",
-	[Private.Enum.FeatureFlag.ShowTargetClassColor] = "Afficher la couleur de classe de la cible",
-	[Private.Enum.FeatureFlag.MirrorLayout] = L.Settings.MirrorLayoutLabel,
-	[Private.Enum.FeatureFlag.InlineDuration] = L.Settings.InlineDurationLabel,
-	[Private.Enum.FeatureFlag.HideUntargetedSpells] = L.Settings.HideUntargetedSpellsLabel,
-	[Private.Enum.FeatureFlag.HideTargetedSpells] = L.Settings.HideTargetedSpellsLabel,
-	[Private.Enum.FeatureFlag.SelfOnly] = L.Settings.SelfOnlyLabel,
-}
-
-L.Settings.FeatureFlagSettingTitles = {
-	[Private.Enum.FeatureFlag.GlowImportant] = "Affichage",
-	[Private.Enum.FeatureFlag.IndicateInterrupts] = "Paramètres d'interruption",
-}
+L.Settings.GroupNameLabel = "Renommer le groupe"
+L.Settings.GroupNamePrompt = "Saisissez un nom pour ce groupe :"
+L.Settings.TemplateLabel = "Modèle"
+L.Settings.TemplateTooltip = "Changer de modèle réinitialise la mise en page des éléments de ce groupe au modèle par défaut."
+L.Settings.TemplateLabels = { [Private.Enum.Template.Icon] = "Icône", [Private.Enum.Template.Bar] = "Barre", [Private.Enum.Template.IconDuration] = "Icône + durée" }
+L.Settings.FilterLabel = "Afficher les sorts ciblant"
+L.Settings.FilterTooltip = "Les cibles des sorts que ce groupe affiche."
+L.Settings.TargetClassLabels = { [Private.Enum.TargetClass.Player] = "vous", [Private.Enum.TargetClass.PartyMember] = "les membres du groupe", [Private.Enum.TargetClass.Nobody] = "personne (sans cible)" }
+L.Settings.CreateGroup = "Créer un groupe"
+L.Settings.DeleteGroup = "Supprimer le groupe"
+L.Settings.DeleteGroupConfirm = "Supprimer ce groupe ? Cette action est irréversible."
+L.Settings.CannotDeleteLastGroup = "Vous ne pouvez pas supprimer le dernier groupe restant."

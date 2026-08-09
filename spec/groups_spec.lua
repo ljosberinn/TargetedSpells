@@ -1,0 +1,269 @@
+---@diagnostic disable: undefined-global, undefined-field
+
+local b = require("spec.bootstrap")
+local Private = b.Private
+local Enum = Private.Enum
+local TargetClass = Enum.TargetClass
+
+-- Builds a groups map keyed by ascending id. Each entry is the minimal shape
+-- GetMatching reads: Enabled + Filter.
+local function makeGroups()
+	return {
+		[1] = { Name = "player", Enabled = true, Filter = { [TargetClass.Player] = true } },
+		[2] = { Name = "party", Enabled = true, Filter = { [TargetClass.PartyMember] = true } },
+		[3] = { Name = "nobody", Enabled = true, Filter = { [TargetClass.Nobody] = true } },
+		[4] = { Name = "player+party", Enabled = true, Filter = { [TargetClass.Player] = true, [TargetClass.PartyMember] = true } },
+		[5] = { Name = "disabled", Enabled = false, Filter = { [TargetClass.Player] = true } },
+	}
+end
+
+local function names(matches)
+	local result = {}
+	for _, group in ipairs(matches) do
+		result[#result + 1] = group.Name
+	end
+	return result
+end
+
+describe("Groups.GetMatching", function()
+	it("matches a single target class", function()
+		local matches = Private.Groups.GetMatching({ targetClasses = { [TargetClass.Nobody] = true } }, makeGroups())
+		assert.same({ "nobody" }, names(matches))
+	end)
+
+	it("PartyMember single matches the party group and the multi group", function()
+		local matches = Private.Groups.GetMatching({ targetClasses = { [TargetClass.PartyMember] = true } }, makeGroups())
+		assert.same({ "party", "player+party" }, names(matches))
+	end)
+
+	it("overlap: one Player cast feeds several groups", function()
+		local matches = Private.Groups.GetMatching({ targetClasses = { [TargetClass.Player] = true } }, makeGroups())
+		-- both the Player group and the Player+Party multi group match; disabled is skipped
+		assert.same({ "player", "player+party" }, names(matches))
+	end)
+
+	it("a cast satisfying two classes matches every group touching either", function()
+		local matches = Private.Groups.GetMatching(
+			{ targetClasses = { [TargetClass.Player] = true, [TargetClass.PartyMember] = true } },
+			makeGroups()
+		)
+		assert.same({ "player", "party", "player+party" }, names(matches))
+	end)
+
+	it("a multi-filter group is returned at most once", function()
+		local matches = Private.Groups.GetMatching(
+			{ targetClasses = { [TargetClass.Player] = true, [TargetClass.PartyMember] = true } },
+			{ [4] = { Name = "player+party", Enabled = true, Filter = { [TargetClass.Player] = true, [TargetClass.PartyMember] = true } } }
+		)
+		assert.same({ "player+party" }, names(matches))
+	end)
+
+	it("disabled groups never match", function()
+		local matches = Private.Groups.GetMatching(
+			{ targetClasses = { [TargetClass.Player] = true } },
+			{ [5] = { Name = "disabled", Enabled = false, Filter = { [TargetClass.Player] = true } } }
+		)
+		assert.same({}, names(matches))
+	end)
+
+	it("returns matches in ascending group-id order", function()
+		local groups = {
+			[10] = { Name = "ten", Enabled = true, Filter = { [TargetClass.Player] = true } },
+			[2] = { Name = "two", Enabled = true, Filter = { [TargetClass.Player] = true } },
+			[7] = { Name = "seven", Enabled = true, Filter = { [TargetClass.Player] = true } },
+		}
+		local matches = Private.Groups.GetMatching({ targetClasses = { [TargetClass.Player] = true } }, groups)
+		assert.same({ "two", "seven", "ten" }, names(matches))
+	end)
+
+	it("no target classes matches nothing", function()
+		assert.same({}, Private.Groups.GetMatching({ targetClasses = {} }, makeGroups()))
+		assert.same({}, Private.Groups.GetMatching({}, makeGroups()))
+	end)
+
+	describe("with a reused `out` table", function()
+		local playerCast = { targetClasses = { [TargetClass.Player] = true } }
+
+		it("returns the same table it was handed, with the same contents as a fresh call", function()
+			local out = {}
+			local matches = Private.Groups.GetMatching(playerCast, makeGroups(), out)
+
+			assert.equals(out, matches)
+			assert.same(names(Private.Groups.GetMatching(playerCast, makeGroups())), names(matches))
+		end)
+
+		it("wipes the previous result rather than appending to it", function()
+			local out = {}
+			local groups = makeGroups()
+
+			Private.Groups.GetMatching(playerCast, groups, out)
+			assert.same({ "player", "player+party" }, names(out))
+
+			Private.Groups.GetMatching({ targetClasses = { [TargetClass.Nobody] = true } }, groups, out)
+			assert.same({ "nobody" }, names(out))
+		end)
+
+		it("wipes it even when nothing matches", function()
+			local out = {}
+			local groups = makeGroups()
+
+			Private.Groups.GetMatching(playerCast, groups, out)
+			Private.Groups.GetMatching({ targetClasses = {} }, groups, out)
+
+			assert.same({}, out)
+		end)
+	end)
+end)
+
+describe("Groups.Create / Delete / SetTemplate / Count", function()
+	local Template = Enum.Template
+	local Element = Enum.Element
+
+	local function newSaved()
+		return { Groups = {} }
+	end
+
+	it("Create seeds a group from the template defaults with a fresh id", function()
+		local saved = newSaved()
+		local id, group = Private.Groups.Create(Template.Bar, saved)
+
+		assert.equals(1, id)
+		assert.equals(group, saved.Groups[1])
+		assert.equals(Template.Bar, group.Template)
+		assert.equals(1, group.Id)
+		assert.is_string(group.Name)
+		assert.is_table(group.Elements[Element.ProgressBar])
+		-- the Filter is seeded per template, not "everything": a bar starts on untargeted
+		-- casts, which is the display it was designed for
+		assert.same({ [Enum.TargetClass.Nobody] = true }, group.Filter)
+	end)
+
+	it("never reuses ids across delete/create within a session", function()
+		local saved = newSaved()
+		local firstId = Private.Groups.Create(Template.Icon, saved)
+		Private.Groups.Create(Template.Icon, saved)
+		assert.is_true(Private.Groups.Delete(firstId, saved))
+		local reusedId = Private.Groups.Create(Template.Icon, saved)
+		assert.equals(3, reusedId)
+	end)
+
+	it("does not reuse the top id after deleting the highest group (high-water mark)", function()
+		-- the runtime allocator must climb even when the largest id is freed: a lingering
+		-- edit-mode frame keeps that id live for the session (a naive max+1 would collide)
+		local saved = newSaved()
+		Private.Groups.Create(Template.Icon, saved) -- 1
+		Private.Groups.Create(Template.Icon, saved) -- 2
+		local topId = Private.Groups.Create(Template.Icon, saved) -- 3
+		assert.equals(3, topId)
+
+		assert.is_true(Private.Groups.Delete(topId, saved))
+		local nextId = Private.Groups.Create(Template.Icon, saved)
+		assert.equals(4, nextId)
+	end)
+
+	it("names are sequential 'Group N', independent of the never-reused id", function()
+		local saved = newSaved()
+		local _, first = Private.Groups.Create(Template.Icon, saved)
+		local _, second = Private.Groups.Create(Template.Icon, saved)
+		assert.equals("Group 1", first.Name)
+		assert.equals("Group 2", second.Name)
+
+		-- delete "Group 1" then create again: the id climbs (3) but the name refills
+		-- the freed slot rather than following the raw allocated id
+		Private.Groups.Delete(first.Id, saved)
+		local newId, third = Private.Groups.Create(Template.Icon, saved)
+		assert.equals(3, newId)
+		assert.equals("Group 1", third.Name)
+	end)
+
+	it("Delete refuses to remove the last remaining group", function()
+		local saved = newSaved()
+		Private.Groups.Create(Template.Icon, saved)
+		assert.is_false(Private.Groups.Delete(1, saved))
+		assert.is_not_nil(saved.Groups[1])
+
+		Private.Groups.Create(Template.Bar, saved)
+		assert.is_true(Private.Groups.Delete(1, saved))
+		assert.is_nil(saved.Groups[1])
+	end)
+
+	it("SetTemplate swaps template and reseeds Elements", function()
+		local saved = newSaved()
+		local _, group = Private.Groups.Create(Template.Icon, saved)
+		assert.is_table(group.Elements[Element.Overlay]) -- icon-only element (Border is now shared)
+
+		Private.Groups.SetTemplate(group, Template.Bar)
+		assert.equals(Template.Bar, group.Template)
+		assert.is_table(group.Elements[Element.ProgressBar])
+		assert.is_nil(group.Elements[Element.Overlay]) -- gone: bar has no Overlay
+	end)
+
+	it("Count reflects the number of groups", function()
+		local saved = newSaved()
+		assert.equals(0, Private.Groups.Count(saved))
+		Private.Groups.Create(Template.Icon, saved)
+		Private.Groups.Create(Template.Bar, saved)
+		assert.equals(2, Private.Groups.Count(saved))
+	end)
+end)
+
+describe("Groups.SortedIds cache + invalidation", function()
+	local Template = Enum.Template
+
+	local function newSaved()
+		return { Groups = {} }
+	end
+
+	it("returns ids in ascending order", function()
+		assert.same({ 1, 2, 3, 4, 5 }, Private.Groups.SortedIds(makeGroups()))
+	end)
+
+	it("hands back the same cached array until invalidated, a fresh one after", function()
+		local groups = makeGroups()
+		local first = Private.Groups.SortedIds(groups)
+		-- second call must reuse the cached instance (no per-call sort/allocation)
+		assert.equals(first, Private.Groups.SortedIds(groups))
+
+		Private.Groups.InvalidateOrder(groups)
+		local rebuilt = Private.Groups.SortedIds(groups)
+		assert(first ~= rebuilt, "expected a rebuilt array after invalidation")
+		assert.same({ 1, 2, 3, 4, 5 }, rebuilt)
+	end)
+
+	it("Create invalidates so GetMatching sees the new group", function()
+		local saved = newSaved()
+		Private.Groups.Create(Template.Icon, saved) -- id 1
+		-- prime the cache before the second create
+		Private.Groups.GetMatching({ targetClasses = { [TargetClass.Player] = true } }, saved.Groups)
+
+		local newId = Private.Groups.Create(Template.Icon, saved) -- id 2
+		assert.same({ 1, newId }, Private.Groups.SortedIds(saved.Groups))
+
+		-- default filter includes Player, so both groups match now
+		local matches = Private.Groups.GetMatching({ targetClasses = { [TargetClass.Player] = true } }, saved.Groups)
+		assert.equals(2, #matches)
+	end)
+
+	it("Delete invalidates so GetMatching drops the removed group", function()
+		local saved = newSaved()
+		Private.Groups.Create(Template.Icon, saved) -- id 1
+		local id2 = Private.Groups.Create(Template.Icon, saved) -- id 2
+		Private.Groups.SortedIds(saved.Groups) -- prime
+
+		assert.is_true(Private.Groups.Delete(1, saved))
+		assert.same({ id2 }, Private.Groups.SortedIds(saved.Groups))
+
+		local matches = Private.Groups.GetMatching({ targetClasses = { [TargetClass.Player] = true } }, saved.Groups)
+		assert.equals(1, #matches)
+		assert.equals(id2, matches[1].Id)
+	end)
+
+	it("GetMatching is stable (byte-identical) across cached calls", function()
+		local groups = makeGroups()
+		local info = { targetClasses = { [TargetClass.Player] = true, [TargetClass.PartyMember] = true } }
+		assert.same(
+			names(Private.Groups.GetMatching(info, groups)),
+			names(Private.Groups.GetMatching(info, groups))
+		)
+	end)
+end)

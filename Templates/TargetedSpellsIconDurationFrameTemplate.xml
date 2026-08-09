@@ -1,6 +1,5 @@
-<!-- this is CooldownViewerEssentialItemTemplate with minor modifications -->
 <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/ https://raw.githubusercontent.com/Gethe/wow-ui-source/live/Interface/AddOns/Blizzard_SharedXML/UI.xsd">
-    <Frame name="TargetedSpellsFrameTemplate" mixin="TargetedSpellsIconMixin" virtual="true" ignoreParentAlpha="true" enableMouse="false" propagateMouseInput="Both">
+    <Frame name="TargetedSpellsIconDurationCellTemplate" virtual="true" enableMouse="false">
         <Layers>
             <Layer level="ARTWORK">
                 <Texture parentKey="Icon" setAllPoints="true" />
@@ -23,15 +22,6 @@
                         <Anchor point="BOTTOMRIGHT" x="-4" y="4" />
                     </Anchors>
                 </Texture>
-                <FontString hidden="true" parentKey="InterruptSource" font="GameFontHighlightSmall" justifyV="TOP" setAllPoints="true">
-                    <Anchors>
-                        <Anchor point="TOP" relativePoint="TOP">
-                            <Offset>
-                                <AbsDimension x="0" y="5" />
-                            </Offset>
-                        </Anchor>
-                    </Anchors>
-                </FontString>
                 <!-- Solid border strips -->
                 <Texture parentKey="BorderSolidTop" hidden="true" file="Interface\Buttons\WHITE8x8">
                     <Color r="1" g="1" b="1" a="0.8" />
@@ -111,6 +101,22 @@
                     <Color r="0" g="0" b="0" a="0.7" />
                 </SwipeTexture>
             </Cooldown>
+        </Frames>
+    </Frame>
+
+    <Frame name="TargetedSpellsIconDurationFrameTemplate" mixin="TargetedSpellsIconDurationMixin" virtual="true" ignoreParentAlpha="true" enableMouse="false" propagateMouseInput="Both">
+        <Layers>
+            <Layer level="OVERLAY">
+                <FontString parentKey="Duration" font="GameFontHighlightSmall" justifyH="CENTER" justifyV="MIDDLE">
+                    <Anchors>
+                        <Anchor point="CENTER" relativePoint="CENTER" />
+                    </Anchors>
+                </FontString>
+            </Layer>
+        </Layers>
+        <Frames>
+            <Frame parentKey="IconCell" inherits="TargetedSpellsIconDurationCellTemplate" />
+            <Frame parentKey="IconCellMirror" inherits="TargetedSpellsIconDurationCellTemplate" />
             <StatusBar parentKey="Bar" ignoreParentAlpha="true" minValue="0" maxValue="1" />
         </Frames>
         <Scripts>
