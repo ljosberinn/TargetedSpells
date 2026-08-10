@@ -300,9 +300,7 @@ function TargetedSpellsDriver:ReleaseFrameForUnit(unit, removeUnit, id, dirtyGro
 end
 
 function TargetedSpellsDriver:UnitIsIrrelevant(unit, skipTargetCheck)
-	if
-		not UnitAffectingCombat(unit)
-	then
+	if not UnitAffectingCombat(unit) or UnitCanAssist("player", unit) then
 		return true
 	end
 
