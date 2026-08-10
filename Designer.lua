@@ -34,6 +34,17 @@ local TEXTURE_PREVIEW_WIDTH = 64
 local previewFontCache = {}
 local previewFontCounter = 0
 
+-- ColorMixin:GenerateHexColor forwards to C_ColorUtil.GenerateTextColorCode, which forces alpha to 255.
+---@param red number
+---@param green number
+---@param blue number
+---@param alpha number
+---@return string
+local function ToHexString(red, green, blue, alpha)
+	local r, g, b, a = CreateColor(red, green, blue, alpha):GetRGBAAsBytes()
+	return ("%.2X%.2X%.2X%.2X"):format(a, r, g, b)
+end
+
 ---@param path string
 ---@return string globalFontName
 local function PreviewFontObject(path)
@@ -896,11 +907,19 @@ end
 function DesignerMixin:OpenColorPicker(record, swatch)
 	local startColor = CreateColorFromHexString(self:SelectedScratchRecord()[record.setting] or record.default)
 
+	-- SetupColorPickerAndShow fires OnColorSelect before OnShow applies the requested opacity, so the
+	-- first callback would otherwise commit whatever alpha the picker was left on by a previous swatch.
+	local ready = false
+
 	local function Commit()
+		if not ready then
+			return
+		end
+
 		local r, g, b = ColorPickerFrame:GetColorRGB()
 		local a = ColorPickerFrame:GetColorAlpha()
 		swatch:SetColorRGB(r, g, b)
-		self:OnWidgetValueChanged(record.setting, CreateColor(r, g, b, a):GenerateHexColor())
+		self:OnWidgetValueChanged(record.setting, ToHexString(r, g, b, a))
 	end
 
 	ColorPickerFrame:SetupColorPickerAndShow({
@@ -913,12 +932,11 @@ function DesignerMixin:OpenColorPicker(record, swatch)
 		opacityFunc = Commit,
 		cancelFunc = function(previous)
 			swatch:SetColorRGB(previous.r, previous.g, previous.b)
-			self:OnWidgetValueChanged(
-				record.setting,
-				CreateColor(previous.r, previous.g, previous.b, previous.a):GenerateHexColor()
-			)
+			self:OnWidgetValueChanged(record.setting, ToHexString(previous.r, previous.g, previous.b, previous.a))
 		end,
 	})
+
+	ready = true
 end
 
 ---@param record table
