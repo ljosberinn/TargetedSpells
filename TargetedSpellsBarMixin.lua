@@ -392,17 +392,16 @@ function TargetedSpellsBarMixin:PostCreate(info, OnCooldownDoneCallback)
 	local targetNameElement = self:GetElement(Element.TargetName)
 	local useClassColorForName = targetNameElement ~= nil and targetNameElement.useClassColor
 	local barColorMode = core ~= nil and core.barColorMode
+	local useClassColorForBar = barColorMode == BarColorMode.TargetClassColor
 
 	---@type colorRGB?
-	local color = nil
-	local isClassColor = false
+	local classColor = nil
 
-	if useClassColorForName then
+	if useClassColorForName or useClassColorForBar then
 		local targetClass = UnitSpellTargetClass(info.unit)
 
 		if targetClass ~= nil then
-			color = C_ClassColor.GetClassColor(targetClass)
-			isClassColor = color ~= nil
+			classColor = C_ClassColor.GetClassColor(targetClass)
 		end
 	end
 
@@ -432,25 +431,24 @@ function TargetedSpellsBarMixin:PostCreate(info, OnCooldownDoneCallback)
 		end
 	end
 
-	if color == nil then
-		if barColorMode == BarColorMode.TargetClassColor then
+	if useClassColorForBar then
+		local color = classColor
+
+		if color == nil then
 			local background = self:GetElement(Element.Background)
 			local bg = CreateColorFromHexString(background and background.backgroundColor or "FF000000")
 			color = CreateColor(bg.r + (1 - bg.r) * 0.6, bg.g + (1 - bg.g) * 0.6, bg.b + (1 - bg.b) * 0.6, 0.5)
-		else
-			color = whiteDefaultColor
 		end
-	end
 
-	if barColorMode == BarColorMode.TargetClassColor then
 		self.ProgressBar.TargetName:SetTextColor(
 			whiteDefaultColor.r,
 			whiteDefaultColor.g,
 			whiteDefaultColor.b,
 			whiteDefaultColor.a
 		)
-		self.ProgressBar:SetStatusBarColor(color.r, color.g, color.b, isClassColor and 0.75 or color.a)
+		self.ProgressBar:SetStatusBarColor(color.r, color.g, color.b, classColor ~= nil and 0.75 or color.a)
 	else
+		local color = (useClassColorForName and classColor) or whiteDefaultColor
 		self.ProgressBar.TargetName:SetTextColor(color.r, color.g, color.b, color.a)
 	end
 
