@@ -1,3 +1,3 @@
-## Version 4.0.2
+## Version 4.0.3
 
-- fixed a bug where Bars > Color: Target Class Color no longer worked
+- fixed a bug where Target Name wasn't respecting the Use Target Class Color setting

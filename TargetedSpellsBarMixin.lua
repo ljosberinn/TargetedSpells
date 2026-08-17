@@ -9,8 +9,6 @@ local FontFlags = Private.Enum.FontFlags
 ---@class TargetedSpellsBarMixin : TargetedSpellsMixin
 TargetedSpellsBarMixin = CreateFromMixins(TargetedSpellsMixin)
 
-local whiteDefaultColor = CreateColor(1, 1, 1, 1)
-
 ---@type colorRGB?
 local playerClassColor = nil
 
@@ -154,9 +152,8 @@ function TargetedSpellsBarMixin:PositionElements()
 			PixelUtil.SetPoint(region, geom.justifyH, self, "CENTER", geom.edgeX, geom.centerY)
 
 			local element = elements[entry.tag]
-			if element.textColor ~= nil then
-				local color = CreateColorFromHexString(element.textColor)
-				region:SetTextColor(color.r, color.g, color.b, color.a)
+			if not element.useClassColor then
+				Private.Utils.ApplyElementTextColor(region, element)
 			end
 		end
 	end
@@ -345,13 +342,15 @@ function TargetedSpellsBarMixin:ApplySpellNameWidth()
 	ApplyTextWidth(self.ProgressBar.SpellName, maxWidth)
 end
 
-function TargetedSpellsBarMixin:UpdateTargetName(targetName)
+---@param targetName string? may be a secret value
+---@param classColor colorRGB? may be a secret value
+function TargetedSpellsBarMixin:UpdateTargetName(targetName, classColor)
 	local element = self:GetElement(Element.TargetName)
 
 	if targetName == nil or element == nil or element.active == false then
 		self.ProgressBar.TargetName:Hide()
 	else
-		self.ProgressBar.TargetName:SetText(targetName)
+		Private.Utils.ApplyElementText(self.ProgressBar.TargetName, element, targetName, classColor)
 		self.ProgressBar.TargetName:Show()
 	end
 
@@ -367,7 +366,7 @@ function TargetedSpellsBarMixin:PostCreate(info, OnCooldownDoneCallback)
 	local core = self:GetElement(Element.ProgressBar)
 
 	if info == nil then
-		self:UpdateTargetName(GetPlayerName())
+		self:UpdateTargetName(GetPlayerName(), GetPlayerClassColor())
 		self:SetPreviewBarColor()
 
 		return
@@ -387,7 +386,6 @@ function TargetedSpellsBarMixin:PostCreate(info, OnCooldownDoneCallback)
 	end
 
 	self.ProgressBar:SetTimerDuration(info.duration, Enum.StatusBarInterpolation.None, info.isChannel and 1 or 0)
-	self:UpdateTargetName(targetName)
 
 	local targetNameElement = self:GetElement(Element.TargetName)
 	local useClassColorForName = targetNameElement ~= nil and targetNameElement.useClassColor
@@ -400,10 +398,12 @@ function TargetedSpellsBarMixin:PostCreate(info, OnCooldownDoneCallback)
 	if useClassColorForName or useClassColorForBar then
 		local targetClass = UnitSpellTargetClass(info.unit)
 
-		if targetClass ~= nil then
+		if targetClass then
 			classColor = C_ClassColor.GetClassColor(targetClass)
 		end
 	end
+
+	self:UpdateTargetName(targetName, not useClassColorForBar and classColor or nil)
 
 	local shield = self:GetElement(Element.InterruptShield)
 	local shieldActive = shield ~= nil and shield.active
@@ -432,24 +432,19 @@ function TargetedSpellsBarMixin:PostCreate(info, OnCooldownDoneCallback)
 	end
 
 	if useClassColorForBar then
-		local color = classColor
-
-		if color == nil then
+		if classColor then
+			self.ProgressBar:SetStatusBarColor(classColor.r, classColor.g, classColor.b, 0.75)
+		else
 			local background = self:GetElement(Element.Background)
 			local bg = CreateColorFromHexString(background and background.backgroundColor or "FF000000")
-			color = CreateColor(bg.r + (1 - bg.r) * 0.6, bg.g + (1 - bg.g) * 0.6, bg.b + (1 - bg.b) * 0.6, 0.5)
-		end
 
-		self.ProgressBar.TargetName:SetTextColor(
-			whiteDefaultColor.r,
-			whiteDefaultColor.g,
-			whiteDefaultColor.b,
-			whiteDefaultColor.a
-		)
-		self.ProgressBar:SetStatusBarColor(color.r, color.g, color.b, classColor ~= nil and 0.75 or color.a)
-	else
-		local color = (useClassColorForName and classColor) or whiteDefaultColor
-		self.ProgressBar.TargetName:SetTextColor(color.r, color.g, color.b, color.a)
+			self.ProgressBar:SetStatusBarColor(
+				bg.r + (1 - bg.r) * 0.6,
+				bg.g + (1 - bg.g) * 0.6,
+				bg.b + (1 - bg.b) * 0.6,
+				0.5
+			)
+		end
 	end
 
 	if OnCooldownDoneCallback ~= nil then
@@ -473,12 +468,7 @@ function TargetedSpellsBarMixin:SetInterrupted(name, color)
 	local interruptSource = self:GetElement(Element.InterruptSource)
 
 	if interruptSource ~= nil and interruptSource.active then
-		self.ProgressBar.InterruptSource:SetText(name)
-
-		if color ~= nil then
-			self.ProgressBar.InterruptSource:SetTextColor(color.r, color.g, color.b)
-		end
-
+		Private.Utils.ApplyElementText(self.ProgressBar.InterruptSource, interruptSource, name, color)
 		self.ProgressBar.InterruptSource:Show()
 	else
 		self.ProgressBar.InterruptSource:Hide()

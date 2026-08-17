@@ -288,7 +288,15 @@ function DesignerMixin:PopulateDemoContent()
 	local classColor = classToken and C_ClassColor.GetClassColor(classToken)
 
 	if frame.ProgressBar then
-		self:StyleDemoText(frame.ProgressBar.TargetName, self.scratchElements[Element.TargetName], playerName, classColor)
+		local core = self.scratchElements[Element.ProgressBar]
+		local barCarriesClassColor = core ~= nil and core.barColorMode == Private.Enum.BarColorMode.TargetClassColor
+
+		self:StyleDemoText(
+			frame.ProgressBar.TargetName,
+			self.scratchElements[Element.TargetName],
+			playerName,
+			not barCarriesClassColor and classColor or nil
+		)
 		self:StyleDemoText(frame.ProgressBar.InterruptSource, self.scratchElements[Element.InterruptSource], playerName,
 			classColor)
 
@@ -320,15 +328,7 @@ function DesignerMixin:StyleDemoText(region, element, sampleText, classColor)
 		return
 	end
 
-	region:SetText(sampleText)
-
-	if element.useClassColor and classColor then
-		region:SetTextColor(classColor.r, classColor.g, classColor.b)
-	elseif element.textColor then
-		local color = CreateColorFromHexString(element.textColor)
-		region:SetTextColor(color.r, color.g, color.b, color.a)
-	end
-
+	Private.Utils.ApplyElementText(region, element, sampleText, classColor)
 	region:Show()
 end
 

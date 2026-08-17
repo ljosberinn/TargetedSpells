@@ -34,7 +34,7 @@
 ---@field StartDemo fun(self: DesignerMixin)
 ---@field PlayDemoCast fun(self: DesignerMixin)
 ---@field PopulateDemoContent fun(self: DesignerMixin)
----@field StyleDemoText fun(self: DesignerMixin, region: Region, element: Element, sampleText: string, classColor: colorRGB)
+---@field StyleDemoText fun(self: DesignerMixin, region: Region, element: Element, sampleText: string, classColor: colorRGB?)
 ---@field EndDemo fun(self: DesignerMixin)
 ---@field ElementMarkerRect fun(self: DesignerMixin, record: table, tag: Element, layout: table): table
 ---@field ScratchLayout fun(self: DesignerMixin): table
@@ -113,6 +113,8 @@
 ---@field ApplyFractionThreshold fun(formatter: NumericFormatter, fractionThreshold: number)
 ---@field RegisterSlashCommand fun(name: string, description: string, handler: fun(rest: string))
 ---@field ComputeElementExtent fun(elements: table<Element, table<string, any>>): { width: number, height: number, offsetX: number, offsetY: number }
+---@field ApplyElementText fun(region: FontString, element: table<string, any>, text: string, classColor: colorRGB?)
+---@field ApplyElementTextColor fun(region: FontString, element: table<string, any>)
 
 ---@class TargetedSpellsElementRecord
 ---@field setting string
@@ -499,7 +501,7 @@
 ---@field AdjustInterruptibleColor fun(self: TargetedSpellsBarMixin, isInterruptible: boolean)
 ---@field AdjustInterruptShield fun(self: TargetedSpellsBarMixin, isInterruptible: boolean)
 ---@field SetTargetMarker fun(self: TargetedSpellsBarMixin, raidTargetIndex: number?)
----@field UpdateTargetName fun(self: TargetedSpellsBarMixin, targetName: string?)
+---@field UpdateTargetName fun(self: TargetedSpellsBarMixin, targetName: string?, classColor: colorRGB?)
 ---@field ApplySpellNameWidth fun(self: TargetedSpellsBarMixin)
 
 ---@class EditModeFrame : Frame

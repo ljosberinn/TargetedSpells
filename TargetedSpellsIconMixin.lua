@@ -68,12 +68,7 @@ function TargetedSpellsIconMixin:SetInterrupted(name, color)
 	local interruptSource = self:GetElement(Private.Enum.Element.InterruptSource)
 
 	if interruptSource ~= nil and interruptSource.active then
-		self.InterruptSource:SetText(name)
-
-		if color ~= nil then
-			self.InterruptSource:SetTextColor(color.r, color.g, color.b)
-		end
-
+		Private.Utils.ApplyElementText(self.InterruptSource, interruptSource, name, color)
 		self.InterruptSource:Show()
 	else
 		self.InterruptSource:Hide()
@@ -214,9 +209,8 @@ function TargetedSpellsIconMixin:StyleInterruptSource()
 		self.InterruptSource:SetShadowOffset(0, 0)
 	end
 
-	if element.textColor ~= nil then
-		local color = CreateColorFromHexString(element.textColor)
-		self.InterruptSource:SetTextColor(color.r, color.g, color.b, color.a)
+	if not element.useClassColor then
+		Private.Utils.ApplyElementTextColor(self.InterruptSource, element)
 	end
 end
 

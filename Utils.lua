@@ -36,6 +36,33 @@ function Private.Utils.SetFontIfChanged(fontString, font, fontSize, fontFlags)
 	fontString.appliedFontFlags = fontFlags
 end
 
+---@param region FontString
+---@param element table<string, any>
+---@param text string may be a secret value
+---@param classColor colorRGB? may be a secret value
+function Private.Utils.ApplyElementText(region, element, text, classColor)
+	if element.useClassColor and classColor then
+		region:SetTextColor(classColor.r, classColor.g, classColor.b)
+		region:SetText(text)
+
+		return
+	end
+
+	Private.Utils.ApplyElementTextColor(region, element)
+	region:SetText(text)
+end
+
+---@param region FontString
+---@param element table<string, any>
+function Private.Utils.ApplyElementTextColor(region, element)
+	if element.textColor == nil then
+		return
+	end
+
+	local color = CreateColorFromHexString(element.textColor)
+	region:SetTextColor(color.r, color.g, color.b, color.a)
+end
+
 do
 	local BACKDROP_COORD_START = 0.0625
 	local BACKDROP_COORD_END = 1 - BACKDROP_COORD_START
