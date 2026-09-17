@@ -23,6 +23,13 @@ local encounterTtsExecutionGuards = {
 	end,
 	[2067] = function(unit) -- Viceroy Nezhar, Seat of the Triumvirate
 		return UnitLevel(unit) == 90
+	end,
+	[3457] = function(unit) -- The Writhing Coil, Altar of Fangs
+		return not UnitIsBossMob(unit) -- ignores casts by the intermission adds
+	end
+	,
+	[2127] = function(unit) -- Avatar of Sethraliss, Temple of Sethraliss
+		return not UnitIsBossMob(unit) -- ignores casts by the intermission adds
 	end
 }
 

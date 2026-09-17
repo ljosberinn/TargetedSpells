@@ -5,6 +5,7 @@ Private.L = {}
 
 Private.EventRegistry = CreateFromMixins(CallbackRegistryMixin)
 Private.EventRegistry:OnLoad()
+Private.IsClassicForever = select(4, GetBuildInfo()) < 120000
 
 do
 	local tbl = {}

@@ -499,6 +499,8 @@ function TargetedSpellsEditModeMixin:CreateSetting(base)
 	elseif base == "TextToSpeechVoice" then
 		local function Set(_, value)
 			TargetedSpellsSaved.TextToSpeech.TextToSpeechVoice = value
+			local spellId = Private.IsClassicForever and 585 or 442204
+			C_VoiceChat.SpeakText(value, C_Spell.GetSpellName(spellId), 1, C_TTSSettings.GetSpeechVolume(), true)
 		end
 
 		local function Generator(owner, rootDescription)

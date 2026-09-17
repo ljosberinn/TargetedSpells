@@ -1,4 +1,4 @@
-## Interface: 120007, 120100
+## Interface: 120007, 120100, 16001
 ## Title: Targeted Spells
 ## DefaultState: Enabled
 ## SavedVariables: TargetedSpellsSaved

@@ -16,6 +16,7 @@
 ---@field Designer TargetedSpellsDesigner
 ---@field Glows GlowFunctions
 ---@field TextToSpeechUtil TargetedSpellsTextToSpeechUtil
+---@field IsClassicForever boolean
 
 ---@class TargetedSpellsTextToSpeechUtil
 ---@field MaybeAnnounceSpell fun(info: SpellCastInfo, contentType: ContentType, activeEncounterId: number?)
