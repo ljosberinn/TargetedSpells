@@ -100,6 +100,49 @@ function TargetedSpellsBarMixin:OnLoad()
 	self.Bar:SetStatusBarTexture("")
 	self.countdownFormatter = Private.Utils.CreateCountdownFormatter()
 	self.DurationCooldown:SetCountdownFormatter(self.countdownFormatter)
+
+	self.TargetNameLabels = {}
+
+	local units = {
+		"player",
+		"party1",
+		"party2",
+		"party3",
+		"party4",
+	}
+
+	for _, unit in ipairs(units) do
+		local label = self.ProgressBar:CreateFontString(nil, "OVERLAY")
+
+		label:SetFont("Fonts\\FRIZQT___CYR.TTF", 14, "OUTLINE")
+
+		label:SetJustifyH("RIGHT")
+		label:SetAlpha(0)
+
+		self.TargetNameLabels[unit] = label
+	end
+end
+
+function TargetedSpellsBarMixin:PositionTargetNameLabels()
+	if self.TargetNameLabels == nil then
+		return
+	end
+
+	local element = self:GetElement(Element.TargetName)
+
+	if element == nil then
+		return
+	end
+
+	for _, label in pairs(self.TargetNameLabels) do
+		label:ClearAllPoints()
+		label:SetPoint("RIGHT", self.ProgressBar.TargetName, "RIGHT", 0, 0)
+
+		label:SetWidth(element.maxWidth or 75)
+		label:SetJustifyH(element.justifyH or "RIGHT")
+
+		label:SetFont("Fonts\\FRIZQT___CYR.TTF", element.fontSize or 14, "OUTLINE")
+	end
 end
 
 function TargetedSpellsBarMixin:PositionElements()
@@ -157,6 +200,7 @@ function TargetedSpellsBarMixin:PositionElements()
 			end
 		end
 	end
+	self:PositionTargetNameLabels()
 end
 
 function TargetedSpellsBarMixin:OnSizeChanged()
@@ -305,6 +349,13 @@ function TargetedSpellsBarMixin:Reset()
 	self.ProgressBar.InterruptSource:SetText("")
 	self.ProgressBar.InterruptSource:Hide()
 
+	if self.TargetNameLabels ~= nil then
+		for _, label in pairs(self.TargetNameLabels) do
+			label:SetText("")
+			label:SetAlpha(0)
+		end
+	end
+
 	self.CustomElementsFrame.InterruptShield:SetAlpha(secretwrap(1))
 	self.CustomElementsFrame.InterruptShield:Hide()
 
@@ -333,13 +384,58 @@ end
 
 function TargetedSpellsBarMixin:ApplySpellNameWidth()
 	local element = self:GetElement(Element.SpellName)
+	local targetNameElement = self:GetElement(Element.TargetName)
 	local maxWidth = nil
 
-	if element ~= nil and self.ProgressBar.TargetName:IsShown() then
+	if element ~= nil and targetNameElement ~= nil and targetNameElement.active ~= false then
 		maxWidth = element.maxWidth
 	end
 
 	ApplyTextWidth(self.ProgressBar.SpellName, maxWidth)
+end
+
+function TargetedSpellsBarMixin:UpdateGroupTargetName()
+	if self.TargetNameLabels == nil or self.unit == nil then
+		return
+	end
+
+	local element = self:GetElement(Element.TargetName)
+
+	if element == nil or element.active == false then
+		for _, label in pairs(self.TargetNameLabels) do
+			label:SetAlpha(0)
+		end
+
+		return
+	end
+
+	local targetUnit = self.unit .. "target"
+
+	for unit, label in pairs(self.TargetNameLabels) do
+		if UnitExists(unit) then
+			local name = UnitName(unit)
+
+			label:SetText(name or "")
+			label:SetAlphaFromBoolean(UnitIsUnit(targetUnit, unit))
+
+			if element.useClassColor then
+				local _, class = UnitClass(unit)
+
+				if class then
+					local color = C_ClassColor.GetClassColor(class)
+
+					if color then
+						label:SetTextColor(color.r, color.g, color.b)
+					end
+				end
+			else
+				Private.Utils.ApplyElementTextColor(label, element)
+			end
+		else
+			label:SetText("")
+			label:SetAlpha(0)
+		end
+	end
 end
 
 ---@param targetName string? may be a secret value
@@ -376,7 +472,6 @@ function TargetedSpellsBarMixin:PostCreate(info, OnCooldownDoneCallback)
 	self:SetSpellId(info.spellId)
 	self:SetId(info.id)
 	local durationAlpha = self:SetDuration(info.duration)
-	local targetName = UnitSpellTargetName(info.unit)
 
 	self:ApplyCastAlpha(info, durationAlpha)
 	self.Bar:SetValue(self:GetAlpha())
@@ -387,15 +482,13 @@ function TargetedSpellsBarMixin:PostCreate(info, OnCooldownDoneCallback)
 
 	self.ProgressBar:SetTimerDuration(info.duration, Enum.StatusBarInterpolation.None, info.isChannel and 1 or 0)
 
-	local targetNameElement = self:GetElement(Element.TargetName)
-	local useClassColorForName = targetNameElement ~= nil and targetNameElement.useClassColor
 	local barColorMode = core ~= nil and core.barColorMode
 	local useClassColorForBar = barColorMode == BarColorMode.TargetClassColor
 
 	---@type colorRGB?
 	local classColor = nil
 
-	if useClassColorForName or useClassColorForBar then
+	if useClassColorForBar then
 		local targetClass = UnitSpellTargetClass(info.unit)
 
 		if targetClass then
@@ -403,7 +496,8 @@ function TargetedSpellsBarMixin:PostCreate(info, OnCooldownDoneCallback)
 		end
 	end
 
-	self:UpdateTargetName(targetName, not useClassColorForBar and classColor or nil)
+	self.ProgressBar.TargetName:Hide()
+	self:UpdateGroupTargetName()
 
 	local shield = self:GetElement(Element.InterruptShield)
 	local shieldActive = shield ~= nil and shield.active
@@ -461,6 +555,13 @@ function TargetedSpellsBarMixin:SetInterrupted(name, color)
 	self.ProgressBar.SpellName:Hide()
 	self.ProgressBar.TargetName:Hide()
 
+	if self.TargetNameLabels ~= nil then
+		for _, label in pairs(self.TargetNameLabels) do
+			label:SetText("")
+			label:SetAlpha(0)
+		end
+	end
+
 	if name == nil then
 		return
 	end
@@ -479,7 +580,15 @@ function TargetedSpellsBarMixin:SetSpellId(spellId)
 	local element = self:GetElement(Element.SpellName)
 
 	if element ~= nil and element.active ~= false then
-		self.ProgressBar.SpellName:SetText(spellId == nil and addonName or C_Spell.GetSpellName(spellId))
+		local spellName = spellId == nil and addonName or C_Spell.GetSpellName(spellId)
+
+		self.ProgressBar.SpellName:SetFont(
+			"Fonts\\FRIZQT___CYR.TTF",
+			element.fontSize or 14,
+			"OUTLINE"
+		)
+
+		self.ProgressBar.SpellName:SetText(spellName)
 		self.ProgressBar.SpellName:Show()
 	else
 		self.ProgressBar.SpellName:Hide()
