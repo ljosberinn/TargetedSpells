@@ -19,8 +19,13 @@
 ---@field IsClassicForever boolean
 
 ---@class TargetedSpellsTextToSpeechUtil
----@field MaybeAnnounceSpell fun(info: SpellCastInfo, contentType: ContentType, activeEncounterId: number?)
+---@field MaybeAnnounceSpell fun(info: SpellCastInfo, contentType: ContentType, encounterState: TargetedSpellsEncounterState)
 ---@field ClearAnnouncementCacheForUnit fun(unit: string)
+
+---@class TargetedSpellsEncounterState
+---@field activeEncounterId number?
+---@field challengeModeMapId number? nil outside a challenge mode run, and after a reload mid-run
+---@field seenEncounterIds table<number, true> encounters started during the current challenge mode run
 
 ---@class TargetedSpellsDesigner
 ---@field Toggle fun()
@@ -578,7 +583,7 @@
 ---@field private DrainPendingCastsClosure fun()
 ---@field private DrainPendingCasts fun(self: TargetedSpellsDriver)
 ---@field private OnCooldownDoneClosure fun(info: SpellCastInfo)
----@field private activeEncounterId number?
+---@field private encounterState TargetedSpellsEncounterState
 ---@field unitGroups table<string, table<integer, boolean>> unit -> set of group ids displaying it; routing only, never frames
 ---@field controllers table<integer, TargetedSpellsGroupController>
 ---@field OnGroupPositionChanged fun(self: TargetedSpellsDriver, groupId: integer)
@@ -613,6 +618,8 @@
 ---@field HandleRaidTargetUpdate fun(self: TargetedSpellsDriver)
 ---@field HandleEncounterStart fun(self: TargetedSpellsDriver, encounterId: number)
 ---@field HandleEncounterEnd fun(self: TargetedSpellsDriver)
+---@field HandleChallengeModeStart fun(self: TargetedSpellsDriver, mapId: number)
+---@field HandleChallengeModeReset fun(self: TargetedSpellsDriver)
 ---@field OnProfileImported fun(self: TargetedSpellsDriver)
 ---@field MaybeMarkAsInterruptedAndDelay fun(self: TargetedSpellsDriver, unit: string, id: number|string|nil, interruptedBy: string?)
 ---@field CleanupDanglingFrames fun(self: TargetedSpellsDriver)

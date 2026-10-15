@@ -97,7 +97,6 @@ function TargetedSpellsMixin:GetUnit()
 	return self.unit
 end
 
-
 function TargetedSpellsMixin:SetGroup(group)
 	self.group = group
 end

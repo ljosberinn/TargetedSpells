@@ -44,20 +44,57 @@ local function NonTextBase(opts)
 	local records = {}
 
 	if not opts.omitActive then
-		records[#records + 1] = { setting = "active", name = "ELEMENT_ACTIVE", type = SettingType.Boolean, default = opts
-		.active }
+		records[#records + 1] = {
+			setting = "active",
+			name = "ELEMENT_ACTIVE",
+			type = SettingType.Boolean,
+			default = opts
+				.active
+		}
 	end
 
-	records[#records + 1] = { setting = "width", name = "ELEMENT_WIDTH", type = SettingType.Number, min = 1, max = 512, step = 1, default =
-	opts.width }
-	records[#records + 1] = { setting = "height", name = "ELEMENT_HEIGHT", type = SettingType.Number, min = 1, max = 512, step = 1, default =
-	opts.height }
+	records[#records + 1] = {
+		setting = "width",
+		name = "ELEMENT_WIDTH",
+		type = SettingType.Number,
+		min = 1,
+		max = 512,
+		step = 1,
+		default =
+			opts.width
+	}
+	records[#records + 1] = {
+		setting = "height",
+		name = "ELEMENT_HEIGHT",
+		type = SettingType.Number,
+		min = 1,
+		max = 512,
+		step = 1,
+		default =
+			opts.height
+	}
 
 	if not opts.omitOffset then
-		records[#records + 1] = { setting = "x", name = "ELEMENT_X", type = SettingType.Number, min = -512, max = 512, step = 1, default =
-		opts.x or 0 }
-		records[#records + 1] = { setting = "y", name = "ELEMENT_Y", type = SettingType.Number, min = -512, max = 512, step = 1, default =
-		opts.y or 0 }
+		records[#records + 1] = {
+			setting = "x",
+			name = "ELEMENT_X",
+			type = SettingType.Number,
+			min = -512,
+			max = 512,
+			step = 1,
+			default =
+				opts.x or 0
+		}
+		records[#records + 1] = {
+			setting = "y",
+			name = "ELEMENT_Y",
+			type = SettingType.Number,
+			min = -512,
+			max = 512,
+			step = 1,
+			default =
+				opts.y or 0
+		}
 	end
 
 	return records
@@ -80,8 +117,13 @@ local function TextBase(opts)
 
 	if opts.useClassColor ~= nil then
 		table.insert(records,
-			{ setting = "useClassColor", name = "ELEMENT_USE_CLASS_COLOR", type = SettingType.Boolean, default = opts
-			.useClassColor })
+			{
+				setting = "useClassColor",
+				name = "ELEMENT_USE_CLASS_COLOR",
+				type = SettingType.Boolean,
+				default = opts
+					.useClassColor
+			})
 	end
 
 	return records
@@ -230,7 +272,8 @@ local function BuildIconDurationSchema()
 
 	do
 		local records = NonTextBase({ omitActive = true, omitOffset = true, width = 32, height = 32 })
-		table.insert(records, { setting = "iconZoom", name = "ELEMENT_ICON_ZOOM", type = SettingType.Number, min = 1, max = 2, step = 0.05, default = 1.35 })
+		table.insert(records,
+			{ setting = "iconZoom", name = "ELEMENT_ICON_ZOOM", type = SettingType.Number, min = 1, max = 2, step = 0.05, default = 1.35 })
 		schema[Enum.Element.Icon] = records
 	end
 

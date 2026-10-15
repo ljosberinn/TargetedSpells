@@ -117,7 +117,6 @@ function TargetedSpellsIconDurationMixin:ApplyBorderStyle(styleName)
 	end)
 end
 
-
 function TargetedSpellsIconDurationMixin:HideGlow()
 	ForEachCell(self, function(cell)
 		self:HideGlowOn(cell)

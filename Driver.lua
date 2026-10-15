@@ -27,7 +27,12 @@ function TargetedSpellsDriver:Init()
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.PROFILE_IMPORTED, self.OnProfileImported, self)
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.GROUP_CHANGED, self.OnGroupChanged, self)
 	Private.EventRegistry:RegisterCallback(Private.Enum.Events.GROUP_POSITION_CHANGED, self.OnGroupPositionChanged, self)
-	self.activeEncounterId = nil
+	---@type TargetedSpellsEncounterState
+	self.encounterState = {
+		activeEncounterId = nil,
+		challengeModeMapId = nil,
+		seenEncounterIds = {},
+	}
 	self.capabilities = nil
 
 	self:SetupFrame(true)
@@ -160,6 +165,8 @@ function TargetedSpellsDriver:SetupFrame(isBoot)
 		self.frame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
 		self.frame:RegisterEvent("ENCOUNTER_START")
 		self.frame:RegisterEvent("ENCOUNTER_END")
+		self.frame:RegisterEvent("CHALLENGE_MODE_START")
+		self.frame:RegisterEvent("CHALLENGE_MODE_RESET")
 
 		self.frame:SetScript("OnEvent", self.OnFrameEventClosure)
 	end
@@ -441,6 +448,10 @@ function TargetedSpellsDriver:OnFrameEvent(_, event, ...)
 		self:HandleRaidTargetUpdate()
 	elseif event == "ENCOUNTER_START" then
 		self:HandleEncounterStart(...)
+	elseif event == "CHALLENGE_MODE_START" then
+		self:HandleChallengeModeStart(...)
+	elseif event == "CHALLENGE_MODE_RESET" then
+		self:HandleChallengeModeReset()
 	elseif event == "ENCOUNTER_END" then
 		self:HandleEncounterEnd()
 	end
@@ -598,12 +609,16 @@ function TargetedSpellsDriver:HandleDelayedStart(info, reverify)
 		return
 	end
 
-	Private.TextToSpeechUtil.MaybeAnnounceSpell(info, self.contentType, self.activeEncounterId)
+	Private.TextToSpeechUtil.MaybeAnnounceSpell(info, self.contentType, self.encounterState)
 end
 
 function TargetedSpellsDriver:HandleWorldStateChanged(event)
 	if event == "LOADING_SCREEN_DISABLED" then
 		self:CleanupDanglingFrames()
+
+		if self.encounterState.challengeModeMapId ~= nil and C_ChallengeMode.GetActiveChallengeMapID() == nil then
+			self:HandleChallengeModeReset()
+		end
 	end
 
 	local _, instanceType, difficultyId = GetInstanceInfo()
@@ -637,11 +652,25 @@ function TargetedSpellsDriver:HandleRaidTargetUpdate()
 end
 
 function TargetedSpellsDriver:HandleEncounterStart(encounterId)
-	self.activeEncounterId = encounterId
+	self.encounterState.activeEncounterId = encounterId
+
+	if self.encounterState.challengeModeMapId ~= nil then
+		self.encounterState.seenEncounterIds[encounterId] = true
+	end
 end
 
 function TargetedSpellsDriver:HandleEncounterEnd()
-	self.activeEncounterId = nil
+	self.encounterState.activeEncounterId = nil
+end
+
+function TargetedSpellsDriver:HandleChallengeModeStart(mapId)
+	self.encounterState.challengeModeMapId = mapId
+	table.wipe(self.encounterState.seenEncounterIds)
+end
+
+function TargetedSpellsDriver:HandleChallengeModeReset()
+	self.encounterState.challengeModeMapId = nil
+	table.wipe(self.encounterState.seenEncounterIds)
 end
 
 function TargetedSpellsDriver:CleanupDanglingFrames()

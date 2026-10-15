@@ -475,4 +475,3 @@ function Private.Migration.Apply(saved)
 		version = advanced
 	end
 end
-
