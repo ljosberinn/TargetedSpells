@@ -204,6 +204,13 @@
 ---@field ProcGlow_Start fun(frame: Frame, width: number, height: number)
 ---@field ProcGlow_Stop fun(frame: Frame)
 
+---@class PixelGlowFrame : Frame
+---@field Top Texture
+---@field Right Texture
+---@field Bottom Texture
+---@field Left Texture
+---@field Animation AnimationGroup
+
 ---@class ProcGlowAnimGroup : AnimationGroup
 ---@field AlphaRepeat Animation
 ---@field FlipbookRepeat Animation
@@ -333,7 +340,7 @@
 
 ---@class GlowTargetFrame : Frame
 ---@field _Star4 Star4Glow?
----@field _PixelGlow Frame?
+---@field _PixelGlow PixelGlowFrame?
 ---@field _AutoCastGlow Frame?
 ---@field _ProcGlow ProcGlowFrame?
 --- the glow currently parked on this frame: its type and the dimensions it was built for.
@@ -634,6 +641,9 @@
 
 ----- type patching / completion
 
+---@class ScriptRegion
+---@field SetRoundLayoutToNearestPixel fun(self: ScriptRegion, enabled: boolean)
+
 ---@class ExtendedCooldownTypes : Cooldown
 ---@field SetMinimumCountdownDuration fun(self: ExtendedCooldownTypes, minimumDuration: number)
 ---@field GetCountdownFontString fun(self: ExtendedCooldownTypes): FontString
@@ -788,28 +798,6 @@ GAME_LOCALE = ""
 
 ---@type table<string, StaticPopupDialogsArgs>
 StaticPopupDialogs = {}
-
-PixelUtil = {
-	SetPoint =
-	---@param region Region
-	---@param point FramePoint
-	---@param relativeTo Region
-	---@param relativePoint FramePoint
-	---@param offsetX number
-	---@param offsetY number
-	---@param minOffsetXPixels number?
-	---@param minOffsetYPixels number?
-		function(region, point, relativeTo, relativePoint, offsetX, offsetY, minOffsetXPixels, minOffsetYPixels)
-			region:SetPoint(point, relativeTo, relativePoint, offsetX, offsetY)
-		end,
-	SetSize =
-	---@param region Region
-	---@param width number
-	---@param height number
-		function(region, width, height)
-			region:SetSize(width, height)
-		end,
-}
 
 function StaticPopup_Hide(name) end
 

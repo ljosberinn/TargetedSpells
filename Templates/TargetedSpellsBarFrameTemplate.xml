@@ -1,8 +1,8 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/ https://raw.githubusercontent.com/Gethe/wow-ui-source/live/Interface/AddOns/Blizzard_SharedXML/UI.xsd">
-    <Frame name="TargetedSpellsBarFrameTemplate" mixin="TargetedSpellsBarMixin" virtual="true" ignoreParentAlpha="true" enableMouse="false" propagateMouseInput="Both">
+    <Frame name="TargetedSpellsBarFrameTemplate" mixin="TargetedSpellsBarMixin" virtual="true" ignoreParentAlpha="true" enableMouse="false" propagateMouseInput="Both" roundLayoutToNearestPixel="true">
         <Layers>
             <Layer level="ARTWORK">
-                <Texture parentKey="Icon">
+                <Texture parentKey="Icon" roundLayoutToNearestPixel="true">
                     <Anchors>
                         <Anchor point="TOPLEFT" relativePoint="TOPLEFT" />
                         <Anchor point="BOTTOMLEFT" relativePoint="BOTTOMLEFT" />
@@ -27,17 +27,17 @@
             </Layer>
         </Layers>
         <Frames>
-            <Cooldown parentKey="DurationCooldown" drawSwipe="false" drawBling="false" minimumCountdownDuration="0" />
+            <Cooldown parentKey="DurationCooldown" drawSwipe="false" drawBling="false" minimumCountdownDuration="0" roundLayoutToNearestPixel="true" />
             <StatusBar parentKey="Bar" ignoreParentAlpha="true" minValue="0" maxValue="1" />
-            <StatusBar parentKey="ProgressBar">
+            <StatusBar parentKey="ProgressBar" roundLayoutToNearestPixel="true">
                 <Layers>
                     <Layer level="BACKGROUND">
                         <Texture parentKey="Background" setAllPoints="true" file="Interface\Buttons\WHITE8X8" />
                     </Layer>
                     <Layer level="OVERLAY">
-                        <FontString parentKey="SpellName" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE" wordwrap="false" />
-                        <FontString parentKey="TargetName" font="GameFontHighlightSmall" justifyH="RIGHT" justifyV="MIDDLE" wordwrap="false" />
-                        <FontString parentKey="InterruptSource" hidden="true" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE" wordwrap="false">
+                        <FontString parentKey="SpellName" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE" wordwrap="false" roundLayoutToNearestPixel="true" />
+                        <FontString parentKey="TargetName" font="GameFontHighlightSmall" justifyH="RIGHT" justifyV="MIDDLE" wordwrap="false" roundLayoutToNearestPixel="true" />
+                        <FontString parentKey="InterruptSource" hidden="true" font="GameFontHighlightSmall" justifyH="LEFT" justifyV="MIDDLE" wordwrap="false" roundLayoutToNearestPixel="true">
                             <Anchors>
                                 <Anchor point="LEFT" relativePoint="LEFT">
                                     <Offset>
@@ -128,8 +128,8 @@
             <Frame parentKey="CustomElementsFrame" setAllPoints="true" enableMouse="false" propagateMouseInput="Both">
                 <Layers>
                     <Layer level="OVERLAY">
-                        <Texture parentKey="TargetMarker" file="Interface/TargetingFrame/UI-RaidTargetingIcons" />
-                        <Texture parentKey="InterruptShield" hidden="true" atlas="nameplates-InterruptShield" />
+                        <Texture parentKey="TargetMarker" file="Interface/TargetingFrame/UI-RaidTargetingIcons" roundLayoutToNearestPixel="true" />
+                        <Texture parentKey="InterruptShield" hidden="true" atlas="nameplates-InterruptShield" roundLayoutToNearestPixel="true" />
                     </Layer>
                 </Layers>
             </Frame>

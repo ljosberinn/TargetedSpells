@@ -23,7 +23,7 @@ function TargetedSpellsIconMixin:ApplyLayout()
 		return
 	end
 
-	PixelUtil.SetSize(self, iconElement.width, iconElement.height)
+	self:SetSize(iconElement.width, iconElement.height)
 	self:SetFont()
 	self:StyleInterruptSource()
 
@@ -110,19 +110,12 @@ function TargetedSpellsIconMixin:OnSizeChanged()
 
 	do
 		local fifteenPercent = 0.15 * iconElement.width
-		PixelUtil.SetPoint(self.Overlay, "TOPLEFT", topleftRelativePoint, "TOPLEFT", -fifteenPercent, fifteenPercent)
+		self.Overlay:SetPoint("TOPLEFT", topleftRelativePoint, "TOPLEFT", -fifteenPercent, fifteenPercent)
 	end
 
 	do
 		local fifteenPercent = 0.15 * iconElement.height
-		PixelUtil.SetPoint(
-			self.Overlay,
-			"BOTTOMRIGHT",
-			bottomrightRelativePoint,
-			"BOTTOMRIGHT",
-			fifteenPercent,
-			-fifteenPercent
-		)
+		self.Overlay:SetPoint("BOTTOMRIGHT", bottomrightRelativePoint, "BOTTOMRIGHT", fifteenPercent, -fifteenPercent)
 	end
 end
 
@@ -193,7 +186,7 @@ function TargetedSpellsIconMixin:StyleInterruptSource()
 		self.InterruptSource:SetWidth(0)
 	end
 
-	PixelUtil.SetPoint(self.InterruptSource, justifyH, self, "CENTER", element.x or 0, element.y or 0)
+	self.InterruptSource:SetPoint(justifyH, self, "CENTER", element.x or 0, element.y or 0)
 
 	Private.Utils.SetFontIfChanged(
 		self.InterruptSource,

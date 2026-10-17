@@ -46,6 +46,7 @@ end
 function GroupController:GetContainer()
 	if self.container == nil then
 		local frame = CreateFrame("Frame", "TargetedSpellsGroupContainer" .. self.group.Id, UIParent)
+		frame:SetRoundLayoutToNearestPixel(true)
 		frame:SetSize(1, 1)
 		self.container = frame
 	end
@@ -99,14 +100,7 @@ do
 		end
 
 		container:ClearAllPoints()
-		PixelUtil.SetPoint(
-			container,
-			"CENTER",
-			UIParent,
-			group.Position.point,
-			group.Position.x + offsetX,
-			group.Position.y + offsetY
-		)
+		container:SetPoint("CENTER", UIParent, group.Position.point, group.Position.x + offsetX, group.Position.y + offsetY)
 		container:Show()
 	end
 end

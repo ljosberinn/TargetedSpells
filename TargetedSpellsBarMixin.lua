@@ -112,8 +112,8 @@ function TargetedSpellsBarMixin:PositionElements()
 
 	local core = layout[Element.ProgressBar]
 	self.ProgressBar:ClearAllPoints()
-	PixelUtil.SetPoint(self.ProgressBar, "CENTER", self, "CENTER", core.centerX, core.centerY)
-	PixelUtil.SetSize(self.ProgressBar, core.width, core.height)
+	self.ProgressBar:SetPoint("CENTER", self, "CENTER", core.centerX, core.centerY)
+	self.ProgressBar:SetSize(core.width, core.height)
 
 	local background = elements[Element.Background]
 	self.ProgressBar.Background:SetShown(background == nil or background.active ~= false)
@@ -124,8 +124,8 @@ function TargetedSpellsBarMixin:PositionElements()
 		local geom = layout[entry.tag]
 
 		if geom ~= nil then
-			PixelUtil.SetPoint(region, "CENTER", self, "CENTER", geom.centerX, geom.centerY)
-			PixelUtil.SetSize(region, geom.width, geom.height)
+			region:SetPoint("CENTER", self, "CENTER", geom.centerX, geom.centerY)
+			region:SetSize(geom.width, geom.height)
 
 			if entry.applyShown then
 				region:SetShown(elements[entry.tag].active ~= false)
@@ -149,7 +149,7 @@ function TargetedSpellsBarMixin:PositionElements()
 				ApplyTextWidth(region, geom.maxWidth)
 			end
 
-			PixelUtil.SetPoint(region, geom.justifyH, self, "CENTER", geom.edgeX, geom.centerY)
+			region:SetPoint(geom.justifyH, self, "CENTER", geom.edgeX, geom.centerY)
 
 			local element = elements[entry.tag]
 			if not element.useClassColor then
@@ -169,7 +169,7 @@ function TargetedSpellsBarMixin:ApplyLayout()
 		return
 	end
 
-	PixelUtil.SetSize(self, core.width, core.height)
+	self:SetSize(core.width, core.height)
 	self:PositionElements()
 
 	self:SetForegroundBarTexture()

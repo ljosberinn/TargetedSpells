@@ -20,9 +20,9 @@ local STAR4_OUTER_FACTOR = 2.2
 ---@param width number
 ---@param height number
 local function SizeStar4Glow(Star4, width, height)
-	PixelUtil.SetSize(Star4, width * STAR4_INNER_FACTOR, height * STAR4_INNER_FACTOR)
-	PixelUtil.SetSize(Star4.Inner, width * STAR4_INNER_FACTOR, height * STAR4_INNER_FACTOR)
-	PixelUtil.SetSize(Star4.Outer, width * STAR4_OUTER_FACTOR, height * STAR4_OUTER_FACTOR)
+	Star4:SetSize(width * STAR4_INNER_FACTOR, height * STAR4_INNER_FACTOR)
+	Star4.Inner:SetSize(width * STAR4_INNER_FACTOR, height * STAR4_INNER_FACTOR)
+	Star4.Outer:SetSize(width * STAR4_OUTER_FACTOR, height * STAR4_OUTER_FACTOR)
 end
 
 ---@param parent Frame
@@ -31,11 +31,13 @@ end
 ---@return Star4Glow
 local function CreateStar4Glow(parent, width, height)
 	local Star4 = CreateFrame("Frame", nil, parent)
+	Star4:SetRoundLayoutToNearestPixel(true)
 	Star4:SetPoint("CENTER")
 	Star4:SetFrameStrata(parent:GetFrameStrata())
 	Star4:SetFrameLevel(parent:GetFrameLevel() + 1)
 
 	local Inner = Star4:CreateTexture(nil, "OVERLAY")
+	Inner:SetRoundLayoutToNearestPixel(true)
 	Inner:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
 	Inner:SetBlendMode("ADD")
 	Inner:SetAlpha(0.9)
@@ -44,6 +46,7 @@ local function CreateStar4Glow(parent, width, height)
 	Star4.Inner = Inner
 
 	local Outer = Star4:CreateTexture(nil, "OVERLAY")
+	Outer:SetRoundLayoutToNearestPixel(true)
 	Outer:SetTexture("Interface\\Cooldown\\star4")
 	Outer:SetBlendMode("ADD")
 	Outer:SetAlpha(0.6)

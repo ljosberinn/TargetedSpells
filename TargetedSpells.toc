@@ -1,4 +1,4 @@
-## Interface: 120105, 16001
+## Interface: 120105, 120107, 16001
 ## Title: Targeted Spells
 ## DefaultState: Enabled
 ## SavedVariables: TargetedSpellsSaved
@@ -20,6 +20,7 @@ Libs\LibSharedMedia-3.0\lib.xml
 Templates\TargetedSpellsFrameTemplate.xml
 Templates\TargetedSpellsBarFrameTemplate.xml
 Templates\TargetedSpellsIconDurationFrameTemplate.xml
+Templates\TargetedSpellsPixelGlowTemplate.xml
 
 Enum.lua
 Init.lua

@@ -10,17 +10,6 @@ local Private = b.Private
 local GlowType = Private.Enum.GlowType
 local Element = Private.Enum.Element
 
--- SizeStar4Glow is the only part of the mixin that reaches for a frame API. Assigned through
--- _G explicitly (as spec/driver_shard_spec.lua does) because busted sandboxes spec files, so a
--- plain global would land in this file's env rather than the one the mixin resolves against.
-_G.PixelUtil = {
-	SetSize = function(region, width, height)
-		region.width = width
-		region.height = height
-	end,
-	SetPoint = function() end,
-}
-
 local function StubGlow()
 	local glow = { shown = false }
 
@@ -30,6 +19,11 @@ local function StubGlow()
 
 	function glow:Hide()
 		self.shown = false
+	end
+
+	function glow:SetSize(width, height)
+		self.width = width
+		self.height = height
 	end
 
 	function glow:SetAlphaFromBoolean(value)

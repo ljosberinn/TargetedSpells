@@ -412,6 +412,7 @@ function DesignerMixin:EnsureMarkerVisuals(marker)
 		return
 	end
 
+	marker:SetRoundLayoutToNearestPixel(true)
 	marker:RegisterForClicks("LeftButtonUp")
 
 	local highlight = marker:CreateTexture(nil, "HIGHLIGHT")
@@ -467,8 +468,8 @@ function DesignerMixin:BuildMarkers()
 
 			marker.element = elementTag
 			marker:ClearAllPoints()
-			PixelUtil.SetSize(marker, width, height)
-			PixelUtil.SetPoint(marker, "CENTER", self.Preview, "CENTER", x, y)
+			marker:SetSize(width, height)
+			marker:SetPoint("CENTER", self.Preview, "CENTER", x, y)
 			local areaLevel = math.min(200, math.floor(50000 / math.max(1, width * height)))
 			marker:SetFrameLevel(self.Preview:GetFrameLevel() + 20 + areaLevel)
 			marker:SetScript("OnClick", function(clicked)
@@ -1058,9 +1059,9 @@ function DesignerMixin:UpdateMarkerRects()
 
 			if width ~= nil then
 				marker:Show()
-				PixelUtil.SetSize(marker, width, height)
+				marker:SetSize(width, height)
 				marker:ClearAllPoints()
-				PixelUtil.SetPoint(marker, "CENTER", self.Preview, "CENTER", x, y)
+				marker:SetPoint("CENTER", self.Preview, "CENTER", x, y)
 			else
 				marker:Hide()
 			end

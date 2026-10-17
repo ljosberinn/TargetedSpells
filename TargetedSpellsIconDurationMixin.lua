@@ -49,15 +49,15 @@ function TargetedSpellsIconDurationMixin:PositionElements()
 
 	local function Place(region, geometry)
 		region:ClearAllPoints()
-		PixelUtil.SetSize(region, geometry.width, geometry.height)
-		PixelUtil.SetPoint(region, "CENTER", self, "CENTER", geometry.centerX, geometry.centerY)
+		region:SetSize(geometry.width, geometry.height)
+		region:SetPoint("CENTER", self, "CENTER", geometry.centerX, geometry.centerY)
 	end
 
 	Place(self.IconCell, layout.iconLeft)
 	Place(self.IconCellMirror, layout.iconRight)
 
 	self.Duration:ClearAllPoints()
-	PixelUtil.SetPoint(self.Duration, "CENTER", self, "CENTER", layout.duration.centerX, layout.duration.centerY)
+	self.Duration:SetPoint("CENTER", self, "CENTER", layout.duration.centerX, layout.duration.centerY)
 end
 
 function TargetedSpellsIconDurationMixin:ApplyLayout()
@@ -68,7 +68,7 @@ function TargetedSpellsIconDurationMixin:ApplyLayout()
 	end
 
 	local layout = Private.Utils.ComputeIconDurationLayout(elements)
-	PixelUtil.SetSize(self, layout.totalWidth, iconElement.height)
+	self:SetSize(layout.totalWidth, iconElement.height)
 
 	self:PositionElements()
 	self:SetFont()
@@ -193,15 +193,8 @@ function TargetedSpellsIconDurationMixin:OnSizeChanged()
 		local bottomrightRelativePoint = select(2, cell.Overlay:GetPointByName("BOTTOMRIGHT"))
 		cell.Overlay:ClearAllPoints()
 
-		PixelUtil.SetPoint(cell.Overlay, "TOPLEFT", topleftRelativePoint, "TOPLEFT", -horizontalInset, verticalInset)
-		PixelUtil.SetPoint(
-			cell.Overlay,
-			"BOTTOMRIGHT",
-			bottomrightRelativePoint,
-			"BOTTOMRIGHT",
-			verticalInset,
-			-verticalInset
-		)
+		cell.Overlay:SetPoint("TOPLEFT", topleftRelativePoint, "TOPLEFT", -horizontalInset, verticalInset)
+		cell.Overlay:SetPoint("BOTTOMRIGHT", bottomrightRelativePoint, "BOTTOMRIGHT", verticalInset, -verticalInset)
 	end)
 
 	self:PositionElements()

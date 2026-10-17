@@ -22,6 +22,7 @@ function TargetedSpellsEditModeMixin:Init(group)
 	}
 
 	self.editModeFrame = CreateFrame("Frame", "TargetedSpellsGroupEditMode" .. group.Id, UIParent)
+	self.editModeFrame:SetRoundLayoutToNearestPixel(true)
 	self.editModeFrame:SetClampedToScreen(true)
 	-- some addons such as BetterCooldownManager toggle the edit mode briefly on login/loading screen end
 	-- which would toggle demos on our end. by flipping this bool, we can avoid that entirely, speeding up load time
@@ -549,10 +550,10 @@ function TargetedSpellsEditModeMixin:ResizeEditModeFrame()
 
 	if self.group.Direction == Private.Enum.Direction.Horizontal then
 		local totalWidth = (self.maxFrames - 1) * (core.width + self.group.Gap) + extent.width
-		PixelUtil.SetSize(self.editModeFrame, totalWidth, extent.height)
+		self.editModeFrame:SetSize(totalWidth, extent.height)
 	else
 		local totalHeight = (self.maxFrames - 1) * (core.height + self.group.Gap) + extent.height
-		PixelUtil.SetSize(self.editModeFrame, extent.width, totalHeight)
+		self.editModeFrame:SetSize(extent.width, totalHeight)
 	end
 end
 
@@ -560,7 +561,7 @@ function TargetedSpellsEditModeMixin:RestoreEditModePosition()
 	local position = self.group.Position
 
 	self.editModeFrame:ClearAllPoints()
-	PixelUtil.SetPoint(self.editModeFrame, position.point, UIParent, position.point, position.x, position.y)
+	self.editModeFrame:SetPoint(position.point, UIParent, position.point, position.x, position.y)
 end
 
 function TargetedSpellsEditModeMixin:OnProfileImported()
