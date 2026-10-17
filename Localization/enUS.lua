@@ -14,9 +14,9 @@ local L = Private.L
 L.EditMode = {}
 L.Functionality = {}
 L.Settings = {}
-L.Migration = {}
 L.SlashCommands = {}
 L.Designer = {}
+L.Groups = {}
 
 L.Designer.Title = "Targeted Spells - Layout Designer"
 L.Designer.ElementPickerLabel = "Element"
@@ -29,19 +29,19 @@ L.Designer.CopyFromEmpty = "No other groups of this type"
 
 -- Scratch-copy lifecycle: the footer Apply/Revert controls, the reminder that edits
 -- are only live once saved, and the unsaved-changes prompt (close / tab-switch).
-L.Designer.Apply = "Save Changes"
-L.Designer.Revert = "Revert"
+L.Designer.Apply = SAVE_CHANGES
+L.Designer.Revert = HUD_EDIT_MODE_REVERT_CHANGES
 L.Designer.Discard = "Discard"
 L.Designer.UnsavedHint = "Changes apply on Save."
 L.Designer.UnsavedPrompt = "You have unsaved layout changes."
 
 L.Designer.SettingNames = {
-	ELEMENT_ACTIVE = "Enabled",
+	ELEMENT_ACTIVE = VIDEO_OPTIONS_ENABLED,
 	ELEMENT_WIDTH = "Width",
 	ELEMENT_HEIGHT = "Height",
 	ELEMENT_X = "X Offset",
 	ELEMENT_Y = "Y Offset",
-	ELEMENT_FONT_SIZE = "Font Size",
+	ELEMENT_FONT_SIZE = FONT_SIZE,
 	ELEMENT_FONT = "Font",
 	ELEMENT_FONT_FLAGS = "Font Style",
 	ELEMENT_TEXT_COLOR = "Text Color",
@@ -81,7 +81,7 @@ L.Designer.FontFlagNames = {
 L.Designer.FontFlagsNone = "None"
 
 L.Designer.ElementNames = {
-	[Private.Enum.Element.Icon] = "Icon",
+	[Private.Enum.Element.Icon] = UNIT_NAMEPLATES_CAST_BAR_DISPLAY_SPELL_ICON,
 	[Private.Enum.Element.Overlay] = "Cooldown Manager Bezel",
 	[Private.Enum.Element.Cooldown] = "Cooldown",
 	[Private.Enum.Element.Border] = "Border",
@@ -90,8 +90,8 @@ L.Designer.ElementNames = {
 	[Private.Enum.Element.Background] = "Background",
 	[Private.Enum.Element.TargetMarker] = "Target Marker",
 	[Private.Enum.Element.DurationCooldown] = "Duration",
-	[Private.Enum.Element.SpellName] = "Spell Name",
-	[Private.Enum.Element.TargetName] = "Target Name",
+	[Private.Enum.Element.SpellName] = UNIT_NAMEPLATES_CAST_BAR_DISPLAY_SPELL_NAME,
+	[Private.Enum.Element.TargetName] = UNIT_NAMEPLATES_CAST_BAR_DISPLAY_SPELL_TARGET,
 	[Private.Enum.Element.InterruptShield] = "Interrupt Shield",
 	[Private.Enum.Element.Duration] = "Duration",
 }
@@ -102,7 +102,7 @@ L.SlashCommands.SettingsDescription = "Open the settings panel"
 L.SlashCommands.DesignDescription = "Open the layout designer"
 
 L.Settings.EditModeReminder =
-"All settings are exposed via the Edit Mode and \"/targetedspells design\"."
+	string.format("All settings are exposed via %s and \"/targetedspells design\".", HUD_EDIT_MODE_MENU)
 L.EditMode.TargetedSpellsSelfLabel = "Targeted Spells - Self"
 L.EditMode.TargetedSpellsPartyLabel = "Targeted Spells - Party"
 
@@ -115,12 +115,13 @@ L.Functionality.CVarWarning = string.format(
 )
 
 L.Functionality.V3MigrationWarning = string.format(
-	"%s\n\nDue to API restriction updates, the Party functionality for Targeted Spells had to be completely overhauled. Please check out Edit Mode for a preview.",
-	addonNameWithIcon
+	"%s\n\nDue to API restriction updates, the Party functionality for Targeted Spells had to be completely overhauled. Please check out %s for a preview.",
+	addonNameWithIcon,
+	HUD_EDIT_MODE_MENU
 )
 
-L.Settings.EnabledLabel = "Enabled"
-L.Settings.DisabledLabel = "Disabled"
+L.Settings.EnabledLabel = VIDEO_OPTIONS_ENABLED
+L.Settings.DisabledLabel = VIDEO_OPTIONS_DISABLED
 
 L.Settings.AddonCompartmentTooltipLine1 =
 	string.format("%s is %s", WrapTextInColorCode(L.EditMode.TargetedSpellsSelfLabel, "ffeda55f"), "%s")
@@ -132,27 +133,27 @@ L.Settings.LoadConditionContentTypeTooltip = nil
 L.Settings.LoadConditionContentTypeLabels = {
 	[Private.Enum.ContentType.OpenWorld] = "Open World",
 	[Private.Enum.ContentType.Delve] = "Delves",
-	[Private.Enum.ContentType.Dungeon] = "Dungeon",
-	[Private.Enum.ContentType.Raid] = "Raid",
-	[Private.Enum.ContentType.Arena] = "Arena",
-	[Private.Enum.ContentType.Battleground] = "Battleground",
+	[Private.Enum.ContentType.Dungeon] = DUNGEONS,
+	[Private.Enum.ContentType.Raid] = RAIDS,
+	[Private.Enum.ContentType.Arena] = ARENA,
+	[Private.Enum.ContentType.Battleground] = BATTLEGROUNDS,
 }
 
 L.Settings.LoadConditionRoleLabel = "Load Condition: Role"
 L.Settings.LoadConditionRoleTooltip = nil
 L.Settings.LoadConditionRoleLabels = {
-	[Private.Enum.Role.Healer] = "Healer",
-	[Private.Enum.Role.Tank] = "Tank",
-	[Private.Enum.Role.Damager] = "DPS",
+	[Private.Enum.Role.Healer] = HEALER,
+	[Private.Enum.Role.Tank] = TANK,
+	[Private.Enum.Role.Damager] = DAMAGER,
 }
 
 L.Settings.FrameGapLabel = "Gap"
 L.Settings.FrameGapTooltip = nil
 
-L.Settings.FrameDirectionLabel = "Direction"
+L.Settings.FrameDirectionLabel = HUD_EDIT_MODE_SETTING_AURA_FRAME_ORIENTATION
 L.Settings.FrameDirectionTooltip = nil
-L.Settings.FrameDirectionHorizontal = "Horizontal"
-L.Settings.FrameDirectionVertical = "Vertical"
+L.Settings.FrameDirectionHorizontal = HUD_EDIT_MODE_SETTING_AURA_FRAME_ORIENTATION_HORIZONTAL
+L.Settings.FrameDirectionVertical = HUD_EDIT_MODE_SETTING_AURA_FRAME_ORIENTATION_VERTICAL
 
 L.Settings.FrameSortOrderLabel = "Sort Order"
 L.Settings.FrameSortOrderTooltip = nil
@@ -182,8 +183,7 @@ L.Settings.GlowTypeLabels = {
 L.Settings.IndicateInterruptsLabel = "Indicate Interrupts"
 
 L.Settings.TextToSpeechVoiceLabel = "TTS Voice"
-L.Settings.TextToSpeechVoiceTooltip =
-"Voice used for Text-To-Speech announcements. Shared between Self and Party settings."
+L.Settings.TextToSpeechVoiceTooltip = "Voice used for Text-To-Speech announcements. Shared between all groups."
 
 L.Settings.AnnounceUntargetedSpellsLabel = "Untargeted TTS Settings"
 L.Settings.AnnounceUntargetedSpellsTooltip = "Text-To-Speech for untargeted spells (AoE, frontals, etc.) by NPC type."
@@ -198,13 +198,9 @@ L.Settings.NpcTypeLabels = {
 	[Private.Enum.NpcType.Minion] = "Minions",
 }
 
-L.Settings.UseTargetClassColorLabel = "Use Target Class Color"
-L.Settings.UseTargetClassColorTooltip =
-"Colors the bar in the class color of the targeted unit at 75% alpha. Untargeted spells will use a brightened Background Bar Color"
-
 L.Settings.ClickToOpenSettingsLabel = "Click to open settings"
 
-L.Settings.Import = "Import"
+L.Settings.Import = HUD_EDIT_MODE_IMPORT_LAYOUT
 L.Settings.Export = "Export"
 
 L.Settings.FeatureFlagsLabel = "Features"
@@ -233,3 +229,9 @@ L.Settings.CreateGroup = "Create Group"
 L.Settings.DeleteGroup = "Delete Group"
 L.Settings.DeleteGroupConfirm = "Delete this group? This cannot be undone."
 L.Settings.CannotDeleteLastGroup = "You cannot delete the last remaining group."
+
+L.Groups.DefaultName = "Group %d"
+L.Groups.StarterSelfName = "Self - Icon"
+L.Groups.StarterUntargetedName = "Untargeted AoE - Bar"
+L.Groups.MigratedSelfName = "Self"
+L.Groups.MigratedPartyName = "Party"

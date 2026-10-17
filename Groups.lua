@@ -175,7 +175,8 @@ end
 
 ---@param group TargetedSpellsGroup
 local function ApplyContainerDefaults(group)
-	local defaults = ContainerDefaults(group.Id, group.Template, group.Name or ("Group " .. tostring(group.Id)))
+	local defaults =
+		ContainerDefaults(group.Id, group.Template, group.Name or Private.L.Groups.DefaultName:format(group.Id))
 
 	for key, value in pairs(defaults) do
 		if group[key] == nil then
@@ -223,11 +224,11 @@ local function NextGroupName(saved)
 	end
 
 	local n = 1
-	while taken["Group " .. n] do
+	while taken[Private.L.Groups.DefaultName:format(n)] do
 		n = n + 1
 	end
 
-	return "Group " .. n
+	return Private.L.Groups.DefaultName:format(n)
 end
 
 ---@param template TargetedSpellsTemplate
@@ -247,10 +248,10 @@ end
 
 ---@return table<integer, TargetedSpellsGroup>
 function Private.Groups.CreateStarterGroups()
-	local selfGroup = BuildDefaultGroup(1, Private.Enum.Template.Icon, "Self - Icon")
+	local selfGroup = BuildDefaultGroup(1, Private.Enum.Template.Icon, Private.L.Groups.StarterSelfName)
 	selfGroup.Filter = { [Private.Enum.TargetClass.Player] = true }
 
-	local barGroup = BuildDefaultGroup(2, Private.Enum.Template.Bar, "Untargeted AoE - Bar")
+	local barGroup = BuildDefaultGroup(2, Private.Enum.Template.Bar, Private.L.Groups.StarterUntargetedName)
 	barGroup.Filter = { [Private.Enum.TargetClass.Nobody] = true }
 
 	return { [1] = selfGroup, [2] = barGroup }

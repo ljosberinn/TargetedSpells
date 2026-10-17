@@ -14,37 +14,97 @@ local L = Private.L
 L.EditMode = {}
 L.Functionality = {}
 L.Settings = {}
-L.Migration = {}
 L.SlashCommands = {}
 L.Designer = {}
+L.Groups = {}
+
 L.Designer.Title = "Targeted Spells - Designer de layout"
 L.Designer.ElementPickerLabel = "Elemento"
 L.Designer.SelectHint = "Clique em um elemento na prévia ou escolha um no menu suspenso de elementos."
 L.Designer.ResetElement = "Redefinir elemento"
 L.Designer.CopyFrom = "Copiar layout de…"
 L.Designer.CopyFromEmpty = "Nenhum outro grupo deste tipo"
-L.Designer.Apply = "Salvar alterações"
-L.Designer.Revert = "Reverter"
+L.Designer.Apply = SAVE_CHANGES
+L.Designer.Revert = HUD_EDIT_MODE_REVERT_CHANGES
 L.Designer.Discard = "Descartar"
 L.Designer.UnsavedHint = "As alterações são aplicadas ao salvar."
 L.Designer.UnsavedPrompt = "Você tem alterações de layout não salvas."
-L.Designer.SettingNames = { ELEMENT_ACTIVE = "Ativado", ELEMENT_WIDTH = "Largura", ELEMENT_HEIGHT = "Altura", ELEMENT_X = "Deslocamento X", ELEMENT_Y = "Deslocamento Y", ELEMENT_FONT_SIZE = "Tamanho da fonte", ELEMENT_FONT = "Fonte", ELEMENT_FONT_FLAGS = "Estilo da fonte", ELEMENT_TEXT_COLOR = "Cor do texto", ELEMENT_JUSTIFY_H = "Alinhamento", ELEMENT_MAX_WIDTH = "Largura máxima", ELEMENT_GAP = "Espaçamento", ELEMENT_USE_CLASS_COLOR = "Usar cor de classe", ELEMENT_ICON_ZOOM = "Zoom do ícone", ELEMENT_SHOW_SWIPE = "Mostrar varredura", ELEMENT_SHOW_COUNTDOWN = "Mostrar duração", ELEMENT_FRACTION_THRESHOLD = "Fração abaixo de (s)", ELEMENT_BORDER_TEXTURE = "Textura da borda", ELEMENT_BORDER_COLOR = "Cor da borda", ELEMENT_BORDER_SIZE = "Tamanho da borda", ELEMENT_BAR_TEXTURE = "Textura da barra", ELEMENT_BAR_COLOR_MODE = "Modo de cor", ELEMENT_BAR_COLOR = "Cor da barra", ELEMENT_INTERRUPTIBLE_COLOR = "Cor interrompível", ELEMENT_UNINTERRUPTIBLE_COLOR = "Cor não interrompível", ELEMENT_BACKGROUND_TEXTURE = "Textura do fundo", ELEMENT_BACKGROUND_COLOR = "Cor do fundo" }
-L.Designer.Options = { JUSTIFY_LEFT = "Esquerda", JUSTIFY_CENTER = "Centro", JUSTIFY_RIGHT = "Direita", BAR_COLOR_STATIC = "Estático", BAR_COLOR_INTERRUPTIBILITY = "Interrompibilidade", BAR_COLOR_TARGET_CLASS = "Cor de classe do alvo" }
-L.Designer.FontFlagNames = { [Private.Enum.FontFlags.OUTLINE] = "Contorno", [Private.Enum.FontFlags.SHADOW] = "Sombra" }
+
+L.Designer.SettingNames = {
+	ELEMENT_ACTIVE = VIDEO_OPTIONS_ENABLED,
+	ELEMENT_WIDTH = "Largura",
+	ELEMENT_HEIGHT = "Altura",
+	ELEMENT_X = "Deslocamento X",
+	ELEMENT_Y = "Deslocamento Y",
+	ELEMENT_FONT_SIZE = FONT_SIZE,
+	ELEMENT_FONT = "Fonte",
+	ELEMENT_FONT_FLAGS = "Estilo da fonte",
+	ELEMENT_TEXT_COLOR = "Cor do texto",
+	ELEMENT_JUSTIFY_H = "Alinhamento",
+	ELEMENT_MAX_WIDTH = "Largura máxima",
+	ELEMENT_GAP = "Espaçamento",
+	ELEMENT_USE_CLASS_COLOR = "Usar cor de classe",
+	ELEMENT_ICON_ZOOM = "Zoom do ícone",
+	ELEMENT_SHOW_SWIPE = "Mostrar varredura",
+	ELEMENT_SHOW_COUNTDOWN = "Mostrar duração",
+	ELEMENT_FRACTION_THRESHOLD = "Fração abaixo de (s)",
+	ELEMENT_BORDER_TEXTURE = "Textura da borda",
+	ELEMENT_BORDER_COLOR = "Cor da borda",
+	ELEMENT_BORDER_SIZE = "Tamanho da borda",
+	ELEMENT_BAR_TEXTURE = "Textura da barra",
+	ELEMENT_BAR_COLOR_MODE = "Modo de cor",
+	ELEMENT_BAR_COLOR = "Cor da barra",
+	ELEMENT_INTERRUPTIBLE_COLOR = "Cor interrompível",
+	ELEMENT_UNINTERRUPTIBLE_COLOR = "Cor não interrompível",
+	ELEMENT_BACKGROUND_TEXTURE = "Textura do fundo",
+	ELEMENT_BACKGROUND_COLOR = "Cor do fundo",
+}
+
+L.Designer.Options = {
+	JUSTIFY_LEFT = "Esquerda",
+	JUSTIFY_CENTER = "Centro",
+	JUSTIFY_RIGHT = "Direita",
+	BAR_COLOR_STATIC = "Estático",
+	BAR_COLOR_INTERRUPTIBILITY = "Interrompibilidade",
+	BAR_COLOR_TARGET_CLASS = "Cor de classe do alvo",
+}
+
+L.Designer.FontFlagNames = {
+	[Private.Enum.FontFlags.OUTLINE] = "Contorno",
+	[Private.Enum.FontFlags.SHADOW] = "Sombra",
+}
 L.Designer.FontFlagsNone = "Nenhum"
-L.Designer.ElementNames = { [Private.Enum.Element.Icon] = "Ícone", [Private.Enum.Element.Overlay] = "Moldura do Gerenciador de Recargas", [Private.Enum.Element.Cooldown] = "Recarga", [Private.Enum.Element.Border] = "Borda", [Private.Enum.Element.InterruptSource] = "Nome do interruptor", [Private.Enum.Element.ProgressBar] = "Barra de progresso", [Private.Enum.Element.Background] = "Fundo", [Private.Enum.Element.TargetMarker] = "Marcador de alvo", [Private.Enum.Element.DurationCooldown] = "Duração", [Private.Enum.Element.SpellName] = "Nome do feitiço", [Private.Enum.Element.TargetName] = "Nome do alvo", [Private.Enum.Element.InterruptShield] = "Escudo de interrupção", [Private.Enum.Element.Duration] = "Duração" }
+
+L.Designer.ElementNames = {
+	[Private.Enum.Element.Icon] = UNIT_NAMEPLATES_CAST_BAR_DISPLAY_SPELL_ICON,
+	[Private.Enum.Element.Overlay] = "Moldura do Gerenciador de recarga",
+	[Private.Enum.Element.Cooldown] = "Recarga",
+	[Private.Enum.Element.Border] = "Borda",
+	[Private.Enum.Element.InterruptSource] = "Nome de quem interrompeu",
+	[Private.Enum.Element.ProgressBar] = "Barra de progresso",
+	[Private.Enum.Element.Background] = "Fundo",
+	[Private.Enum.Element.TargetMarker] = "Marcador de alvo",
+	[Private.Enum.Element.DurationCooldown] = "Duração",
+	[Private.Enum.Element.SpellName] = UNIT_NAMEPLATES_CAST_BAR_DISPLAY_SPELL_NAME,
+	[Private.Enum.Element.TargetName] = UNIT_NAMEPLATES_CAST_BAR_DISPLAY_SPELL_TARGET,
+	[Private.Enum.Element.InterruptShield] = "Escudo de interrupção",
+	[Private.Enum.Element.Duration] = "Duração",
+}
+
 L.SlashCommands.Header = "Comandos do Targeted Spells:"
 L.SlashCommands.OptionsDescription = "Abrir o painel de configurações"
 L.SlashCommands.SettingsDescription = "Abrir o painel de configurações"
 L.SlashCommands.DesignDescription = "Abrir o designer de layout"
 
-L.Settings.EditModeReminder =
-	"Todas as configurações estão disponíveis através do Modo de Edição e \"/targetedspells design\"."
+L.Settings.EditModeReminder = string.format(
+	"Todas as configurações estão disponíveis através do %s e \"/targetedspells design\".",
+	HUD_EDIT_MODE_MENU
+)
 L.EditMode.TargetedSpellsSelfLabel = "Targeted Spells - Próprio"
 L.EditMode.TargetedSpellsPartyLabel = "Targeted Spells - Grupo"
 
 L.Functionality.CVarWarning = string.format(
-	"%s\n\nA configuração de identificações '%s' foi desativada.\n\nSem ela, %s não funcionará em inimigos fora da tela.\n\nClique em '%s' para reativá-la.",
+	"%s\n\nA configuração de placas de identificação '%s' foi desativada.\n\nSem ela, %s não funcionará em inimigos fora da tela.\n\nClique em '%s' para reativá-la.",
 	addonNameWithIcon,
 	UNIT_NAMEPLATES_SHOW_OFFSCREEN,
 	addonName,
@@ -52,12 +112,13 @@ L.Functionality.CVarWarning = string.format(
 )
 
 L.Functionality.V3MigrationWarning = string.format(
-	"%s\n\nDevido a atualizações nas restrições de API, a funcionalidade de Grupo do Targeted Spells precisou ser completamente reformulada. Confira o Modo de Edição para uma prévia.",
-	addonNameWithIcon
+	"%s\n\nDevido a atualizações nas restrições de API, a funcionalidade de Grupo do Targeted Spells precisou ser completamente reformulada. Confira o %s para uma prévia.",
+	addonNameWithIcon,
+	HUD_EDIT_MODE_MENU
 )
 
-L.Settings.EnabledLabel = "Habilitado"
-L.Settings.DisabledLabel = "Desabilitado"
+L.Settings.EnabledLabel = VIDEO_OPTIONS_ENABLED
+L.Settings.DisabledLabel = VIDEO_OPTIONS_DISABLED
 
 L.Settings.AddonCompartmentTooltipLine1 =
 	string.format("%s está %s", WrapTextInColorCode(L.EditMode.TargetedSpellsSelfLabel, "ffeda55f"), "%s")
@@ -68,28 +129,28 @@ L.Settings.LoadConditionContentTypeLabel = "Condição de carregamento: Tipo de 
 L.Settings.LoadConditionContentTypeTooltip = nil
 L.Settings.LoadConditionContentTypeLabels = {
 	[Private.Enum.ContentType.OpenWorld] = "Mundo aberto",
-	[Private.Enum.ContentType.Delve] = "Masmorra de desbravamento",
-	[Private.Enum.ContentType.Dungeon] = "Masmorra",
-	[Private.Enum.ContentType.Raid] = "Raide",
-	[Private.Enum.ContentType.Arena] = "Arena",
-	[Private.Enum.ContentType.Battleground] = "Campo de batalha",
+	[Private.Enum.ContentType.Delve] = "Imersões",
+	[Private.Enum.ContentType.Dungeon] = DUNGEONS,
+	[Private.Enum.ContentType.Raid] = RAIDS,
+	[Private.Enum.ContentType.Arena] = ARENA,
+	[Private.Enum.ContentType.Battleground] = BATTLEGROUNDS,
 }
 
 L.Settings.LoadConditionRoleLabel = "Condição de carregamento: Função"
 L.Settings.LoadConditionRoleTooltip = nil
 L.Settings.LoadConditionRoleLabels = {
-	[Private.Enum.Role.Healer] = "Curandeiro",
-	[Private.Enum.Role.Tank] = "Guardião",
-	[Private.Enum.Role.Damager] = "DPS",
+	[Private.Enum.Role.Healer] = HEALER,
+	[Private.Enum.Role.Tank] = TANK,
+	[Private.Enum.Role.Damager] = DAMAGER,
 }
 
 L.Settings.FrameGapLabel = "Espaçamento"
 L.Settings.FrameGapTooltip = nil
 
-L.Settings.FrameDirectionLabel = "Direção"
+L.Settings.FrameDirectionLabel = HUD_EDIT_MODE_SETTING_AURA_FRAME_ORIENTATION
 L.Settings.FrameDirectionTooltip = nil
-L.Settings.FrameDirectionHorizontal = "Horizontal"
-L.Settings.FrameDirectionVertical = "Vertical"
+L.Settings.FrameDirectionHorizontal = HUD_EDIT_MODE_SETTING_AURA_FRAME_ORIENTATION_HORIZONTAL
+L.Settings.FrameDirectionVertical = HUD_EDIT_MODE_SETTING_AURA_FRAME_ORIENTATION_VERTICAL
 
 L.Settings.FrameSortOrderLabel = "Ordem de classificação"
 L.Settings.FrameSortOrderTooltip = nil
@@ -113,14 +174,14 @@ L.Settings.GlowTypeLabels = {
 	[Private.Enum.GlowType.PixelGlow] = "Pixel Glow",
 	[Private.Enum.GlowType.AutoCastGlow] = "Auto Cast Glow",
 	[Private.Enum.GlowType.ProcGlow] = "Proc Glow",
-	[Private.Enum.GlowType.Star4] = "Estrela 4",
+	[Private.Enum.GlowType.Star4] = "Star 4",
 }
 
 L.Settings.IndicateInterruptsLabel = "Indicar interrupções"
 
 L.Settings.TextToSpeechVoiceLabel = "Voz TTS"
 L.Settings.TextToSpeechVoiceTooltip =
-	"Voz usada para os anúncios de texto para voz. Compartilhada entre as configurações Self e Party."
+	"Voz usada para os anúncios de texto para voz. Compartilhada entre todos os grupos."
 
 L.Settings.AnnounceUntargetedSpellsLabel = "Configurações TTS sem alvo"
 L.Settings.AnnounceUntargetedSpellsTooltip =
@@ -137,26 +198,40 @@ L.Settings.NpcTypeLabels = {
 	[Private.Enum.NpcType.Minion] = "Capangas",
 }
 
-L.Settings.UseTargetClassColorLabel = "Usar cor de classe do alvo"
-L.Settings.UseTargetClassColorTooltip =
-	"Colorize a barra com a cor de classe da unidade alvo com 75% de opacidade. Feitiços sem alvo usarão uma Cor de Barra de Fundo mais clara."
-
 L.Settings.ClickToOpenSettingsLabel = "Clique para abrir as configurações"
 
-L.Settings.Import = "Importar"
+L.Settings.Import = HUD_EDIT_MODE_IMPORT_LAYOUT
 L.Settings.Export = "Exportar"
 
 L.Settings.FeatureFlagsLabel = "Funcionalidades"
 L.Settings.FeatureFlagsTooltip = nil
+
 L.Settings.GroupNameLabel = "Renomear grupo"
 L.Settings.GroupNamePrompt = "Digite um nome para este grupo:"
+
 L.Settings.TemplateLabel = "Modelo"
 L.Settings.TemplateTooltip = "Trocar o modelo redefine o layout dos elementos deste grupo para o padrão do modelo."
-L.Settings.TemplateLabels = { [Private.Enum.Template.Icon] = "Ícone", [Private.Enum.Template.Bar] = "Barra", [Private.Enum.Template.IconDuration] = "Ícone + duração" }
+L.Settings.TemplateLabels = {
+	[Private.Enum.Template.Icon] = "Ícone",
+	[Private.Enum.Template.Bar] = "Barra",
+	[Private.Enum.Template.IconDuration] = "Ícone + duração",
+}
+
 L.Settings.FilterLabel = "Mostrar lançamentos que têm como alvo"
 L.Settings.FilterTooltip = "Quais alvos de lançamento este grupo exibe."
-L.Settings.TargetClassLabels = { [Private.Enum.TargetClass.Player] = "você", [Private.Enum.TargetClass.PartyMember] = "membros do grupo", [Private.Enum.TargetClass.Nobody] = "ninguém (sem alvo)" }
+L.Settings.TargetClassLabels = {
+	[Private.Enum.TargetClass.Player] = "você",
+	[Private.Enum.TargetClass.PartyMember] = "membros do grupo",
+	[Private.Enum.TargetClass.Nobody] = "ninguém (sem alvo)",
+}
+
 L.Settings.CreateGroup = "Criar grupo"
 L.Settings.DeleteGroup = "Excluir grupo"
 L.Settings.DeleteGroupConfirm = "Excluir este grupo? Isso não pode ser desfeito."
 L.Settings.CannotDeleteLastGroup = "Você não pode excluir o último grupo restante."
+
+L.Groups.DefaultName = "Grupo %d"
+L.Groups.StarterSelfName = "Próprio - Ícone"
+L.Groups.StarterUntargetedName = "AoE sem alvo - Barra"
+L.Groups.MigratedSelfName = "Próprio"
+L.Groups.MigratedPartyName = "Grupo"

@@ -142,15 +142,21 @@ Private.EventRegistry = {
 	end,
 }
 
-Private.L = setmetatable({}, {
-	__index = function()
-		return setmetatable({}, {
-			__index = function(_, k)
-				return k
-			end,
-		})
+-- enUS feeds string.format at file scope; other Blizzard globals it references are left nil.
+C_AddOns = {
+	GetAddOnMetadata = function()
+		return ""
 	end,
-})
+}
+WrapTextInColorCode = function(text)
+	return text
+end
+UNIT_NAMEPLATES_SHOW_OFFSCREEN = "Show Offscreen Nameplates"
+ENABLE = "Enable"
+HUD_EDIT_MODE_MENU = "Edit Mode"
+
+Private.L = {}
+loadfile("Localization/enUS.lua")(addonName, Private)
 
 TargetedSpellsSaved = {}
 

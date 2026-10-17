@@ -14,44 +14,92 @@ local L = Private.L
 L.EditMode = {}
 L.Functionality = {}
 L.Settings = {}
-L.Migration = {}
 L.SlashCommands = {}
 L.Designer = {}
+L.Groups = {}
 
-L.Designer.Title = "Targeted Spells - Diseñador de diseño"
+L.Designer.Title = "Targeted Spells - Editor de diseño"
 L.Designer.ElementPickerLabel = "Elemento"
 L.Designer.SelectHint = "Haz clic en un elemento de la vista previa o elige uno en el menú desplegable de elementos."
 L.Designer.ResetElement = "Restablecer elemento"
 L.Designer.CopyFrom = "Copiar diseño de…"
 L.Designer.CopyFromEmpty = "No hay otros grupos de este tipo"
-L.Designer.Apply = "Guardar cambios"
-L.Designer.Revert = "Revertir"
+L.Designer.Apply = SAVE_CHANGES
+L.Designer.Revert = HUD_EDIT_MODE_REVERT_CHANGES
 L.Designer.Discard = "Descartar"
 L.Designer.UnsavedHint = "Los cambios se aplican al guardar."
 L.Designer.UnsavedPrompt = "Tienes cambios de diseño sin guardar."
+
 L.Designer.SettingNames = {
-	ELEMENT_ACTIVE = "Activado", ELEMENT_WIDTH = "Anchura", ELEMENT_HEIGHT = "Altura", ELEMENT_X = "Desplazamiento X", ELEMENT_Y = "Desplazamiento Y",
-	ELEMENT_FONT_SIZE = "Tamaño de fuente", ELEMENT_FONT = "Fuente", ELEMENT_FONT_FLAGS = "Estilo de fuente", ELEMENT_TEXT_COLOR = "Color del texto", ELEMENT_JUSTIFY_H = "Alineación",
-	ELEMENT_MAX_WIDTH = "Anchura máxima", ELEMENT_GAP = "Espaciado", ELEMENT_USE_CLASS_COLOR = "Usar color de clase", ELEMENT_ICON_ZOOM = "Zoom del icono", ELEMENT_SHOW_SWIPE = "Mostrar barrido",
-	ELEMENT_SHOW_COUNTDOWN = "Mostrar duración", ELEMENT_FRACTION_THRESHOLD = "Fracción inferior (s)", ELEMENT_BORDER_TEXTURE = "Textura del borde", ELEMENT_BORDER_COLOR = "Color del borde", ELEMENT_BORDER_SIZE = "Tamaño del borde",
-	ELEMENT_BAR_TEXTURE = "Textura de la barra", ELEMENT_BAR_COLOR_MODE = "Modo de color", ELEMENT_BAR_COLOR = "Color de la barra", ELEMENT_INTERRUPTIBLE_COLOR = "Color interrumpible", ELEMENT_UNINTERRUPTIBLE_COLOR = "Color no interrumpible",
-	ELEMENT_BACKGROUND_TEXTURE = "Textura del fondo", ELEMENT_BACKGROUND_COLOR = "Color del fondo",
+	ELEMENT_ACTIVE = VIDEO_OPTIONS_ENABLED,
+	ELEMENT_WIDTH = "Anchura",
+	ELEMENT_HEIGHT = "Altura",
+	ELEMENT_X = "Desplazamiento X",
+	ELEMENT_Y = "Desplazamiento Y",
+	ELEMENT_FONT_SIZE = FONT_SIZE,
+	ELEMENT_FONT = "Fuente",
+	ELEMENT_FONT_FLAGS = "Estilo de fuente",
+	ELEMENT_TEXT_COLOR = "Color del texto",
+	ELEMENT_JUSTIFY_H = "Alineación",
+	ELEMENT_MAX_WIDTH = "Anchura máxima",
+	ELEMENT_GAP = "Espaciado",
+	ELEMENT_USE_CLASS_COLOR = "Usar color de clase",
+	ELEMENT_ICON_ZOOM = "Zoom del icono",
+	ELEMENT_SHOW_SWIPE = "Mostrar barrido",
+	ELEMENT_SHOW_COUNTDOWN = "Mostrar duración",
+	ELEMENT_FRACTION_THRESHOLD = "Fracción inferior (s)",
+	ELEMENT_BORDER_TEXTURE = "Textura del borde",
+	ELEMENT_BORDER_COLOR = "Color del borde",
+	ELEMENT_BORDER_SIZE = "Tamaño del borde",
+	ELEMENT_BAR_TEXTURE = "Textura de la barra",
+	ELEMENT_BAR_COLOR_MODE = "Modo de color",
+	ELEMENT_BAR_COLOR = "Color de la barra",
+	ELEMENT_INTERRUPTIBLE_COLOR = "Color interrumpible",
+	ELEMENT_UNINTERRUPTIBLE_COLOR = "Color no interrumpible",
+	ELEMENT_BACKGROUND_TEXTURE = "Textura del fondo",
+	ELEMENT_BACKGROUND_COLOR = "Color del fondo",
 }
-L.Designer.Options = { JUSTIFY_LEFT = "Izquierda", JUSTIFY_CENTER = "Centro", JUSTIFY_RIGHT = "Derecha", BAR_COLOR_STATIC = "Estático", BAR_COLOR_INTERRUPTIBILITY = "Interrumpibilidad", BAR_COLOR_TARGET_CLASS = "Color de clase del objetivo" }
-L.Designer.FontFlagNames = { [Private.Enum.FontFlags.OUTLINE] = "Contorno", [Private.Enum.FontFlags.SHADOW] = "Sombra" }
+
+L.Designer.Options = {
+	JUSTIFY_LEFT = "Izquierda",
+	JUSTIFY_CENTER = "Centro",
+	JUSTIFY_RIGHT = "Derecha",
+	BAR_COLOR_STATIC = "Estático",
+	BAR_COLOR_INTERRUPTIBILITY = "Interrumpibilidad",
+	BAR_COLOR_TARGET_CLASS = "Color de clase del objetivo",
+}
+
+L.Designer.FontFlagNames = {
+	[Private.Enum.FontFlags.OUTLINE] = "Contorno",
+	[Private.Enum.FontFlags.SHADOW] = "Sombra",
+}
 L.Designer.FontFlagsNone = "Ninguno"
+
 L.Designer.ElementNames = {
-	[Private.Enum.Element.Icon] = "Icono", [Private.Enum.Element.Overlay] = "Bisel del gestor de enfriamientos", [Private.Enum.Element.Cooldown] = "Enfriamiento", [Private.Enum.Element.Border] = "Borde",
-	[Private.Enum.Element.InterruptSource] = "Nombre del interruptor", [Private.Enum.Element.ProgressBar] = "Barra de progreso", [Private.Enum.Element.Background] = "Fondo", [Private.Enum.Element.TargetMarker] = "Marcador de objetivo",
-	[Private.Enum.Element.DurationCooldown] = "Duración", [Private.Enum.Element.SpellName] = "Nombre del hechizo", [Private.Enum.Element.TargetName] = "Nombre del objetivo", [Private.Enum.Element.InterruptShield] = "Escudo de interrupción", [Private.Enum.Element.Duration] = "Duración",
+	[Private.Enum.Element.Icon] = UNIT_NAMEPLATES_CAST_BAR_DISPLAY_SPELL_ICON,
+	[Private.Enum.Element.Overlay] = "Bisel del gestor de tiempos de reutilización",
+	[Private.Enum.Element.Cooldown] = "Tiempo de reutilización",
+	[Private.Enum.Element.Border] = "Borde",
+	[Private.Enum.Element.InterruptSource] = "Nombre de quien interrumpe",
+	[Private.Enum.Element.ProgressBar] = "Barra de progreso",
+	[Private.Enum.Element.Background] = "Fondo",
+	[Private.Enum.Element.TargetMarker] = "Marcador de objetivo",
+	[Private.Enum.Element.DurationCooldown] = "Duración",
+	[Private.Enum.Element.SpellName] = UNIT_NAMEPLATES_CAST_BAR_DISPLAY_SPELL_NAME,
+	[Private.Enum.Element.TargetName] = UNIT_NAMEPLATES_CAST_BAR_DISPLAY_SPELL_TARGET,
+	[Private.Enum.Element.InterruptShield] = "Escudo de interrupción",
+	[Private.Enum.Element.Duration] = "Duración",
 }
+
 L.SlashCommands.Header = "Comandos de Targeted Spells:"
 L.SlashCommands.OptionsDescription = "Abrir el panel de configuración"
 L.SlashCommands.SettingsDescription = "Abrir el panel de configuración"
-L.SlashCommands.DesignDescription = "Abrir el diseñador de diseño"
+L.SlashCommands.DesignDescription = "Abrir el editor de diseño"
 
-L.Settings.EditModeReminder =
-	"Todas las configuraciones están disponibles a través del modo edición y \"/targetedspells design\"."
+L.Settings.EditModeReminder = string.format(
+	"Todas las configuraciones están disponibles a través del %s y \"/targetedspells design\".",
+	HUD_EDIT_MODE_MENU
+)
 L.EditMode.TargetedSpellsSelfLabel = "Targeted Spells - Uno mismo"
 L.EditMode.TargetedSpellsPartyLabel = "Targeted Spells - Grupo"
 
@@ -64,12 +112,13 @@ L.Functionality.CVarWarning = string.format(
 )
 
 L.Functionality.V3MigrationWarning = string.format(
-	"%s\n\nDebido a actualizaciones en las restricciones de la API, la funcionalidad de Grupo de Targeted Spells tuvo que ser completamente revisada. Consulta el Modo de Edición para una vista previa.",
-	addonNameWithIcon
+	"%s\n\nDebido a actualizaciones en las restricciones de la API, la funcionalidad de Grupo de Targeted Spells tuvo que ser completamente revisada. Consulta el %s para una vista previa.",
+	addonNameWithIcon,
+	HUD_EDIT_MODE_MENU
 )
 
-L.Settings.EnabledLabel = "Activado"
-L.Settings.DisabledLabel = "Desactivado"
+L.Settings.EnabledLabel = VIDEO_OPTIONS_ENABLED
+L.Settings.DisabledLabel = VIDEO_OPTIONS_DISABLED
 
 L.Settings.AddonCompartmentTooltipLine1 =
 	string.format("%s es %s", WrapTextInColorCode(L.EditMode.TargetedSpellsSelfLabel, "ffeda55f"), "%s")
@@ -81,27 +130,27 @@ L.Settings.LoadConditionContentTypeTooltip = nil
 L.Settings.LoadConditionContentTypeLabels = {
 	[Private.Enum.ContentType.OpenWorld] = "Mundo abierto",
 	[Private.Enum.ContentType.Delve] = "Profundidades",
-	[Private.Enum.ContentType.Dungeon] = "Mazmorra",
-	[Private.Enum.ContentType.Raid] = "Banda",
-	[Private.Enum.ContentType.Arena] = "Arena",
-	[Private.Enum.ContentType.Battleground] = "Campo de batalla",
+	[Private.Enum.ContentType.Dungeon] = DUNGEONS,
+	[Private.Enum.ContentType.Raid] = RAIDS,
+	[Private.Enum.ContentType.Arena] = ARENA,
+	[Private.Enum.ContentType.Battleground] = BATTLEGROUNDS,
 }
 
 L.Settings.LoadConditionRoleLabel = "Condición de carga: Rol"
 L.Settings.LoadConditionRoleTooltip = nil
 L.Settings.LoadConditionRoleLabels = {
-	[Private.Enum.Role.Healer] = "Sanador",
-	[Private.Enum.Role.Tank] = "Tanque",
-	[Private.Enum.Role.Damager] = "Daño",
+	[Private.Enum.Role.Healer] = HEALER,
+	[Private.Enum.Role.Tank] = TANK,
+	[Private.Enum.Role.Damager] = DAMAGER,
 }
 
 L.Settings.FrameGapLabel = "Espaciado"
 L.Settings.FrameGapTooltip = nil
 
-L.Settings.FrameDirectionLabel = "Dirección"
+L.Settings.FrameDirectionLabel = HUD_EDIT_MODE_SETTING_AURA_FRAME_ORIENTATION
 L.Settings.FrameDirectionTooltip = nil
-L.Settings.FrameDirectionHorizontal = "Horizontal"
-L.Settings.FrameDirectionVertical = "Vertical"
+L.Settings.FrameDirectionHorizontal = HUD_EDIT_MODE_SETTING_AURA_FRAME_ORIENTATION_HORIZONTAL
+L.Settings.FrameDirectionVertical = HUD_EDIT_MODE_SETTING_AURA_FRAME_ORIENTATION_VERTICAL
 
 L.Settings.FrameSortOrderLabel = "Orden"
 L.Settings.FrameSortOrderTooltip = nil
@@ -132,7 +181,7 @@ L.Settings.IndicateInterruptsLabel = "Indicar interrupciones"
 
 L.Settings.TextToSpeechVoiceLabel = "Voz TTS"
 L.Settings.TextToSpeechVoiceTooltip =
-	"Voz usada para los anuncios de texto a voz. Compartida entre las configuraciones de Self y Party."
+	"Voz usada para los anuncios de texto a voz. Compartida entre todos los grupos."
 
 L.Settings.AnnounceUntargetedSpellsLabel = "Configuración TTS sin objetivo"
 L.Settings.AnnounceUntargetedSpellsTooltip =
@@ -149,26 +198,40 @@ L.Settings.NpcTypeLabels = {
 	[Private.Enum.NpcType.Minion] = "Secuaces",
 }
 
-L.Settings.UseTargetClassColorLabel = "Usar color de clase del objetivo"
-L.Settings.UseTargetClassColorTooltip =
-	"Colorea la barra con el color de clase de la unidad objetivo al 75 % de opacidad. Los hechizos sin objetivo usarán un Color de Barra de Fondo más brillante."
-
 L.Settings.ClickToOpenSettingsLabel = "Haz clic para abrir la configuración"
 
-L.Settings.Import = "Importar"
+L.Settings.Import = HUD_EDIT_MODE_IMPORT_LAYOUT
 L.Settings.Export = "Exportar"
 
 L.Settings.FeatureFlagsLabel = "Características"
 L.Settings.FeatureFlagsTooltip = nil
+
 L.Settings.GroupNameLabel = "Cambiar nombre del grupo"
 L.Settings.GroupNamePrompt = "Introduce un nombre para este grupo:"
+
 L.Settings.TemplateLabel = "Plantilla"
 L.Settings.TemplateTooltip = "Cambiar la plantilla restablece el diseño de elementos de este grupo al predeterminado."
-L.Settings.TemplateLabels = { [Private.Enum.Template.Icon] = "Icono", [Private.Enum.Template.Bar] = "Barra", [Private.Enum.Template.IconDuration] = "Icono + duración" }
+L.Settings.TemplateLabels = {
+	[Private.Enum.Template.Icon] = "Icono",
+	[Private.Enum.Template.Bar] = "Barra",
+	[Private.Enum.Template.IconDuration] = "Icono + duración",
+}
+
 L.Settings.FilterLabel = "Mostrar lanzamientos dirigidos a"
 L.Settings.FilterTooltip = "Qué objetivos de lanzamiento muestra este grupo."
-L.Settings.TargetClassLabels = { [Private.Enum.TargetClass.Player] = "ti", [Private.Enum.TargetClass.PartyMember] = "miembros del grupo", [Private.Enum.TargetClass.Nobody] = "nadie (sin objetivo)" }
+L.Settings.TargetClassLabels = {
+	[Private.Enum.TargetClass.Player] = "ti",
+	[Private.Enum.TargetClass.PartyMember] = "miembros del grupo",
+	[Private.Enum.TargetClass.Nobody] = "nadie (sin objetivo)",
+}
+
 L.Settings.CreateGroup = "Crear grupo"
 L.Settings.DeleteGroup = "Eliminar grupo"
 L.Settings.DeleteGroupConfirm = "¿Eliminar este grupo? Esta acción no se puede deshacer."
 L.Settings.CannotDeleteLastGroup = "No puedes eliminar el último grupo restante."
+
+L.Groups.DefaultName = "Grupo %d"
+L.Groups.StarterSelfName = "Uno mismo - Icono"
+L.Groups.StarterUntargetedName = "AoE sin objetivo - Barra"
+L.Groups.MigratedSelfName = "Uno mismo"
+L.Groups.MigratedPartyName = "Grupo"

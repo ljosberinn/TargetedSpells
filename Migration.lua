@@ -156,7 +156,7 @@ local function BuildSelfGroup(selfSettings, defaults)
 	end
 
 	return {
-		Name = "Self",
+		Name = Private.L.Groups.MigratedSelfName,
 		Enabled = read(selfSettings, defaults, "Enabled"),
 		Filter = { [TargetClass.Player] = true },
 		Template = Template.Icon,
@@ -238,7 +238,7 @@ local function BuildPartyGroup(partySettings, defaults)
 	end
 
 	return {
-		Name = "Party",
+		Name = Private.L.Groups.MigratedPartyName,
 		Enabled = read(partySettings, defaults, "Enabled"),
 		Filter = DerivePartyFilter(flags),
 		Template = Template.Bar,
