@@ -35,7 +35,7 @@ local encounterTtsExecutionGuards = {
 
 ---@type table<number, fun(info: SpellCastInfo, seenEncounterIds: table<number, true>): boolean>
 local challengeModeTtsExecutionGuards = {
-	[587] = function(info, seenEncounterIds) -- Murder Row
+	[2813] = function(info, seenEncounterIds)             -- Murder Row
 		return info.isChannel and next(seenEncounterIds) == nil -- ignores channels before the first boss
 	end,
 }
@@ -56,7 +56,9 @@ local function SituationPreventsTTSExecution(info, encounterState)
 		local challengeModeGuard = challengeModeTtsExecutionGuards[encounterState.challengeModeMapId]
 
 		if challengeModeGuard then
-			return challengeModeGuard(info, encounterState.seenEncounterIds)
+			local result = challengeModeGuard(info, encounterState.seenEncounterIds)
+
+			return result
 		end
 	end
 
@@ -92,16 +94,14 @@ function Private.TextToSpeechUtil.MaybeAnnounceSpell(info, contentType, encounte
 			info.unit
 		)))
 		or SituationPreventsTTSExecution(info, encounterState)
+		or not UnitMatchesTTSCriteria(info.unit)
 	then
 		return
 	end
 
 	local now = GetTime()
 
-	if
-		announcementCache[info.unit] ~= nil and now - announcementCache[info.unit] < 3
-		or not UnitMatchesTTSCriteria(info.unit)
-	then
+	if announcementCache[info.unit] ~= nil and now - announcementCache[info.unit] < 3 then
 		return
 	end
 
@@ -116,6 +116,7 @@ function Private.TextToSpeechUtil.MaybeAnnounceSpell(info, contentType, encounte
 	local configuredVoice = TargetedSpellsSaved.TextToSpeech.TextToSpeechVoice
 	local voiceId = configuredVoice ~= nil and configuredVoice > -1 and configuredVoice
 		or C_TTSSettings.GetVoiceOptionID(Enum.TtsVoiceType.Standard)
+
 
 	C_VoiceChat.SpeakText(voiceId, spellName, 2, C_TTSSettings.GetSpeechVolume(), true)
 end

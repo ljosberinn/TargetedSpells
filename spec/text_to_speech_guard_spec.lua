@@ -44,6 +44,9 @@ end
 _G.UnitLevel = function()
 	return 90
 end
+_G.UnitName = function()
+	return "Unit"
+end
 _G.C_Spell = {
 	GetSpellName = function()
 		return "Spell"
