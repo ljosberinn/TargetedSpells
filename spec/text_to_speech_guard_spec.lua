@@ -87,7 +87,7 @@ end
 loadfile("TextToSpeech.lua")("TargetedSpells", Private)
 loadfile("Driver.lua")("TargetedSpells", Private)
 
-local murderRow = 587
+local murderRow = 2813
 
 ---@param event string
 local function Fire(event, ...)
