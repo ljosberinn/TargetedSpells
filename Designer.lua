@@ -100,6 +100,7 @@ local ELEMENT_ORDER = {
 		Element.InterruptSource,
 		Element.InterruptShield,
 		Element.Border,
+		Element.IconBorder,
 	},
 	[Private.Enum.Template.IconDuration] = {
 		Element.Icon,
@@ -511,9 +512,11 @@ function DesignerMixin:SetupElementDropdown()
 			return
 		end
 
+		local templateNames = Private.L.Designer.TemplateElementNames[self.scratchTemplate]
+
 		for _, elementTag in ipairs(order) do
 			rootDescription:CreateRadio(
-				Private.L.Designer.ElementNames[elementTag] or elementTag,
+				templateNames and templateNames[elementTag] or Private.L.Designer.ElementNames[elementTag] or elementTag,
 				function()
 					return self.selectedElement == elementTag
 				end,

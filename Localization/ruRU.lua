@@ -88,7 +88,14 @@ L.Designer.ElementNames = {
 	[Private.Enum.Element.SpellName] = UNIT_NAMEPLATES_CAST_BAR_DISPLAY_SPELL_NAME,
 	[Private.Enum.Element.TargetName] = UNIT_NAMEPLATES_CAST_BAR_DISPLAY_SPELL_TARGET,
 	[Private.Enum.Element.InterruptShield] = "Щит прерывания",
+	[Private.Enum.Element.IconBorder] = "Рамка значка заклинания",
 	[Private.Enum.Element.Duration] = "Длительность",
+}
+
+L.Designer.TemplateElementNames = {
+	[Private.Enum.Template.Bar] = {
+		[Private.Enum.Element.Border] = "Рамка полосы",
+	},
 }
 
 L.SlashCommands.Header = "Команды Targeted Spells:"

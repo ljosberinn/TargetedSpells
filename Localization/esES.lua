@@ -88,7 +88,14 @@ L.Designer.ElementNames = {
 	[Private.Enum.Element.SpellName] = UNIT_NAMEPLATES_CAST_BAR_DISPLAY_SPELL_NAME,
 	[Private.Enum.Element.TargetName] = UNIT_NAMEPLATES_CAST_BAR_DISPLAY_SPELL_TARGET,
 	[Private.Enum.Element.InterruptShield] = "Escudo de interrupción",
+	[Private.Enum.Element.IconBorder] = "Borde del icono de hechizo",
 	[Private.Enum.Element.Duration] = "Duración",
+}
+
+L.Designer.TemplateElementNames = {
+	[Private.Enum.Template.Bar] = {
+		[Private.Enum.Element.Border] = "Borde de la barra",
+	},
 }
 
 L.SlashCommands.Header = "Comandos de Targeted Spells:"

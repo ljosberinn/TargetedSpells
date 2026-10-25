@@ -88,7 +88,14 @@ L.Designer.ElementNames = {
 	[Private.Enum.Element.SpellName] = UNIT_NAMEPLATES_CAST_BAR_DISPLAY_SPELL_NAME,
 	[Private.Enum.Element.TargetName] = UNIT_NAMEPLATES_CAST_BAR_DISPLAY_SPELL_TARGET,
 	[Private.Enum.Element.InterruptShield] = "打斷護盾",
+	[Private.Enum.Element.IconBorder] = "法術圖示邊框",
 	[Private.Enum.Element.Duration] = "持續時間",
+}
+
+L.Designer.TemplateElementNames = {
+	[Private.Enum.Template.Bar] = {
+		[Private.Enum.Element.Border] = "條邊框",
+	},
 }
 
 L.SlashCommands.Header = "Targeted Spells 指令："

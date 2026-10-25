@@ -114,6 +114,7 @@ Private.Enum.Element = {
 	SpellName = "SpellName",
 	TargetName = "TargetName",
 	InterruptShield = "InterruptShield",
+	IconBorder = "IconBorder",
 	-- icon+duration template
 	Duration = "Duration",
 }

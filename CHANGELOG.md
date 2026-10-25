@@ -1,3 +1,3 @@
-## Version 4.0.7
+## Version 4.1.0
 
-- fix Murder Row TTS gate being incorrect
+- added Spell Icon Border for Bars

@@ -180,6 +180,7 @@ function TargetedSpellsBarMixin:ApplyLayout()
 
 	local border = self:GetElement(Element.Border)
 	self:ApplyBorderStyle(border ~= nil and border.active ~= false and border.borderTexture or "None")
+	self:ApplyIconBorderStyle()
 
 	local duration = self:GetElement(Element.DurationCooldown)
 	if duration ~= nil then
@@ -290,6 +291,22 @@ function TargetedSpellsBarMixin:ApplyBorderStyle(styleName)
 		self.ProgressBar --[[@as TargetedSpellsBorderFrame]],
 		styleName,
 		{ width = layout.barWidth, height = (core and core.height) or 0, offsetX = 0, offsetY = 0 },
+		border and border.borderSize,
+		border and border.borderColor
+	)
+end
+
+function TargetedSpellsBarMixin:ApplyIconBorderStyle()
+	local border = self:GetElement(Element.IconBorder)
+	local icon = self:GetElement(Element.Icon)
+	if icon == nil then
+		return
+	end
+
+	Private.Utils.ApplyBorderStyle(
+		self.IconBorder --[[@as TargetedSpellsBorderFrame]],
+		border ~= nil and border.active ~= false and icon.active ~= false and border.borderTexture or "None",
+		{ width = icon.width, height = icon.height, offsetX = 0, offsetY = 0 },
 		border and border.borderSize,
 		border and border.borderColor
 	)
