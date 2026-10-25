@@ -114,6 +114,28 @@ describe("Design.BackfillElements", function()
 	end)
 end)
 
+describe("Bar icon border", function()
+	it("is a Bar-only element seeded like the bar border", function()
+		local bar = Private.Design.GetDefault(Enum.Template.Bar)
+
+		assert.is_false(bar[Enum.Element.IconBorder].active)
+		assert.same(bar[Enum.Element.Border], bar[Enum.Element.IconBorder])
+		assert.is_nil(Private.Design.GetDefault(Enum.Template.Icon)[Enum.Element.IconBorder])
+		assert.is_nil(Private.Design.GetDefault(Enum.Template.IconDuration)[Enum.Element.IconBorder])
+	end)
+
+	it("is backfilled into a Bar group saved before it existed, leaving the bar border alone", function()
+		local group = { Template = Enum.Template.Bar, Elements = Private.Design.GetDefault(Enum.Template.Bar) }
+		group.Elements[Enum.Element.IconBorder] = nil
+		group.Elements[Enum.Element.Border].active = true
+
+		Private.Design.BackfillElements(group)
+
+		assert.is_false(group.Elements[Enum.Element.IconBorder].active)
+		assert.is_true(group.Elements[Enum.Element.Border].active)
+	end)
+end)
+
 describe("Design.CopyElements", function()
 	it("deep-copies with no shared nested references", function()
 		local original = Private.Design.GetDefault(Enum.Template.Icon)

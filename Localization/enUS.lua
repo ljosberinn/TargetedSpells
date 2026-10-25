@@ -93,7 +93,15 @@ L.Designer.ElementNames = {
 	[Private.Enum.Element.SpellName] = UNIT_NAMEPLATES_CAST_BAR_DISPLAY_SPELL_NAME,
 	[Private.Enum.Element.TargetName] = UNIT_NAMEPLATES_CAST_BAR_DISPLAY_SPELL_TARGET,
 	[Private.Enum.Element.InterruptShield] = "Interrupt Shield",
+	[Private.Enum.Element.IconBorder] = "Spell Icon Border",
 	[Private.Enum.Element.Duration] = "Duration",
+}
+
+-- Per-template label overrides: the Bar template's Border has to read apart from its IconBorder.
+L.Designer.TemplateElementNames = {
+	[Private.Enum.Template.Bar] = {
+		[Private.Enum.Element.Border] = "Bar Border",
+	},
 }
 
 L.SlashCommands.Header = "Targeted Spells commands:"

@@ -140,6 +140,17 @@ local function CountdownTextRecords(fontSize)
 	}
 end
 
+---@param active boolean
+---@return table[]
+local function BorderRecords(active)
+	return {
+		{ setting = "active",        name = "ELEMENT_ACTIVE",         type = SettingType.Boolean, default = active },
+		{ setting = "borderTexture", name = "ELEMENT_BORDER_TEXTURE", type = SettingType.Texture, mediaType = "border", default = "Blizzard Tooltip Border" },
+		{ setting = "borderColor",   name = "ELEMENT_BORDER_COLOR",   type = SettingType.Color,   default = "FFFFFFFF" },
+		{ setting = "borderSize",    name = "ELEMENT_BORDER_SIZE",    type = SettingType.Number,  min = 1,              max = 32,                           step = 1, default = 8 },
+	}
+end
+
 ---@param target table[]
 ---@param source table[]
 ---@return nil
@@ -183,12 +194,7 @@ local function BuildIconSchema()
 		useClassColor = true,
 	})
 
-	schema[Enum.Element.Border] = {
-		{ setting = "active",        name = "ELEMENT_ACTIVE",         type = SettingType.Boolean, default = true },
-		{ setting = "borderTexture", name = "ELEMENT_BORDER_TEXTURE", type = SettingType.Texture, mediaType = "border", default = "Blizzard Tooltip Border" },
-		{ setting = "borderColor",   name = "ELEMENT_BORDER_COLOR",   type = SettingType.Color,   default = "FFFFFFFF" },
-		{ setting = "borderSize",    name = "ELEMENT_BORDER_SIZE",    type = SettingType.Number,  min = 1,              max = 32,                           step = 1, default = 8 },
-	}
+	schema[Enum.Element.Border] = BorderRecords(true)
 
 	return schema
 end
@@ -256,12 +262,9 @@ local function BuildBarSchema()
 
 	schema[Enum.Element.InterruptShield] = NonTextBase({ active = false, width = 24, height = 24, x = -35, y = 0 })
 
-	schema[Enum.Element.Border] = {
-		{ setting = "active",        name = "ELEMENT_ACTIVE",         type = SettingType.Boolean, default = false },
-		{ setting = "borderTexture", name = "ELEMENT_BORDER_TEXTURE", type = SettingType.Texture, mediaType = "border", default = "Blizzard Tooltip Border" },
-		{ setting = "borderColor",   name = "ELEMENT_BORDER_COLOR",   type = SettingType.Color,   default = "FFFFFFFF" },
-		{ setting = "borderSize",    name = "ELEMENT_BORDER_SIZE",    type = SettingType.Number,  min = 1,              max = 32,                           step = 1, default = 8 },
-	}
+	schema[Enum.Element.Border] = BorderRecords(false)
+
+	schema[Enum.Element.IconBorder] = BorderRecords(false)
 
 	return schema
 end
@@ -299,12 +302,7 @@ local function BuildIconDurationSchema()
 		schema[Enum.Element.Duration] = records
 	end
 
-	schema[Enum.Element.Border] = {
-		{ setting = "active",        name = "ELEMENT_ACTIVE",         type = SettingType.Boolean, default = true },
-		{ setting = "borderTexture", name = "ELEMENT_BORDER_TEXTURE", type = SettingType.Texture, mediaType = "border", default = "Blizzard Tooltip Border" },
-		{ setting = "borderColor",   name = "ELEMENT_BORDER_COLOR",   type = SettingType.Color,   default = "FFFFFFFF" },
-		{ setting = "borderSize",    name = "ELEMENT_BORDER_SIZE",    type = SettingType.Number,  min = 1,              max = 32,                           step = 1, default = 8 },
-	}
+	schema[Enum.Element.Border] = BorderRecords(true)
 
 	return schema
 end

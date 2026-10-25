@@ -88,7 +88,14 @@ L.Designer.ElementNames = {
 	[Private.Enum.Element.SpellName] = UNIT_NAMEPLATES_CAST_BAR_DISPLAY_SPELL_NAME,
 	[Private.Enum.Element.TargetName] = UNIT_NAMEPLATES_CAST_BAR_DISPLAY_SPELL_TARGET,
 	[Private.Enum.Element.InterruptShield] = "Unterbrechungsschild",
+	[Private.Enum.Element.IconBorder] = "Zaubersymbolrahmen",
 	[Private.Enum.Element.Duration] = "Dauer",
+}
+
+L.Designer.TemplateElementNames = {
+	[Private.Enum.Template.Bar] = {
+		[Private.Enum.Element.Border] = "Balkenrahmen",
+	},
 }
 
 L.SlashCommands.Header = "Targeted-Spells-Befehle:"

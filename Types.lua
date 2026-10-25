@@ -493,6 +493,7 @@
 ---@class TargetedSpellsBarMixin : TargetedSpellsMixin
 ---@field ProgressBar TargetedSpellsBarProgressBar
 ---@field CustomElementsFrame TargetedSpellsBarCustomElementsFrame
+---@field IconBorder TargetedSpellsBorderFrame
 ---@field DurationCooldown ExtendedCooldownTypes
 ---@field OnLoad fun(self: TargetedSpellsBarMixin)
 ---@field GetCoreElement fun(self: TargetedSpellsBarMixin): Element
@@ -509,6 +510,7 @@
 ---@field SetForegroundBarTexture fun(self: TargetedSpellsBarMixin)
 ---@field SetBackgroundBarTexture fun(self: TargetedSpellsBarMixin)
 ---@field SetBackgroundBarColor fun(self: TargetedSpellsBarMixin)
+---@field ApplyIconBorderStyle fun(self: TargetedSpellsBarMixin)
 ---@field SetProgressBarColor fun(self: TargetedSpellsBarMixin)
 ---@field SetPreviewBarColor fun(self: TargetedSpellsBarMixin)
 ---@field AdjustInterruptibleColor fun(self: TargetedSpellsBarMixin, isInterruptible: boolean)
